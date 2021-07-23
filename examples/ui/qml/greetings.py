@@ -39,7 +39,14 @@ else:
     controller = Controller()
     controller.context = engineContext
 
-    component = QQmlComponent(engine, QUrl(f"{apContext.yamlDir}/dialog.qml"))
+    component = QQmlComponent(engine, QUrl.fromLocalFile(f"{apContext.yamlDir}/dialog.qml"))
+    if (component.status() is not QQmlComponent.Ready):
+        print(f"QML errors: {component.errors()}", flush=True)
+        ui.showToast("QML error", \
+            ap.UI.ToastType.Fail, \
+            description="QML file has errors. See ap.log for details.")
+        exit()
+        
     initialProperties = {"parent": root.contentItem(), "controller": controller}
 
     object = component.createWithInitialProperties(initialProperties, engineContext)
