@@ -1,0 +1,33 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action: 
+  #Must Have Properties
+  name: "Greetings Dialog"
+
+  #Optional Properties
+  version: 1
+  id: "ap::greetings"
+  category: "examples/ui"
+  type: python
+  author: "Anchorpoint Software GmbH"
+
+  script: "${yamlDir}/greetings.py"
+
+  #Where to register this action
+  register:
+    folder: 
+      enable: true 
+
+  #Handle toast messages
+  toast:
+    success:
+      enable: false
+    error:
+      enable: false
+
+    
