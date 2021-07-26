@@ -14,10 +14,8 @@ Dialogs.BasicDialog {
     dialogHeight: Dimensions.sizes.ultraLarge*3
     dialogWidth: Dimensions.sizes.huge*3
 
+    // Our controller property that we set from python by calling createWithInitialProperties
     property var controller
-
-    //Really important to not leak memory
-    onDialogClosed: controller.cleanup()
 
     title: "Greetings Dialog"
     titleIcon: Icons.normal.bubble
@@ -28,13 +26,12 @@ Dialogs.BasicDialog {
             anchors.fill: parent
             anchors.margins: Dimensions.margins.middle
 
+            // Similar to a QVBoxLayout
             ColumnLayout {
-                id: buttonLayoutId
                 anchors.fill: parent
 
+                // The first entry in the column layout is a simple label.
                 Atoms.TextView {
-                    id: labelId
-
                     style: Styles.BodyBoldTextStyle{}
                     text: "What is your name?"
                     horizontalAlignment: Text.AlignLeft
@@ -43,26 +40,36 @@ Dialogs.BasicDialog {
                     Layout.fillWidth: true
                 }
 
+                // The second entry is a text input field
                 Inputs.TextInput {
+                    // We set an ID so that we can access it later
                     id: textInputId
+
+                    // Default text
                     text: "John Doe"
                     style: Styles.BodyTextStyle{}
 
+                    // Set the focus to this object when the text input has loaded.
                     Component.onCompleted: textInputId.forceActiveFocus()
 
                     Layout.fillWidth: true
                 }
 
+                // Third, show a blue button to the user to trigger the greetings method
                 HighlightButtons.SquareTextHighlightButton {
-                    id: greetingsId
-                    text: qsTr("Show Greetings")
+                    text: "Show Greetings"
                     enabled: true
 
                     Layout.topMargin: Dimensions.sizes.small
                     Layout.bottomMargin: Dimensions.margins.small
 
+                    // JavaScript that is executed when the user clicks the button
                     onClicked: {
+                        // First, we tell our python script that the button was clicked.
+                        // By that we provide the current text from our TextView
                         controller.greetings(textInputId.text)
+
+                        // Then we close this dialog
                         rootId.closeDialog()
                     }
                 }
