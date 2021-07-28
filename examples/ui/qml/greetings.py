@@ -3,7 +3,6 @@
 # Note that Anchorpoint internally uses QML for a nice UX experience. 
 # If you just want to create a simple QWidgets plugin, checkout the widgets examples.
 
-from sys import getrefcount
 import anchorpoint as ap
 from PySide2.QtWidgets import QApplication
 from PySide2.QtQuick import QQuickWindow
