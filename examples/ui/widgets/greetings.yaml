@@ -7,27 +7,24 @@ version: "1.0"
 
 action: 
   #Must Have Properties
-  name: "Greetings Dialog"
+  name: "UI / Widgets / Greetings Dialog"
 
   #Optional Properties
   version: 1
-  id: "ap::greetings"
+  id: "ap::examples::widgets::greetings"
   category: "examples/ui"
   type: python
   author: "Anchorpoint Software GmbH"
+  description: "This is an advanced example action that uses PySide2 Qt Widgets to create native dialogs"
+  icon:
+    path: ":icons/aplogo.svg"
+    
+  script: "greetings.py"
 
-  script: "${yamlDir}/greetings.py"
-
-  #Where to register this action
+  #Where to register this action: in all folders
   register:
     folder: 
       enable: true 
 
-  #Handle toast messages
-  toast:
-    success:
-      enable: false
-    error:
-      enable: false
 
     

@@ -27,7 +27,7 @@ class Greetings(QDialog):
     
     def greetings(self):
         # Shows a 'success' toast in anchorpoint. 
-        ui.showToast(f"Hello {self.edit.text()}")
+        ui.show_toast(f"Hello {self.edit.text()}")
 
         # Close the Dialog
         self.close()
@@ -38,7 +38,7 @@ if app is None:
     # Ouch, no Anchorpoint QApplication instance, this is not good. 
     # We show a toast in Anchorpoint and create our own QApplication.
     import sys
-    ui.showToast("PySide2 hiccup", \
+    ui.show_toast("PySide2 hiccup", \
         ap.UI.ToastType.Info, \
         description="QApplication could not be accessed, please report a bug.")
     app = QApplication(sys.argv)

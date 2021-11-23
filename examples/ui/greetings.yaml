@@ -7,15 +7,15 @@ version: "1.0"
 
 action: 
   #Must Have Properties
-  name: "UI / QML / Greetings Dialog"
+  name: "UI / Greetings Dialog"
 
   #Optional Properties
   version: 1
-  id: "ap::examples::qml::greetings"
+  id: "ap::examples::greetings"
   category: "examples/ui"
   type: python
   author: "Anchorpoint Software GmbH"
-  description: "This is an advanced example action that uses PySide2 QML to create native QML dialogs"
+  description: "This is a basic example that shows how to create simple dialogs"
   icon:
     path: ":icons/aplogo.svg"
     
