@@ -1,0 +1,28 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "FFMPEG / Sequence to Video"
+
+  #Optional Properties
+  version: 1
+  id: "ap::ffmpeg::seqtovideo"
+  category: "ffmpeg/video"
+  type: python
+  author: "Anchorpoint Software GmbH"
+
+  script: "ffmpeg_img_to_video.py"
+  inputs:
+    ffmpeg_win: "ffmpeg.exe"
+    ffmpeg_mac: "ffmpeg"
+    fps: "25"
+
+  #Where to register this action: on all files matching the filter
+  register:
+    file:
+      filter: "*.png;*.exr;*.jpg;*.jpeg;*.tif;*.tiff" #Wildcard matching
