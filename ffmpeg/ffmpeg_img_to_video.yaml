@@ -7,7 +7,7 @@ version: "1.0"
 
 action:
   #Must Have Properties
-  name: "FFMPEG / Sequence to Video"
+  name: "FFmpeg / Sequence to Video"
 
   #Optional Properties
   version: 1
