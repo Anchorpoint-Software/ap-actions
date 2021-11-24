@@ -74,6 +74,7 @@ def create_action(dialog):
     ap.create_action(filepath, action)    
 
     dialog.close()
+    ui.show_toast("Action created")
 
 
 dialog = ap.Dialog()
