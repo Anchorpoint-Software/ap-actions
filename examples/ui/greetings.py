@@ -7,7 +7,7 @@ ui = ap.UI()
 name_var = "name"
 def button_clicked_cb(dialog):
     name = dialog.get_value(name_var)
-    ui.show_toast(f"Hello {name}")  
+    ui.show_info(f"Hello {name}")  
 
 # Create a dialog container
 dialog = ap.Dialog()

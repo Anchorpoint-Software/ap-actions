@@ -22,7 +22,7 @@ class Controller(QObject):
     @Slot(str)
     def greetings(self, name):
         # Called from QML. Shows a 'success' toast in anchorpoint.
-        ui.show_toast(f"Hello {name}")
+        ui.show_info(f"Hello {name}")
 
 
 # First, we check if we can access the Anchorpoint provided QApplication instance
@@ -32,9 +32,8 @@ if app is None:
     # We show a toast in Anchorpoint and exit the script
     import sys
 
-    ui.show_toast(
+    ui.show_error(
         "PySide2 hiccup",
-        ap.UI.ToastType.Info,
         description="QApplication could not be accessed, please report a bug.",
     )
     sys.exit()
@@ -45,9 +44,8 @@ controller = Controller()
 # Everything OK, we can access the active QML Engine from the Anchorpoint UI.
 engine = ui.get_qml_engine()
 if engine is None:
-    ui.show_toast(
+    ui.show_error(
         "PySide2 hiccup",
-        ap.UI.ToastType.Info,
         description="No QQmlApplicationEngine found, please report a bug.",
     )
     exit()
@@ -63,9 +61,8 @@ component = QQmlComponent(engine, QUrl.fromLocalFile(f"{yaml_dir}/dialog.qml"))
 if component.status() is not QQmlComponent.Ready:
     # QML parsing error, see ap.log
     print(f"QML errors: {component.errors()}", flush=True)
-    ui.show_toast(
+    ui.show_error(
         "QML error",
-        ap.UI.ToastType.Fail,
         description="QML file has errors. See ap.log for details.",
     )
     exit()

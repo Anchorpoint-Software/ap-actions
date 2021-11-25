@@ -61,12 +61,12 @@ def export_fbx():
     
     if c4d.returncode is not 0:
         print(c4d.stderr)
-        ui.show_toast("Failed to Export!", description="Check Anchorpoint Console", type=ap.UI.ToastType.Fail)
+        ui.show_error("Failed to Export!", "Check Anchorpoint Console")
     else:
         print(c4d.stdout)
         set_all_attributes()
-        ui.show_toast("Export Successful")
-        ui.navigate_to_folder(scene)
+        ui.show_success("Export Successful")
+        ui.reload()
 
 if (ap.check_application(c4d_path, f"Could not find Cinema 4D! Make sure it is set up correctly in {ctx.yaml}")):
     ctx.run_async(export_fbx)

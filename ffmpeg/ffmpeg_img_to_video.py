@@ -50,9 +50,9 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         )
         if ffmpeg.returncode is not 0:
             print(ffmpeg.stderr)
-            ui.show_toast("Failed to export video", description="Check Anchorpoint Console", type=ap.UI.ToastType.Fail)
+            ui.show_error("Failed to export video", description="Check Anchorpoint Console")
         else:
-            ui.show_toast("Export Successful", description="Created video.mp4")
+            ui.show_success("Export Successful", description="Created video.mp4")
 
         # Do some cleanup
         os.remove(concat_file)

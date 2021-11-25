@@ -33,7 +33,7 @@ def render_blender(blender_path, selected_files, yaml_dir):
             )
             ui.replace_thumbnail(file, f"{output}0.png")
             
-        ui.show_toast("Render Successful")
+        ui.show_success("Render Successful")
 
     # Tell the UI that these files are being processed
     for file in selected_files:

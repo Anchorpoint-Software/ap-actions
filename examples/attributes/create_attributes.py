@@ -28,5 +28,5 @@ for f in selected_files:
 for f in selected_folders:
     create_attribute(f)
 
-ui.navigate_to_folder(ctx.path)
-ui.show_toast("Attributes created")
+ui.reload()
+ui.show_success("Attributes created")
