@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::ffmpeg::seqtovideo"
-  category: "ffmpeg/video"
+  category: "ffmpeg"
   type: python
   author: "Anchorpoint Software GmbH"
 

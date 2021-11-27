@@ -39,6 +39,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         ffmpeg = subprocess.run(
             [
                 ffmpeg_path,
+                "-y",
                 "-f", "concat",
                 "-safe", "0",
                 "-i", concat_file,
