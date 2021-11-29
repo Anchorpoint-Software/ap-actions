@@ -1,0 +1,28 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Open VSCode Here
+
+  version: 1
+  id: ap::openvscode
+  category: code
+  type: command
+  author: Anchorpoint Software GmbH
+  description: Opens Visual Studio Code in the current Folder. Make sure that the VSCode shell command 'code' is installed
+  icon:
+    path: :/icons/action.svg
+
+  command: code
+  arguments: ${path}
+
+  register:
+    folder:
+      enable: true
+
+  toast:
+    error:
+      message: "VSCode or the VSCode shell command 'code' is not installed"
