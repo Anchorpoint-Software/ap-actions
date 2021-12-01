@@ -1,7 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
 import os
-from datetime import date
 
 ctx = ap.Context.instance()
 api = ctx.create_api()
@@ -15,54 +14,52 @@ dialog_template_var = "template"
 dialog_type_var = "type"
 dialog_name_var = "name"
 
-def get_next_increment(template):
-    increment = 10
-    directories = [item for item in os.listdir(folder) if os.path.isdir(os.path.join(folder,item))]
+resolved_vars = []
 
-    while True:
-        name = template.replace("$", str(increment), 1)
-        pos_var = name.find("$")
-        substr = name if pos_var == -1 else name[:pos_var]
-        
-        if substr not in directories:
-            return str(increment)
+import sys
+sys.path.insert(0, ctx.yaml_dir)
+import template_utility
 
-        increment = increment + 10
+def map_variable_type(variable_type_str):
+    if variable_type_str == "Name":
+        return template_utility.VariableType.NAME
+    if variable_type_str == "Date of Today":
+        return template_utility.VariableType.DATE
+    if variable_type_str == "User Initials":
+        return template_utility.VariableType.USER
+    if variable_type_str == "Increment":
+        return template_utility.VariableType.INCREMENT
+    return template_utility.VariableType.NAME
 
-def resolve_one_variable(name, variable_type, var_name):
-    replacement = ""
-    if variable_type == "Name":
-        replacement = var_name
-    elif variable_type == "Date of Today":
-        replacement = date.today().strftime("%y%m%d")
-    elif variable_type == "User Initials":
-        initials = username.split(" ")
-        for initial in initials:
-            replacement = replacement + initial[0].upper()
-    elif variable_type == "Increment":
-        replacement = get_next_increment(name)
-
-    return name.replace("$", replacement, 1)
+def resolve_variables(path, resolved_vars):   
+    for var in resolved_vars:
+        path = path.replace("$", var, 1)
     
-def resolve_variables(dialog, template):
+    return path
+
+def resolve_dialog_variables(dialog, template):
     variable = 0
+    global resolved_vars
+    resolved_vars.clear()
+
     while True:
         if "$" not in template:
             break
 
         type = dialog.get_value(dialog_type_var+str(variable))
         var_name = dialog.get_value(dialog_name_var+str(variable))
-        template = resolve_one_variable(template, type, var_name)
+        resolved_var = template_utility.resolve_variable(template, map_variable_type(type), folder, var_name, username)
+        template = template.replace("$", resolved_var, 1)
         variable = variable + 1
+        resolved_vars.append(resolved_var)
 
     return template
 
 def update_preview(dialog):
     template = dialog.get_value(dialog_template_var)
-    template = resolve_variables(dialog, template)
+    template = resolve_dialog_variables(dialog, template)
     dialog.set_value(dialog_preview_var, template)
     
-
 def dropdown_changed(variable, dialog, value):
     name_entry = dialog.get(dialog_name_var+str(variable))
     if name_entry:
@@ -75,12 +72,12 @@ def name_changed(dialog, value):
 def rename_folder_entries(dialog, target):
     for root, _, files in os.walk(target):
         if root != target:
-            resolved = resolve_variables(dialog, root)
+            resolved = resolve_variables(root, resolved_vars)
             if resolved != root: 
                 aps.rename_folder(api, root, resolved)
 
         for file in files:
-            resolved = resolve_variables(dialog, file)
+            resolved = resolve_variables(file, resolved_vars)
             if resolved != file: 
                 aps.rename_file(api, os.path.join(root, file), os.path.join(root, resolved))
 
@@ -92,7 +89,7 @@ def button_pressed(dialog, source):
             target = os.path.join(folder, preview)
             aps.copy_folder(api, source, target)
             rename_folder_entries(dialog, target)
-            remove_gitkeep(target)
+            template_utility.remove_gitkeep(target)
         except Exception as e:
             ui.show_error("Could not create Folder", str(e))
         else:
@@ -136,12 +133,6 @@ def check_folder_conflict(folder):
         return True
     return False
 
-def remove_gitkeep(folder):
-    for root, _, files in os.walk(folder):
-        for file in files:
-            if file == ".gitkeep":
-                os.remove(os.path.join(root, file))
-
 def copy_folder_no_variables(template_folders, target_folder):
     if check_folder_conflict(target_folder):
         return    
@@ -149,7 +140,7 @@ def copy_folder_no_variables(template_folders, target_folder):
     def copy_folder_no_variables_async():
         try:
             aps.copy_folder(api, template_folders, target_folder)
-            remove_gitkeep(target_folder)
+            template_utility.remove_gitkeep(target_folder)
         except Exception as e:
             ui.show_error("could not copy folder", str(e))
     
