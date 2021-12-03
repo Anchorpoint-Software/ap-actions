@@ -1,13 +1,14 @@
 import anchorpoint as ap
+import apsync as aps
 import string
 import random
 import os
 
 ctx = ap.Context.instance()
+api = ctx.create_api()
 ui = ap.UI()
 
 current_folder = ctx.path
-
 username = ctx.username
 
 create_button_var = "create"
@@ -76,6 +77,18 @@ def create_action(dialog):
     dialog.close()
     ui.show_success("Action created")
 
+    settings = aps.Settings(api)
+    settings.set("author", action.author)
+    settings.set("category", action.category)
+    settings.set("icon", action.icon)
+    settings.store()
+
+
+settings = aps.Settings(api)
+
+author_default = settings.get("author", username)
+category_default = settings.get("category", "user")
+icon_default = settings.get("icon", ":/icons/action.svg")
 
 dialog = ap.Dialog()
 dialog.title = "Create New Action"
@@ -96,9 +109,9 @@ dialog.end_section()
 
 dialog.start_section("Advanced")
 dialog.add_text("Unique ID:\t").add_input(create_random_id(), var=action_id_var)
-dialog.add_text("Author:\t").add_input(username, var=action_author_var)
-dialog.add_text("Catgeory:\t").add_input("user", var=action_cat_var)
-dialog.add_text("Icon:\t").add_input(":/icons/action.svg", var=action_icon_var)
+dialog.add_text("Author:\t").add_input(author_default, var=action_author_var)
+dialog.add_text("Catgeory:\t").add_input(category_default, var=action_cat_var)
+dialog.add_text("Icon:\t").add_input(icon_default, var=action_icon_var)
 dialog.end_section()
 
 dialog.add_button("Create", create_action, var = create_button_var, enabled = False)
