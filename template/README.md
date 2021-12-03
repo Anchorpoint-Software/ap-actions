@@ -4,7 +4,7 @@ A collection of useful actions that create folder structures and instantiates fi
 
 ## New Shot / New Folder
 
-This action creates a new folder (e.g. a new shot) based on a template. It also increments the shot number automatically by replacing each variable \$ within the folder and file names.
+This action creates a new folder (e.g. a new shot) based on a template. It also increments the shot number automatically by replacing each variable \$ within the folder (including files).
 
 ### Add Template Files
 If you want to add a template file, just go ahead and create it within the template folder like so, for example:
