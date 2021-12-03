@@ -18,7 +18,7 @@ def get_next_increment(template, current_folder):
         pos_var = name.find("$")
         substr = name if pos_var == -1 else name[:pos_var]
 
-        if substr not in directories:
+        if not any(substr in dir for dir in directories):
             return str(increment).zfill(leading_zeros)
 
         increment = increment + 10
