@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: "ap::newshot"
-  category: "examples/templates"
+  category: "template"
   type: python
   author: "Anchorpoint Software GmbH"
   description: Adds a new shot folder based on the provided template

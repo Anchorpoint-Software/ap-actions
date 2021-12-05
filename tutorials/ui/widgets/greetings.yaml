@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::examples::widgets::greetings"
-  category: "examples/ui"
+  category: "examples/dialog"
   type: python
   author: "Anchorpoint Software GmbH"
   description: "This is an advanced example action that uses PySide2 Qt Widgets to create native dialogs"
