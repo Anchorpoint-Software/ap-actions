@@ -30,16 +30,19 @@ def set_settings(settings, setting_name, increment):
     
 
 def action_settings():
-    # Create a Settings object
-    settings = aps.Settings(api)
-    set_settings(settings, "my setting", 1)
+    # Create a Settings object for this python script
+    settings = aps.Settings(api, __file__)
+    set_settings(settings, "my action setting", 1)
     
+def user_settings():
+    # Create a Settings object for the current user
+    settings = aps.Settings(api)
+    set_settings(settings, "my user setting", 2)
 
 def named_settings():
     # Create a Settings object with a name
     settings = aps.Settings(api, "my named settings")
-    set_settings(settings, "my named setting", 2)
-
+    set_settings(settings, "my named setting", 3)
 
 def workspace_settings():
     # Get the current project
@@ -50,7 +53,7 @@ def workspace_settings():
 
     # Create a Settings object and identify it with the current active workspace
     settings = aps.Settings(api, identifier = project.workspace_id)
-    set_settings(settings, "my workspace setting", 3)
+    set_settings(settings, "my workspace setting", 4)
 
 
 def project_settings():
@@ -62,7 +65,7 @@ def project_settings():
 
     # Create a Settings object and identify it with the current active workspace
     settings = aps.Settings(api, identifier = project.id)
-    set_settings(settings, "my project setting", 4)
+    set_settings(settings, "my project setting", 5)
 
 
 # Note: All settings demonstrated here are stored locally per user account. 
@@ -71,6 +74,9 @@ def project_settings():
 
 # Demonstrates how to store settings for this specific action script so that the settings are unique for *this* action
 action_settings()
+
+# Demonstrates how to store settings for the current user
+user_settings()
 
 # Demonstrates how to store settings with a name so that they can be written and read from any action
 named_settings()
