@@ -22,8 +22,11 @@ action:
     targetFolder: "${folder}"
     renderSettings: "Playblast"
     setAttributes: true
-    c4dPathWindows: "C:/Program Files/Maxon Cinema 4D R25/Commandline.exe"
-    c4dPathMac: "/Applications/Maxon Cinema 4D R25/Commandline.app/Contents/MacOS/Commandline"
+    c4d: 
+      message: Path to Cinema 4D Commandline
+      browse: file
+      store: user
+      
     c4dUsername: ""  #Optional
     c4dPassword: ""  #Optional
 

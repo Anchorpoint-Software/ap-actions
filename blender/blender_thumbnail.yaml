@@ -20,8 +20,10 @@ action:
 
   script: "blender_thumbnail.py"
   inputs:
-    blender_win: "C:/Program Files/Blender_Foundation/Blender_2.92/blender.exe"
-    blender_mac: "/Applications/Blender.app/Contents/MacOS/Blender"
+    blender:
+      message: Path to Blender  # The message that is displayed to the user
+      browse: file              # Show a browse button so that the user can browse to the executable
+      store: user               # Only ask once, store in user settings
 
   #Where to register this action
   register:
