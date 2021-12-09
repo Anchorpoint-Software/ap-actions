@@ -27,7 +27,7 @@ action:
     
     ask_the_user_once_variable: # And another input variable, this time we store the user provided value in the action settings
       message: What is your favorite app? # The message that is displayed to the user
-      browse: folder                      # Show a browse button so that the user can choose something on the file system. Valid values are folder, file
+      browse: file                        # Show a browse button so that the user can choose something on the file system. Valid values are folder, file
       store: action                       # Store the setting so that the user is only aksed once. If all inputs are stored, the user is not asked again. Valid valure are:
                                           # User: The value is stored for the user account. This means this value is the same for all actions
                                           # Action: The value is stored only for this action
