@@ -31,6 +31,7 @@ action:
       store: action                       # Store the setting so that the user is only aksed once. If all inputs are stored, the user is not asked again. Valid valure are:
                                           # User: The value is stored for the user account. This means this value is the same for all actions
                                           # Action: The value is stored only for this action
+                                          # Project: The value is stored for the current project. If no project is selected, it's stored for the user.
 
   register:
     folder:
