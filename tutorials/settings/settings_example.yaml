@@ -5,20 +5,18 @@
 
 version: 1.0
 action:
-  name: New Folder From Template
+  name: Settings Example
 
   version: 1
-  id: ap::template::newfolder
-  category: template
+  id: ap::settingsexample
+  category: examples/settings
   type: python
   author: Anchorpoint Software GmbH
-  description: Creates a new folder based on a template as specified in the YAML file
+  description: An example action that demonstrates how to read and write action settings
   icon:
-    path: :/icons/addFolder.svg
+    path: :/icons/settings.svg
 
-  script: new_folder_from_template.py
-  inputs:
-    template_folder: "templates/$_project_$"
+  script: settings_example.py
 
   register:
     folder:

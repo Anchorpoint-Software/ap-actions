@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::examples::greetings"
-  category: "examples/ui"
+  category: "examples/dialog"
   type: python
   author: "Anchorpoint Software GmbH"
   description: "This is a basic example that shows how to create simple dialogs"

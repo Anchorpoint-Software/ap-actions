@@ -5,20 +5,20 @@
 
 version: 1.0
 action:
-  name: New Folder From Template
+  name: New Shot
 
   version: 1
-  id: ap::template::newfolder
-  category: template
+  id: "ap::newshot"
+  category: "template"
   type: python
-  author: Anchorpoint Software GmbH
-  description: Creates a new folder based on a template as specified in the YAML file
+  author: "Anchorpoint Software GmbH"
+  description: Adds a new shot folder based on the provided template
   icon:
     path: :/icons/addFolder.svg
 
-  script: new_folder_from_template.py
-  inputs:
-    template_folder: "templates/$_project_$"
+  script: new_folder_incremental.py
+  inputs: 
+    template_folder: "templates/shot_$"
 
   register:
     folder:

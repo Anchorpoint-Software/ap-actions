@@ -15,7 +15,10 @@ out = target_folder+"/"+ctx.filename
 outFile = target_folder+"/"+ctx.filename + ".fbx"
 set_attributes = "setAttributes" in ctx.inputs and ctx.inputs["setAttributes"]
 
-c4d_path = ctx.inputs["c4dPathMac"] if platform == "darwin" else ctx.inputs["c4dPathWindows"]
+if "c4d" in ctx.inputs:
+    c4d_path = ctx.inputs["c4d"]
+    if c4d_path.lower().endswith("commandline.app"):
+        c4d_path = os.path.join(c4d_path, "Contents/MacOS/Commandline")
 
 c4d_username = ""
 c4d_password = ""
@@ -68,5 +71,11 @@ def export_fbx():
         ui.show_success("Export Successful")
         ui.reload()
 
-if (ap.check_application(c4d_path, f"Could not find Cinema 4D! Make sure it is set up correctly in {ctx.yaml}")):
+if (ap.check_application(c4d_path, f"Path to Cinema 4D's commandline tool is not correct. It is called Commandline.exe / Commandline.app. Please try again", "commandline")):
     ctx.run_async(export_fbx)
+else:
+    # Remove the path to c4d from the action settings so that the user must provide it again
+    settings = aps.Settings(api)
+    if settings:
+        settings.remove("c4d")
+        settings.store()
