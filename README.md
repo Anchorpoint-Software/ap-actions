@@ -29,18 +29,14 @@ Download this repository and navigate to the global action directory.
 1. in Anchorpoint, click on the three dots in the upper right corner and select Preferences.
 2. go to Actions and click on Actions Folder
 3. you are now in the folder where scripts can be placed. Put the files you unzipped in there.
-4. open the Context menu and there you should see a list of actions. 
+4. open the Context menu, you should see a list of actions. 
 
-If you don't want to show all actions there you can disable actions in the respective YAML file. 
-Go to the point "register" and set the option "enabled" to "false".
+If you don't want all actions to show up in the context menu, disable an action in the respective YAML file. 
 
 ```yaml
-#Where should the action be shown
-register:
-    #Action will be shown in the folder context menu
-    folder:
-      #Action is enabled
-      enable: true
+category: examples/input
+type: python
+enable: false # Don't show this action at all
 ```
 
 ## Table of contents
@@ -56,7 +52,7 @@ register:
 - [A template for quickly building new Actions](/tree/main/utility)
 
 
-## Want to contribute
+## Want to contribute?
 Do you have scripts that you use in your workflow and think that they could be valuable for other users? Share them via a pull request. If you need any help feel free to contact us directly.
 You can talk to us on our [Discord](https://discord.com/invite/ZPyPzvx) server or via [Email](mailto:support@anchorpoint.app).
 
