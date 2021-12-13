@@ -40,16 +40,16 @@ enable: false # Don't show this action at all
 ```
 
 ## Table of contents
-- [High resolution thumbnails for Blender files](/tree/main/blender)
-- [Export FBX from Cinema 4D files](/tree/main/cinema4d)
-- [Render playblast from Cinema 4D files](/tree/main/cinema4d)
-- [Turn any folder to a drive to solve the issue with absolute file paths](/tree/main/drives)
-- [Turn image sequences to a video](/tree/main/ffmpeg)
-- [Turn a video to a GIF](/tree/main/ffmpeg)
-- [Use .gitignore templates for Unity, Unreal or Godot](/tree/main/git/ignore%20files)
-- [Create a folder template with options from a UI](/tree/main/template)
-- [Understand how to build a custom UI and set Attributes](/tree/main/tutorials)
-- [A template for quickly building new Actions](/tree/main/utility)
+- [High resolution thumbnails for Blender files](blender/README.md)
+- [Export FBX from Cinema 4D files](cinema4d/README.md)
+- [Render playblast from Cinema 4D files](cinema4d/README.md)
+- [Turn any folder to a drive to solve the issue with absolute file paths](drives/README.md)
+- [Turn image sequences to a video](ffmpeg/README.md)
+- [Turn a video to a GIF](ffmpeg/README.md)
+- [Use .gitignore templates for Unity, Unreal or Godot](git/ignore%20files/README.md)
+- [Create a folder template with options from a UI](template/README.md)
+- [Understand how to build a custom UI and set Attributes](tutorials/README.md)
+- [A template for quickly building new Actions](utility/README.md)
 
 
 ## Want to contribute?
