@@ -54,6 +54,6 @@ enable: false # Don't show this action at all
 
 ## Want to contribute?
 Do you have scripts that you use in your workflow and think that they could be valuable for other users? Share them via a pull request. If you need any help feel free to contact us directly.
-You can talk to us on our [Discord](https://discord.com/invite/ZPyPzvx) server or via [Email](mailto:support@anchorpoint.app).
+You can talk to us on our [Discord](https://discord.com/invite/ZPyPzvx) server or via [Email](mailto:support@anchorpoint.app). You can also create an issue on [GitHub](https://github.com/Anchorpoint-Software/ap-actions/issues).
 
 
