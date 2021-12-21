@@ -28,8 +28,8 @@ if "c4dPassword" in ctx.inputs and len(ctx.inputs["c4dPassword"]) > 0:
 def set_all_attributes():
     if set_attributes == False:
         return
-    aps.set_cell_link(api, scene, "Rendering", out)
-    aps.set_cell_link(api, out, "Source", scene)
+    aps.set_attribute_link(api, scene, "Rendering", out)
+    aps.set_attribute_link(api, out, "Source", scene)
 
 def render():
     ui.show_busy(scene)

@@ -30,9 +30,9 @@ if "c4dPassword" in ctx.inputs and len(ctx.inputs["c4dPassword"]) > 0:
 def set_all_attributes():
     if set_attributes == False:
         return
-    aps.set_cell_date(api, scene, "Exported Date", int(time.time()))
-    aps.set_cell_link(api, scene, "FBX", outFile)
-    aps.set_cell_link(api, outFile, "Source", scene)
+    aps.set_attribute_date(api, scene, "Exported Date", int(time.time()))
+    aps.set_attribute_link(api, scene, "FBX", outFile)
+    aps.set_attribute_link(api, outFile, "Source", scene)
 
 
 def export_fbx():
