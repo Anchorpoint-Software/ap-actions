@@ -2,8 +2,9 @@ import c4d
 import sys
 import argparse
 
+import apcommands
 
-def GetNextObject(op):
+def get_next_object(op):
     if op == None:
         return None
     if op.GetDown():
@@ -13,7 +14,7 @@ def GetNextObject(op):
     return op.GetNext()
 
 
-def GetRenderData(doc, name):
+def get_render_data(doc, name):
     if name == None:
         return doc.GetActiveRenderData()
 
@@ -23,10 +24,10 @@ def GetRenderData(doc, name):
     while renderData:
         if renderData.GetName() == name:
             return renderData
-        renderData = GetNextObject(renderData)
+        renderData = get_next_object(renderData)
 
 
-def Render(doc, rd):
+def render(doc, rd):
     bmp = c4d.bitmaps.MultipassBitmap(
         int(rd[c4d.RDATA_XRES]), int(rd[c4d.RDATA_YRES]), c4d.COLORMODE_RGB
     )
@@ -44,7 +45,7 @@ def Render(doc, rd):
         raise RuntimeError("Failed to render the temporary document.")
 
 
-def CommandRenderScene(scenePath, settingsName, outputPath):
+def command_render_scene(scenePath, settingsName, outputPath):
     c4d.GePrint(
         f"Anchorpoint: Render Scene. Scene: {scenePath} Settings: {settingsName} OutputPath: {outputPath}"
     )
@@ -57,7 +58,7 @@ def CommandRenderScene(scenePath, settingsName, outputPath):
 
     c4d.documents.InsertBaseDocument(doc)
 
-    rd = GetRenderData(doc, settingsName)
+    rd = get_render_data(doc, settingsName)
     if rd is None:
         raise RuntimeError(f"Failed to load render settings {settingsName}.")
 
@@ -65,11 +66,11 @@ def CommandRenderScene(scenePath, settingsName, outputPath):
     if outputPath != None:
         rd[c4d.RDATA_PATH] = outputPath
 
-    Render(doc, rd)
+    render(doc, rd)
     c4d.documents.KillDocument(doc)
 
 
-def CommandExportFBX(scenePath, outPath):
+def command_export_fbx(scenePath, outPath):
     c4d.GePrint(f"Anchorpoint: Export FBX. Scene: {scenePath} Out: {outPath}")
 
     # Load the document
@@ -111,8 +112,7 @@ def CommandExportFBX(scenePath, outPath):
 
     c4d.documents.KillDocument(doc)
 
-
-def PluginMessage(id, data):
+def handle_command_line(id, data):
     try:
         if id == c4d.C4DPL_COMMANDLINEARGS:
             parser = argparse.ArgumentParser(
@@ -131,16 +131,58 @@ def PluginMessage(id, data):
             )
 
             if args.ap_export_fbx and args.ap_out:
-                result = CommandExportFBX(args.ap_export_fbx, args.ap_out)
+                command_export_fbx(args.ap_export_fbx, args.ap_out)
+                c4d.GePrint(f"Anchorpoint: Command succeeded.")
 
             if args.ap_render:
-                result = CommandRenderScene(
+                command_render_scene(
                     args.ap_render, args.ap_render_settings, args.ap_out
                 )
+                c4d.GePrint(f"Anchorpoint: Command succeeded.")
 
-            c4d.GePrint(f"Anchorpoint: Command succeeded.")
             return True
         return False
     except Exception as e:
         c4d.GePrint(e)
         return False
+
+
+def PluginMessage(id, data):
+    try:
+        return handle_command_line(id, data)
+    except Exception as e:
+        c4d.GePrint(e)
+        return False
+
+class ExampleDialogCommand(c4d.plugins.CommandData):
+    def Execute(self, doc):
+        from apcommands import ui, publish
+
+        app = ui.get_qt_application()
+        publish.publish_file(app)
+
+        # Opens the dialog
+        return True #self.dialog.Open(dlgtype=c4d.DLG_TYPE_ASYNC, pluginid=PLUGIN_ID, defaultw=400, defaulth=32)
+
+    # def RestoreLayout(self, sec_ref):
+    #     """Used to restore an asynchronous dialog that has been placed in the users layout.
+    #     Args:
+    #         sec_ref (PyCObject): The data that needs to be passed to the dialog.
+    #     Returns:
+    #         bool: True if the restore success
+    #     """
+    #     # Creates the dialog if its not already exists
+    #     if self.dialog is None:
+    #         self.dialog = ExampleDialog()
+
+    #     # Restores the layout
+    #     return self.dialog.Restore(pluginid=PLUGIN_ID, secret=sec_ref)
+
+if __name__ == "__main__":
+    PLUGIN_ID = 424254
+    c4d.plugins.RegisterCommandPlugin(id=PLUGIN_ID,
+                                      str="Publish File to Anchorpoint",
+                                      info=0,
+                                      help="Publishes the current file to Anchorpoint. Optionally creates a new increment",
+                                      dat=ExampleDialogCommand(),
+                                      icon=None)
