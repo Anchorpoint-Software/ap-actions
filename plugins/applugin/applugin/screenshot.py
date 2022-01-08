@@ -1,4 +1,4 @@
-from PySide2.QtGui import QColor, QCursor, QPalette, QKeyEvent, QMouseEvent, QBrush, QImage, QPixmap
+from PySide2.QtGui import QCursor, QKeyEvent, QMouseEvent, QPixmap
 from PySide2.QtWidgets import QApplication, QDialog, QRubberBand
 from PySide2.QtCore import QSize, Qt, QEvent, QPoint, QRect, Signal
 import platform
@@ -7,7 +7,7 @@ from applugin import ui
 
 class ScreenshotDialog(QDialog):
 
-    imagecaptured = Signal(QPixmap)
+    image_captured = Signal(QPixmap)
 
     def __init__(self, parent=None):
         super(ScreenshotDialog, self).__init__(parent)
@@ -116,7 +116,7 @@ class ScreenshotDialog(QDialog):
                         QApplication.instance().processEvents()
 
                         pix = screen.grabWindow(QApplication.desktop().winId(), capturerect.x(), capturerect.y(), capturerect.width(), capturerect.height())
-                        self.imagecaptured.emit(pix)
+                        self.image_captured.emit(pix)
                 
                 QApplication.restoreOverrideCursor()
                 self.accept()
@@ -129,7 +129,7 @@ def store_screenshot(img: QPixmap):
     import os
     directory, _ = os.path.split(__file__)
     fn = os.path.join(directory, "screenshot.png")
-    img.toImage().save(fn)
+    img.save(fn)
 
 if __name__ == '__main__':
     import sys
@@ -137,6 +137,6 @@ if __name__ == '__main__':
     window = ScreenshotDialog()
     window.show()
 
-    window.imagecaptured.connect(store_screenshot)
+    window.image_captured.connect(store_screenshot)
 
     sys.exit(app.exec_())

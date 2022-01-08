@@ -1,5 +1,3 @@
-from typing import Optional
-
 def get_qt_application():
     from PySide2.QtWidgets import QApplication
     import os

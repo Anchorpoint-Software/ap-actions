@@ -165,13 +165,25 @@ class ExampleDialogCommand(c4d.plugins.CommandData):
         self.dialog = None
         self.api = aps.Api("Cinema 4D")
 
+    def new_version_created(self, file: str):
+        c4d.documents.LoadFile(file)
+        pass
+
+    def save_document(self, doc, path):
+        if not c4d.documents.SaveDocument(doc, path, c4d.SAVEDOCUMENTFLAGS_DONTADDTORECENTLIST,format=c4d.FORMAT_C4DEXPORT):
+            raise RuntimeError("Failed to save the document.")
+
     def Execute(self, doc):
         if not doc or not is_doc_saved(doc):
             return False
         
         file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
+        self.save_document(doc, file)
+
         self.command = publish.PublishCommand(self.api, file)
         self.command.publish_file()
+
+        self.command.file_created.connect(self.new_version_created)
 
         return True 
 
@@ -204,6 +216,6 @@ if __name__ == "__main__":
     c4d.plugins.RegisterCommandPlugin(id=PLUGIN_ID,
                                       str="Publish File to Anchorpoint",
                                       info=0,
-                                      help="Publishes the current file to Anchorpoint. Optionally creates a new increment",
+                                      help="Saves the current scene and publishes the file to Anchorpoint. Optionally creates a new increment.",
                                       dat=ExampleDialogCommand(),
                                       icon=bmp)
