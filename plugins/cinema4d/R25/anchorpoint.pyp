@@ -1,8 +1,9 @@
+from PySide2.QtWidgets import QApplication
+import apsync as aps
 import c4d
 import sys
 import argparse
-
-import apcommands
+import os
 
 def get_next_object(op):
     if op == None:
@@ -78,9 +79,7 @@ def command_export_fbx(scenePath, outPath):
         scenePath, c4d.SCENEFILTER_OBJECTS | c4d.SCENEFILTER_MATERIALS
     )
     if doc is None:
-        raise RuntimeError("Failed to load document.")
-
-    
+        raise RuntimeError("Failed to load document.")    
 
     # See https://plugincafe.maxon.net/topic/11623/fbx-export-plugin-option-setting-with-python/2
     fbxExportId = 1026370
@@ -154,35 +153,57 @@ def PluginMessage(id, data):
         c4d.GePrint(e)
         return False
 
-class ExampleDialogCommand(c4d.plugins.CommandData):
-    def Execute(self, doc):
-        from apcommands import ui, publish
+def is_doc_saved(doc):
+    return doc.GetDocumentPath() != ""
 
-        app = ui.get_qt_application()
-        publish.publish_file(app)
+from applugin import ui, publish
+
+class ExampleDialogCommand(c4d.plugins.CommandData):
+    def __init__(self):
+        super(ExampleDialogCommand, self).__init__()
+        self.app = ui.get_qt_application()
+        self.dialog = None
+        self.api = aps.Api("Cinema 4D")
+
+    def Execute(self, doc):
+        if not doc or not is_doc_saved(doc):
+            return False
+        
+        file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
+        self.dialog = publish.publish_file(self.api, file)
 
         # Opens the dialog
         return True #self.dialog.Open(dlgtype=c4d.DLG_TYPE_ASYNC, pluginid=PLUGIN_ID, defaultw=400, defaulth=32)
 
-    # def RestoreLayout(self, sec_ref):
-    #     """Used to restore an asynchronous dialog that has been placed in the users layout.
-    #     Args:
-    #         sec_ref (PyCObject): The data that needs to be passed to the dialog.
-    #     Returns:
-    #         bool: True if the restore success
-    #     """
-    #     # Creates the dialog if its not already exists
-    #     if self.dialog is None:
-    #         self.dialog = ExampleDialog()
+    def GetState(self, doc):
+        if not doc or not is_doc_saved(doc):
+            return False
 
-    #     # Restores the layout
-    #     return self.dialog.Restore(pluginid=PLUGIN_ID, secret=sec_ref)
+        file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
+
+        # Checks apsync whether or not the folder has version control enabled
+        if publish.is_versioning_enabled(self.api, doc.GetDocumentPath()):
+            return c4d.CMD_ENABLED
+        
+        return False
 
 if __name__ == "__main__":
     PLUGIN_ID = 424254
+    directory, _ = os.path.split(__file__)
+    fn = os.path.join(directory, "res", "app_icon.ico")
+
+    bmp = c4d.bitmaps.BaseBitmap()
+    if bmp is None:
+        raise MemoryError("Failed to create a BaseBitmap.")
+
+    # Init the BaseBitmap with the icon
+    if bmp.InitWith(fn)[0] != c4d.IMAGERESULT_OK:
+        raise MemoryError("Failed to initialize the BaseBitmap.")
+
+
     c4d.plugins.RegisterCommandPlugin(id=PLUGIN_ID,
                                       str="Publish File to Anchorpoint",
                                       info=0,
                                       help="Publishes the current file to Anchorpoint. Optionally creates a new increment",
                                       dat=ExampleDialogCommand(),
-                                      icon=None)
+                                      icon=bmp)
