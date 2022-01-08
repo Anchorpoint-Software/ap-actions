@@ -170,10 +170,10 @@ class ExampleDialogCommand(c4d.plugins.CommandData):
             return False
         
         file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
-        self.dialog = publish.publish_file(self.api, file)
+        self.command = publish.PublishCommand(self.api, file)
+        self.command.publish_file()
 
-        # Opens the dialog
-        return True #self.dialog.Open(dlgtype=c4d.DLG_TYPE_ASYNC, pluginid=PLUGIN_ID, defaultw=400, defaulth=32)
+        return True 
 
     def GetState(self, doc):
         if not doc or not is_doc_saved(doc):
