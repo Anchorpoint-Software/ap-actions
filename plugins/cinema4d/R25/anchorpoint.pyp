@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QApplication
-import apsync as aps
 import c4d
+import apsync as aps
+
 import sys
 import argparse
 import os
@@ -153,45 +153,47 @@ def PluginMessage(id, data):
         c4d.GePrint(e)
         return False
 
-def is_doc_saved(doc):
-    return doc.GetDocumentPath() != ""
-
 from applugin import ui, publish
 
-class ExampleDialogCommand(c4d.plugins.CommandData):
+class PublishCommandData(c4d.plugins.CommandData):
     def __init__(self):
-        super(ExampleDialogCommand, self).__init__()
+        super(PublishCommandData, self).__init__()
         self.app = ui.get_qt_application()
         self.dialog = None
         self.api = aps.Api("Cinema 4D")
 
-    def new_version_created(self, file: str):
+    def IsDocSaved(doc):
+        return doc.GetDocumentPath() != ""
+
+    def NewVersionCreated(self, file: str):
         c4d.documents.LoadFile(file)
         pass
 
-    def save_document(self, doc, path):
-        if not c4d.documents.SaveDocument(doc, path, c4d.SAVEDOCUMENTFLAGS_DONTADDTORECENTLIST,format=c4d.FORMAT_C4DEXPORT):
+    def SaveDocument(self, doc, path):
+        if not c4d.documents.SaveDocument(doc, path, c4d.SAVEDOCUMENTFLAGS_DONTADDTORECENTLIST, format=c4d.FORMAT_C4DEXPORT):
             raise RuntimeError("Failed to save the document.")
 
     def Execute(self, doc):
-        if not doc or not is_doc_saved(doc):
+        if not doc or not self.IsDocSaved(doc):
             return False
         
         file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
-        self.save_document(doc, file)
+        self.SaveDocument(doc, file)
 
         self.command = publish.PublishCommand(self.api, file)
         self.command.publish_file()
 
-        self.command.file_created.connect(self.new_version_created)
+        self.command.file_created.connect(self.NewVersionCreated)
 
         return True 
 
-    def GetState(self, doc):
-        if not doc or not is_doc_saved(doc):
-            return False
+    def Message(self, type, data):
+        if id == c4d.MSG_DESCRIPTION_COMMAND:
+            pass
 
-        file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
+    def GetState(self, doc):
+        if not doc or not self.IsDocSaved(doc):
+            return False
 
         # Checks apsync whether or not the folder has version control enabled
         if publish.is_versioning_enabled(self.api, doc.GetDocumentPath()):
@@ -216,6 +218,6 @@ if __name__ == "__main__":
     c4d.plugins.RegisterCommandPlugin(id=PLUGIN_ID,
                                       str="Publish File to Anchorpoint",
                                       info=0,
-                                      help="Saves the current scene and publishes the file to Anchorpoint. Optionally creates a new increment.",
-                                      dat=ExampleDialogCommand(),
+                                      help="Saves the current scene, starts the screenshot tool and publishes the file to Anchorpoint. Optionally creates a new increment.",
+                                      dat=PublishCommandData(),
                                       icon=bmp)
