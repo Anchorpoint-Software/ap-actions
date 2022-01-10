@@ -166,8 +166,6 @@ def file_created_cb(filepath: str):
     print (filepath)
 
 if __name__ == '__main__':
-    help(PublishCommand)
-
     api = aps.Api("applugin")
     app = ui.get_qt_application()
     command = PublishCommand(api, "scene.blend")
