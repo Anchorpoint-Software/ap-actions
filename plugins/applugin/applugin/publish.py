@@ -1,9 +1,10 @@
 from PySide2.QtCore import Slot, Signal, QObject
 from PySide2.QtGui import QPixmap
-from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QLineEdit, QPushButton
+from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QLineEdit, QMessageBox, QPushButton
 
 import sys
 import tempfile
+import os
 
 from applugin import screenshot, ui
 import apsync as aps
@@ -11,7 +12,7 @@ import apsync as aps
 class _PublishDialog(QDialog):
     file_created = Signal(str)
 
-    def __init__(self, api, file, img: QPixmap, parent=None):
+    def __init__(self, api, file: str, img: QPixmap, parent=None):
         super(_PublishDialog, self).__init__(parent)
 
         self.api = api
@@ -24,10 +25,19 @@ class _PublishDialog(QDialog):
         self.imglabel.setPixmap(img.scaledToWidth(500))
         self.imglabel.setMaximumSize(500, 500)
 
-        self.info = QLabel("Publish the file: " + file)
+        self.nextfile = aps.get_next_version_path(self.api, self.file)
+        filename = os.path.split(self.file)[-1]
+        nextfilename = os.path.split(self.nextfile)[-1]
+
+        self.info = QLabel("Publish the file: " + filename)
+        self.info.setToolTip(self.file)
+
         self.nextversion = QCheckBox("Create new version")
         self.nextversion.setChecked(True)
-        self.nextversionpreview = QLabel("Preview: " + aps.get_next_version_path(self.api, self.file))
+        self.nextversion.setToolTip("Saves the current file under the new name and opens the new file in the application")
+
+        self.nextversionpreview = QLabel("Preview: " + nextfilename)
+        self.nextversionpreview.setToolTip(self.nextfile)
 
         self.comment = QLineEdit()
         self.comment.setPlaceholderText("Enter a comment (optional)")
@@ -57,7 +67,6 @@ class _PublishDialog(QDialog):
         aps.comment_version(self.api, self.file, comment)
 
     def __set_thumbnail(self):
-        import os
         dir = tempfile.gettempdir()
         detail_thumbnail = os.path.join(dir, "detail.png")
         preview_thumbnail = os.path.join(dir, "preview.png")
@@ -95,24 +104,29 @@ class PublishCommand(QObject):
         self.publish_dialog.show()
         pass
 
+    def is_versioning_enabled(self):
+        import os
+        folder = aps.get_folder(self.api, os.path.dirname(self.file))
+        if not folder: return False
+        return folder.versioning_enabled
+
     def publish_file(self):
-        self.screenshot_dialog = screenshot.ScreenshotDialog()
-        self.screenshot_dialog.image_captured.connect(self.__show_publish_dialog)
-        self.screenshot_dialog.show()
+        if self.is_versioning_enabled():
+            self.screenshot_dialog = screenshot.ScreenshotDialog()
+            self.screenshot_dialog.image_captured.connect(self.__show_publish_dialog)
+            self.screenshot_dialog.show()
+        else:
+            message = QMessageBox()
+            message.setText("To publish a file to Anchorpoint you have to enable version control in the target folder.")
+            message.exec_()
     
-
-def is_versioning_enabled(api, folderpath):
-    folder = aps.get_folder(api, folderpath)
-    if not folder: return False
-    return folder.versioning_enabled
-
 def file_created_cb(filepath: str):
     print (filepath)
 
 if __name__ == '__main__':
     api = aps.Api("applugin")
     app = ui.get_qt_application()
-    command = PublishCommand(api, "/Users/jochenhunz/Desktop/cube.c4d")
+    command = PublishCommand(api, "/Users/jochenhunz/Documents/Anchorpoint/scenes/Artist Sculpting/Scene_v0004.c4d")
     command.file_created.connect(file_created_cb)
     command.publish_file()
     sys.exit(app.exec_())
