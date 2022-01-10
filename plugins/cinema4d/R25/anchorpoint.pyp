@@ -162,7 +162,7 @@ class PublishCommandData(c4d.plugins.CommandData):
         self.dialog = None
         self.api = aps.Api("Cinema 4D")
 
-    def IsDocSaved(doc):
+    def IsDocSaved(self, doc):
         return doc.GetDocumentPath() != ""
 
     def NewVersionCreated(self, file: str):
@@ -194,12 +194,8 @@ class PublishCommandData(c4d.plugins.CommandData):
     def GetState(self, doc):
         if not doc or not self.IsDocSaved(doc):
             return False
-
-        # Checks apsync whether or not the folder has version control enabled
-        if publish.is_versioning_enabled(self.api, doc.GetDocumentPath()):
-            return c4d.CMD_ENABLED
         
-        return False
+        return c4d.CMD_ENABLED
 
 if __name__ == "__main__":
     PLUGIN_ID = 424254
