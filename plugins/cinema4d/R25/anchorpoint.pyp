@@ -198,7 +198,7 @@ class PublishCommandData(c4d.plugins.CommandData):
         return c4d.CMD_ENABLED
 
 if __name__ == "__main__":
-    PLUGIN_ID = 424254
+    PLUGIN_ID = 1058846
     directory, _ = os.path.split(__file__)
     fn = os.path.join(directory, "res", "app_icon.ico")
 
