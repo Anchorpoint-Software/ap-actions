@@ -16,7 +16,7 @@ def get_used_drives():
         ], capture_output=True
     )
 
-    if subst.returncode is 0:
+    if subst.returncode == 0:
         return subst.stdout.splitlines()
     return []
 
@@ -32,7 +32,7 @@ def unmount(dialog):
         ]
     )
 
-    if subst.returncode is not 0:
+    if subst.returncode != 0:
         print(subst.stderr)
         ui.show_error("Failed to Unmount!")
     else:
@@ -43,7 +43,7 @@ def unmount(dialog):
 
 def show_options():
     drives = get_used_drives()
-    if len(drives) is 0:
+    if len(drives) == 0:
         ui.show_error("No drives to unmount", "Mount another drive first")
         return
 

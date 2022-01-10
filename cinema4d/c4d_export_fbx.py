@@ -41,7 +41,7 @@ def export_fbx():
         os.makedirs(target_folder)
     
     c4d = None
-    if c4d_username is not "" and c4d_password is not "":
+    if c4d_username != "" and c4d_password != "":
         c4d = subprocess.run(
             [
                 c4d_path,
@@ -62,7 +62,7 @@ def export_fbx():
     
     ui.finish_busy(scene)
     
-    if c4d.returncode is not 0:
+    if c4d.returncode != 0:
         print(c4d.stderr)
         ui.show_error("Failed to Export!", "Check Anchorpoint Console")
     else:

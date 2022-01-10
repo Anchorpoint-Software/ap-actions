@@ -230,7 +230,7 @@ def copy_folder(template_folder, target_folder):
     copy_folder_with_variables(variable_count, template_folder, target_folder)
 
 
-if "template_folder" not in ctx.inputs or len(ctx.inputs["template_folder"]) is 0:
+if "template_folder" not in ctx.inputs or len(ctx.inputs["template_folder"]) == 0:
     ui.show_error("template_folders not set", f"Please adapt {ctx.yaml}", duration=6000)
 else:
     template_folder = ctx.inputs["template_folder"]

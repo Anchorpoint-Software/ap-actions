@@ -53,7 +53,7 @@ def create_folder(template_folder, target_path):
     else:
         copy_folder_async(template_folder, target_path, resolved)
 
-if "template_folder" not in ctx.inputs or len(ctx.inputs["template_folder"]) is 0:
+if "template_folder" not in ctx.inputs or len(ctx.inputs["template_folder"]) == 0:
     ui.show_error("Could not create folder", f"Variable template_folder not set. Please adapt {ctx.yaml}", duration=6000)
 else:
     template_folder = ctx.inputs["template_folder"]
