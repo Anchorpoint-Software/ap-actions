@@ -64,10 +64,10 @@ def cb_closed(dialog):
 def set_attributes(folder, set_wip, set_link, api):
     if set_wip:
         # Adds a new single choice tag attribute called "Status" and assigns a yellow tag called "WIP" to the folder
-        aps.set_cell_tag(api, folder, "Status", "WIP", tag_color=aps.TagColor.yellow)
+        aps.set_attribute_tag(api, folder, "Status", "WIP", tag_color=aps.TagColor.yellow)
     if set_link:
         # Adds a new link attribute called "Link" and assigns the best homepage in the world to it
-        aps.set_cell_link(api, folder, "Link", "https://www.anchorpoint.app")
+        aps.set_attribute_link(api, folder, "Link", "https://www.anchorpoint.app")
 
 
 # This function does the heavy lifting: It creates the "count" number of folders on the filesystem

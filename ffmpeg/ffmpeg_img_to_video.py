@@ -49,7 +49,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
                 os.path.join(target_folder,"video.mp4"),
             ], capture_output=True
         )
-        if ffmpeg.returncode is not 0:
+        if ffmpeg.returncode != 0:
             print(ffmpeg.stderr)
             ui.show_error("Failed to export video", description="Check Anchorpoint Console")
         else:

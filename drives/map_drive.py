@@ -33,7 +33,7 @@ def mount(dialog):
         ]
     )
 
-    if subst.returncode is not 0:
+    if subst.returncode != 0:
         print(subst.stderr)
         ui.show_error("Failed to Mount!")
     else:
@@ -44,7 +44,7 @@ def mount(dialog):
 
 def show_options():
     drives = get_unused_drives()
-    if len(drives) is 0:
+    if len(drives) == 0:
         ui.show_error("No drives to mount", "Unmount another drive first")
         return
 
