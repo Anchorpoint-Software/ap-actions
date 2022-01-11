@@ -34,7 +34,7 @@ def set_all_attributes():
 def render():
     ui.show_busy(scene)
     c4d = None
-    if c4d_username is not "" and c4d_password is not "":
+    if c4d_username != "" and c4d_password != "":
         c4d = subprocess.run(
             [
                 c4d_path,
@@ -57,7 +57,7 @@ def render():
 
     ui.finish_busy(scene)
     
-    if c4d.returncode is not 0:
+    if c4d.returncode != 0:
         print(c4d.stderr)
         ui.show_error("Failed to Render!", description="Check Anchorpoint Console")
     else:
