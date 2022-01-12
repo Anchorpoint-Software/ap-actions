@@ -1,9 +1,11 @@
+from applugin import core
+if __name__ == '__main__':
+    core.initialize()
+
 from PySide2.QtGui import QCursor, QKeyEvent, QMouseEvent, QPixmap
 from PySide2.QtWidgets import QApplication, QDialog, QRubberBand
 from PySide2.QtCore import QSize, Qt, QEvent, QPoint, QRect, Signal
 import platform
-
-from applugin import ui
 
 class ScreenshotDialog(QDialog):
 
@@ -133,7 +135,7 @@ def store_screenshot(img: QPixmap):
 
 if __name__ == '__main__':
     import sys
-    app = ui.get_qt_application()
+    app = core.get_qt_application()
     window = ScreenshotDialog()
     window.show()
 

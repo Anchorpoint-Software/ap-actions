@@ -1,3 +1,7 @@
+from applugin import core
+if __name__ == '__main__':
+    core.initialize()
+
 from PySide2.QtCore import Slot, Signal, QObject
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QLineEdit, QMessageBox, QPushButton
@@ -6,7 +10,7 @@ import sys
 import tempfile
 import os
 
-from applugin import screenshot, ui
+from applugin import screenshot
 import apsync as aps
 
 class _PublishDialog(QDialog):
@@ -167,7 +171,8 @@ def file_created_cb(filepath: str):
 
 if __name__ == '__main__':
     api = aps.Api("applugin")
-    app = ui.get_qt_application()
+    core.initialize()
+    app = core.get_qt_application()
     command = PublishCommand(api, "scene.blend")
     command.file_created.connect(file_created_cb)
     command.publish_file()
