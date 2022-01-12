@@ -58,7 +58,7 @@ window = engine.rootObjects()[0]
 
 # Load our QML file from the yaml directory.
 component = QQmlComponent(engine, QUrl.fromLocalFile(f"{yaml_dir}/dialog.qml"))
-if component.status() is not QQmlComponent.Ready:
+if component.status() != QQmlComponent.Ready:
     # QML parsing error, see ap.log
     print(f"QML errors: {component.errors()}", flush=True)
     ui.show_error(

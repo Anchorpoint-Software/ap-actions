@@ -30,9 +30,9 @@ if "c4dPassword" in ctx.inputs and len(ctx.inputs["c4dPassword"]) > 0:
 def set_all_attributes():
     if set_attributes == False:
         return
-    aps.set_cell_date(api, scene, "Exported Date", int(time.time()))
-    aps.set_cell_link(api, scene, "FBX", outFile)
-    aps.set_cell_link(api, outFile, "Source", scene)
+    aps.set_attribute_date(api, scene, "Exported Date", int(time.time()))
+    aps.set_attribute_link(api, scene, "FBX", outFile)
+    aps.set_attribute_link(api, outFile, "Source", scene)
 
 
 def export_fbx():
@@ -41,7 +41,7 @@ def export_fbx():
         os.makedirs(target_folder)
     
     c4d = None
-    if c4d_username is not "" and c4d_password is not "":
+    if c4d_username != "" and c4d_password != "":
         c4d = subprocess.run(
             [
                 c4d_path,
@@ -62,7 +62,7 @@ def export_fbx():
     
     ui.finish_busy(scene)
     
-    if c4d.returncode is not 0:
+    if c4d.returncode != 0:
         print(c4d.stderr)
         ui.show_error("Failed to Export!", "Check Anchorpoint Console")
     else:
