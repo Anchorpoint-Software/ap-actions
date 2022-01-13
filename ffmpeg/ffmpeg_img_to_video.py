@@ -11,6 +11,15 @@ ui = ap.UI()
 ctx = ap.Context.instance()
 api = ctx.create_api()
 
+try:
+    filename = ctx.filename.split("_")
+    filename.pop()
+    filename = "_".join(filename) if len(filename) > 1 else ctx.filename
+except:
+    filename = ctx.filename
+
+is_exr = "exr" in ctx.suffix
+
 def create_random_text():
     ran = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))    
     return str(ran)
@@ -18,7 +27,7 @@ def create_random_text():
 def concat_demuxer(selected_files, fps):
     # Create a file for ffmpeg within Anchorpoints temp directory. 
     # Use a random name so that we do not conflict with any other file
-    output = os.path.join(ap.temp_dir(), f"{create_random_text()}.txt")
+    output = os.path.join(ctx.folder, f"{create_random_text()}.txt")
 
     # See https://trac.ffmpeg.org/wiki/Concatenate
     file = open(output, "a")
@@ -31,14 +40,15 @@ def concat_demuxer(selected_files, fps):
     file.close()
     return output
     
+    
 
 def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     def ffmpeg_seq_to_video_async():
         # Provide FFmpeg with the set of selected files through the concat demuxer
         concat_file = concat_demuxer(selected_files, fps)
-        ffmpeg = subprocess.run(
-            [
-                ffmpeg_path,
+
+        arguments = [
+                ffmpeg_path,                
                 "-y",
                 "-f", "concat",
                 "-safe", "0",
@@ -46,10 +56,16 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
                 "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
                 "-vsync", "vfr",
                 "-pix_fmt", "yuv420p",
-                os.path.join(target_folder,"video.mp4"),
-            ], capture_output=True
+                os.path.join(target_folder,f"{filename}.mp4"),
+            ]
+        if is_exr:
+            arguments.insert(1,"-apply_trc")
+            arguments.insert(2,"iec61966_2_1")
+
+        ffmpeg = subprocess.run(
+            arguments, capture_output=True
         )
-        if ffmpeg.returncode != 0:
+        if ffmpeg.returncode is not 0:
             print(ffmpeg.stderr)
             ui.show_error("Failed to export video", description="Check Anchorpoint Console")
         else:

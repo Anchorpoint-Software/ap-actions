@@ -12,13 +12,13 @@ action:
   #Optional Properties
   version: 1
   id: "ap::ffmpeg::seqtovideo"
-  category: "ffmpeg"
+  category: "ffmpeg/video"
   type: python
   author: "Anchorpoint Software GmbH"
 
   script: "ffmpeg_img_to_video.py"
   inputs:
-    ffmpeg_win: "ffmpeg.exe"
+    ffmpeg_win: "${yamlDir}/ffmpeg.exe"
     ffmpeg_mac: "ffmpeg"
     fps: "25"
 
