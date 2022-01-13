@@ -1,5 +1,7 @@
 import platform
 import os
+import sys
+import ctypes
 from distutils.dir_util import copy_tree
 
 class Plugin:
@@ -43,6 +45,31 @@ class Plugin:
         os.makedirs(plugin_dir, exist_ok=True)
         os.makedirs(os.path.join(plugin_dir, "res"), exist_ok=True)
         copy_tree(dir, plugin_dir)
-
+        
         # Copy applugin as well
         copy_tree(os.path.join(dir, "../../applugin/applugin"), os.path.join(plugin_dir, "applugin"))
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        print("Location of Cinema 4D must be provided")
+        exit()
+
+    def is_admin():
+        if platform.system() == "Darwin":
+            # TODO
+            return True
+        try:
+            return ctypes.windll.shell32.IsUserAnAdmin()
+        except:
+            return False
+
+    if is_admin():            
+        plugin = Plugin() 
+        plugin.install(sys.argv[1])
+    else:
+        # Re-run the program with admin rights
+        if platform.system() == "Darwin":
+            # TODO
+            raise NotImplementedError
+        else:
+            ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, f"\"{sys.argv[0]}\" \"{sys.argv[1]}\"", None, 1)

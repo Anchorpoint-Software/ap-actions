@@ -1,7 +1,10 @@
+from re import S
 import anchorpoint as ap
 import apsync as aps
 
 import os
+import sys
+import subprocess
 import sys
 
 ctx = ap.Context.instance()
@@ -29,18 +32,22 @@ def get_available_plugin_paths():
 
     return plugins
 
-def install_plugin(dialog, api, i, plugin):
+def install_plugin(dialog, api, i, plugin, plugin_path):
     name = plugin.get_description()["name"]
     version = plugin.get_description()["version"]
     location = dialog.get_value(f"location{i}")
     try:
-        plugin.install(location)
-        ui.show_success("Plugin installed successfully")
-        dialog.set_value(f"button{i}", "Update Plugin")
+        # must run as separate process as admin rights might be required
+        result = subprocess.run([sys.executable, plugin_path, location])
+        if result.returncode != 0:
+            ui.show_error("Could not install plugin", "See Console Log")
+        else:
+            ui.show_success("Plugin installed successfully")
+            dialog.set_value(f"button{i}", "Update Plugin")
 
-        settings = aps.Settings(api)
-        settings.set(name+version, location)
-        settings.store()
+            settings = aps.Settings(api)
+            settings.set(name+version, location)
+            settings.store()
     except Exception as e:
         ui.show_error("Could not install plugin", str(e))
 
@@ -72,9 +79,9 @@ def show_options():
             dialog.add_text("Location:\t").add_input(installed_location, browse=ap.BrowseType.Folder, var=f"location{i}")
             
             if plugin.is_installed(installed_location):
-                dialog.add_button("Update Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, api, src, plugin))
+                dialog.add_button("Update Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, api, src, plugin, path))
             else: 
-                dialog.add_button("Install Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, api, src, plugin))
+                dialog.add_button("Install Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, api, src, plugin, path))
 
     dialog.show()
 
