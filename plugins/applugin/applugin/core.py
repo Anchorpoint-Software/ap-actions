@@ -50,9 +50,12 @@ def get_qt_application():
     Returns the running instance of QApplication - or creates a new one
     '''
     from PySide2.QtWidgets import QApplication
+    from PySide2.QtCore import Qt
 
     app = QApplication.instance()
     if app is None:
+        QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+        QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
         app = QApplication(sys.argv)
     
     return app
