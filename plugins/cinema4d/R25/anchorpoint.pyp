@@ -15,7 +15,7 @@ def PluginMessage(id, data):
 if __name__ == "__main__":
     PLUGIN_ID = 1058846
     directory, _ = os.path.split(__file__)
-    fn = os.path.join(directory, "res", "app_icon.ico")
+    fn = os.path.join(directory, "applugin", "res", "app_icon.ico")
 
     bmp = c4d.bitmaps.BaseBitmap()
     if bmp is None:

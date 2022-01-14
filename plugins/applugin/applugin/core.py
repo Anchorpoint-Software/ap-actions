@@ -57,5 +57,11 @@ def get_qt_application():
     
     return app
 
+def load_stylesheet(path: str):
+    with (open(path, "r") as qssfile):
+        stylesheet = qssfile.read()
+    stylesheet = stylesheet.replace("qss:", os.path.dirname(path).replace("\\", "/") + "/")
+    return stylesheet
+
 if __name__ == '__main__':
     app = get_qt_application()

@@ -1,5 +1,6 @@
 import sys
 import c4d
+import os
 
 from applugin import publish, core
 import apsync as aps
@@ -29,7 +30,9 @@ class PublishCommandData(c4d.plugins.CommandData):
         file = doc.GetDocumentPath() + "/" + doc.GetDocumentName()
         self.SaveDocument(doc, file)
 
-        self.command = publish.PublishCommand(self.api, file)
+        style = core.load_stylesheet(os.path.dirname(__file__) + "/style/stylesheet.qss")
+
+        self.command = publish.PublishCommand(self.api, file, style)
         self.command.publish_file()
 
         self.command.file_created.connect(self.NewVersionCreated)

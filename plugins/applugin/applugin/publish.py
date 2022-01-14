@@ -5,13 +5,14 @@ except:
     sys.path.insert(0, os.path.dirname(__file__) + "/..")
     from applugin import core
     
-from PySide2.QtCore import Slot, Signal, QObject
-from PySide2.QtGui import QPixmap
+from PySide2.QtCore import Slot, Signal, QObject, Qt
+from PySide2.QtGui import QPixmap, QIcon
 from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QTextEdit, QMessageBox, QPushButton
 
 import sys
 import tempfile
 import os
+from typing import Optional
 
 from applugin import screenshot
 import apsync as aps
@@ -19,22 +20,26 @@ import apsync as aps
 class _PublishDialog(QDialog):
     file_created = Signal(str)
 
-    def __init__(self, api, file: str, img: QPixmap, parent=None):
+    def __init__(self, api, file: str, img: QPixmap, stylesheet: Optional[str]=None, parent=None):
         super(_PublishDialog, self).__init__(parent)        
 
         self.api = api
         self.file = file
 
+        if stylesheet:
+            self.setStyleSheet(stylesheet)
+
         filename = os.path.split(self.file)[-1]
-        
+        dir = os.path.dirname(__file__)
+
         self.setWindowTitle("Publish to Anchorpoint - ["+filename+"]")   
-        self.setWindowIcon(QIcon("C:/Users/matni/Desktop/checkbox_light.png"))    
+        self.setWindowIcon(QIcon(os.path.join(dir, "res", "app_icon.ico")))    
         self.setWindowFlags(Qt.WindowCloseButtonHint)
 
         self.img = img
         self.imglabel = QLabel()
-        self.imglabel.setPixmap(img.scaledToWidth(960))
-        self.imglabel.setMaximumSize(960, 960)
+        self.imglabel.setPixmap(img.scaledToWidth(480))
+        self.imglabel.setMaximumSize(480, 480)
 
         # Retrieve the next path of the next version that will be created once the user clicks "publish"
         self.nextfile = aps.get_next_version_path(self.api, self.file)
@@ -42,103 +47,13 @@ class _PublishDialog(QDialog):
         self.nextversion = QCheckBox("Create new Version")
         self.nextversion.setChecked(True)
         self.nextversion.setToolTip("Saves the current file under the new name and opens the new file in the application")
-        self.nextversion.setStyleSheet(
-        """
-        
-        QCheckBox {
-            spacing: 5px;
-        }
-
-        QCheckBox::indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-
-        QCheckBox::indicator:unchecked {
-            color: black;
-                    background-color: #1C1C1C;
-        }
-
-        QCheckBox::indicator:unchecked:hover {
-            color: black;
-                    background-color: #1C1C1C;
-        }
-
-        QCheckBox::indicator:unchecked:pressed {
-            color: black;
-                    background-color: #1C1C1C;
-        }
-
-        QCheckBox::indicator:checked {
-            color: white;
-            background-color: #6A71CE;
-            image: url(C:/Users/matni/Desktop/checkbox_light.png);
-        }
-
-        QCheckBox::indicator:checked:hover {
-            color: white;
-            background-color: #6A71CE;
-            image: url(C:/Users/matni/Desktop/checkbox_light.png);
-        }
-
-        QCheckBox::indicator:checked:pressed {
-            color: white;
-            background-color: #6A71CE;
-            image: url(C:/Users/matni/Desktop/checkbox_light.png);
-        }
-
-        QCheckBox::indicator:indeterminate:hover {
-            color: white;
-            background-color: #6A71CE;
-            image: url(C:/Users/matni/Desktop/checkbox_light.png);
-        }
-
-        QCheckBox::indicator:indeterminate:pressed {
-            color: white;
-            background-color: #6A71CE;
-            image: url(C:/Users/matni/Desktop/checkbox_light.png);
-        }
-        """
-        )
 
         self.comment = QTextEdit()
         self.comment.setPlaceholderText("Enter a comment (optional)")
         self.comment.setMinimumWidth(250)
         self.comment.setMaximumHeight(80)
 
-        self.comment.setStyleSheet(
-        """
-        height: 20px;
-        padding: 4;
-        margin-top:8;
-        margin-bottom:8px;
-        border-radius: 4px;
-        border-width: 2px;
-        border-color: #6A71CE;
-        border-style: solid;
-        background-color: #1C1C1C;
-        font-size: 12px; 
-        """    
-        )
-
         self.publish = QPushButton("Publish")
-
-        self.publish.setStyleSheet(
-        """
-        height: 18px;
-        border-radius: 9px;
-        background-color: #404040;
-        margin-top: 8px;
-        margin-bottom: 8px;
-        """
-        )
-
-        self.setStyleSheet(
-        """
-        background-color: #2B2B2B;
-        color: #E7E7E7;
-        """)
 
         # Create layout and add widgets
         layout = QGridLayout()
@@ -203,7 +118,7 @@ class PublishCommand(QObject):
     '''
     file_created = Signal(str)
 
-    def __init__(self, api, file):
+    def __init__(self, api, file, stylesheet:Optional[str]=None):
         '''
         Args:
             api (apsync.Api): Anchorpoint Api object
@@ -212,6 +127,7 @@ class PublishCommand(QObject):
         super(PublishCommand, self).__init__()
         self.api = api
         self.file = file
+        self.stylesheet = stylesheet
 
     def is_versioning_enabled(self):
         '''
@@ -246,12 +162,20 @@ class PublishCommand(QObject):
         else:
             message = QMessageBox()
             message.setText("To publish a file to Anchorpoint you have to enable version control in the target folder.")
+            
+            dir = os.path.dirname(__file__)
+            filename = os.path.split(self.file)[-1]
+
+            message.setWindowTitle("Publish to Anchorpoint - ["+filename+"]")   
+            message.setWindowIcon(QIcon(os.path.join(dir, "res", "app_icon.ico")))   
+            if self.stylesheet:
+                message.setStyleSheet(self.stylesheet)
             message.exec_()
             return False
 
     @Slot()
     def __show_publish_dialog(self, img):
-        self.publish_dialog = _PublishDialog(self.api, self.file, img)
+        self.publish_dialog = _PublishDialog(self.api, self.file, img, self.stylesheet)
         self.publish_dialog.file_created.connect(lambda x: self.file_created.emit(x))
         self.publish_dialog.show()
         pass
@@ -261,10 +185,10 @@ def file_created_cb(filepath: str):
 
 if __name__ == '__main__':
     scene = input("Enter path to scene file:")
-
     api = aps.Api("applugin")
     app = core.get_qt_application()
-    command = PublishCommand(api, scene)
+    style = core.load_stylesheet(os.path.dirname(__file__) + "/../../cinema4d/R25/style/stylesheet.qss")
+    command = PublishCommand(api, scene, style)
     command.file_created.connect(file_created_cb)
     if command.publish_file():
         sys.exit(app.exec_())

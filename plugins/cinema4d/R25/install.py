@@ -43,7 +43,6 @@ class Plugin:
         dir, _ = os.path.split(__file__)
         plugin_dir = os.path.join(app_location, "plugins/anchorpoint")
         os.makedirs(plugin_dir, exist_ok=True)
-        os.makedirs(os.path.join(plugin_dir, "res"), exist_ok=True)
         copy_tree(dir, plugin_dir)
         
         # Copy applugin as well
