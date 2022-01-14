@@ -1,4 +1,9 @@
-from applugin import core
+try:
+    from applugin import core
+except:
+    import sys, os
+    sys.path.insert(0, os.path.dirname(__file__) + "/..")
+    from applugin import core
 
 from PySide2.QtGui import QCursor, QKeyEvent, QMouseEvent, QPixmap
 from PySide2.QtWidgets import QApplication, QDialog, QRubberBand

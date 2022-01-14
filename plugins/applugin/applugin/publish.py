@@ -1,5 +1,10 @@
-from applugin import core
-
+try:
+    from applugin import core
+except:
+    import sys, os
+    sys.path.insert(0, os.path.dirname(__file__) + "/..")
+    from applugin import core
+    
 from PySide2.QtCore import Slot, Signal, QObject
 from PySide2.QtGui import QPixmap
 from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QLineEdit, QMessageBox, QPushButton
