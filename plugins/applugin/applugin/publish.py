@@ -157,10 +157,12 @@ class PublishCommand(QObject):
             self.screenshot_dialog = screenshot.ScreenshotDialog()
             self.screenshot_dialog.image_captured.connect(self.__show_publish_dialog)
             self.screenshot_dialog.show()
+            return True
         else:
             message = QMessageBox()
             message.setText("To publish a file to Anchorpoint you have to enable version control in the target folder.")
             message.exec_()
+            return False
 
     @Slot()
     def __show_publish_dialog(self, img):
@@ -173,9 +175,11 @@ def file_created_cb(filepath: str):
     print (filepath)
 
 if __name__ == '__main__':
+    scene = input("Enter path to scene file:")
+
     api = aps.Api("applugin")
     app = core.get_qt_application()
-    command = PublishCommand(api, "scene.blend")
+    command = PublishCommand(api, scene)
     command.file_created.connect(file_created_cb)
-    command.publish_file()
-    sys.exit(app.exec_())
+    if command.publish_file():
+        sys.exit(app.exec_())
