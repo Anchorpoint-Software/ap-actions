@@ -2,9 +2,9 @@ from applugin import core
 if __name__ == '__main__':
     core.initialize()
 
-from PySide2.QtCore import Slot, Signal, QObject
-from PySide2.QtGui import QPixmap
-from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QLineEdit, QMessageBox, QPushButton
+from PySide2.QtCore import Slot, Signal, QObject, Qt
+from PySide2.QtGui import QPixmap, QIcon
+from PySide2.QtWidgets import QCheckBox, QDialog, QGridLayout, QLabel, QLayout, QTextEdit, QMessageBox, QPushButton
 
 import sys
 import tempfile
@@ -17,46 +17,131 @@ class _PublishDialog(QDialog):
     file_created = Signal(str)
 
     def __init__(self, api, file: str, img: QPixmap, parent=None):
-        super(_PublishDialog, self).__init__(parent)
+        super(_PublishDialog, self).__init__(parent)        
 
         self.api = api
         self.file = file
+
+        filename = os.path.split(self.file)[-1]
         
-        self.setWindowTitle("Publish File")
+        self.setWindowTitle("Publish to Anchorpoint - ["+filename+"]")   
+        self.setWindowIcon(QIcon("C:/Users/matni/Desktop/checkbox_light.png"))    
+        self.setWindowFlags(Qt.WindowCloseButtonHint)
 
         self.img = img
         self.imglabel = QLabel()
-        self.imglabel.setPixmap(img.scaledToWidth(500))
-        self.imglabel.setMaximumSize(500, 500)
+        self.imglabel.setPixmap(img.scaledToWidth(960))
+        self.imglabel.setMaximumSize(960, 960)
 
         # Retrieve the next path of the next version that will be created once the user clicks "publish"
         self.nextfile = aps.get_next_version_path(self.api, self.file)
-        filename = os.path.split(self.file)[-1]
-        nextfilename = os.path.split(self.nextfile)[-1]
 
-        self.info = QLabel("Publish the file: " + filename)
-        self.info.setToolTip(self.file)
-
-        self.nextversion = QCheckBox("Create new version")
+        self.nextversion = QCheckBox("Create new Version")
         self.nextversion.setChecked(True)
         self.nextversion.setToolTip("Saves the current file under the new name and opens the new file in the application")
+        self.nextversion.setStyleSheet(
+        """
+        
+        QCheckBox {
+            spacing: 5px;
+        }
 
-        self.nextversionpreview = QLabel("Preview: " + nextfilename)
-        self.nextversionpreview.setToolTip(self.nextfile)
+        QCheckBox::indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+        }
 
-        self.comment = QLineEdit()
+        QCheckBox::indicator:unchecked {
+            color: black;
+                    background-color: #1C1C1C;
+        }
+
+        QCheckBox::indicator:unchecked:hover {
+            color: black;
+                    background-color: #1C1C1C;
+        }
+
+        QCheckBox::indicator:unchecked:pressed {
+            color: black;
+                    background-color: #1C1C1C;
+        }
+
+        QCheckBox::indicator:checked {
+            color: white;
+            background-color: #6A71CE;
+            image: url(C:/Users/matni/Desktop/checkbox_light.png);
+        }
+
+        QCheckBox::indicator:checked:hover {
+            color: white;
+            background-color: #6A71CE;
+            image: url(C:/Users/matni/Desktop/checkbox_light.png);
+        }
+
+        QCheckBox::indicator:checked:pressed {
+            color: white;
+            background-color: #6A71CE;
+            image: url(C:/Users/matni/Desktop/checkbox_light.png);
+        }
+
+        QCheckBox::indicator:indeterminate:hover {
+            color: white;
+            background-color: #6A71CE;
+            image: url(C:/Users/matni/Desktop/checkbox_light.png);
+        }
+
+        QCheckBox::indicator:indeterminate:pressed {
+            color: white;
+            background-color: #6A71CE;
+            image: url(C:/Users/matni/Desktop/checkbox_light.png);
+        }
+        """
+        )
+
+        self.comment = QTextEdit()
         self.comment.setPlaceholderText("Enter a comment (optional)")
         self.comment.setMinimumWidth(250)
+        self.comment.setMaximumHeight(80)
+
+        self.comment.setStyleSheet(
+        """
+        height: 20px;
+        padding: 4;
+        margin-top:8;
+        margin-bottom:8px;
+        border-radius: 4px;
+        border-width: 2px;
+        border-color: #6A71CE;
+        border-style: solid;
+        background-color: #1C1C1C;
+        font-size: 12px; 
+        """    
+        )
 
         self.publish = QPushButton("Publish")
 
+        self.publish.setStyleSheet(
+        """
+        height: 18px;
+        border-radius: 9px;
+        background-color: #404040;
+        margin-top: 8px;
+        margin-bottom: 8px;
+        """
+        )
+
+        self.setStyleSheet(
+        """
+        background-color: #2B2B2B;
+        color: #E7E7E7;
+        """)
+
         # Create layout and add widgets
         layout = QGridLayout()
-        layout.addWidget(self.info, 0, 0, 1, 2)
         layout.addWidget(self.imglabel, 1, 0, 1, 2)
         layout.addWidget(self.comment, 2, 0, 1, 2)
         layout.addWidget(self.nextversion, 3, 0)
-        layout.addWidget(self.nextversionpreview, 3, 1)
         layout.addWidget(self.publish, 4, 0, 1, 2)
 
         layout.setSizeConstraint(QLayout.SetFixedSize)
@@ -173,7 +258,7 @@ if __name__ == '__main__':
     api = aps.Api("applugin")
     core.initialize()
     app = core.get_qt_application()
-    command = PublishCommand(api, "scene.blend")
+    command = PublishCommand(api, "C:/Projects/20211126_V8_1/3D/Materials_v0004.c4d")
     command.file_created.connect(file_created_cb)
     command.publish_file()
     sys.exit(app.exec_())
