@@ -1,8 +1,8 @@
 import sys
 import c4d
 
-import apsync as aps
 from applugin import publish, core
+import apsync as aps
 
 class PublishCommandData(c4d.plugins.CommandData):
     def __init__(self):

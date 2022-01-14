@@ -1,6 +1,4 @@
 from applugin import core
-if __name__ == '__main__':
-    core.initialize()
 
 from PySide2.QtGui import QCursor, QKeyEvent, QMouseEvent, QPixmap
 from PySide2.QtWidgets import QApplication, QDialog, QRubberBand

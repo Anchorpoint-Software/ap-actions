@@ -5,9 +5,6 @@ import sys
 directory, _ = os.path.split(__file__)
 sys.path.insert(0, directory)
 
-from applugin import core
-core.initialize()
-
 from c4d_commandline import CommandLineHandler
 from c4d_publish_command import PublishCommandData
 

@@ -1,6 +1,4 @@
 from applugin import core
-if __name__ == '__main__':
-    core.initialize()
 
 from PySide2.QtCore import Slot, Signal, QObject
 from PySide2.QtGui import QPixmap
@@ -171,7 +169,6 @@ def file_created_cb(filepath: str):
 
 if __name__ == '__main__':
     api = aps.Api("applugin")
-    core.initialize()
     app = core.get_qt_application()
     command = PublishCommand(api, "scene.blend")
     command.file_created.connect(file_created_cb)
