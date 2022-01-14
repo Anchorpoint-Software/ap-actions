@@ -34,7 +34,7 @@ def get_available_plugin_paths():
 
 def install_plugin(dialog, api, i, plugin, plugin_path):
     name = plugin.get_description()["name"]
-    version = plugin.get_description()["version"]
+    version = plugin.get_description()["appversion"]
     location = dialog.get_value(f"location{i}")
     try:
         # must run as separate process as admin rights might be required
@@ -70,7 +70,7 @@ def show_options():
             location = plugin.get_application_location()
             desc = plugin.get_description()
             name = desc["name"]
-            version = desc["version"]
+            version = desc["appversion"]
 
             installed_location = settings.get(name+version, default=location)
 

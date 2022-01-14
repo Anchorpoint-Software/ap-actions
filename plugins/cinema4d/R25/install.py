@@ -12,7 +12,7 @@ class Plugin:
     def get_description(self):
         return {
             "name": "Cinema 4D",
-            "version": "R25",
+            "appversion": "R25",
         }
 
     def get_application_location(self):
