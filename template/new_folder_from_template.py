@@ -69,9 +69,7 @@ def update_preview(dialog):
 
 
 def dropdown_changed(variable, dialog, value):
-    name_entry = dialog.get(dialog_name_var + str(variable))
-    if name_entry:
-        name_entry.enabled = value == "Name"
+    dialog.set_enabled(dialog_name_var + str(variable), value == "Name")
     update_preview(dialog)
 
 

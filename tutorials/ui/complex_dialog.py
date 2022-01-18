@@ -23,15 +23,10 @@ attr_link_var = "link"
 # The changed challback is called whenever the item has changed (e.g. when the user types something in the text input)
 # The first paramter is the dialog itself, the second parameter is the changed value
 def cb_name_changed(dialog, value):
-    # Retrieve the button entry from the dialog by using the button_var that we used to identify the button entry
-    button = dialog.get(button_var)
-    if button:
-        enable = len(value) != 0
-        if enable != button.enabled:
-            # By setting the enabled property on the entry we can disable or enable the entry in the UI.
-            button.enabled = enable
-            print(f"button enabled: {button.enabled}")
-
+    # Toggle the enable state on the button when the content of the name input field changes
+    enable = len(value) != 0
+    dialog.set_enabled(button_var, enable)
+    print(f"button enabled: {enable}")
 
 # The button pressed callback takes only one parameter: the dialog itself
 def button_pressed(dialog):
