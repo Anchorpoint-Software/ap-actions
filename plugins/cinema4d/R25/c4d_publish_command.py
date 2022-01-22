@@ -1,16 +1,13 @@
-import sys
 import c4d
 import os
 
 from applugin import publish, core
-import apsync as aps
 
 class PublishCommandData(c4d.plugins.CommandData):
     def __init__(self):
         super(PublishCommandData, self).__init__()
         self.app = core.get_qt_application()
         self.dialog = None
-        self.api = aps.Api("Cinema 4D")
 
     def IsDocSaved(self, doc):
         return doc.GetDocumentPath() != ""
@@ -32,7 +29,7 @@ class PublishCommandData(c4d.plugins.CommandData):
 
         style = core.load_stylesheet(os.path.dirname(__file__) + "/style/stylesheet.qss")
 
-        self.command = publish.PublishCommand(self.api, file, style)
+        self.command = publish.PublishCommand(file, style)
         self.command.publish_file()
 
         self.command.file_created.connect(self.NewVersionCreated)

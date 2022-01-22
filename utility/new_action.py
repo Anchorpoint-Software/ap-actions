@@ -5,7 +5,6 @@ import random
 import os
 
 ctx = ap.Context.instance()
-api = ctx.create_api()
 ui = ap.UI()
 
 current_folder = ctx.path
@@ -70,14 +69,14 @@ def create_action(dialog):
     dialog.close()
     ui.show_success("Action created")
 
-    settings = aps.Settings(api)
+    settings = aps.Settings()
     settings.set("author", action.author)
     settings.set("category", action.category)
     settings.set("icon", action.icon)
     settings.store()
 
 
-settings = aps.Settings(api)
+settings = aps.Settings()
 
 author_default = settings.get("author", username)
 category_default = settings.get("category", "user")

@@ -20,10 +20,9 @@ import apsync as aps
 class _PublishDialog(QDialog):
     file_created = Signal(str)
 
-    def __init__(self, api, file: str, img: QPixmap, stylesheet: Optional[str]=None, parent=None):
+    def __init__(self, file: str, img: QPixmap, stylesheet: Optional[str]=None, parent=None):
         super(_PublishDialog, self).__init__(parent)        
 
-        self.api = api
         self.file = file
 
         if stylesheet:
@@ -42,7 +41,7 @@ class _PublishDialog(QDialog):
         self.imglabel.setMaximumSize(480, 480)
 
         # Retrieve the next path of the next version that will be created once the user clicks "publish"
-        self.nextfile = aps.get_next_version_path(self.api, self.file)
+        self.nextfile = aps.get_next_version_path(self.file)
 
         self.nextversion = QCheckBox("Create new Version")
         self.nextversion.setChecked(True)
@@ -72,7 +71,7 @@ class _PublishDialog(QDialog):
 
     def __set_comment(self):
         comment = None if len(self.comment.text()) == 0 else self.comment.text()
-        aps.comment_version(self.api, self.file, comment)
+        aps.comment_version(self.file, comment)
 
     def __set_thumbnail(self):
         # First, we save the QPixmap to a temporary directory in high resolution and scaled down for a quick preview
@@ -81,12 +80,12 @@ class _PublishDialog(QDialog):
         preview_thumbnail = os.path.join(dir, "preview.png")
         if self.img.save(detail_thumbnail) and self.img.scaledToWidth(256).save(preview_thumbnail):
             # Then, we attach the newly saved images to the file in Anchorpoint. After that, we can cleanup the temporary files
-            aps.attach_thumbnails(self.api, self.file, preview_thumbnail, detail_thumbnail)
+            aps.attach_thumbnails(self.file, preview_thumbnail, detail_thumbnail)
             os.remove(preview_thumbnail)
             os.remove(detail_thumbnail)
 
     def __create_next_version(self):
-        new_file = aps.create_next_version(self.api, self.file)
+        new_file = aps.create_next_version(self.file)
         self.file_created.emit(new_file)
 
     @Slot()
@@ -111,21 +110,17 @@ class PublishCommand(QObject):
 
     Example:
         >>> from applugin import publish
-        >>> import apsync
-        >>> api = apsync.Api("Blender")
-        >>> command = publish.PublishCommand(api, path_to_file)
+        >>> command = publish.PublishCommand(path_to_file)
         >>> command.publish_file()
     '''
     file_created = Signal(str)
 
-    def __init__(self, api, file, stylesheet:Optional[str]=None):
+    def __init__(self, file, stylesheet:Optional[str]=None):
         '''
         Args:
-            api (apsync.Api): Anchorpoint Api object
             file (str): The (absolute) path to the file that should be published
         '''
         super(PublishCommand, self).__init__()
-        self.api = api
         self.file = file
         self.stylesheet = stylesheet
 
@@ -138,7 +133,7 @@ class PublishCommand(QObject):
         '''
 
         import os
-        folder = aps.get_folder(self.api, os.path.dirname(self.file))
+        folder = aps.get_folder(os.path.dirname(self.file))
         if not folder: return False
         return folder.versioning_enabled
 
@@ -149,7 +144,7 @@ class PublishCommand(QObject):
         Emits the file_created Signal when a new version of the file has been created.
 
         Example:
-            >>> command = publish.PublishCommand(api, path_to_file)
+            >>> command = publish.PublishCommand(path_to_file)
             >>> command.file_created.connect(new_file_created_callback)
             >>> command.publish_file()
         '''
@@ -175,7 +170,7 @@ class PublishCommand(QObject):
 
     @Slot()
     def __show_publish_dialog(self, img):
-        self.publish_dialog = _PublishDialog(self.api, self.file, img, self.stylesheet)
+        self.publish_dialog = _PublishDialog(self.file, img, self.stylesheet)
         self.publish_dialog.file_created.connect(lambda x: self.file_created.emit(x))
         self.publish_dialog.show()
         pass
@@ -185,10 +180,9 @@ def file_created_cb(filepath: str):
 
 if __name__ == '__main__':
     scene = input("Enter path to scene file:")
-    api = aps.Api("applugin")
     app = core.get_qt_application()
     style = core.load_stylesheet(os.path.dirname(__file__) + "/../../cinema4d/R25/style/stylesheet.qss")
-    command = PublishCommand(api, scene, style)
+    command = PublishCommand(scene, style)
     command.file_created.connect(file_created_cb)
     if command.publish_file():
         sys.exit(app.exec_())

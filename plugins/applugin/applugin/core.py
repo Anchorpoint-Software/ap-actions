@@ -2,6 +2,15 @@ import os
 import platform
 import sys
 
+def initialize(client_name: str):
+    '''
+    Call once at plugin startup.
+    Args: 
+        client_name (str): The name of the client, e.g. "blender"
+    ''' 
+    import apsync
+    apsync.Api.instance().set_client_name(client_name)
+
 def get_ap_dataroot():
     '''
     Returns the root of the AppData / Application Support folder for Anchorpoint
