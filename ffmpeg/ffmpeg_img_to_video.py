@@ -1,11 +1,9 @@
 import anchorpoint as ap
-import apsync as aps
 from sys import platform
 import subprocess
 import os
 import random
 import string
-
 
 ui = ap.UI()
 ctx = ap.Context.instance()
@@ -38,10 +36,11 @@ def concat_demuxer(selected_files, fps):
     file.write("file '" + selected_files[-1] + "'\n")
     file.close()
     return output
-    
-    
 
 def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
+    # Show Progress
+    progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=True)
+
     # Provide FFmpeg with the set of selected files through the concat demuxer
     concat_file = concat_demuxer(selected_files, fps)
 
@@ -63,7 +62,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     ffmpeg = subprocess.run(
         arguments, capture_output=True
     )
-    if ffmpeg.returncode is not 0:
+    if ffmpeg.returncode != 0:
         print(ffmpeg.stderr)
         ui.show_error("Failed to export video", description="Check Anchorpoint Console")
     else:

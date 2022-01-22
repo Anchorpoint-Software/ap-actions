@@ -16,9 +16,10 @@ This includes
 Basically anything that will save a tremendous amount of time and hassle in your day to day life.
 
 ## Documentation
-- [Actions Overview](https://docs.anchorpoint.app/Actions/Intro)
-- [YAML Reference](https://docs.anchorpoint.app/API-Reference/YAML)
-- [Quick Tutorial](https://docs.anchorpoint.app/Actions/Tutorials/Image-Conversion)
+- [Actions Overview](https://docs.anchorpoint.app/docs/5-Actions/1-Intro)
+- [YAML Reference](https://docs.anchorpoint.app/docs/5-Actions/4-YAML)
+- [Python Reference](https://docs.anchorpoint.app/docs/5-Actions/5-Python)
+- [Quick Tutorial](https://docs.anchorpoint.app/docs/5-Actions/Tutorials/1-Image-Conversion)
 
 
 ## Getting Started
