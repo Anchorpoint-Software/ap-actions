@@ -70,7 +70,8 @@ class _PublishDialog(QDialog):
         self.publish.clicked.connect(self.publish_cb)
 
     def __set_comment(self):
-        comment = None if len(self.comment.text()) == 0 else self.comment.text()
+        text = self.comment.toPlainText()
+        comment = None if len(text) == 0 else text
         aps.comment_version(self.file, comment)
 
     def __set_thumbnail(self):
