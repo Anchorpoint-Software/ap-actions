@@ -19,7 +19,7 @@ action:
   script: "ffmpeg_img_to_video.py"
   inputs:
     ffmpeg_win: "${yamlDir}/ffmpeg.exe"
-    ffmpeg_mac: "ffmpeg"
+    ffmpeg_mac: "/usr/local/bin/ffmpeg"
     fps: "25"
 
   #Where to register this action: on all files matching the filter

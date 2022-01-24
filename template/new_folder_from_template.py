@@ -3,7 +3,6 @@ import apsync as aps
 import os
 
 ctx = ap.Context.instance()
-api = ctx.create_api()
 ui = ap.UI()
 
 username = ctx.username
@@ -69,9 +68,7 @@ def update_preview(dialog):
 
 
 def dropdown_changed(variable, dialog, value):
-    name_entry = dialog.get(dialog_name_var + str(variable))
-    if name_entry:
-        name_entry.enabled = value == "Name"
+    dialog.set_enabled(dialog_name_var + str(variable), value == "Name")
     update_preview(dialog)
 
 
@@ -84,18 +81,18 @@ def rename_folder_entries(dialog, target):
         if root != target:
             resolved = resolve_variables(root, resolved_vars)
             if resolved != root:
-                aps.rename_folder(api, root, resolved)
+                aps.rename_folder(root, resolved)
 
         for file in files:
             resolved = resolve_variables(file, resolved_vars)
             if resolved != file:
                 aps.rename_file(
-                    api, os.path.join(root, file), os.path.join(root, resolved)
+                    os.path.join(root, file), os.path.join(root, resolved)
                 )
 
 
 def store_settings(dialog):
-    settings = aps.Settings(api)
+    settings = aps.Settings()
     variable = 0
     while True:
         type = dialog.get_value(dialog_type_var + str(variable))
@@ -117,28 +114,26 @@ def store_settings(dialog):
 
     settings.store()
 
+def copy_folder(dialog, folder, preview, source):
+    try:
+        store_settings(dialog)
+        target = os.path.join(folder, preview)
+        aps.copy_folder(source, target)
+        rename_folder_entries(dialog, target)
+        template_utility.remove_gitkeep(target)
+    except Exception as e:
+        ui.show_error("Could not create Folder", str(e))
+    else:
+        ui.show_success("folder copied")
 
 def button_pressed(dialog, source):
     preview = dialog.get_value(dialog_preview_var)
-
-    def copy_folder_async():
-        try:
-            store_settings(dialog)
-            target = os.path.join(folder, preview)
-            aps.copy_folder(api, source, target)
-            rename_folder_entries(dialog, target)
-            template_utility.remove_gitkeep(target)
-        except Exception as e:
-            ui.show_error("Could not create Folder", str(e))
-        else:
-            ui.show_success("folder copied")
-
-    ctx.run_async(copy_folder_async)
+    ctx.run_async(copy_folder, dialog, folder, preview, source)
     dialog.close()
 
 
 def create_copy_dialog(variable_count, template_folders):
-    settings = aps.Settings(api)
+    settings = aps.Settings()
 
     dialog = ap.Dialog()
     dialog.title = "New Folder from Template"
@@ -201,15 +196,11 @@ def copy_folder_no_variables(template_folders, target_folder):
     if check_folder_conflict(target_folder):
         return
 
-    def copy_folder_no_variables_async():
-        try:
-            aps.copy_folder(api, template_folders, target_folder)
-            template_utility.remove_gitkeep(target_folder)
-        except Exception as e:
-            ui.show_error("could not copy folder", str(e))
-
-    ctx.run_async(copy_folder_no_variables_async)
-
+    try:
+        aps.copy_folder(template_folders, target_folder)
+        template_utility.remove_gitkeep(target_folder)
+    except Exception as e:
+        ui.show_error("could not copy folder", str(e))
 
 def copy_folder_with_variables(variable_count, template_folders, target_folder):
     dialog = create_copy_dialog(variable_count, template_folders)
@@ -224,7 +215,7 @@ def copy_folder(template_folder, target_folder):
 
     variable_count = get_variables_count(template_folder)
     if variable_count == 0:
-        copy_folder_no_variables(template_folder, target_folder)
+        ctx.run_async(copy_folder_no_variables, template_folder, target_folder)
         return
 
     copy_folder_with_variables(variable_count, template_folder, target_folder)

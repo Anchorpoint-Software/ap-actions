@@ -1,4 +1,3 @@
-from re import S
 import anchorpoint as ap
 import apsync as aps
 
@@ -32,7 +31,7 @@ def get_available_plugin_paths():
 
     return plugins
 
-def install_plugin(dialog, api, i, plugin, plugin_path):
+def install_plugin(dialog, i, plugin, plugin_path):
     name = plugin.get_description()["name"]
     version = plugin.get_description()["appversion"]
     location = dialog.get_value(f"location{i}")
@@ -45,7 +44,7 @@ def install_plugin(dialog, api, i, plugin, plugin_path):
             ui.show_success("Plugin installed successfully")
             dialog.set_value(f"button{i}", "Update Plugin")
 
-            settings = aps.Settings(api)
+            settings = aps.Settings()
             settings.set(name+version, location)
             settings.store()
     except Exception as e:
@@ -57,8 +56,7 @@ def show_options():
         ui.show_error("No plugins to install")
         return
 
-    api = ctx.create_api()
-    settings = aps.Settings(api)
+    settings = aps.Settings()
 
     dialog = ap.Dialog()
     dialog.icon = ctx.icon
@@ -79,9 +77,9 @@ def show_options():
             dialog.add_text("Location:\t").add_input(installed_location, browse=ap.BrowseType.Folder, var=f"location{i}")
             
             if plugin.is_installed(installed_location):
-                dialog.add_button("Update Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, api, src, plugin, path))
+                dialog.add_button("Update Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, src, plugin, path))
             else: 
-                dialog.add_button("Install Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, api, src, plugin, path))
+                dialog.add_button("Install Plugin", var=f"button{i}", callback=lambda d, src=i: install_plugin(d, src, plugin, path))
 
     dialog.show()
 

@@ -5,7 +5,6 @@ import random
 import os
 
 ctx = ap.Context.instance()
-api = ctx.create_api()
 ui = ap.UI()
 
 current_folder = ctx.path
@@ -30,22 +29,15 @@ def create_random_id():
     return f"user::{str(ran)}"
 
 def cb_name(dialog, value):
-    button = dialog.get(create_button_var)   
-    if button:
-        button.enabled = len(value) != 0
-    
+    dialog.set_enabled(create_button_var, len(value) != 0)
     filename = get_filename(value)
     dialog.set_value(action_filename_var, filename + ".yaml")
     
 def cb_reg_file(dialog, value):
-    checkbox_file_entry = dialog.get(registration_filefilter_var)
-    if checkbox_file_entry:
-        checkbox_file_entry.enabled = value
-
+    dialog.set_enabled(registration_filefilter_var, value)
+    
 def cb_reg_folder(dialog, value):
-    checkbox_folder_entry = dialog.get(registration_folderfilter_var)
-    if checkbox_folder_entry:
-        checkbox_folder_entry.enabled = value
+    dialog.set_enabled(registration_folderfilter_var, value)
 
 def get_filename(action_name):
     return action_name.lower().replace(" ", "_")
@@ -77,14 +69,14 @@ def create_action(dialog):
     dialog.close()
     ui.show_success("Action created")
 
-    settings = aps.Settings(api)
+    settings = aps.Settings()
     settings.set("author", action.author)
     settings.set("category", action.category)
     settings.set("icon", action.icon)
     settings.store()
 
 
-settings = aps.Settings(api)
+settings = aps.Settings()
 
 author_default = settings.get("author", username)
 category_default = settings.get("category", "user")

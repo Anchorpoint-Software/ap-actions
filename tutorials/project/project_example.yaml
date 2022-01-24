@@ -1,0 +1,23 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Project Example
+
+  version: 1
+  id: ap::examples::project
+  category: examples/project
+  type: python
+  author: Anchorpoint Software GmbH
+  description: An action that demonstrates how to create a project and how to set additional metadata
+  icon:
+    path: :/icons/aplogo.svg
+
+  script: project_example.py
+
+  register:
+    folder:
+      enable: true

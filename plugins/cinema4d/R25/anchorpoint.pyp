@@ -7,6 +7,7 @@ sys.path.insert(0, directory)
 
 from c4d_commandline import CommandLineHandler
 from c4d_publish_command import PublishCommandData
+from applugin import core
 
 def PluginMessage(id, data):
     commandline = CommandLineHandler()
@@ -14,6 +15,10 @@ def PluginMessage(id, data):
 
 if __name__ == "__main__":
     PLUGIN_ID = 1058846
+
+    # Initialize Anchorpoint plugin
+    core.initialize("Cinema 4D")
+    
     directory, _ = os.path.split(__file__)
     fn = os.path.join(directory, "applugin", "res", "app_icon.ico")
 
@@ -24,7 +29,6 @@ if __name__ == "__main__":
     # Init the BaseBitmap with the icon
     if bmp.InitWith(fn)[0] != c4d.IMAGERESULT_OK:
         raise MemoryError("Failed to initialize the BaseBitmap.")
-
 
     c4d.plugins.RegisterCommandPlugin(id=PLUGIN_ID,
                                       str="Publish File to Anchorpoint",

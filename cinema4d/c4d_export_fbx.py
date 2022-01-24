@@ -7,7 +7,6 @@ from sys import platform
 
 ctx = ap.Context.instance()
 ui = ap.UI()
-api = ctx.create_api()
 
 scene = ctx.path
 target_folder = ctx.inputs["targetFolder"]
@@ -30,9 +29,9 @@ if "c4dPassword" in ctx.inputs and len(ctx.inputs["c4dPassword"]) > 0:
 def set_all_attributes():
     if set_attributes == False:
         return
-    aps.set_attribute_date(api, scene, "Exported Date", int(time.time()))
-    aps.set_attribute_link(api, scene, "FBX", outFile)
-    aps.set_attribute_link(api, outFile, "Source", scene)
+    aps.set_attribute_date(scene, "Exported Date", int(time.time()))
+    aps.set_attribute_link(scene, "FBX", outFile)
+    aps.set_attribute_link(outFile, "Source", scene)
 
 
 def export_fbx():
@@ -75,7 +74,7 @@ if (ap.check_application(c4d_path, f"Path to Cinema 4D's commandline tool is not
     ctx.run_async(export_fbx)
 else:
     # Remove the path to c4d from the action settings so that the user must provide it again
-    settings = aps.Settings(api)
+    settings = aps.Settings()
     if settings:
         settings.remove("c4d")
         settings.store()
