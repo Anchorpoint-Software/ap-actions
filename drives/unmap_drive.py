@@ -3,11 +3,19 @@ import apsync as aps
 import platform
 import subprocess
 import os
+from os import path
 
 ctx = ap.Context.instance()
 ui = ap.UI()
 
 drive_var = "drive"
+
+def remove_bat_file(drive):    
+    app_data = os.getenv('APPDATA')
+    startup_path = f'{app_data}/Microsoft/Windows/Start Menu/Programs/Startup'
+    path_to_bat = path.join(startup_path,"ap_mount_"+drive[:-1]+".bat")
+    if(path.isfile(path_to_bat)):
+        os.remove(path_to_bat)
 
 def get_used_drives():
     subst = subprocess.run(
@@ -39,6 +47,7 @@ def unmount(dialog):
         print(subst.stdout)
         ui.show_success("Unmount Successful")
 
+    remove_bat_file(drive)
     dialog.close()
 
 def show_options():
@@ -49,6 +58,9 @@ def show_options():
 
     dialog = ap.Dialog()
     dialog.title = "Unmap Drive"
+
+    if ctx.icon:
+        dialog.icon = ctx.icon
 
     dialog.add_text("Unmap Drive:\t").add_dropdown(drives[-1], drives, var=drive_var)
     dialog.add_button("Unmap", callback=unmount)
