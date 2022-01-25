@@ -1,0 +1,6 @@
+#python
+venv
+__pycache__
+
+#vscode
+.vscode

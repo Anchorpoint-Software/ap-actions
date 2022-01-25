@@ -23,15 +23,10 @@ attr_link_var = "link"
 # The changed challback is called whenever the item has changed (e.g. when the user types something in the text input)
 # The first paramter is the dialog itself, the second parameter is the changed value
 def cb_name_changed(dialog, value):
-    # Retrieve the button entry from the dialog by using the button_var that we used to identify the button entry
-    button = dialog.get(button_var)
-    if button:
-        enable = len(value) != 0
-        if enable != button.enabled:
-            # By setting the enabled property on the entry we can disable or enable the entry in the UI.
-            button.enabled = enable
-            print(f"button enabled: {button.enabled}")
-
+    # Toggle the enable state on the button when the content of the name input field changes
+    enable = len(value) != 0
+    dialog.set_enabled(button_var, enable)
+    print(f"button enabled: {enable}")
 
 # The button pressed callback takes only one parameter: the dialog itself
 def button_pressed(dialog):
@@ -61,13 +56,13 @@ def cb_closed(dialog):
 
 # Other Functions used to control the behavior of our action
 # This functions creates attributes and sets values to the corresponding folder
-def set_attributes(folder, set_wip, set_link, api):
+def set_attributes(folder, set_wip, set_link):
     if set_wip:
         # Adds a new single choice tag attribute called "Status" and assigns a yellow tag called "WIP" to the folder
-        aps.set_attribute_tag(api, folder, "Status", "WIP", tag_color=aps.TagColor.yellow)
+        aps.set_attribute_tag(folder, "Status", "WIP", tag_color=aps.TagColor.yellow)
     if set_link:
         # Adds a new link attribute called "Link" and assigns the best homepage in the world to it
-        aps.set_attribute_link(api, folder, "Link", "https://www.anchorpoint.app")
+        aps.set_attribute_link(folder, "Link", "https://www.anchorpoint.app")
 
 
 # This function does the heavy lifting: It creates the "count" number of folders on the filesystem
@@ -76,11 +71,6 @@ def create_folders(folder, folder_name, count, set_wip, set_link):
     # Better play safe by using the try-except-else paradigm of python.
     # By that we can capture exceptions and report them to the user.
     try:
-        # We create the Anchorpoint sync API so that we can interact with the Anchorpoint server, if required.
-        api = None
-        if set_wip or set_link:
-            api = ctx.create_api()
-
         for i in range(count):
             # Create all the fancy folders
             prefix = str((i + 1) * 10)
@@ -88,8 +78,7 @@ def create_folders(folder, folder_name, count, set_wip, set_link):
             os.mkdir(current_folder)
 
             # And set the attributes, if asked for
-            if api:
-                set_attributes(current_folder, set_wip, set_link, api)
+            set_attributes(current_folder, set_wip, set_link)
 
     except Exception as e:
         # Yikes, something went wrong! Tell the user about it
