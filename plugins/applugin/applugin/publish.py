@@ -72,7 +72,7 @@ class _PublishDialog(QDialog):
     def __set_comment(self):
         text = self.comment.toPlainText()
         comment = None if len(text) == 0 else text
-        aps.comment_version(self.file, comment)
+        aps.comment_file(self.file, comment)
 
     def __set_thumbnail(self):
         # First, we save the QPixmap to a temporary directory in high resolution and scaled down for a quick preview
