@@ -1,32 +1,21 @@
 # Template Actions
 
-A collection of useful actions that create folder structures and instantiates files from given templates.
+For a visual quickstart [check out this video how to use the template actions!](https://www.loom.com/share/87c1c0909f444af69833bec8ce621635)
 
-## New Shot / New Folder
+Template actions allow you to create folder structures, projects, and files with the click of a button.
 
-This action creates a new folder (e.g. a new shot) based on a template. It also increments the shot number automatically by replacing each variable \$ within the folder (including files).
+To create your own custom templates, just add a new folder to the provided template folders:
 
-### Add Template Files
-If you want to add a template file, just go ahead and create it within the template folder like so, for example:
+* __File Templates__: add a new entry in [file_templates](file_templates)
+* __Folder Templates__: add a new entry in [folder_templates](folder_templates)
+* __Project Templates__: add a new entry in [project_templates](project_templates)
 
-**/templates/shot_$/02_assets/main_shot_$.c4d**
+## Tokens
 
-so that when firing up the action, the file will be created as:
+Use tokens, such as __[Client_Name]__, within your files and folders. Based on user input, the tokens will be replaced when instantiating the template.
+When using tokens on a project template, the tokens will be stored on the project so that when using file and folder templates, the tokens will be reused. 
 
-**shot_50/02_assets/main_shot_50.c4d**
+## Custom Actions
 
-### Add Other Folder Templates
-
-The action uses the *new_folder_incremental.py* script. 
-The *new_shot.yaml* points to the **templates/shot_$** folder that is located in this directory. So you can simply add new folder templates by creating actions based on the *new_shot.yaml*
-
-![Action GIF](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/gif/new_shot.gif)
-
-
-## New folder from Template
-
-This action shows a more advanced case of template folders. It opens up a dialog that lets you configure a template folder based on a variable set of variables.
-Each \$ within the folder name is a variable that resolves to the current date or to the current user initials, for example.
-
-![Action GIF](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/gif/new_folder_from_template.gif)
-
+Adding a custom action is super simple.
+To add a new action "Create new Briefing", copy & paste the [folder.yaml](folder.yaml) and name it __briefing.yaml__. You can adjust the action name and description - but most importantly, change the id and the template_dir so that your new action knows where to find the templates.
