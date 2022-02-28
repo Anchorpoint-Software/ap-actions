@@ -46,23 +46,23 @@ def set_variable_availability(dialog, value):
                 if ("["+str(key)+"]") in dir:
                     dialog.set_enabled(str(key),True)
 
+# Search for tokens in a single file oder folder name / entry
+def get_tokens(entry, variables: dict):
+    entry_vars =  re.findall('\[[^\[\]]*\]',entry)
+    for var in entry_vars:
+        variables[var.replace("[","").replace("]","")] = None
+
 # Traverse the template structure and look for tokens which will be shown in the dialog popup
 def get_template_variables():
-    variable_set = set([])
-
-    # Search for tokens in a single file oder folder name / entry
-    def get_tokens(entry):
-        entry_vars =  re.findall('\[[^\[\]]*\]',entry)
-        for var in entry_vars:
-            variable_set.add(var.replace("[","").replace("]","")) 
+    variables = {}
 
     for _, dirs, files in os.walk(template_dir):
         for file in files:
-            get_tokens(file)
+            get_tokens(file, variables)
         for dir in dirs:
-            get_tokens(dir)
+            get_tokens(dir, variables)
 
-    resolve_tokens(list(variable_set))
+    resolve_tokens(list(variables))
 
 # Build the variables with the tokens from the template. Add a value directly if possible
 def resolve_tokens(variable_list):
@@ -172,9 +172,12 @@ def create_project_from_template(template_path, target_folder, ctx):
         return
 
     # Set a project name which will show up in the project list
+    tokens = {}
+    get_tokens(source, tokens)
     project_display_name = ""
-    for key in text_inputs.keys():
-        project_display_name += text_inputs[key]+ " "
+    for token in tokens:
+        if token in text_inputs:
+            project_display_name += text_inputs[token]+ " "
 
     # Create the actual project and write it in the database
     project = ctx.create_project(target, strip_spaces(project_display_name))
