@@ -23,8 +23,8 @@ else:
     metadata = project.get_metadata()
 
     # Metadata of a project is just a python dict[str,str]
-    metadata["Client Name"] = "Anchorpoint"
-    metadata["Aspect Ratio"] = "16:9"
+    metadata["Project_Name"] = "Anchorpoint"
+    metadata["Aspect_Ratio"] = "16:9"
 
     # Update the projects metadata so that all actions can use them
     # Note that only the creator of a project can update the metadata. Reading metadata is generally possible.
