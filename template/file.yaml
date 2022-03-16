@@ -18,6 +18,7 @@ action:
 
   inputs:
     template_dir: file_templates
+    file_mode: true
 
   script: templates.py
 

@@ -21,6 +21,11 @@ if "create_project" in ctx.inputs:
 else:
     create_project = False
 
+if "file_mode" in ctx.inputs:
+    file_mode = ctx.inputs["file_mode"]
+else:
+    file_mode = False
+
 template = ctx.inputs["template_dir"]
 template_dir = os.path.join(ctx.yaml_dir, template)
 yaml_dir = ctx.yaml_dir
@@ -196,7 +201,10 @@ def create_documents_from_template(template_path, target_folder, ctx):
     ap.Progress("Creating From Template", "Copying Files and Attributes")
 
     # Copy the whole folder structure and resolve all tokens using the variables dict
-    aps.copy_from_template(template_path, target_folder, variables)
+    if file_mode:
+        aps.copy_file_from_template(template_path, target_folder, variables)
+    else:
+        aps.copy_from_template(template_path, target_folder, variables)
 
     ui.show_success("Document(s) successfully created")
     
