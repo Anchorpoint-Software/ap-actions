@@ -4,6 +4,7 @@ import platform
 import subprocess
 import os
 
+
 ctx = ap.Context.instance()
 ui = ap.UI()
 
@@ -21,6 +22,12 @@ def get_unused_drives():
         bitmask >>= 1
 
     return drives
+
+def create_bat_file(command,drive):    
+    app_data = os.getenv('APPDATA')
+    startup_path = f'{app_data}/Microsoft/Windows/Start Menu/Programs/Startup/ap_mount_{drive}.bat'
+    with open(startup_path,'w') as f:
+        f.write(command)
 
 def mount(dialog):
     drive = dialog.get_value(drive_var)
@@ -40,6 +47,7 @@ def mount(dialog):
         print(subst.stdout)
         ui.show_success("Mount Successful")
 
+    create_bat_file("subst "+f'{drive}: "'+f'{ctx.path}"',drive)
     dialog.close()
 
 def show_options():
@@ -50,6 +58,9 @@ def show_options():
 
     dialog = ap.Dialog()
     dialog.title = "Map Folder as Drive"
+
+    if ctx.icon:
+        dialog.icon = ctx.icon
 
     dialog.add_text("Map to Drive:\t").add_dropdown(drives[-1], drives, var=drive_var)
     dialog.add_button("Map", callback=mount)

@@ -1,0 +1,27 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: New File from Template
+
+  version: 1
+  id: ap::template::newfile
+  category: template
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Creates a new File from a set of templates with the correct naming convention
+  icon:
+    path: :/icons/singleFile.svg
+
+  inputs:
+    template_dir: file_templates
+    file_mode: true
+
+  script: templates.py
+
+  register:
+    folder:
+      enable: true

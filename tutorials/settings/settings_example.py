@@ -2,7 +2,6 @@ import anchorpoint as ap
 import apsync as aps
 
 ctx = ap.Context.instance()
-api = ctx.create_api()
 ui = ap.UI()
 
 def set_settings(settings, setting_name, increment):
@@ -31,40 +30,40 @@ def set_settings(settings, setting_name, increment):
 
 def action_settings():
     # Create a Settings object for this python script
-    settings = aps.Settings(api, __file__)
+    settings = aps.Settings(__file__)
     set_settings(settings, "my action setting", 1)
     
 def user_settings():
     # Create a Settings object for the current user
-    settings = aps.Settings(api)
+    settings = aps.Settings()
     set_settings(settings, "my user setting", 2)
 
 def named_settings():
     # Create a Settings object with a name
-    settings = aps.Settings(api, "my named settings")
+    settings = aps.Settings("my named settings")
     set_settings(settings, "my named setting", 3)
 
 def workspace_settings():
     # Get the current project
-    project = aps.get_project(api, ctx.path)
+    project = aps.get_project(ctx.path)
     if not project:
         print("Skipped workspace settings example: No active Project")
         return 
 
     # Create a Settings object and identify it with the current active workspace
-    settings = aps.Settings(api, identifier = project.workspace_id)
+    settings = aps.Settings(identifier = project.workspace_id)
     set_settings(settings, "my workspace setting", 4)
 
 
 def project_settings():
     # Get the current project
-    project = aps.get_project(api, ctx.path)
+    project = aps.get_project(ctx.path)
     if not project:
         print("Skipped project settings example: No active Project")
         return 
 
     # Create a Settings object and identify it with the current active workspace
-    settings = aps.Settings(api, identifier = project.id)
+    settings = aps.Settings(identifier = project.id)
     set_settings(settings, "my project setting", 5)
 
 
