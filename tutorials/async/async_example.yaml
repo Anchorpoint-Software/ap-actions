@@ -11,6 +11,7 @@ action:
   id: ap::examples::async
   category: examples/async
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: Runs an async function thar reports progress to the user
   icon:

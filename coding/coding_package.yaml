@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Coding Utilities
+
+  version: 1
+  id: ap::package::coding
+  category: code
+  type: package
+  enable: false
+  
+  author: Anchorpoint Software GmbH
+  description: Contains a set of actions that are very useful when you want to create your own Actions for Anchorpoint
+  icon:
+    path: :/icons/action.svg
+
+  actions:
+    - ap::newaction
+    - ap::openterminal
+    - ap::openvscode

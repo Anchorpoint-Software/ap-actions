@@ -58,7 +58,7 @@ Dialogs.BasicDialog {
                 // Third, show a blue button to the user to trigger the greetings method
                 HighlightButtons.SquareTextHighlightButton {
                     text: "Show Greetings"
-                    enabled: true
+                    enable: true
 
                     Layout.topMargin: Dimensions.sizes.small
                     Layout.bottomMargin: Dimensions.margins.small

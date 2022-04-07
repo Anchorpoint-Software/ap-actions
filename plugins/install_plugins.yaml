@@ -11,6 +11,7 @@ action:
   id: ap::installplugins
   category: plugin
   type: python
+  enable: true
   author: Anchorpoint Software GmbH
   description: Installs the Anchorpoint Plugin to a DCC (e.g. Cinema 4D)
   icon:

@@ -1,0 +1,24 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Blender"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::blender"
+  category: "blender/thumbnail"
+  type: package
+  enable: false
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "blender.svg"
+
+  actions:
+    - ap::blender::thumbnail

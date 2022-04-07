@@ -11,6 +11,7 @@ action:
   id: ap::examples::attributes
   category: examples/attributes
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: Example action to demonstrate how to create all kinds of attributes
   icon:

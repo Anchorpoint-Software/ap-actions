@@ -8,9 +8,10 @@ action:
   name: Environment Example
 
   version: 1
-  id: ap::examples/environment
+  id: ap::examples::environment
   category: examples/environment
   type: command
+  enable: false
   author: Anchorpoint Software GmbH
   description: Demonstrates how to set a custom environment when running a command action
   icon:

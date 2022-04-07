@@ -11,6 +11,7 @@ action:
   id: ap::examples::inputcommand
   category: examples/input
   type: command
+  enable: false
   author: Anchorpoint Software GmbH
   description: Demonstrates how to run a command that is provided by the user
   icon:

@@ -26,7 +26,7 @@ def cb_name_changed(dialog, value):
     # Toggle the enable state on the button when the content of the name input field changes
     enable = len(value) != 0
     dialog.set_enabled(button_var, enable)
-    print(f"button enabled: {enable}")
+    print(f"button enable: {enable}")
 
 # The button pressed callback takes only one parameter: the dialog itself
 def button_pressed(dialog):

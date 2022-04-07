@@ -14,6 +14,7 @@ action:
   id: "ap::examples::widgets::greetings"
   category: "examples/dialog"
   type: python
+  enable: false
   author: "Anchorpoint Software GmbH"
   description: "This is an advanced example action that uses PySide2 Qt Widgets to create native dialogs"
   icon:

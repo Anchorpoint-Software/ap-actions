@@ -11,6 +11,7 @@ action:
   id: ap::examples::input
   category: examples/input
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: An example action that demonstrates how to pass data to an action by asking the user for input
   icon:

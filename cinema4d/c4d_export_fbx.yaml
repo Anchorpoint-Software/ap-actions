@@ -13,6 +13,7 @@ action:
   version: 1
   id: "ap::c4d::export::fbx"
   category: "c4d/export"
+  enable: false
   type: python
   author: "Anchorpoint Software GmbH"
   description: "Exports the scene file as FBX and sets attributes"

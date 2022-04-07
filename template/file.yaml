@@ -11,6 +11,7 @@ action:
   id: ap::template::newfile
   category: template
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: Creates a new File from a set of templates with the correct naming convention
   icon:
@@ -21,6 +22,9 @@ action:
     file_mode: true
 
   script: templates.py
+
+  dependencies:
+    - file_templates
 
   register:
     folder:

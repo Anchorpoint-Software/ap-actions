@@ -14,8 +14,10 @@ action:
   id: "ap::ffmpeg::seqtovideo"
   category: "ffmpeg/video"
   type: python
+  enable: false
   author: "Anchorpoint Software GmbH"
 
+  description: Converts a sequence of images to a video using FFmpeg
   script: "ffmpeg_img_to_video.py"
   inputs:
     ffmpeg_win: "${yamlDir}/ffmpeg.exe"

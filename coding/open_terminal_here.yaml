@@ -10,6 +10,7 @@ action:
   version: 1
   id: ap::openterminal
   category: code
+  enable: false
   type: python
   author: Anchorpoint Software GmbH
   description: Opens the Terminal / Command line in the current folder

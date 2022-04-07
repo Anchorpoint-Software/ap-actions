@@ -13,6 +13,7 @@ action:
   version: 1
   id: "ap::c4d::render::playblast"
   category: "c4d/render"
+  enable: false
   type: python
   author: "Anchorpoint Software GmbH"
   description: "Renders the scene using the 'Playblast' render setting"

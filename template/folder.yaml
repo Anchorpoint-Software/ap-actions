@@ -11,6 +11,7 @@ action:
   id: ap::template::newfolder
   category: template
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: Creates a new scene within a project
   icon:
@@ -20,6 +21,9 @@ action:
     template_dir: folder_templates
 
   script: templates.py
+
+  dependencies:
+    - folder_templates
 
   register:
     folder:

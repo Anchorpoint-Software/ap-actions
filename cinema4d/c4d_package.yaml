@@ -1,0 +1,23 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Cinema 4D"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::c4d"
+  category: "c4d/render"
+  enable: false
+  type: package
+  author: "Anchorpoint Software GmbH"
+  description: Cinema 4D actions
+
+  actions:
+    - ap::c4d::export::fbx
+    - ap::c4d::render::playblast

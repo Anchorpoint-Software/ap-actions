@@ -11,6 +11,7 @@ action:
   id: ap::examples::project
   category: examples/project
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: An action that demonstrates how to create a project and how to set additional metadata
   icon:

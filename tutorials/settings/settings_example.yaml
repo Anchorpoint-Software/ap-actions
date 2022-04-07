@@ -8,9 +8,10 @@ action:
   name: Settings Example
 
   version: 1
-  id: ap::settingsexample
+  id: ap::examples::settings
   category: examples/settings
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: An example action that demonstrates how to read and write action settings
   icon:

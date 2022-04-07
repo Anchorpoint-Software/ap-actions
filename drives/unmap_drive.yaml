@@ -11,6 +11,7 @@ action:
   id: ap::unmapdrive
   category: map
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: Unmaps (unmounts) a drive
   icon:

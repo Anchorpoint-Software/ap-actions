@@ -11,8 +11,9 @@ action:
   id: ap::ffmpeg::videotogif
   category: ffmpeg
   type: command
+  enable: false
   author: Anchorpoint Software GmbH
-  description: Converts a video to an animated GIF by using FFmpeg
+  description: Converts a video to an animated GIF by using FFmpeg.
   icon:
     path: :/icons/action.svg
 
