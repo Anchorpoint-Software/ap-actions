@@ -1,12 +1,13 @@
 import anchorpoint as ap
 import apsync as aps
+import os
 
 ctx = ap.Context.instance()
 ui = ap.UI()
 
-template_dir = ctx.inputs["template_dir"]
+template_dir = os.path.join(ctx.yaml_dir, ctx.inputs["template_dir"])
 
-settings = aps.Settings("Template Settings", "workspace", ctx.yaml_dir + "/template_settings.json", user = False)
+settings = aps.Settings("Template Settings", "workspace", os.path.join(ctx.yaml_dir, "template_settings.json"), user = False)
 
 # Create a dialog container
 dialog = ap.Dialog()
