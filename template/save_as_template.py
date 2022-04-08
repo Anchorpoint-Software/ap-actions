@@ -10,6 +10,9 @@ template_dir = os.path.join(ctx.yaml_dir, template_dir)
 is_file_template = ctx.type == ap.Type.File
 source = ctx.path
 
+settings = aps.Settings("Template Settings", "workspace", os.path.join(ctx.yaml_dir, "template_settings.json"), user = False)
+template_dir = settings.get("template_dir", template_dir)
+
 def get_target(name: str):
     if is_file_template: return f"{template_dir}/file/{name}/{os.path.basename(source)}"
     return f"{template_dir}/folder/{name}/{os.path.basename(source)}"
@@ -18,7 +21,6 @@ def create_template(dialog: ap.Dialog):
     name = dialog.get_value("name")
     target = get_target(name)
     try:
-        print(target)
         if is_file_template == False:
             if aps.is_project(source, True):
                 ui.show_info("Could not create template", "The folder contains a project. This is not yet supported, unfortunately.")

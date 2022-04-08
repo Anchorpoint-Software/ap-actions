@@ -18,7 +18,8 @@ action:
     path: :/icons/singleFile.svg
 
   inputs:
-    template_dir: templates/file
+    template_dir: templates
+    template_subdir: file
     file_mode: true
 
   script: templates.py

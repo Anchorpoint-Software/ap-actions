@@ -18,7 +18,8 @@ action:
     path: :/icons/folderGrey.svg
 
   inputs:
-    template_dir: templates/folder
+    template_dir: templates
+    template_subdir: folder
 
   script: templates.py
 
