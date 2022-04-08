@@ -8,14 +8,55 @@ action:
   name: Create from Templates
 
   version: 1
-  id: ap::package::template::newfile
+  id: ap::package::template
   category: template
   type: package
   enable: true
   author: Anchorpoint Software GmbH
   description: Create new file and folder structures from templates
+  details: "# How to use
+
+    The template action packages allows the user to use templates to create:
+
+    - Projects
+
+    - Folder structures
+
+    - Files
+
+
+    By default, a set of example templates are provided with this action package. Click **Settings** to adjust the paths to use your own templates instead.
+
+    # Create your own templates
+
+    A template can be created by any user by right clicking on any folder **Save as Template**.
+    This copies the folder structure, all files, and all metadata (attributes, tasks) to the location as set in **Settings**.
+    You can adjust the templates by using **tokens**
+
+    ## Tokens
+
+    Tokens are a super powerful way to tell Anchorpoint to apply naming conventions when instantiating a template.
+    There are a few pre-configured Tokens:
+
+    - **[Increment]**: MyProject_**[Increment]** -> MyProject_**0010**
+
+    - **[YYYY-MM-DD]**: MyProject_**[YYYY-MM-DD]** -> MyProject_**2022-04-08**. You can also use variants like **[YYYY]** instead.
+
+
+    You can always add your own Token logic by implementing the **resolve_tokens** callback.
+
+
+    Moreover, you can simply add any Token to your folders and files. The user can provide the token replacement on template instantiation:
+
+    MyProject_**[Client]** -> MyProject_**Anchorpoint**
+
+    Used Tokens are stored on the projet when creating a project with the template actions. This means that you can re-use the Tokens in your file and folder templates and they are automatically filled by the Tokens set in the project."
+
+  settings: template_settings.py
+  inputs:
+    template_dir: templates
 
   actions:
     - ap::template::newfile
     - ap::template::newfolder
-    - ap::template::newproject
+    - ap::template::save

@@ -99,6 +99,7 @@ def resolve_tokens(variable_list):
 # Get the values from the UI
 def create_template(dialog):
     template_name = dialog.get_value("dropdown")
+    create_project = dialog.get_value("create_project")
 
     # Load the user input and pass it to the dictionaries
     for key in text_inputs.keys():
@@ -141,6 +142,12 @@ def create_dialog():
  
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,folder_templates[0])
+
+    if len(text_inputs.keys()) > 0:
+        dialog.add_separator()
+
+    if file_mode == False:
+        dialog.add_checkbox(var="create_project").add_text("Create Project")
 
     # Add a button to create the project, register a callback when the button is clicked.
     dialog.add_button("Create", callback = create_template)

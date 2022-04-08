@@ -13,17 +13,17 @@ action:
   type: python
   enable: false
   author: Anchorpoint Software GmbH
-  description: Creates a new scene within a project
+  description: Creates a new folder from a set of templates with the correct naming convention
   icon:
     path: :/icons/folderGrey.svg
 
   inputs:
-    template_dir: folder_templates
+    template_dir: templates/folder
 
   script: templates.py
 
   dependencies:
-    - folder_templates
+    - templates/folder
 
   register:
     folder:
