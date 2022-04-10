@@ -22,7 +22,7 @@ action:
     template_subdir: file
     file_mode: true
 
-  script: templates.py
+  script: code/templates.py
 
   dependencies:
     - templates/file

@@ -1,7 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
-import os
-import re 
+import os, re, sys
 from datetime import datetime
 
 ctx = ap.Context.instance()
@@ -14,7 +13,7 @@ target_folder = ctx.path
 variables =	{}
 
 # Stores all tokens, which require user input via the Dialog
-text_inputs = {}
+user_inputs = {}
 
 if "create_project" in ctx.inputs:
     create_project = ctx.inputs["create_project"]
@@ -31,8 +30,17 @@ template_subdir = ctx.inputs["template_subdir"]
 template_dir = os.path.join(ctx.yaml_dir, template)
 yaml_dir = ctx.yaml_dir
 
-settings = aps.Settings("Template Settings", "workspace", os.path.join(ctx.yaml_dir, "template_settings.json"), user = False)
+settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
+callback_file = os.path.join(settings.get("callback_dir"), "template_action_callbacks.py")
+if os.path.exists(callback_file):
+    callbacks = aps.import_local(os.path.splitext(callback_file)[0], True)
+else:
+    callbacks = None
+
+if os.path.exists(template_dir) == False:
+    ui.show_info("No templates installed")
+    sys.exit(0)
 
 # Return all foldernames within a folder
 def get_all_foldernames(folder):
@@ -42,16 +50,16 @@ def get_all_foldernames(folder):
 def set_variable_availability(dialog, value):
     template_path = os.path.join(template_dir, value)
 
-    for key in text_inputs.keys():
+    for key in user_inputs.keys():
         dialog.set_enabled(str(key),False)
 
     for _, dirs, files in os.walk(template_path):
         for file in files:
-            for key in text_inputs.keys():
+            for key in user_inputs.keys():
                 if ("["+str(key)+"]") in file:
                     dialog.set_enabled(str(key),True)
         for dir in dirs:
-            for key in text_inputs.keys():
+            for key in user_inputs.keys():
                 if ("["+str(key)+"]") in dir:
                     dialog.set_enabled(str(key),True)
 
@@ -92,13 +100,15 @@ def resolve_tokens(variable_list):
             variables["YYYYMMDD"] = datetime.today().strftime('%Y%m%d')
         elif variable == "YYYY-MM-DD":
             variables["YYYY-MM-DD"] = datetime.today().strftime('%Y-%m-%d')
-        else:
-            # Check if certain tokens are already in the project (e.g. client name), 
-            # so the value can be read from there and the user does not need to enter it again
-            if variable not in variables.keys():
-                # For all tokens, that cannot be resolved directly, add them to text_inputs,
-                # they will be used to create the UI elements in the dialog
-                text_inputs[variable] = "text"
+        elif variable not in variables:
+            variables[variable] = ""
+
+    if callbacks and "resolve_tokens" in dir(callbacks):
+        callbacks.resolve_tokens(variables, target_folder)
+
+    for variable in variables:
+        if len(variables[variable]) == 0:
+            user_inputs[variable] = ""
 
 # Get the values from the UI
 def create_template(dialog):
@@ -106,8 +116,8 @@ def create_template(dialog):
     create_project = dialog.get_value("create_project")
 
     # Load the user input and pass it to the dictionaries
-    for key in text_inputs.keys():
-        text_inputs[str(key)] = variables[str(key)] = dialog.get_value(str(key))
+    for key in user_inputs.keys():
+        user_inputs[str(key)] = variables[str(key)] = dialog.get_value(str(key))
         
     template_path = os.path.join(template_dir,template_name)
 
@@ -130,24 +140,23 @@ def create_dialog():
         dialog.icon = ctx.icon
     
     # Set a description and a dropdown. Use \t to create tab spaces
-    if len(folder_templates)>1:
-        dialog.add_text("Template:\t\t").add_dropdown(
-            folder_templates[0],
-            folder_templates,
-            var="dropdown",
-            callback = set_variable_availability
-        )
+    dialog.add_text("Template:\t\t").add_dropdown(
+        folder_templates[0],
+        folder_templates,
+        var="dropdown",
+        callback = set_variable_availability
+    )
     
     dialog.add_separator()
 
     # Use the unresolved tokens in text_inputs, to create input fields
-    for key in text_inputs.keys():
+    for key in user_inputs.keys():
         dialog.add_text(str(key).replace("_"," ")+":\t").add_input("" , var = str(key))
  
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,folder_templates[0])
 
-    if len(text_inputs.keys()) > 0:
+    if len(user_inputs.keys()) > 0:
         dialog.add_separator()
 
     if file_mode == False:
@@ -192,8 +201,8 @@ def create_project_from_template(template_path, target_folder, ctx):
     get_tokens(source, tokens)
     project_display_name = ""
     for token in tokens:
-        if token in text_inputs:
-            project_display_name += text_inputs[token]+ " "
+        if token in user_inputs:
+            project_display_name += user_inputs[token]+ " "
 
     # Create the actual project and write it in the database
     project = ctx.create_project(target, strip_spaces(project_display_name))
@@ -203,7 +212,11 @@ def create_project_from_template(template_path, target_folder, ctx):
     # Add metadata to the project, which was recorded by user input.
     # This metadata can be used for any file and subfolder templates
     # The user won't need to enter this data again
-    project.update_metadata(text_inputs)
+    project.update_metadata(user_inputs)
+
+    if callbacks and "project_from_template_created" in dir(callbacks):
+        callbacks.project_from_template_created(target, source, variables, project)
+
     ui.show_success("Project successfully created")
 
 
@@ -214,8 +227,12 @@ def create_documents_from_template(template_path, target_folder, ctx):
     # Copy the whole folder structure and resolve all tokens using the variables dict
     if file_mode:
         aps.copy_file_from_template(template_path, target_folder, variables)
+        if callbacks and "file_from_template_created" in dir(callbacks):
+            callbacks.file_from_template_created(target_folder, template_path, variables)
     else:
         aps.copy_from_template(template_path, target_folder, variables)
+        if callbacks and "folder_from_template_created" in dir(callbacks):
+            callbacks.folder_from_template_created(target_folder, template_path, variables)
 
     ui.show_success("Document(s) successfully created")
     

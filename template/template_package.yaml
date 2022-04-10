@@ -52,7 +52,7 @@ action:
 
     Used Tokens are stored on the projet when creating a project with the template actions. This means that you can re-use the Tokens in your file and folder templates and they are automatically filled by the Tokens set in the project."
 
-  settings: template_settings.py
+  settings: code/template_settings.py
   inputs:
     template_dir: templates
 

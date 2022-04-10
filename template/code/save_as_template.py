@@ -10,8 +10,13 @@ template_dir = os.path.join(ctx.yaml_dir, template_dir)
 is_file_template = ctx.type == ap.Type.File
 source = ctx.path
 
-settings = aps.Settings("Template Settings", "workspace", os.path.join(ctx.yaml_dir, "template_settings.json"), user = False)
+settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = settings.get("template_dir", template_dir)
+callback_file = os.path.join(settings.get("callback_dir"), "template_action_callbacks.py")
+if os.path.exists(callback_file):
+    callbacks = aps.import_local(os.path.splitext(callback_file)[0], True)
+else:
+    callbacks = None
 
 def get_target(name: str):
     if is_file_template: return f"{template_dir}/file/{name}/{os.path.basename(source)}"
@@ -29,9 +34,13 @@ def create_template(dialog: ap.Dialog):
                 
             os.makedirs(target)
             aps.copy_folder(source, target)
+            if callbacks and "folder_template_saved" in dir(callbacks):
+                callbacks.folder_template_saved(name, target)
         else:
             os.makedirs(os.path.dirname(target))
             aps.copy_file(source, target)
+            if callbacks and "file_template_saved" in dir(callbacks):
+                callbacks.file_template_saved(name, target)
 
         ui.show_success("Template created")
     except:
