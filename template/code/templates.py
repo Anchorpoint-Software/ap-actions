@@ -138,29 +138,32 @@ def create_dialog():
     dialog.title = "New Project" if create_project else "New Document"
     if ctx.icon:
         dialog.icon = ctx.icon
-    
+
     # Set a description and a dropdown. Use \t to create tab spaces
-    dialog.add_text("Template:\t\t").add_dropdown(
+    dialog.add_text("Template:\t").add_dropdown(
         folder_templates[0],
         folder_templates,
         var="dropdown",
         callback = set_variable_availability
     )
-    
-    dialog.add_separator()
 
-    # Use the unresolved tokens in text_inputs, to create input fields
+    # Use the unresolved tokens in text_inputs, to create input fields 
+    has_keys = len(user_inputs.keys()) > 0
+    if has_keys:
+        dialog.add_separator()
+
     for key in user_inputs.keys():
-        dialog.add_text(str(key).replace("_"," ")+":\t").add_input("" , var = str(key))
+        dialog.add_text(str(key).replace("_"," ")+":").add_input("" , var = str(key))
  
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,folder_templates[0])
 
-    if len(user_inputs.keys()) > 0:
-        dialog.add_separator()
+    if has_keys:
+        dialog.add_empty()
 
     if file_mode == False:
         dialog.add_checkbox(var="create_project").add_text("Create Project")
+        dialog.add_info("Enable this to create a new Anchorpoint project")
 
     # Add a button to create the project, register a callback when the button is clicked.
     dialog.add_button("Create", callback = create_template)
