@@ -32,7 +32,7 @@ yaml_dir = ctx.yaml_dir
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
-callback_file = os.path.join(settings.get("callback_dir"), "template_action_callbacks.py")
+callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
 if os.path.exists(callback_file):
     callbacks = aps.import_local(os.path.splitext(callback_file)[0], True)
 else:
