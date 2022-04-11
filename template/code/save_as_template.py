@@ -66,7 +66,8 @@ if not is_file_template:
 else:
     dialog.title = "Save File as Template"
 
-dialog.add_text("Name:\t").add_input(placeholder = "Your Template Name", var="name", callback=name_changed)
+dialog.add_text("Name:").add_input(placeholder = "Your Template Name", var="name", callback=name_changed)
+dialog.add_info("Give your template a unique name")
 dialog.add_button("Create Template", callback=create_template, enabled=False, var="button")
 
 dialog.show()
