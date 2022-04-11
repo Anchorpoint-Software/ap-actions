@@ -22,10 +22,9 @@ def get_target(name: str):
     if is_file_template: return f"{template_dir}/file/{name}/{os.path.basename(source)}"
     return f"{template_dir}/folder/{name}/{os.path.basename(source)}"
     
-def create_template(dialog: ap.Dialog):
-    name = dialog.get_value("name")
-    target = get_target(name)
+def create_template_async(name, source, target):
     try:
+        progress = ap.Progress("Create Template", "Copying Files", infinite=True)
         if is_file_template == False:
             if aps.is_project(source, True):
                 ui.show_info("Could not create template", "The folder contains a project. This is not yet supported, unfortunately.")
@@ -47,7 +46,11 @@ def create_template(dialog: ap.Dialog):
         ui.show_success("Template created")
     except:
         ui.show_error("Failed to create template")
-    
+
+def create_template(dialog: ap.Dialog):
+    name = dialog.get_value("name")
+    target = get_target(name)
+    ctx.run_async(create_template_async, name, source, target)
     dialog.close()
     
 def name_changed(dialog: ap.Dialog, name):
