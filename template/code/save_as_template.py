@@ -42,6 +42,8 @@ def create_template(dialog: ap.Dialog):
             if callbacks and "file_template_saved" in dir(callbacks):
                 callbacks.file_template_saved(name, target)
 
+        ui.create_tab(os.path.dirname(target))
+
         ui.show_success("Template created")
     except:
         ui.show_error("Failed to create template")
