@@ -17,6 +17,9 @@ action:
   icon:
     path: :/icons/hardDrive.svg
 
+  platforms:
+    - win
+
   actions:
     - ap::mapasdrive
     - ap::unmapdrive
