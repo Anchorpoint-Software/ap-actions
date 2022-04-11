@@ -11,7 +11,7 @@ events_stub_dir =  os.path.join(ctx.yaml_dir, "code", "events.stub")
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 
-def create_event_callbacks(dialog : ap.Dialog):
+def apply_callback(dialog : ap.Dialog):
     dir = dialog.get_value("callback_dir")
     if len(dir) > 0:
         target = os.path.join(dir, "template_action_events.py")
@@ -19,7 +19,9 @@ def create_event_callbacks(dialog : ap.Dialog):
             if os.path.exists(dir) == False:
                 os.makedirs(dir)
             copyfile(events_stub_dir, target)
-    pass
+    
+    dialog.store_settings()
+    dialog.close()
 
 # Create a dialog container
 dialog = ap.Dialog()
@@ -31,8 +33,8 @@ dialog.add_input(template_dir, browse=ap.BrowseType.Folder, var="template_dir")
 dialog.add_text("Event Callbacks Location")
 dialog.add_input(browse=ap.BrowseType.Folder, var="callback_dir")
 
-dialog.callback_closed = create_event_callbacks
+dialog.add_button("Apply", callback = apply_callback)
 
 # Present the dialog to the user
-dialog.show(settings)
+dialog.show(settings, store_settings_on_close=False)
 
