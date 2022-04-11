@@ -16,7 +16,15 @@ action:
   enable: false
   type: package
   author: "Anchorpoint Software GmbH"
-  description: Cinema 4D actions
+  description: Exports an FBX or a Playblast from a <b>.c4d</b> file
+  details: '
+  <p>This action can be found in the context menu on <b>.c4d</b> files. It uses the Cinema 4D commandline application</p>
+  <h3>Export FBX</h3>
+  <p>Exports the c4d scene to FBX via the provided C4D plugin. It also sets attributes so that you always know which c4d file created the FBX and vice versa.</p>
+
+  <h3>Render Playblast</h3>
+  <p>Renders the c4d scene by using a render setting called "Playblast". It also sets attributes so that you always know which c4d file created the playblast and vice versa. </p>
+  '
 
   actions:
     - ap::c4d::export::fbx
