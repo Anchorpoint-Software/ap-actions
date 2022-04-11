@@ -31,7 +31,7 @@ dialog.icon = ":/icons/settings.svg"
 dialog.add_text("Templates Location")
 dialog.add_input(template_dir, browse=ap.BrowseType.Folder, var="template_dir")
 dialog.add_text("Event Callbacks Location")
-dialog.add_input(browse=ap.BrowseType.Folder, var="callback_dir")
+dialog.add_input(placeholder="Optional", browse=ap.BrowseType.Folder, var="callback_dir")
 
 dialog.add_button("Apply", callback = apply_callback)
 
