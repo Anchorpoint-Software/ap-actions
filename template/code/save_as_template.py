@@ -13,14 +13,26 @@ source = ctx.path
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = settings.get("template_dir", template_dir)
 callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
+
+project = aps.get_project(source)
+if project:
+    project_callbacks = os.path.join(project.path, ".ap/templates/template_action_events.py")
+    if os.path.exists(project_callbacks):
+        callback_file = project_callbacks
+
 if os.path.exists(callback_file):
     callbacks = aps.import_local(os.path.splitext(callback_file)[0], True)
 else:
     callbacks = None
 
-def get_target(name: str):
-    if is_file_template: return f"{template_dir}/file/{name}/{os.path.basename(source)}"
-    return f"{template_dir}/folder/{name}/{os.path.basename(source)}"
+def get_template_dir(save_in_project: bool):
+    if project and save_in_project:
+        return os.path.join(project.path, ".ap/templates")
+    return template_dir
+
+def get_target(name: str, save_in_project: bool):
+    if is_file_template: return f"{get_template_dir(save_in_project)}/file/{name}/{os.path.basename(source)}"
+    return f"{get_template_dir(save_in_project)}/folder/{name}/{os.path.basename(source)}"
     
 def create_template_async(name, source, target):
     try:
@@ -49,7 +61,8 @@ def create_template_async(name, source, target):
 
 def create_template(dialog: ap.Dialog):
     name = dialog.get_value("name")
-    target = get_target(name)
+    save_in_project = dialog.get_value("project")
+    target = get_target(name, save_in_project)
     ctx.run_async(create_template_async, name, source, target)
     dialog.close()
     
@@ -61,7 +74,14 @@ def validate_input(name: str, target: str):
     return True
 
 def name_changed(dialog: ap.Dialog, name):
-    target = get_target(name)
+    save_in_project = dialog.get_value("project")
+    target = get_target(name, save_in_project)
+    is_valid_input = validate_input(name, target)
+    dialog.set_enabled("button", is_valid_input)
+
+def project_check_changed(dialog: ap.Dialog, save_in_project):
+    name = dialog.get_value("name")
+    target = get_target(name, save_in_project)
     is_valid_input = validate_input(name, target)
     dialog.set_enabled("button", is_valid_input)
 
@@ -75,6 +95,13 @@ else:
 
 dialog.add_text("Name:").add_input(placeholder = "Your Template Name", var="name", callback=name_changed)
 dialog.add_info("Give your template a unique name")
+
+if project:
+    project_dir = os.path.split(project.path)[1]
+    dialog.add_checkbox(True, var="project", callback=project_check_changed).add_text("Save in Project")
+    dialog.add_info(f"Project templates are stored here:<br><b>{project_dir}</b>/.ap/templates")
+    dialog.add_empty()
+
 dialog.add_button("Create Template", callback=create_template, enabled=False, var="button")
 
 dialog.show()
