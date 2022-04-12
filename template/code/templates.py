@@ -18,6 +18,9 @@ user_inputs = {}
 # Stores all templates the user can choose from. 
 folder_templates = {}
 
+# Stores available tokens per template
+template_available_tokens = {}
+
 if "create_project" in ctx.inputs:
     create_project = ctx.inputs["create_project"]
 else:
@@ -70,22 +73,25 @@ def get_all_foldernames(folder):
         return next(os.walk(folder))[1]
     return []
 
-# Deactive UI elements if the chosen template does not require them
-def set_variable_availability(dialog, value):
-    template_path = get_template_path(value)
-
-    for key in user_inputs.keys():
-        dialog.set_enabled(str(key),False)
-
+def compute_variable_availability(template_name):
+    template_path = get_template_path(template_name)
     for _, dirs, files in os.walk(template_path):
         for file in files:
             for key in user_inputs.keys():
                 if ("["+str(key)+"]") in file:
-                    dialog.set_enabled(str(key),True)
+                    template_available_tokens[template_name].add(str(key))
         for dir in dirs:
             for key in user_inputs.keys():
                 if ("["+str(key)+"]") in dir:
-                    dialog.set_enabled(str(key),True)
+                    template_available_tokens[template_name].add(str(key))
+
+# Deactive UI elements if the chosen template does not require them
+def set_variable_availability(dialog, value):
+    for key in user_inputs.keys():
+        dialog.hide_row(str(key),True)
+
+    for key in template_available_tokens[value]:
+        dialog.hide_row(str(key),False)
 
 # Search for tokens in a single file oder folder name / entry
 def get_tokens(entry, variables: dict):
@@ -176,10 +182,8 @@ def create_dialog():
     has_keys = len(user_inputs.keys()) > 0
 
     if has_keys:
-        dialog.start_section("Tokens", foldable=False)
         for key in user_inputs.keys():
             dialog.add_text(str(key).replace("_"," ")+":").add_input("" , var = str(key))
-        dialog.end_section()
 
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,folder_templates[0])
@@ -276,6 +280,9 @@ if project:
     folder_template_list.extend(get_all_foldernames(project_template_dir))
 
 folder_templates = list(dict.fromkeys(folder_template_list))
+template_available_tokens = dict.fromkeys(folder_template_list)
+for token in template_available_tokens:
+    template_available_tokens[token] = set()
 
 if len(folder_templates) == 0:
     ui.show_info("No templates available", f"Please add a proper template using the Save as Template action")
@@ -291,6 +298,9 @@ else:
     get_template_variables(template_dir)
     if project:
         get_template_variables(project_template_dir)
+
+    for template in folder_templates:
+        compute_variable_availability(template)
 
     # build the dialog
     create_dialog()
