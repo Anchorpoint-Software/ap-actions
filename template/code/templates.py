@@ -228,16 +228,23 @@ def create_documents_from_template(template_path, target_folder, ctx):
     ap.Progress("Creating From Template", "Copying Files and Attributes")
 
     # Copy the whole folder structure and resolve all tokens using the variables dict
-    if file_mode:
-        aps.copy_file_from_template(template_path, target_folder, variables)
-        if callbacks and "file_from_template_created" in dir(callbacks):
-            callbacks.file_from_template_created(target_folder, template_path, variables)
-    else:
-        aps.copy_from_template(template_path, target_folder, variables)
-        if callbacks and "folder_from_template_created" in dir(callbacks):
-            callbacks.folder_from_template_created(target_folder, template_path, variables)
+    try:
+        if file_mode:
+            aps.copy_file_from_template(template_path, target_folder, variables)
+            if callbacks and "file_from_template_created" in dir(callbacks):
+                callbacks.file_from_template_created(target_folder, template_path, variables)
+        else:
+            aps.copy_from_template(template_path, target_folder, variables)
+            if callbacks and "folder_from_template_created" in dir(callbacks):
+                callbacks.folder_from_template_created(target_folder, template_path, variables)
 
-    ui.show_success("Document(s) successfully created")
+        ui.show_success("Document(s) successfully created")
+    except Exception as e:
+        if "exists" in str(e):
+            ui.show_info("Document(s) already exist", "Please choose a different name")
+        else:
+            ui.show_error("Document(s) could not be created")    
+
     
 # Look for all folders in the template directory
 folder_templates = get_all_foldernames(template_dir)
