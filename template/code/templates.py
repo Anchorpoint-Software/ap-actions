@@ -20,6 +20,8 @@ if "create_project" in ctx.inputs:
 else:
     create_project = False
 
+allow_project_creation = aps.get_project(target_folder) is None
+
 if "file_mode" in ctx.inputs:
     file_mode = ctx.inputs["file_mode"]
 else:
@@ -161,7 +163,7 @@ def create_dialog():
     if has_keys:
         dialog.add_empty()
 
-    if file_mode == False:
+    if file_mode == False and allow_project_creation:
         dialog.add_checkbox(var="create_project").add_text("Create Project")
         dialog.add_info("Enable this to create a new Anchorpoint project")
 
