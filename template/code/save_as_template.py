@@ -53,9 +53,16 @@ def create_template(dialog: ap.Dialog):
     ctx.run_async(create_template_async, name, source, target)
     dialog.close()
     
+def validate_input(name: str, target: str):
+    if len(name) == 0: return False
+    if os.path.exists(target): return False
+    if os.path.exists(os.path.dirname(target)): return False
+    if "." in name: return False
+    return True
+
 def name_changed(dialog: ap.Dialog, name):
     target = get_target(name)
-    is_valid_input = len(name) > 0 and os.path.exists(target) == False and os.path.exists(os.path.dirname(target)) == False
+    is_valid_input = validate_input(name, target)
     dialog.set_enabled("button", is_valid_input)
 
 dialog = ap.Dialog()
