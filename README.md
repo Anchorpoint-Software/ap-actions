@@ -42,15 +42,11 @@ enable: false # Don't show this action at all
 
 ## Table of contents
 - [High resolution thumbnails for Blender files](blender)
-- [Export FBX from Cinema 4D files](cinema4d)
-- [Render playblast from Cinema 4D files](cinema4d)
 - [Turn any folder to a drive to solve the issue with absolute file paths](drives)
-- [Turn image sequences to a video](ffmpeg)
-- [Turn a video to a GIF](ffmpeg)
 - [Use .gitignore templates for Unity, Unreal or Godot](git/ignore%20files)
 - [Create a folder template with options from a UI](template)
-- [Understand how to build a custom UI and set Attributes](tutorials)
-- [A template for quickly building new Actions](utility)
+- [Understand how to build a custom UI and set Attributes](examples)
+- [Coding utilities that are helpful when creating your own actions for Anchorpoint](coding)
 
 
 ## Want to contribute?
