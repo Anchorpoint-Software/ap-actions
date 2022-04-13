@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Example Actions
+  name: Coding Examples
 
   version: 1
   id: ap::package::examples

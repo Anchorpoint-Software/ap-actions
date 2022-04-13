@@ -1,4 +1,4 @@
-# Tutorials
+# Examples
 
 This folder contains various example actions that are a very good starting point.
 Use these snippets to learn how to write Anchorpoint actions.
