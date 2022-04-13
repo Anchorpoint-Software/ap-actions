@@ -9,11 +9,14 @@ action:
 
   version: 1
   id: ap::package::template
-  category: template
+  category: automation/template
   type: package
   enable: true
   author: Anchorpoint Software GmbH
   description: Create new file and folder structures from templates
+  icon:
+    path: :/icons/project.svg
+
   details: '
     <h2>How to use</h2>
     <p>The template action packages allows the user to use templates to create:</p>

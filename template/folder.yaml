@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::template::newfolder
-  category: template
+  category: automation/template
   type: python
   enable: false
   author: Anchorpoint Software GmbH

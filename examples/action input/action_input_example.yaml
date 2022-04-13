@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::examples::input
-  category: examples/input
+  category: utility/code/examples/input
   type: python
   enable: false
   author: Anchorpoint Software GmbH

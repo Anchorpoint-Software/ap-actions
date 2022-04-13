@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::examples::async
-  category: examples/async
+  category: utility/code/examples/async
   type: python
   enable: false
   author: Anchorpoint Software GmbH

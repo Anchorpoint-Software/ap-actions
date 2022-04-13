@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::examples::attributes
-  category: examples/attributes
+  category: utility/code/examples/attributes
   type: python
   enable: false
   author: Anchorpoint Software GmbH

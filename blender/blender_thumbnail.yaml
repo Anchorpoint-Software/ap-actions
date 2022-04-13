@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::blender::thumbnail"
-  category: "blender/thumbnail"
+  category: "dcc/blender/thumbnail"
   enable: false
   type: python
   author: "Anchorpoint Software GmbH"

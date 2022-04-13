@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::openterminal
-  category: code
+  category: utility/code
   enable: false
   type: python
   author: Anchorpoint Software GmbH

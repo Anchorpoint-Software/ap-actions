@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::package::coding
-  category: code
+  category: utility/code
   type: package
   enable: false
   

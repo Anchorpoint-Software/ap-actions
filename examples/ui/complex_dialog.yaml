@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::examples::complexdialog"
-  category: "examples/dialog"
+  category: "utility/code/examples/dialog"
   type: python
   enable: false
   author: "Anchorpoint Software GmbH"

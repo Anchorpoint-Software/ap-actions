@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::openvscode
-  category: code
+  category: utility/code
   enable: false
   type: command
   author: Anchorpoint Software GmbH

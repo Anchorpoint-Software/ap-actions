@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::package::blender"
-  category: "blender/thumbnail"
+  category: "dcc/blender"
   type: package
   enable: false
   description: Render a thumbnail for Anchorpoint using Eevee

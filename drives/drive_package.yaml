@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Map Folder As Drive
+  name: Map Folder as Drive
 
   version: 1
   id: ap::package::drive

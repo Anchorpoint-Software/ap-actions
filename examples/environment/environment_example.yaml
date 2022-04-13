@@ -9,7 +9,7 @@ action:
 
   version: 1
   id: ap::examples::environment
-  category: examples/environment
+  category: utility/code/examples/environment
   type: command
   enable: false
   author: Anchorpoint Software GmbH

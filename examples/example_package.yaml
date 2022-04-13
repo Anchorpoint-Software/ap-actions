@@ -9,11 +9,13 @@ action:
 
   version: 1
   id: ap::package::examples
-  category: template
+  category: utility/code/examples
   type: package
   enable: false
   author: Anchorpoint Software GmbH
   description: A useful collection of actions that showcase how to write your own actions
+  icon:
+    path: :/icons/action.svg
 
   actions:
     - ap::examples::async

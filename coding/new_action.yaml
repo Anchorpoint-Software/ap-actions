@@ -12,7 +12,7 @@ action:
   #Optional Properties
   version: 1
   id: "ap::newaction"
-  category: "code"
+  category: utility/code
   type: python
   enable: false
   author: "Anchorpoint Software GmbH"
