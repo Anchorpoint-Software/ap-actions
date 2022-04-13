@@ -14,9 +14,9 @@ action:
   enable: false
   
   author: Anchorpoint Software GmbH
-  description: Contains a set of actions that are very useful when you want to create your own Actions for Anchorpoint
+  description: Contains a set of developer tools that are very useful when you want to create your own Actions for Anchorpoint
   icon:
-    path: :/icons/action.svg
+    path: codingUtils.svg
 
   actions:
     - ap::newaction

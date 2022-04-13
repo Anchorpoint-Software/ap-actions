@@ -15,7 +15,7 @@ action:
   author: Anchorpoint Software GmbH
   description: Create new file and folder structures from templates
   icon:
-    path: :/icons/project.svg
+    path: folderTemplates.svg
 
   details: '
     <h2>How to use</h2>
