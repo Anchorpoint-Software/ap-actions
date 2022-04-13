@@ -15,10 +15,19 @@ variables =	{}
 # Stores all tokens, which require user input via the Dialog
 user_inputs = {}
 
+# Stores all templates the user can choose from. 
+folder_templates = {}
+
+# Stores available tokens per template
+template_available_tokens = {}
+
 if "create_project" in ctx.inputs:
     create_project = ctx.inputs["create_project"]
 else:
     create_project = False
+
+project = aps.get_project(target_folder)
+allow_project_creation = project is None
 
 if "file_mode" in ctx.inputs:
     file_mode = ctx.inputs["file_mode"]
@@ -38,30 +47,51 @@ if os.path.exists(callback_file):
 else:
     callbacks = None
 
-if os.path.exists(template_dir) == False:
-    ui.show_info("No templates installed")
+if project:
+    project_callbacks = os.path.join(project.path, ".ap/templates/template_action_events.py")
+    if os.path.exists(project_callbacks):
+        callback_file = project_callbacks
+    project_template_dir = os.path.join(project.path, ".ap/templates", template_subdir)
+else:
+    project_template_dir = ""
+
+
+if os.path.exists(template_dir) == False and os.path.exists(project_template_dir) == False:
+    ui.show_info("No templates available", f"Please add a proper template using the Save as Template action")
     sys.exit(0)
+
+# Return the template path for the project of workspace (project wins)
+def get_template_path(template_name):
+    template_path = os.path.join(project_template_dir, template_name)
+    if project and os.path.exists(template_path):
+        return template_path
+    return os.path.join(template_dir, template_name)
 
 # Return all foldernames within a folder
 def get_all_foldernames(folder):
-    return next(os.walk(folder))[1]
+    if os.path.exists(folder):
+        return next(os.walk(folder))[1]
+    return []
 
-# Deactive UI elements if the chosen template does not require them
-def set_variable_availability(dialog, value):
-    template_path = os.path.join(template_dir, value)
-
-    for key in user_inputs.keys():
-        dialog.set_enabled(str(key),False)
-
+def compute_variable_availability(template_name):
+    template_path = get_template_path(template_name)
     for _, dirs, files in os.walk(template_path):
         for file in files:
             for key in user_inputs.keys():
                 if ("["+str(key)+"]") in file:
-                    dialog.set_enabled(str(key),True)
+                    template_available_tokens[template_name].add(str(key))
         for dir in dirs:
             for key in user_inputs.keys():
                 if ("["+str(key)+"]") in dir:
-                    dialog.set_enabled(str(key),True)
+                    template_available_tokens[template_name].add(str(key))
+
+# Deactive UI elements if the chosen template does not require them
+def set_variable_availability(dialog, value):
+    for key in user_inputs.keys():
+        dialog.hide_row(str(key),True)
+
+    for key in template_available_tokens[value]:
+        dialog.hide_row(str(key),False)
 
 # Search for tokens in a single file oder folder name / entry
 def get_tokens(entry, variables: dict):
@@ -70,10 +100,10 @@ def get_tokens(entry, variables: dict):
         variables[var.replace("[","").replace("]","")] = None
 
 # Traverse the template structure and look for tokens which will be shown in the dialog popup
-def get_template_variables():
+def get_template_variables(dir):
     variables = {}
 
-    for _, dirs, files in os.walk(template_dir):
+    for _, dirs, files in os.walk(dir):
         for file in files:
             get_tokens(file, variables)
         for dir in dirs:
@@ -119,7 +149,7 @@ def create_template(dialog):
     for key in user_inputs.keys():
         user_inputs[str(key)] = variables[str(key)] = dialog.get_value(str(key))
         
-    template_path = os.path.join(template_dir,template_name)
+    template_path = get_template_path(template_name)
 
     if (os.path.isdir(template_path)):
         # Run everything async to not block the main thread
@@ -128,7 +158,7 @@ def create_template(dialog):
         else: 
             ctx.run_async(create_documents_from_template, template_path, target_folder, ctx)    
     else:
-        ui.show_error("Template does not exist", f"Please add a proper template in {template_dir}")
+        ui.show_error("Template does not exist", f"Please add a proper template")
 
     dialog.close()
 
@@ -146,22 +176,19 @@ def create_dialog():
         var="dropdown",
         callback = set_variable_availability
     )
+    dialog.add_info("Choose a template from the dropdown to create it")
 
     # Use the unresolved tokens in text_inputs, to create input fields 
     has_keys = len(user_inputs.keys()) > 0
-    if has_keys:
-        dialog.add_separator()
 
-    for key in user_inputs.keys():
-        dialog.add_text(str(key).replace("_"," ")+":").add_input("" , var = str(key))
- 
+    if has_keys:
+        for key in user_inputs.keys():
+            dialog.add_text(str(key).replace("_"," ")+":").add_input("" , var = str(key))
+
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,folder_templates[0])
 
-    if has_keys:
-        dialog.add_empty()
-
-    if file_mode == False:
+    if file_mode == False and allow_project_creation:
         dialog.add_checkbox(var="create_project").add_text("Create Project")
         dialog.add_info("Enable this to create a new Anchorpoint project")
 
@@ -228,33 +255,52 @@ def create_documents_from_template(template_path, target_folder, ctx):
     ap.Progress("Creating From Template", "Copying Files and Attributes")
 
     # Copy the whole folder structure and resolve all tokens using the variables dict
-    if file_mode:
-        aps.copy_file_from_template(template_path, target_folder, variables)
-        if callbacks and "file_from_template_created" in dir(callbacks):
-            callbacks.file_from_template_created(target_folder, template_path, variables)
-    else:
-        aps.copy_from_template(template_path, target_folder, variables)
-        if callbacks and "folder_from_template_created" in dir(callbacks):
-            callbacks.folder_from_template_created(target_folder, template_path, variables)
+    try:
+        if file_mode:
+            aps.copy_file_from_template(template_path, target_folder, variables)
+            if callbacks and "file_from_template_created" in dir(callbacks):
+                callbacks.file_from_template_created(target_folder, template_path, variables)
+        else:
+            aps.copy_from_template(template_path, target_folder, variables)
+            if callbacks and "folder_from_template_created" in dir(callbacks):
+                callbacks.folder_from_template_created(target_folder, template_path, variables)
 
-    ui.show_success("Document(s) successfully created")
+        ui.show_success("Document(s) successfully created")
+    except Exception as e:
+        if "exists" in str(e):
+            ui.show_info("Document(s) already exist", "Please choose a different name")
+        else:
+            ui.show_error("Document(s) could not be created")    
+
     
-# Look for all folders in the template directory
-folder_templates = get_all_foldernames(template_dir)
+# Look for all folders in the template directories
+folder_template_list = get_all_foldernames(template_dir)
+if project:
+    # Project templates with the same name overwrite global templates
+    folder_template_list.extend(get_all_foldernames(project_template_dir))
+
+folder_templates = list(dict.fromkeys(folder_template_list))
+template_available_tokens = dict.fromkeys(folder_template_list)
+for token in template_available_tokens:
+    template_available_tokens[token] = set()
 
 if len(folder_templates) == 0:
-    ui.show_error("No templates available", f"Please add a proper template in {template_dir}")
+    ui.show_info("No templates available", f"Please add a proper template using the Save as Template action")
 else:
     if not create_project:
         # Check if the target location is part of a project. A project can store metadata, which could be tokens e.g "Client_Name". 
         # If these tokens show up in the file name, they can be resolved from the project metadata and the user does not need to enter them again
-        project = aps.get_project(target_folder)
         if project:
             metadata = project.get_metadata()
             variables.update(metadata)
 
     # Check all tokens in the file / folder
-    get_template_variables()
+    get_template_variables(template_dir)
+    if project:
+        get_template_variables(project_template_dir)
+
+    for template in folder_templates:
+        compute_variable_availability(template)
 
     # build the dialog
     create_dialog()

@@ -38,6 +38,11 @@ dialog.add_text("Event Callbacks Location")
 dialog.add_input(placeholder="Optional", browse=ap.BrowseType.Folder, var="callback_dir")
 dialog.add_info("Use event callbacks to customize templates according to your needs")
 
+dialog.add_empty()
+dialog.add_text("Share Templates with your Team")
+dialog.add_info("For projects, templates are stored in the project root <b>.ap/templates</b> folder<br>Optionally, place event callbacks here: <b>.ap/templates/template_action_events.py</b>")
+dialog.add_empty()
+
 dialog.add_button("Apply", callback = apply_callback)
 
 # Present the dialog to the user
