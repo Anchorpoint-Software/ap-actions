@@ -86,23 +86,25 @@ dialog = ap.Dialog()
 dialog.title = "Create New Action"
 dialog.icon = ctx.icon
 
-dialog.add_text("Name:\t").add_input("", var=action_name_var, callback=cb_name)
-dialog.add_text("File:\t").add_input(".yaml", var=action_filename_var, enabled=False)
-dialog.add_text("Description:\t").add_input("", var=action_desc_var)
+dialog.add_text("Name:\t\t").add_input(placeholder="My Action", var=action_name_var, callback=cb_name)
+dialog.add_text("File:\t\t").add_input(".yaml", var=action_filename_var, enabled=False)
+dialog.add_text("Description:\t").add_input(placeholder="Describe your action", var=action_desc_var)
 dialog.add_checkbox(True, var=action_python_var).add_text("Use Python")
-dialog.add_separator()
+dialog.add_info("Create a <b>python</b> action or create a <b>command</b> action that runs an exectuable")
+dialog.add_empty()
 
 dialog.start_section("Registration", foldable=False)
 dialog.add_checkbox(True, var=registration_file_var, callback=cb_reg_file) \
-    .add_text("File\tFilter:").add_input("", var=registration_filefilter_var)
+    .add_text("File\tFilter:").add_input(placeholder="*.png;*.jpeg", var=registration_filefilter_var)
 dialog.add_checkbox(False, var=registration_folder_var, callback=cb_reg_folder) \
-    .add_text("Folder\tFilter:").add_input("", var=registration_folderfilter_var, enabled=False)
+    .add_text("Folder\tFilter:").add_input(placeholder="assets", var=registration_folderfilter_var, enabled=False)
+dialog.add_info("Controls whether or not the action is available in the file and folder context menus")
 dialog.end_section()
 
 dialog.start_section("Advanced")
 dialog.add_text("Unique ID:\t").add_input(create_random_id(), var=action_id_var)
 dialog.add_text("Author:\t").add_input(author_default, var=action_author_var)
-dialog.add_text("Catgeory:\t").add_input(category_default, var=action_cat_var)
+dialog.add_text("Category:\t").add_input(category_default, var=action_cat_var)
 dialog.add_text("Icon:\t").add_input(icon_default, var=action_icon_var)
 dialog.end_section()
 
