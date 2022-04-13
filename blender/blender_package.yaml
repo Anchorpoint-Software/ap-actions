@@ -28,6 +28,10 @@ action:
     <img src = "https://github.com/Anchorpoint-Software/ap-actions-data/blob/fab5ec6e66e55d5558006ed738e674ad1a6e6706/png/blender_thumbnail.png?raw=true" width="400">
     <br>
     Replaces the thumbnail with an Eevee rendering.
+    <br><br>
+    <img src = "https://github.com/Anchorpoint-Software/ap-actions-data/blob/9c94231f3ffb3cd2650526cf2c00b0c8454f5959/png/blender_thumbnail_rendered.png?raw=true" width="400">
+    <br>
+    The result after replacing the thumbnail
   '
 
   author: "Anchorpoint Software GmbH"
@@ -36,3 +40,6 @@ action:
 
   actions:
     - ap::blender::thumbnail 
+
+
+    
