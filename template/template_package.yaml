@@ -14,43 +14,40 @@ action:
   enable: true
   author: Anchorpoint Software GmbH
   description: Create new file and folder structures from templates
-  details: "# How to use
+  details: '
+    <h2>How to use</h2>
+    <p>The template action packages allows the user to use templates to create:</p>
+    <ul>
+      <li>Projects</li>
+      <li>Folder structures</li>
+      <li>Files</li>
+    </ul>
 
-    The template action packages allows the user to use templates to create:
+    By default, a set of example templates are provided with this action package. Click <b>Settings</b> to adjust the paths to use your own templates instead.
 
-    - Projects
+    <h2>Create your own templates</h2>
 
-    - Folder structures
+    A template can be created by any user by right clicking on any folder <b<Save as Template</b>.
+    This copies the folder structure, all files, and all metadata (attributes, tasks) to the location as set in <b>Settings</b>.
+    You can adjust the templates by using <b>Tokens</b>
 
-    - Files
-
-
-    By default, a set of example templates are provided with this action package. Click **Settings** to adjust the paths to use your own templates instead.
-
-    # Create your own templates
-
-    A template can be created by any user by right clicking on any folder **Save as Template**.
-    This copies the folder structure, all files, and all metadata (attributes, tasks) to the location as set in **Settings**.
-    You can adjust the templates by using **tokens**
-
-    ## Tokens
+    <h3>Tokens</h3>
 
     Tokens are a super powerful way to tell Anchorpoint to apply naming conventions when instantiating a template.
     There are a few pre-configured Tokens:
 
-    - **[Increment]**: MyProject_**[Increment]** -> MyProject_**0010**
+    <ul>
+      <li><b>[Increment]</b>: MyProject_<b>[Increment]</b> -> MyProject_<b>0010</b></li>
+      <li><b>[YYYY-MM-DD]</b>: MyProject_<b>[YYYY-MM-DD]</b> -> MyProject_<b>2022-04-08</b>. You can also use variants like <b>[YYYY]</b> instead.</li>
+    </ul>
 
-    - **[YYYY-MM-DD]**: MyProject_**[YYYY-MM-DD]** -> MyProject_**2022-04-08**. You can also use variants like **[YYYY]** instead.
-
-
-    You can always add your own Token logic by implementing the **resolve_tokens** callback.
-
-
+    You can always add your own Token logic by implementing the <b>resolve_tokens</b> callback.
     Moreover, you can simply add any Token to your folders and files. The user can provide the token replacement on template instantiation:
 
-    MyProject_**[Client]** -> MyProject_**Anchorpoint**
+    MyProject_<b>[Client]</b> -> MyProject_<b>Anchorpoint</b>
 
-    Used Tokens are stored on the projet when creating a project with the template actions. This means that you can re-use the Tokens in your file and folder templates and they are automatically filled by the Tokens set in the project."
+    Used Tokens are stored on the projet when creating a project with the template actions. This means that you can re-use the Tokens in your file and folder templates and they are automatically filled by the Tokens set in the project.
+    '
 
   settings: code/template_settings.py
   inputs:
