@@ -28,20 +28,15 @@ dialog = ap.Dialog()
 dialog.title = "Template Action Settings"
 dialog.icon = ":/icons/settings.svg"
 
-dialog.add_text("Templates Location")
+dialog.add_text("Workspace Templates Location")
 dialog.add_input(template_dir, browse=ap.BrowseType.Folder, var="template_dir")
 dialog.add_info("Set a location that your team can access, such as a folder in your Dropbox")
 
 dialog.add_empty()
 
-dialog.add_text("Event Callbacks Location")
+dialog.add_text("Workspace Event Callbacks Location")
 dialog.add_input(placeholder="Optional", browse=ap.BrowseType.Folder, var="callback_dir")
-dialog.add_info("Use event callbacks to customize templates according to your needs")
-
-dialog.add_empty()
-dialog.add_text("Share Templates with your Team")
-dialog.add_info("For projects, templates are stored in the project root <b>.ap/templates</b> folder<br>Optionally, place event callbacks here: <b>.ap/templates/template_action_events.py</b>")
-dialog.add_empty()
+dialog.add_info("Use event callbacks to customize templates according to your needs<br>For projects, place event callbacks here: <b>project/.ap/templates/template_action_events.py</b>")
 
 dialog.add_button("Apply", callback = apply_callback)
 
