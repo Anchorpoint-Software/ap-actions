@@ -176,21 +176,22 @@ def create_dialog():
         var="dropdown",
         callback = set_variable_availability
     )
-    dialog.add_info("Choose a template from the dropdown to create it")
 
     # Use the unresolved tokens in text_inputs, to create input fields 
     has_keys = len(user_inputs.keys()) > 0
 
     if has_keys:
         for key in user_inputs.keys():
-            dialog.add_text(str(key).replace("_"," ")+":").add_input("" , var = str(key))
+            dialog.add_text(str(key).replace("_"," ")+":\t").add_input("" , var = str(key))
 
+        dialog.add_info("Tokens (placeholders) were found in your template. <br> They will be replaced with the entries in the text fields.")    
+   
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,folder_templates[0])
 
     if file_mode == False and allow_project_creation:
-        dialog.add_checkbox(var="create_project").add_text("Create Project")
-        dialog.add_info("Enable this to create a new Anchorpoint project")
+        dialog.add_checkbox(var="create_project").add_text("This is a project")
+        dialog.add_info("Select this option if it is a project template. <br> Anchorpoint will create a project in the project list.")
 
     # Add a button to create the project, register a callback when the button is clicked.
     dialog.add_button("Create", callback = create_template)
@@ -285,7 +286,7 @@ for token in template_available_tokens:
     template_available_tokens[token] = set()
 
 if len(folder_templates) == 0:
-    ui.show_info("No templates available", f"Please add a proper template using the Save as Template action")
+    ui.show_info("No templates available", f"Please add a proper template using the Save as Template Action")
 else:
     if not create_project:
         # Check if the target location is part of a project. A project can store metadata, which could be tokens e.g "Client_Name". 

@@ -1,0 +1,2057 @@
+#! C:/Program Files/Nuke11.0v1/nuke-11.0.1.dll -nx
+version 11.0 v1
+define_window_layout_xml {<?xml version="1.0" encoding="UTF-8"?>
+<layout version="1.0">
+    <window x="-8" y="-8" w="1920" h="1147" maximized="1" screen="0">
+        <splitter orientation="1">
+            <split size="40"/>
+            <dock id="" hideTitles="1" activePageId="Toolbar.1">
+                <page id="Toolbar.1"/>
+            </dock>
+            <split size="1257" stretch="1"/>
+            <splitter orientation="2">
+                <split size="1103"/>
+                <dock id="" activePageId="DAG.1" focus="true">
+                    <page id="DAG.1"/>
+                    <page id="Curve Editor.1"/>
+                    <page id="DopeSheet.1"/>
+                    <page id="Error Console.1"/>
+                </dock>
+            </splitter>
+            <split size="615"/>
+            <dock id="" activePageId="Properties.1">
+                <page id="Properties.1"/>
+                <page id="uk.co.thefoundry.backgroundrenderview.1"/>
+            </dock>
+        </splitter>
+    </window>
+    <window x="-1928" y="0" w="1920" h="1177" maximized="1" screen="1">
+        <splitter orientation="1">
+            <split size="1916"/>
+            <dock id="" activePageId="Viewer.1">
+                <page id="Viewer.1"/>
+            </dock>
+            <split size="0"/>
+            <dock id="" activePageId="uk.co.thefoundry.waveformscope.1">
+                <page id="uk.co.thefoundry.waveformscope.1"/>
+                <page id="uk.co.thefoundry.histogram.1"/>
+                <page id="uk.co.thefoundry.vectorscope.1"/>
+            </dock>
+        </splitter>
+    </window>
+</layout>
+}
+Root {
+ inputs 0
+ name M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0000/06_comp/Rob-IQ_shot_0000_comp_v001_aw.nk
+ frame 1033200
+ first_frame 1033115
+ last_frame 1033243
+ lock_range true
+ fps 25
+ format "4480 3096 0 0 4480 3096 1 4,5K_ALEXA"
+ proxy_type scale
+ proxy_format "1024 778 0 0 1024 778 1 1K_Super_35(full-ap)"
+ colorManagement Nuke
+ workingSpaceLUT linear
+ monitorLut sRGB
+ int8Lut sRGB
+ int16Lut linear
+ logLut Cineon
+ floatLut linear
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode13
+ tile_color 0x555555ff
+ label "3D Passes\n"
+ note_font_size 42
+ note_font_color 0xff
+ xpos 8
+ ypos -3322
+ bdwidth 5044
+ bdheight 10340
+ z_order -2
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode50
+ tile_color 0x388e8e00
+ label "Multipass Comp KEY"
+ note_font_size 42
+ xpos 961
+ ypos 1666
+ bdwidth 3358
+ bdheight 1852
+ z_order -1
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode51
+ tile_color 0x388e8e00
+ label "Multipass Comp RIM"
+ note_font_size 42
+ xpos 961
+ ypos 3706
+ bdwidth 3358
+ bdheight 1852
+ z_order -1
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode52
+ tile_color 0x388e8e00
+ label "Multipass Comp OTHER"
+ note_font_size 42
+ xpos 961
+ ypos -350
+ bdwidth 3358
+ bdheight 1852
+ z_order -1
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode1
+ tile_color 0x7171c600
+ label "Utility Passes"
+ note_font_size 42
+ xpos 380
+ ypos -2365
+ bdwidth 561
+ bdheight 794
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode14
+ tile_color 0x388e8e00
+ label "Glow Screen"
+ note_font_size 42
+ xpos 4153
+ ypos 11421
+ bdwidth 504
+ bdheight 980
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode15
+ tile_color 0x388e8e00
+ label "Glow Heart"
+ note_font_size 42
+ xpos 4151
+ ypos 12530
+ bdwidth 500
+ bdheight 908
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode16
+ tile_color 0x388e8e00
+ label "Glow Ears\n"
+ note_font_size 42
+ xpos 4154
+ ypos 13524
+ bdwidth 502
+ bdheight 729
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode2
+ tile_color 0x71c67100
+ label "Reflections & Shadows to Backplate"
+ note_font_size 42
+ xpos 1327
+ ypos 8869
+ bdwidth 975
+ bdheight 1509
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode3
+ tile_color 0x298e00ff
+ label Backplate
+ note_font_size 42
+ xpos -1965
+ ypos 5935
+ bdwidth 1290
+ bdheight 1041
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode4
+ tile_color 0x71c67100
+ label "FG over BG"
+ note_font_size 42
+ xpos 4163
+ ypos 10518
+ bdwidth 479
+ bdheight 260
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode5
+ tile_color 0x71c67100
+ label Lightwrap
+ note_font_size 42
+ xpos 4163
+ ypos 10830
+ bdwidth 479
+ bdheight 260
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode53
+ tile_color 0x8e8e3800
+ label "Diffuse Light"
+ note_font_size 42
+ xpos 1330
+ ypos 1852
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode54
+ tile_color 0x298e00ff
+ label "3D Render"
+ note_font_size 42
+ xpos 542
+ ypos -3033
+ bdwidth 456
+ bdheight 379
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode55
+ tile_color 0x8e8e3800
+ label "Specular Light"
+ note_font_size 42
+ xpos 1770
+ ypos 1852
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode56
+ tile_color 0x8e8e3800
+ label GI
+ note_font_size 42
+ xpos 2210
+ ypos 1852
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode57
+ tile_color 0x8e8e3800
+ label SSS
+ note_font_size 42
+ xpos 2650
+ ypos 1852
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode58
+ tile_color 0x8e8e3800
+ label Reflection
+ note_font_size 42
+ xpos 3090
+ ypos 1852
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode59
+ tile_color 0x8e8e3800
+ label Refraction
+ note_font_size 42
+ xpos 3530
+ ypos 1852
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode6
+ tile_color 0xa00900ff
+ label Output
+ note_font_size 42
+ xpos 4350
+ ypos 14892
+ bdwidth 719
+ bdheight 602
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode62
+ tile_color 0x8e8e3800
+ label "Diffuse Light"
+ note_font_size 42
+ xpos 1330
+ ypos 3892
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode63
+ tile_color 0x8e8e3800
+ label "Specular Light"
+ note_font_size 42
+ xpos 1770
+ ypos 3892
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode64
+ tile_color 0x8e8e3800
+ label GI
+ note_font_size 42
+ xpos 2210
+ ypos 3892
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode65
+ tile_color 0x8e8e3800
+ label SSS
+ note_font_size 42
+ xpos 2650
+ ypos 3892
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode66
+ tile_color 0x8e8e3800
+ label Reflection
+ note_font_size 42
+ xpos 3090
+ ypos 3892
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode67
+ tile_color 0x8e8e3800
+ label Refraction
+ note_font_size 42
+ xpos 3530
+ ypos 3892
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode69
+ tile_color 0x8e8e3800
+ label "Diffuse Light"
+ note_font_size 42
+ xpos 1330
+ ypos -164
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode7
+ tile_color 0x71c67100
+ label "Edge Extend"
+ note_font_size 42
+ xpos 4294
+ ypos 9463
+ bdwidth 436
+ bdheight 498
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode70
+ tile_color 0x8e8e3800
+ label "Specular Light"
+ note_font_size 42
+ xpos 1770
+ ypos -164
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode71
+ tile_color 0x8e8e3800
+ label GI
+ note_font_size 42
+ xpos 2210
+ ypos -164
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode72
+ tile_color 0x8e8e3800
+ label SSS
+ note_font_size 42
+ xpos 2650
+ ypos -164
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode73
+ tile_color 0x8e8e3800
+ label Reflection
+ note_font_size 42
+ xpos 3090
+ ypos -164
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode74
+ tile_color 0x8e8e3800
+ label Refraction
+ note_font_size 42
+ xpos 3530
+ ypos -164
+ bdwidth 421
+ bdheight 856
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode8
+ tile_color 0x7171c600
+ label Cryptomatte
+ note_font_size 42
+ xpos 380
+ ypos -1320
+ bdwidth 561
+ bdheight 794
+}
+BackdropNode {
+ inputs 0
+ name BackdropNode9
+ tile_color 0x8e8e3800
+ label "Diffuse Light"
+ note_font_size 42
+ xpos 3530
+ ypos 5812
+ bdwidth 421
+ bdheight 856
+}
+Read {
+ inputs 0
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/01_assets/frameleader/ARRI_LF_UHD16zu9_black.png
+ format "4448 3096 0 0 4448 3096 1 "
+ origset true
+ name Read4
+ xpos 4800
+ ypos 14960
+}
+Dot {
+ name Dot24
+ xpos 4834
+ ypos 15090
+}
+Read {
+ inputs 0
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0030/90_render_3d/Rob-IQ_shot_0030_3d_v003_aw/shot_0030_3d_Utility/shot_0030_3d_Utility__Cryptomatte####.exr
+ format "4480 3096 0 0 4480 3096 1 4,5K_ALEXA"
+ first 20
+ last 109
+ frame_mode "start at"
+ frame 1033150
+ origfirst 20
+ origlast 109
+ origset true
+ name Read1
+ xpos 510
+ ypos -1192
+}
+Dot {
+ name Dot45
+ xpos 544
+ ypos -1038
+}
+set N5ca25c00 [stack 0]
+Dot {
+ name Dot18
+ xpos 544
+ ypos -966
+}
+add_layer {CryptoMesh00 CryptoMesh00.red CryptoMesh00.green CryptoMesh00.blue CryptoMesh00.alpha}
+add_layer {CryptoMesh01 CryptoMesh01.red CryptoMesh01.green CryptoMesh01.blue CryptoMesh01.alpha}
+add_layer {CryptoMesh02 CryptoMesh02.red CryptoMesh02.green CryptoMesh02.blue CryptoMesh02.alpha}
+add_layer {CryptoMesh03 CryptoMesh03.red CryptoMesh03.green CryptoMesh03.blue CryptoMesh03.alpha}
+Cryptomatte {
+ name Cryptomatte2
+ xpos 620
+ ypos -970
+ matteOutput alpha
+ matteList ""
+ cryptoLayer CryptoMesh
+ expression ""
+ keyedName ""
+ previewExpression0 "((mantissa(abs(CryptoMesh00.red)) * 1 % 0.25) * CryptoMesh00.green + (mantissa(abs(CryptoMesh00.blue)) * 1 % 0.25) * CryptoMesh00.alpha + (mantissa(abs(CryptoMesh01.red)) * 1 % 0.25) * CryptoMesh01.green + (mantissa(abs(CryptoMesh01.blue)) * 1 % 0.25) * CryptoMesh01.alpha)"
+ previewExpression1 "((mantissa(abs(CryptoMesh00.red)) * 16 % 0.25) * CryptoMesh00.green + (mantissa(abs(CryptoMesh00.blue)) * 16 % 0.25) * CryptoMesh00.alpha + (mantissa(abs(CryptoMesh01.red)) * 16 % 0.25) * CryptoMesh01.green + (mantissa(abs(CryptoMesh01.blue)) * 16 % 0.25) * CryptoMesh01.alpha)"
+ previewExpression2 "((mantissa(abs(CryptoMesh00.red)) * 64 % 0.25) * CryptoMesh00.green + (mantissa(abs(CryptoMesh00.blue)) * 64 % 0.25) * CryptoMesh00.alpha + (mantissa(abs(CryptoMesh01.red)) * 64 % 0.25) * CryptoMesh01.green + (mantissa(abs(CryptoMesh01.blue)) * 64 % 0.25) * CryptoMesh01.alpha)"
+ previewExpression3 ""
+ previewChannel none
+ in00 CryptoMesh00
+ in01 CryptoMesh01
+ in02 CryptoMesh02
+ in03 CryptoMesh03
+ in04 none
+ in05 none
+ in06 none
+ in07 none
+ in08 none
+ in09 none
+ in10 none
+ in11 none
+}
+push $N5ca25c00
+Cryptomatte {
+ name Cryptomatte1
+ xpos 620
+ ypos -1042
+ matteOutput alpha
+ matteList ""
+ cryptoLayer CryptoMesh
+ expression ""
+ keyedName ""
+ previewExpression0 "((mantissa(abs(CryptoMesh00.red)) * 1 % 0.25) * CryptoMesh00.green + (mantissa(abs(CryptoMesh00.blue)) * 1 % 0.25) * CryptoMesh00.alpha + (mantissa(abs(CryptoMesh01.red)) * 1 % 0.25) * CryptoMesh01.green + (mantissa(abs(CryptoMesh01.blue)) * 1 % 0.25) * CryptoMesh01.alpha)"
+ previewExpression1 "((mantissa(abs(CryptoMesh00.red)) * 16 % 0.25) * CryptoMesh00.green + (mantissa(abs(CryptoMesh00.blue)) * 16 % 0.25) * CryptoMesh00.alpha + (mantissa(abs(CryptoMesh01.red)) * 16 % 0.25) * CryptoMesh01.green + (mantissa(abs(CryptoMesh01.blue)) * 16 % 0.25) * CryptoMesh01.alpha)"
+ previewExpression2 "((mantissa(abs(CryptoMesh00.red)) * 64 % 0.25) * CryptoMesh00.green + (mantissa(abs(CryptoMesh00.blue)) * 64 % 0.25) * CryptoMesh00.alpha + (mantissa(abs(CryptoMesh01.red)) * 64 % 0.25) * CryptoMesh01.green + (mantissa(abs(CryptoMesh01.blue)) * 64 % 0.25) * CryptoMesh01.alpha)"
+ previewExpression3 ""
+ previewChannel none
+ in00 CryptoMesh00
+ in01 CryptoMesh01
+ in02 CryptoMesh02
+ in03 CryptoMesh03
+ in04 none
+ in05 none
+ in06 none
+ in07 none
+ in08 none
+ in09 none
+ in10 none
+ in11 none
+}
+Read {
+ inputs 0
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0030/90_render_3d/Rob-IQ_shot_0030_3d_v003_aw/shot_0030_3d_Utility/shot_0030_3d_Utility_####.exr
+ format "4480 3096 0 0 4480 3096 1 4,5K_ALEXA"
+ first 20
+ last 109
+ frame_mode "start at"
+ frame 1033150
+ origfirst 20
+ origlast 109
+ origset true
+ name Read2
+ xpos 510
+ ypos -2248
+}
+Dot {
+ name Dot8
+ xpos 544
+ ypos -2070
+}
+set N7840a80 [stack 0]
+Dot {
+ name Dot9
+ xpos 544
+ ypos -1974
+}
+set N7840700 [stack 0]
+Dot {
+ name Dot10
+ xpos 544
+ ypos -1878
+}
+push $N7840700
+push $N7840a80
+Read {
+ inputs 0
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0030/90_render_3d/Rob-IQ_shot_0030_3d_v003_aw/shot_0030_3d_Beauty/shot_0030_3d_####.exr
+ format "4480 3096 0 0 4480 3096 1 4,5K_ALEXA"
+ first 20
+ last 109
+ frame_mode "start at"
+ frame 1033135
+ origfirst 20
+ origlast 109
+ origset true
+ name Read7
+ xpos 730
+ ypos -2920
+}
+ShuffleCopy {
+ inputs 2
+ in depth
+ red red
+ out depth
+ name ShuffleCopy2
+ label "\[value out]"
+ xpos 730
+ ypos -2080
+}
+add_layer {N N.red N.green N.blue}
+ShuffleCopy {
+ inputs 2
+ in N
+ red red
+ green green
+ blue blue
+ out N
+ name ShuffleCopy3
+ label "\[value out]"
+ xpos 730
+ ypos -1984
+}
+add_layer {P P.red P.green P.blue}
+ShuffleCopy {
+ inputs 2
+ in P
+ red red
+ green green
+ blue blue
+ out P
+ name ShuffleCopy5
+ label "\[value out]"
+ xpos 730
+ ypos -1888
+}
+add_layer {Matte_Heart Matte_Heart.red Matte_Heart.green Matte_Heart.blue Matte_Heart.alpha}
+ShuffleCopy {
+ inputs 2
+ red red
+ green green
+ blue blue
+ out Matte_Heart
+ name ShuffleCopy4
+ label "\[value out]"
+ xpos 730
+ ypos -1048
+ disable true
+}
+add_layer {Matte_Screen Matte_Screen.red Matte_Screen.green Matte_Screen.blue Matte_Screen.alpha}
+ShuffleCopy {
+ inputs 2
+ red red
+ green green
+ blue blue
+ out Matte_Screen
+ name ShuffleCopy1
+ label "\[value out]"
+ xpos 730
+ ypos -976
+ disable true
+}
+Dot {
+ name Dot2
+ xpos 764
+ ypos -222
+}
+set N7974a80 [stack 0]
+Dot {
+ name Dot6
+ xpos 764
+ ypos 1794
+}
+set N7974700 [stack 0]
+Dot {
+ name Dot7
+ xpos 764
+ ypos 3834
+}
+set N7974380 [stack 0]
+Dot {
+ name Dot50
+ xpos 764
+ ypos 5754
+}
+set N7974000 [stack 0]
+Dot {
+ name Dot152
+ xpos 764
+ ypos 7562
+}
+Dot {
+ name Dot20
+ xpos 1204
+ ypos 7562
+}
+set N799f880 [stack 0]
+Dot {
+ name Dot70
+ xpos 2964
+ ypos 7562
+}
+set N799f500 [stack 0]
+Dot {
+ name Dot23
+ xpos 2964
+ ypos 9066
+}
+set N799f180 [stack 0]
+Dot {
+ name Dot13
+ xpos 2964
+ ypos 9906
+}
+Dot {
+ name Dot66
+ xpos 2414
+ ypos 9906
+}
+Dot {
+ name Dot67
+ xpos 2414
+ ypos 10266
+}
+push $N799f880
+Dot {
+ name Dot11
+ xpos 1204
+ ypos 9074
+}
+set N799e380 [stack 0]
+Dot {
+ name Dot27
+ xpos 1204
+ ypos 9906
+}
+Dot {
+ name Dot17
+ xpos 1864
+ ypos 9906
+}
+add_layer {Shadows Shadows.red Shadows.green Shadows.blue}
+Shuffle {
+ in Shadows
+ alpha black
+ name Shuffle4
+ label "\[value in]"
+ xpos 1830
+ ypos 9992
+}
+Dot {
+ name Dot31
+ xpos 1864
+ ypos 10266
+}
+push $N799f180
+Dot {
+ name Dot51
+ xpos 2414
+ ypos 9066
+}
+Dot {
+ name Dot52
+ xpos 2414
+ ypos 9618
+}
+push $N799e380
+Dot {
+ name Dot14
+ xpos 1644
+ ypos 9074
+}
+set N79b4a80 [stack 0]
+Dot {
+ name Dot12
+ xpos 1754
+ ypos 9074
+}
+set N79b4700 [stack 0]
+Dot {
+ name Dot15
+ xpos 1864
+ ypos 9074
+}
+add_layer {Reflections_Rim Reflections_Rim.red Reflections_Rim.green Reflections_Rim.blue}
+Shuffle {
+ in Reflections_Rim
+ alpha black
+ name Shuffle2
+ label "\[value in]"
+ xpos 1830
+ ypos 9152
+}
+push $N79b4700
+add_layer {Reflections_Key Reflections_Key.red Reflections_Key.green Reflections_Key.blue}
+Shuffle {
+ in Reflections_Key
+ alpha black
+ name Shuffle1
+ label "\[value in]"
+ xpos 1720
+ ypos 9152
+}
+push $N79b4a80
+add_layer {Reflections_other Reflections_other.red Reflections_other.green Reflections_other.blue}
+Shuffle {
+ in Reflections_other
+ alpha black
+ name Shuffle8
+ label "\[value in]"
+ xpos 1610
+ ypos 9152
+}
+Dot {
+ name Dot16
+ xpos 1644
+ ypos 9378
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge9
+ xpos 1720
+ ypos 9374
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge10
+ xpos 1830
+ ypos 9374
+}
+Grade {
+ white 4
+ name Grade3
+ xpos 1830
+ ypos 9470
+}
+Dot {
+ name Dot19
+ xpos 1864
+ ypos 9618
+}
+Read {
+ inputs 0
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0010/01_footage/01_exr/Rob-IQ_shot_0010_rohmat_v001_mq_#######.exr
+ format "4480 3096 0 0 4480 3096 1 4,5K_ALEXA"
+ first 1033115
+ last 1033243
+ origfirst 1033115
+ origlast 1033243
+ origset true
+ name Read3
+ xpos -1140
+ ypos 6120
+}
+Colorspace {
+ colorspace_in AlexaV3LogC
+ name Colorspace1
+ xpos -1140
+ ypos 6246
+}
+Dot {
+ name Dot22
+ xpos -1106
+ ypos 7746
+}
+Dot {
+ name Dot21
+ xpos 2194
+ ypos 7746
+}
+Merge2 {
+ inputs 2+1
+ operation plus
+ invert_mask true
+ name Merge2
+ xpos 2160
+ ypos 9614
+}
+Merge2 {
+ inputs 2+1
+ operation multiply
+ output {rgba.red rgba.green rgba.blue -rgba.alpha}
+ maskChannelMask rgba.red
+ mix 0.7
+ name Merge4
+ xpos 2160
+ ypos 10262
+ disable true
+}
+Dot {
+ name Dot35
+ xpos 2194
+ ypos 10650
+}
+Dot {
+ name Dot36
+ xpos 4284
+ ypos 10650
+}
+set N7a0d180 [stack 0]
+Dot {
+ name Dot39
+ xpos 4284
+ ypos 10914
+}
+push $N799f500
+push $N7974000
+Dot {
+ name Dot1
+ xpos 3624
+ ypos 5754
+}
+add_layer {Emission Emission.red Emission.green Emission.blue}
+Shuffle {
+ in Emission
+ in2 alpha
+ alpha alpha2
+ name Shuffle5
+ label "\[value in]"
+ xpos 3590
+ ypos 5936
+}
+Unpremult {
+ name Unpremult1
+ xpos 3590
+ ypos 5990
+}
+Dot {
+ name Dot30
+ xpos 3624
+ ypos 6714
+}
+push $N7974380
+Dot {
+ name Dot162
+ xpos 1424
+ ypos 3834
+}
+set N7a33c00 [stack 0]
+Dot {
+ name Dot163
+ xpos 1864
+ ypos 3834
+}
+set N7a33880 [stack 0]
+Dot {
+ name Dot164
+ xpos 2304
+ ypos 3834
+}
+set N7a33500 [stack 0]
+Dot {
+ name Dot165
+ xpos 2744
+ ypos 3834
+}
+set N7a33180 [stack 0]
+Dot {
+ name Dot166
+ xpos 3184
+ ypos 3834
+}
+set N7a32e00 [stack 0]
+Dot {
+ name Dot167
+ xpos 3624
+ ypos 3834
+}
+add_layer {Refractions_Rim Refractions_Rim.red Refractions_Rim.green Refractions_Rim.blue}
+Shuffle {
+ in Refractions_Rim
+ in2 alpha
+ alpha red2
+ name Shuffle58
+ label "\[value in]"
+ xpos 3590
+ ypos 4016
+}
+Unpremult {
+ name Unpremult59
+ xpos 3590
+ ypos 4070
+}
+push $N7a32e00
+Shuffle {
+ in Reflections_Rim
+ in2 alpha
+ alpha red2
+ name Shuffle59
+ label "\[value in]"
+ xpos 3150
+ ypos 4016
+}
+Unpremult {
+ name Unpremult60
+ xpos 3150
+ ypos 4070
+}
+push $N7a33180
+add_layer {SSS_Rim SSS_Rim.red SSS_Rim.green SSS_Rim.blue}
+Shuffle {
+ in SSS_Rim
+ in2 alpha
+ alpha red2
+ name Shuffle60
+ label "\[value in]"
+ xpos 2710
+ ypos 4016
+}
+Unpremult {
+ name Unpremult61
+ xpos 2710
+ ypos 4070
+}
+push $N7a33500
+add_layer {GI_Rim GI_Rim.red GI_Rim.green GI_Rim.blue}
+Shuffle {
+ in GI_Rim
+ in2 alpha
+ alpha red2
+ name Shuffle61
+ label "\[value in]"
+ xpos 2270
+ ypos 4016
+}
+Unpremult {
+ name Unpremult62
+ xpos 2270
+ ypos 4070
+}
+push $N7a33880
+add_layer {SpecularLighting_Rim SpecularLighting_Rim.red SpecularLighting_Rim.green SpecularLighting_Rim.blue}
+Shuffle {
+ in SpecularLighting_Rim
+ in2 alpha
+ alpha alpha2
+ name Shuffle62
+ label "\[value in]"
+ xpos 1830
+ ypos 4016
+}
+Unpremult {
+ name Unpremult63
+ xpos 1830
+ ypos 4070
+}
+push $N7a33c00
+add_layer {DiffuseLighting_Rim DiffuseLighting_Rim.red DiffuseLighting_Rim.green DiffuseLighting_Rim.blue}
+Shuffle {
+ in DiffuseLighting_Rim
+ in2 alpha
+ alpha alpha2
+ name Shuffle63
+ label "\[value in]"
+ xpos 1390
+ ypos 4016
+}
+Unpremult {
+ name Unpremult64
+ xpos 1390
+ ypos 4070
+}
+Dot {
+ name Dot183
+ xpos 1424
+ ypos 4794
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge62
+ label +Specular
+ xpos 1830
+ ypos 4784
+}
+Dot {
+ name Dot184
+ xpos 1864
+ ypos 4842
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge63
+ label +GI
+ xpos 2270
+ ypos 4832
+}
+Dot {
+ name Dot185
+ xpos 2304
+ ypos 4890
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge64
+ label +SSS
+ xpos 2710
+ ypos 4880
+}
+Dot {
+ name Dot186
+ xpos 2744
+ ypos 4938
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge65
+ label +Reflection
+ xpos 3150
+ ypos 4928
+}
+Dot {
+ name Dot187
+ xpos 3184
+ ypos 4986
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge66
+ label +Refraction
+ xpos 3590
+ ypos 4976
+}
+Dot {
+ name Dot4
+ xpos 3624
+ ypos 5610
+}
+push $N7974700
+Dot {
+ name Dot155
+ xpos 1424
+ ypos 1794
+}
+set N7ab3500 [stack 0]
+Dot {
+ name Dot156
+ xpos 1864
+ ypos 1794
+}
+set N7ab3180 [stack 0]
+Dot {
+ name Dot157
+ xpos 2304
+ ypos 1794
+}
+set N7ab2e00 [stack 0]
+Dot {
+ name Dot158
+ xpos 2744
+ ypos 1794
+}
+set N7ab2a80 [stack 0]
+Dot {
+ name Dot159
+ xpos 3184
+ ypos 1794
+}
+set N7ab2700 [stack 0]
+Dot {
+ name Dot160
+ xpos 3624
+ ypos 1794
+}
+add_layer {Refractions_Key Refractions_Key.red Refractions_Key.green Refractions_Key.blue}
+Shuffle {
+ in Refractions_Key
+ in2 alpha
+ alpha red2
+ name Shuffle65
+ label "\[value in]"
+ xpos 3590
+ ypos 1976
+}
+Unpremult {
+ name Unpremult66
+ xpos 3590
+ ypos 2030
+}
+push $N7ab2700
+Shuffle {
+ in Reflections_Key
+ in2 alpha
+ alpha red2
+ name Shuffle66
+ label "\[value in]"
+ xpos 3150
+ ypos 1976
+}
+Unpremult {
+ name Unpremult67
+ xpos 3150
+ ypos 2030
+}
+push $N7ab2a80
+add_layer {SSS_Key SSS_Key.red SSS_Key.green SSS_Key.blue}
+Shuffle {
+ in SSS_Key
+ in2 alpha
+ alpha red2
+ name Shuffle67
+ label "\[value in]"
+ xpos 2710
+ ypos 1976
+}
+Unpremult {
+ name Unpremult68
+ xpos 2710
+ ypos 2030
+}
+push $N7ab2e00
+add_layer {GI_Key GI_Key.red GI_Key.green GI_Key.blue}
+Shuffle {
+ in GI_Key
+ in2 alpha
+ alpha red2
+ name Shuffle68
+ label "\[value in]"
+ xpos 2270
+ ypos 1976
+}
+Unpremult {
+ name Unpremult69
+ xpos 2270
+ ypos 2030
+}
+push $N7ab3180
+add_layer {SpecularLighting_Key SpecularLighting_Key.red SpecularLighting_Key.green SpecularLighting_Key.blue}
+Shuffle {
+ in SpecularLighting_Key
+ in2 alpha
+ alpha alpha2
+ name Shuffle69
+ label "\[value in]"
+ xpos 1830
+ ypos 1976
+}
+Unpremult {
+ name Unpremult70
+ xpos 1830
+ ypos 2030
+}
+push $N7ab3500
+add_layer {DiffuseLighting_Key DiffuseLighting_Key.red DiffuseLighting_Key.green DiffuseLighting_Key.blue}
+Shuffle {
+ in DiffuseLighting_Key
+ in2 alpha
+ alpha alpha2
+ name Shuffle70
+ label "\[value in]"
+ xpos 1390
+ ypos 1976
+}
+Unpremult {
+ name Unpremult71
+ xpos 1390
+ ypos 2030
+}
+Dot {
+ name Dot190
+ xpos 1424
+ ypos 2754
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge68
+ label +Specular
+ xpos 1830
+ ypos 2744
+}
+Dot {
+ name Dot191
+ xpos 1864
+ ypos 2802
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge69
+ label +GI
+ xpos 2270
+ ypos 2792
+}
+Dot {
+ name Dot192
+ xpos 2304
+ ypos 2850
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge70
+ label +SSS
+ xpos 2710
+ ypos 2840
+}
+Dot {
+ name Dot193
+ xpos 2744
+ ypos 2898
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge71
+ label +Reflection
+ xpos 3150
+ ypos 2888
+}
+Dot {
+ name Dot194
+ xpos 3184
+ ypos 2946
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge72
+ label +Refraction
+ xpos 3590
+ ypos 2936
+}
+Dot {
+ name Dot3
+ xpos 3624
+ ypos 3570
+}
+push $N7974a80
+Dot {
+ name Dot169
+ xpos 1424
+ ypos -222
+}
+set N7b2ae00 [stack 0]
+Dot {
+ name Dot170
+ xpos 1864
+ ypos -222
+}
+set N7b2aa80 [stack 0]
+Dot {
+ name Dot171
+ xpos 2304
+ ypos -222
+}
+set N7b2a700 [stack 0]
+Dot {
+ name Dot172
+ xpos 2744
+ ypos -222
+}
+set N7b2a380 [stack 0]
+Dot {
+ name Dot173
+ xpos 3184
+ ypos -222
+}
+set N7b2a000 [stack 0]
+Dot {
+ name Dot174
+ xpos 3624
+ ypos -222
+}
+add_layer {Refractions_other Refractions_other.red Refractions_other.green Refractions_other.blue}
+Shuffle {
+ in Refractions_other
+ in2 alpha
+ alpha red2
+ name Shuffle51
+ label "\[value in]"
+ xpos 3590
+ ypos -40
+}
+Unpremult {
+ name Unpremult52
+ xpos 3590
+ ypos 14
+}
+push $N7b2a000
+Shuffle {
+ in Reflections_other
+ in2 alpha
+ alpha red2
+ name Shuffle52
+ label "\[value in]"
+ xpos 3150
+ ypos -40
+}
+Unpremult {
+ name Unpremult53
+ xpos 3150
+ ypos 14
+}
+push $N7b2a380
+add_layer {SSS_other SSS_other.red SSS_other.green SSS_other.blue}
+Shuffle {
+ in SSS_other
+ in2 alpha
+ alpha red2
+ name Shuffle53
+ label "\[value in]"
+ xpos 2710
+ ypos -40
+}
+Unpremult {
+ name Unpremult54
+ xpos 2710
+ ypos 14
+}
+push $N7b2a700
+add_layer {GI_other GI_other.red GI_other.green GI_other.blue}
+Shuffle {
+ in GI_other
+ in2 alpha
+ alpha red2
+ name Shuffle54
+ label "\[value in]"
+ xpos 2270
+ ypos -40
+}
+Unpremult {
+ name Unpremult55
+ xpos 2270
+ ypos 14
+}
+push $N7b2aa80
+add_layer {SpecularLighting_other SpecularLighting_other.red SpecularLighting_other.green SpecularLighting_other.blue}
+Shuffle {
+ in SpecularLighting_other
+ in2 alpha
+ alpha alpha2
+ name Shuffle55
+ label "\[value in]"
+ xpos 1830
+ ypos -40
+}
+Unpremult {
+ name Unpremult56
+ xpos 1830
+ ypos 14
+}
+push $N7b2ae00
+add_layer {DiffuseLighting_other DiffuseLighting_other.red DiffuseLighting_other.green DiffuseLighting_other.blue}
+Shuffle {
+ in DiffuseLighting_other
+ in2 alpha
+ alpha alpha2
+ name Shuffle56
+ label "\[value in]"
+ xpos 1390
+ ypos -40
+}
+Unpremult {
+ name Unpremult57
+ xpos 1390
+ ypos 14
+}
+Dot {
+ name Dot176
+ xpos 1424
+ ypos 738
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge56
+ label +Specular
+ xpos 1830
+ ypos 728
+}
+Dot {
+ name Dot177
+ xpos 1864
+ ypos 786
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge57
+ label +GI
+ xpos 2270
+ ypos 776
+}
+Dot {
+ name Dot178
+ xpos 2304
+ ypos 834
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge58
+ label +SSS
+ xpos 2710
+ ypos 824
+}
+Dot {
+ name Dot179
+ xpos 2744
+ ypos 882
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge59
+ label +Reflection
+ xpos 3150
+ ypos 872
+}
+Dot {
+ name Dot180
+ xpos 3184
+ ypos 930
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge60
+ label +Refraction
+ xpos 3590
+ ypos 920
+}
+Dot {
+ name Dot181
+ xpos 3624
+ ypos 1554
+}
+Dot {
+ name Dot5
+ xpos 4504
+ ypos 1554
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge74
+ xpos 4470
+ ypos 3566
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge75
+ xpos 4470
+ ypos 5606
+}
+Merge2 {
+ inputs 2
+ operation plus
+ name Merge8
+ xpos 4470
+ ypos 6710
+}
+Copy {
+ inputs 2
+ from0 rgba.alpha
+ to0 rgba.alpha
+ name Copy5
+ xpos 4470
+ ypos 7552
+}
+Dot {
+ name Dot46
+ xpos 4504
+ ypos 9570
+}
+set N7bd9500 [stack 0]
+Dot {
+ name Dot49
+ xpos 4394
+ ypos 9570
+}
+Dot {
+ name Dot47
+ xpos 4394
+ ypos 9690
+}
+set N7bd8e00 [stack 0]
+Dot {
+ name Dot48
+ xpos 4394
+ ypos 9858
+}
+push $N7bd8e00
+push $N7bd9500
+ColourEdge {
+ inputs 2
+ name ColourEdge1
+ xpos 4470
+ ypos 9686
+ blurGrain 0
+ growTexture 2
+ shrinkMatte 0
+ invertMatte true
+}
+Copy {
+ inputs 2
+ from0 rgba.alpha
+ to0 rgba.alpha
+ name Copy1
+ xpos 4470
+ ypos 9848
+}
+Premult {
+ name Premult5
+ xpos 4470
+ ypos 10118
+}
+Blur {
+ size 1
+ name Blur1
+ xpos 4470
+ ypos 10256
+}
+Dot {
+ name Dot37
+ xpos 4504
+ ypos 10578
+}
+set N2bc6ae00 [stack 0]
+Dot {
+ name Dot38
+ xpos 4394
+ ypos 10578
+}
+LightWrap {
+ inputs 2
+ name LightWrap1
+ xpos 4360
+ ypos 10910
+ Diffuse 5
+ Intensity 5
+ onlywrap true
+ master 1
+ shadows 1
+ midtones 1
+ highlights 1
+}
+Dot {
+ name Dot40
+ xpos 4394
+ ypos 11010
+}
+push $N2bc6ae00
+push $N7a0d180
+Merge2 {
+ inputs 2
+ Bchannels {rgba.red rgba.green rgba.blue -rgba.alpha}
+ also_merge all
+ name Merge1
+ xpos 4470
+ ypos 10646
+}
+Merge2 {
+ inputs 2
+ operation screen
+ name Merge5
+ xpos 4470
+ ypos 11006
+}
+Dot {
+ name Dot65
+ xpos 4504
+ ypos 11514
+}
+set N2bd22e00 [stack 0]
+Dot {
+ name Dot69
+ xpos 4284
+ ypos 11514
+}
+set N2bd22a80 [stack 0]
+Dot {
+ name Dot71
+ xpos 4065
+ ypos 11514
+}
+Dot {
+ name Dot72
+ xpos 4064
+ ypos 12618
+}
+set N2bd22380 [stack 0]
+Dot {
+ name Dot73
+ xpos 4064
+ ypos 13626
+}
+Dot {
+ name Dot74
+ xpos 4284
+ ypos 13626
+}
+Dot {
+ name Dot75
+ xpos 4284
+ ypos 13746
+}
+set N2bd49880 [stack 0]
+Dot {
+ name Dot76
+ xpos 4284
+ ypos 13914
+}
+set N2bd49500 [stack 0]
+Dot {
+ name Dot77
+ xpos 4284
+ ypos 14082
+}
+add_layer {PuzzleMatte_Emission PuzzleMatte_Emission.red PuzzleMatte_Emission.green PuzzleMatte_Emission.blue}
+Glow2 {
+ tint {0.388586 0.46081 1 1}
+ tint_panelDropped true
+ tolerance 0.2
+ brightness 0.05
+ saturation 5
+ W PuzzleMatte_Emission.blue
+ effect_only true
+ size 10
+ name Glow10
+ xpos 4360
+ ypos 14078
+}
+Dot {
+ name Dot78
+ xpos 4394
+ ypos 14154
+}
+push $N2bd49500
+Glow2 {
+ tint {0.394487 0.42942 1 1}
+ tint_panelDropped true
+ tolerance 0.2
+ brightness 0.25
+ saturation 5
+ W PuzzleMatte_Emission.blue
+ effect_only true
+ size 3.4
+ name Glow11
+ xpos 4360
+ ypos 13910
+}
+Dot {
+ name Dot79
+ xpos 4394
+ ypos 13986
+}
+push $N2bd49880
+Glow2 {
+ tint {0.219855 0.311201 1 1}
+ tint_panelDropped true
+ tolerance 0.2
+ brightness 0.15
+ saturation 5
+ W PuzzleMatte_Emission.blue
+ effect_only true
+ size 2
+ name Glow12
+ xpos 4360
+ ypos 13742
+}
+Dot {
+ name Dot80
+ xpos 4394
+ ypos 13818
+}
+push $N2bd22380
+Dot {
+ name Dot81
+ xpos 4284
+ ypos 12618
+}
+Dot {
+ name Dot82
+ xpos 4284
+ ypos 12930
+}
+set N2463500 [stack 0]
+Dot {
+ name Dot83
+ xpos 4284
+ ypos 13098
+}
+set N2463180 [stack 0]
+Dot {
+ name Dot84
+ xpos 4284
+ ypos 13266
+}
+Glow2 {
+ brightness 0.2
+ W PuzzleMatte_Emission.green
+ effect_only true
+ size 40
+ name Glow13
+ xpos 4360
+ ypos 13262
+}
+Dot {
+ name Dot85
+ xpos 4394
+ ypos 13338
+}
+push $N2463180
+Glow2 {
+ saturation 3
+ W PuzzleMatte_Emission.green
+ effect_only true
+ size 5
+ name Glow14
+ xpos 4360
+ ypos 13094
+}
+Dot {
+ name Dot86
+ xpos 4394
+ ypos 13170
+}
+push $N2463500
+Glow2 {
+ saturation 3
+ W PuzzleMatte_Emission.green
+ effect_only true
+ size 1.5
+ name Glow15
+ xpos 4360
+ ypos 12926
+}
+Dot {
+ name Dot87
+ xpos 4394
+ ypos 13002
+}
+push $N2bd22a80
+add_layer {Emission_Screen_Mask Emission_Screen_Mask.red Emission_Screen_Mask.green Emission_Screen_Mask.blue}
+Grade {
+ channels Emission_Screen_Mask
+ whitepoint 0.15
+ name Grade2
+ xpos 4250
+ ypos 11576
+}
+Dot {
+ name Dot88
+ xpos 4284
+ ypos 11874
+}
+set N2489180 [stack 0]
+Dot {
+ name Dot89
+ xpos 4284
+ ypos 12042
+}
+set N2488e00 [stack 0]
+Dot {
+ name Dot90
+ xpos 4284
+ ypos 12210
+}
+Glow2 {
+ brightness 0.2
+ W Emission_Screen_Mask.red
+ effect_only true
+ size 40
+ name Glow16
+ xpos 4360
+ ypos 12206
+}
+Dot {
+ name Dot91
+ xpos 4394
+ ypos 12282
+}
+push $N2488e00
+Glow2 {
+ saturation 3
+ W Emission_Screen_Mask.red
+ effect_only true
+ size 5
+ name Glow17
+ xpos 4360
+ ypos 12038
+}
+Dot {
+ name Dot92
+ xpos 4394
+ ypos 12114
+}
+push $N2489180
+Glow2 {
+ saturation 3
+ W Emission_Screen_Mask.red
+ effect_only true
+ size 1.5
+ name Glow18
+ xpos 4360
+ ypos 11870
+}
+Dot {
+ name Dot93
+ xpos 4394
+ ypos 11946
+}
+push $N2bd22e00
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge3
+ xpos 4470
+ ypos 11942
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge7
+ xpos 4470
+ ypos 12110
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge11
+ xpos 4470
+ ypos 12278
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge15
+ xpos 4470
+ ypos 12998
+ disable true
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge16
+ xpos 4470
+ ypos 13166
+ disable true
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge22
+ xpos 4470
+ ypos 13334
+ disable true
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge23
+ xpos 4470
+ ypos 13814
+ disable true
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge24
+ xpos 4470
+ ypos 13982
+ disable true
+}
+Merge2 {
+ inputs 2
+ operation screen
+ invert_mask true
+ name Merge25
+ xpos 4470
+ ypos 14150
+ disable true
+}
+Dot {
+ name Dot63
+ xpos 4504
+ ypos 14970
+}
+set N24f5180 [stack 0]
+Dot {
+ name Dot64
+ xpos 4724
+ ypos 14970
+}
+Merge2 {
+ inputs 2
+ name Merge6
+ xpos 4690
+ ypos 15086
+}
+set N357aa80 [stack 0]
+Reformat {
+ format "1920 1326 0 0 1920 1326 1 1.447_HD"
+ name Reformat1
+ xpos 4690
+ ypos 15224
+}
+Write {
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0000/95_render_comp/Rob-IQ_shot_0000_comp_v001_aw/HD_Preview/Rob-IQ_shot_0000_comp_v001_aw_#######.png
+ file_type png
+ create_directories true
+ checkHashOnRead false
+ version 4
+ in_colorspace linear
+ out_colorspace linear
+ name Write2
+ xpos 4690
+ ypos 15320
+}
+push $N24f5180
+Colorspace {
+ colorspace_out AlexaV3LogC
+ name Colorspace2
+ xpos 4470
+ ypos 15230
+}
+Write {
+ file M:/FREELANCE/2019_06_redseven_ROB-IQ/02_production/02_shots/shot_0000/95_render_comp/Rob-IQ_shot_0000_comp_v001_aw/Rob-IQ_shot_0000_comp_v001_aw_#######.exr
+ file_type exr
+ create_directories true
+ version 4
+ in_colorspace linear
+ out_colorspace linear
+ name Write1
+ xpos 4470
+ ypos 15320
+ disable true
+}
+push $N357aa80
+Viewer {
+ frame_range 1033150-1033227
+ frame_range_lock true
+ fps 25
+ colour_sample_bbox {0.08854166418 0.256249994 0.08958332986 0.2572916746}
+ samplepoints {{0.08854166418 0.256249994}
+   }
+ name Viewer1
+ xpos 5790
+ ypos 10654
+}
