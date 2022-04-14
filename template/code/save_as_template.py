@@ -93,8 +93,8 @@ if not is_file_template:
 else:
     dialog.title = "Save File as Template"
 
-dialog.add_text("Name:").add_input(placeholder = "Your Template Name", var="name", callback=name_changed)
-dialog.add_info("Give your template a unique name")
+dialog.add_text("Name:").add_input(placeholder = "Character Template", var="name", callback=name_changed)
+dialog.add_info("Your template will appear in a <b>new tab.</b> <br> Templates are accessible from the <b>New</b> context menu. <br> <a href='https://github.com/Anchorpoint-Software/ap-actions-data/blob/main/png/blender_thumbnail_rendered.png'>Learn more about templates</a>")
 
 if project:
     project_dir = os.path.split(project.path)[1]

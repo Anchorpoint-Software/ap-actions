@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: New File from Template
+  name: File from Template
 
   version: 1
   id: ap::template::newfile
@@ -28,5 +28,5 @@ action:
     - templates/file
 
   register:
-    folder:
+    new_file:
       enable: true
