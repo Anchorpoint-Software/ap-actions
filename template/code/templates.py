@@ -42,10 +42,6 @@ yaml_dir = ctx.yaml_dir
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
 callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
-if os.path.exists(callback_file):
-    callbacks = aps.import_local(os.path.splitext(callback_file)[0], True)
-else:
-    callbacks = None
 
 if project:
     project_callbacks = os.path.join(project.path, ".ap/templates/template_action_events.py")
@@ -55,6 +51,10 @@ if project:
 else:
     project_template_dir = ""
 
+if os.path.exists(callback_file):
+    callbacks = aps.import_local(os.path.splitext(callback_file)[0], True)
+else:
+    callbacks = None
 
 if os.path.exists(template_dir) == False and os.path.exists(project_template_dir) == False:
     ui.show_info("No templates available", f"Please add a proper template using the Save as Template action")
@@ -240,7 +240,7 @@ def create_project_from_template(template_path, target_folder, ctx):
     # Copy the whole folder structure and resolve all tokens using the variables dict
     aps.copy_from_template(source, target, variables)
 
-    # Add metadata to the project, which was recorded by user input.
+    # Add the resolved tokens as metadata to the project
     # This metadata can be used for any file and subfolder templates
     # The user won't need to enter this data again
     project.update_metadata(user_inputs)
