@@ -17,6 +17,7 @@ action:
     path: :/icons/folderCloud.svg
 
   script: code/save_as_template.py
+  settings: code/template_action_settings.py
   inputs:
     template_dir: templates
 

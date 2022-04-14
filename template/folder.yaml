@@ -22,6 +22,7 @@ action:
     template_subdir: folder
 
   script: code/templates.py
+  settings: code/template_action_settings.py
 
   dependencies:
     - templates/folder

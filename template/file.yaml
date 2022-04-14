@@ -23,6 +23,7 @@ action:
     file_mode: true
 
   script: code/templates.py
+  settings: code/template_action_settings.py
 
   dependencies:
     - templates/file
