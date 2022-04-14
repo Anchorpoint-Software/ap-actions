@@ -14,6 +14,20 @@ action:
   enable: true
   author: Anchorpoint Software GmbH
   description: Maps (mounts) a folder as an internal drive
+  details: '
+  <p>This action can be found in the folder context menu. With this you can mount any folder as a drive. If everyone in the team does this, you can avoid problems with absolute paths (e.g. for textures, footage etc.).</p>
+  <p><b>Select a folder and open the dialog</b></p>
+  <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/mapDrive_01.png" width="400"></p>
+  <p><b>Pick a drive letter</b></p>
+  <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/mapDrive_02.png" width="300"></p>
+  <p>Everyone in the team should choose the same letter.</p>
+  <p><b>Press map</b></p>
+  <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/mapDrive_03.png" width="300"></p>
+  <p>The drive also appears in Windows Explorer and is visible to all applications.</p>
+  <p><b>Remove the drive</b></p>
+  <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/mapDrive_04.png" width="400"></p>
+  <p>Select the option <b>Unmap Drive</b> in the Context menu and remove the drive.</p>
+  '
   icon:
     path: "mapToDrive.svg"
 

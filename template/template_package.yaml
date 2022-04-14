@@ -18,39 +18,44 @@ action:
     path: folderTemplates.svg
 
   details: '
-    <h2>How to use</h2>
-    <p>The template action packages allows the user to use templates to create:</p>
-    <ul>
-      <li>Projects</li>
-      <li>Folder structures</li>
-      <li>Files</li>
-    </ul>
+    <p>This action is located in the context menus and under each folder and file view.</p>
 
-    By default, a set of example templates are provided with this action package. Click <b>Settings</b> to adjust the paths to use your own templates instead.
+    <p><b>Open the template dialog</b></p>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new01.png" width="400"></p>
+    <p>You can open the dialog from the Context menu or via the <b>New</b> button under Folders and Files.</p>
+    <p><b>Pick a Template like Assets, Motion Graphics or Shot</b></p>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new04.png" width="400"></p>
 
-    <h2>Create your own templates</h2>
+    <p><b>Enter what is necessary</b></p>
 
-    A template can be created by any user by right clicking on any folder <b<Save as Template</b>.
-    This copies the folder structure, all files, and all metadata (attributes, tasks) to the location as set in <b>Settings</b>.
-    You can adjust the templates by using <b>Tokens</b>
+    <p>These text fields are based on tokens (placeholders) in your template. Tokens can be present in folders or file names and will be replaced by your input.  <br>
+    <i>[Client]_[Project]_shot[Number]_v001.blend becomes ACME_Commercial_shot0020_v001.blend</i> </p>
+
+    <p>The great thing about this is that you can replace multiple tokens at once. You save the complete renaming of your folders and files.</p>
+
+    <b>What if the template is a project?</b>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new05.png" width="400"></p>
+    <p>This option is useful if your folder structure represents a complete project and not a part of it. A part can be e.g. a shot, an asset or a level. If the template is a project, Anchorpoint automatically creates an entry in your project list.</p>
+
+    <h2>Use your own templates</h2>
+    You can save any file or folder structure as a template by selecting <b>Save as Template</b>. This will open the place where the templates are located in a new tab. Navigate there to customize your tempaltes.
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new06.png" width="600"></p>
 
     <h3>Tokens</h3>
 
-    Tokens are a super powerful way to tell Anchorpoint to apply naming conventions when instantiating a template.
-    There are a few pre-configured Tokens:
+    <p>Put tokens in your folders or file names. For each token, an input field is automatically created when the template is loaded. The token is then replaced by the text that was specified in the dialog. The great thing about this is that you can have a token in multiple places e.g. in the folder and file name. All these tokens will be replaced. So you can create a naming convention once and never need to name folders or files again.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new07.png" width="300"></p>
+
+    <p>Certain tokens are also converted automatically.</p>
 
     <ul>
-      <li><b>[Increment]</b>: MyProject_<b>[Increment]</b> -> MyProject_<b>0010</b></li>
-      <li><b>[YYYY-MM-DD]</b>: MyProject_<b>[YYYY-MM-DD]</b> -> MyProject_<b>2022-04-08</b>. You can also use variants like <b>[YYYY]</b> instead.</li>
+      <li>[Increment] <br> The number of the folder or file <br> e.g. [Increment]_MyProject -> 0010_MyProject</li>
+      <li>[YYYYMMDD] <br> Date of today <br> e.g. [YYYYMMDD]_WIP -> 20220414_WIP</li>
     </ul>
 
-    You can always add your own Token logic by implementing the <b>resolve_tokens</b> callback.
-    Moreover, you can simply add any Token to your folders and files. The user can provide the token replacement on template instantiation:
-
-    MyProject_<b>[Client]</b> -> MyProject_<b>Anchorpoint</b>
-
-    Used Tokens are stored on the projet when creating a project with the template actions. This means that you can re-use the Tokens in your file and folder templates and they are automatically filled by the Tokens set in the project.
-    '
+    For [YYYYMMDD], variants such as [YYYY], [YYYYMM] or [YYYY-MM-DD] are also possible.
+'
 
   settings: code/template_settings.py
   inputs:
