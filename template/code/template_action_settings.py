@@ -34,3 +34,5 @@ if os.path.exists(template_dir):
         ui.create_tab(template_dir)
     else:
         ui.open_tab(template_dir)
+elif has_project_templates == False:
+    ui.show_info("No templates installed", "Use \"Save as Template\" Action to create a new template")
