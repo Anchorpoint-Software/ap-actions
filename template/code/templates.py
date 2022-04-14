@@ -230,10 +230,8 @@ def create_project_from_template(template_path, target_folder, ctx):
     # Set a project name which will show up in the project list
     tokens = {}
     get_tokens(source, tokens)
-    project_display_name = ""
-    for token in tokens:
-        if token in user_inputs:
-            project_display_name += user_inputs[token]+ " "
+    project_display_name = os.path.split(target)[1]
+    project_display_name = project_display_name.replace("-", " ").replace("_", " ")
 
     # Create the actual project and write it in the database
     project = ctx.create_project(target, strip_spaces(project_display_name))
