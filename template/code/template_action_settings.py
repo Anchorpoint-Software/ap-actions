@@ -6,7 +6,7 @@ import os
 ctx = ap.Context.instance()
 ui = ap.UI()
 
-is_file_template = ctx.type == ap.Type.File
+is_file_template = ctx.type == ap.Type.File or ap.Type.NewFile
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 project = aps.get_project(ctx.path)
 
