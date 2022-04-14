@@ -7,7 +7,7 @@ ui = ap.UI()
 
 template_dir = ctx.inputs["template_dir"]
 template_dir = os.path.join(ctx.yaml_dir, template_dir)
-is_file_template = ctx.type == ap.Type.File or ap.Type.NewFile
+is_file_template = ctx.type == ap.Type.File or ctx.type == ap.Type.NewFile
 source = ctx.path
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
