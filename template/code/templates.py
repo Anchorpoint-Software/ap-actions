@@ -183,7 +183,6 @@ def create_dialog():
     if has_keys:
         for key in user_inputs.keys():
             dialog.add_text(str(key).replace("_"," ")+":\t").add_input("" , var = str(key))
-
         dialog.add_info("Tokens (placeholders) were found in your template. <br> They will be replaced with the entries in the text fields.")    
    
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown

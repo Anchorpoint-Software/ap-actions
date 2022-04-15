@@ -94,9 +94,10 @@ else:
     dialog.title = "Save File as Template"
 
 dialog.add_text("Name:").add_input(placeholder = "Character Template", var="name", callback=name_changed)
-dialog.add_info("Your template will appear in a <b>new tab.</b> <br> Templates are accessible from the <b>New</b> context menu. <br> <a href='https://github.com/Anchorpoint-Software/ap-actions-data/blob/main/png/blender_thumbnail_rendered.png'>Learn more about templates</a>")
-dialog.add_separator()
+dialog.add_info("Your template will appear in a <b>new tab.</b> <br> Templates are accessible from the <b>New</b> context menu.") #add this later:  <br> <a href='https://github.com/Anchorpoint-Software/ap-actions-data/blob/main/png/blender_thumbnail_rendered.png'>Learn more about templates</a>
+
 if project:
+    dialog.add_separator()
     project_dir = os.path.split(project.path)[1]
     dialog.add_checkbox(True, var="project", callback=project_check_changed).add_text("Save in Project")
     dialog.add_info(f"Project templates are stored here:<br><b>{project_dir}</b>/.ap/templates")    
