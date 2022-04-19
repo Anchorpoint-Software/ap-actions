@@ -5,22 +5,28 @@
 
 version: 1.0
 action:
-  name: New Folder from Template
+  name: Folder from Template
 
   version: 1
   id: ap::template::newfolder
-  category: template
+  category: automation/template
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
-  description: Creates a new scene within a project
+  description: Creates a folder from a template with the correct naming convention
   icon:
     path: :/icons/folderGrey.svg
 
   inputs:
-    template_dir: folder_templates
+    template_dir: templates
+    template_subdir: folder
 
-  script: templates.py
+  script: code/templates.py
+  settings: code/template_action_settings.py
+
+  dependencies:
+    - templates/folder
 
   register:
-    folder:
+    new_folder:
       enable: true

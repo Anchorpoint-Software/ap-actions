@@ -1,0 +1,39 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Action Input Example
+
+  version: 1
+  id: ap::examples::input
+  category: utility/code/examples/input
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: An example action that demonstrates how to pass data to an action by asking the user for input
+  icon:
+    path: :/icons/bubble.svg
+
+  script: action_input_example.py
+
+  inputs: # Inputs can have arbitrary names
+    some_hardcoded_variable: This is a hardcoded string # This input value will never change
+    
+    ask_the_user_variable: # Optionally, we can ask the user for input
+      message: What is your name? # The message that is displayed to the user
+      default: ${username}  
+    
+    ask_the_user_once_variable: # And another input variable, this time we store the user provided value in the action settings
+      message: What is your favorite app? # The message that is displayed to the user
+      browse: file                        # Show a browse button so that the user can choose something on the file system. Valid values are folder, file
+      store: action                       # Store the setting so that the user is only aksed once. If all inputs are stored, the user is not asked again. Valid valure are:
+                                          # User: The value is stored for the user account. This means this value is the same for all actions
+                                          # Action: The value is stored only for this action
+                                          # Project: The value is stored for the current project. If no project is selected, it's stored for the user.
+
+  register:
+    folder:
+      enable: true

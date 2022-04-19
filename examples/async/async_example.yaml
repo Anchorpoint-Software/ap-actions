@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Unmap Drive
+  name: Async Example
 
   version: 1
-  id: ap::unmapdrive
-  category: map
+  id: ap::examples::async
+  category: utility/code/examples/async
   type: python
   enable: false
   author: Anchorpoint Software GmbH
-  description: Unmaps (unmounts) a drive
+  description: Runs an async function thar reports progress to the user
   icon:
-    path: :/icons/hardDrive.svg
+    path: :/icons/aplogo.svg
 
-  script: unmap_drive.py
+  script: async_example.py
 
   register:
     folder:

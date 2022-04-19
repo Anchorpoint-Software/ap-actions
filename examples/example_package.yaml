@@ -1,0 +1,31 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Coding Examples
+
+  version: 1
+  id: ap::package::examples
+  category: utility/code/examples
+  type: package
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: A useful collection of Action examples that showcase how to write your own Actions
+  icon:
+    path: codingExamples.svg
+
+  actions:
+    - ap::examples::async
+    - ap::examples::attributes
+    - ap::examples::input
+    - ap::examples::inputcommand
+    - ap::examples::project
+    - ap::examples::complexdialog
+    - ap::examples::greetings
+    - ap::examples::qml::greetings
+    - ap::examples::widgets::greetings
+    - ap::examples::settings
+    - ap::examples::environment

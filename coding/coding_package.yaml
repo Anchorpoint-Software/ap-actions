@@ -5,20 +5,20 @@
 
 version: 1.0
 action:
-  name: Open Terminal Here
+  name: Coding Utilities
 
   version: 1
-  id: ap::openterminal
+  id: ap::package::coding
   category: utility/code
+  type: package
   enable: false
-  type: python
+  
   author: Anchorpoint Software GmbH
-  description: Opens the Terminal / Command line in the current folder
+  description: Contains a set of developer tools that are very useful when you want to create your own Actions for Anchorpoint
   icon:
-    path: :/icons/action.svg
+    path: codingUtils.svg
 
-  script: open_terminal_here.py
-
-  register:
-    folder:
-      enable: true
+  actions:
+    - ap::newaction
+    - ap::openterminal
+    - ap::openvscode

@@ -1,0 +1,39 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Run Command Example
+
+  version: 1
+  id: ap::examples::inputcommand
+  category: utility/code/examples/input
+  type: command
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Demonstrates how to run a command that is provided by the user
+  icon:
+    path: :/icons/action.svg
+
+  command: ${command_to_run}
+  detach: true                # Detach the command from Anchorpoint so that it becomes a standalone application
+  workingDirectory: ${path}   # Set the working directory of the command explicity (default is current folder)  
+
+  inputs:
+    command_to_run: # The command to run
+        message: Choose an application to run # The message that is displayed to the user
+        browse: file                          # Show a browse button so that the user can choose something on the file system. 
+        store: action                         # Store the setting so that the user is only aksed once for this project. 
+
+    custom_path: # A custom extension to the PATH environment
+        message: Append to PATH               # The message that is displayed to the user
+        store: action                         # Store the setting so that the user is only aksed once for this project. 
+
+  environment:
+    PATH: ${PATH};${custom_path}
+        
+  register:
+    folder:
+      enable: true

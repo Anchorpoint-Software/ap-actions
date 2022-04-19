@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Unmap Drive
+  name: Project Example
 
   version: 1
-  id: ap::unmapdrive
-  category: map
+  id: ap::examples::project
+  category: utility/code/examples/project
   type: python
   enable: false
   author: Anchorpoint Software GmbH
-  description: Unmaps (unmounts) a drive
+  description: An action that demonstrates how to create a project and how to set additional metadata
   icon:
-    path: :/icons/hardDrive.svg
+    path: :/icons/aplogo.svg
 
-  script: unmap_drive.py
+  script: project_example.py
 
   register:
     folder:
