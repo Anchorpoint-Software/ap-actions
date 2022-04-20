@@ -94,7 +94,7 @@ else:
     dialog.title = "Save File as Template"
 
 dialog.add_text("Name:").add_input(placeholder = "Character Template", var="name", callback=name_changed)
-dialog.add_info("Your template will appear in a <b>new tab.</b> <br> Templates are accessible from the <b>New</b> context menu.") #add this later:  <br> <a href='https://github.com/Anchorpoint-Software/ap-actions-data/blob/main/png/blender_thumbnail_rendered.png'>Learn more about templates</a>
+dialog.add_info("Your template will appear in a <b>new tab.</b> <br> Templates are accessible from the <b>New</b> context menu. <br> <a href='https://www.anchorpoint.app/blog/automate-folder-structures-and-naming-conventions-without-writing-code'>Learn more about templates</a>")
 
 if project:
     dialog.add_separator()

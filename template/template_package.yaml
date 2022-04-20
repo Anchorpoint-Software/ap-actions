@@ -18,7 +18,7 @@ action:
     path: folderTemplates.svg
 
   details: '
-    <p>Enables template actions in the context menu and when creating new files and folders in the Anchorpoint browser.</p>
+    <p>Enables template actions in the context menu and when creating new files and folders in the Anchorpoint browser. Take a look at this <a href="https://www.anchorpoint.app/blog/automate-folder-structures-and-naming-conventions-without-writing-code">tutorial</a> for more details.</p>
 
     <p><b>Open the template dialog</b></p>
     <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new01.png" width="400"></p>
