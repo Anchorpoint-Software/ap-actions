@@ -18,6 +18,8 @@ class _CloneProgressImpl(git.RemoteProgress):
         self.progress.update(_map_op_code(op_code), cur_count, max_count)
 
 class GitRepository(VCRepository):
+    repo: git.Repo
+
     @staticmethod
     def is_repo(path: str) -> bool:
         return os.path.exists(os.path.join(path, ".git"))
@@ -83,21 +85,34 @@ class GitRepository(VCRepository):
             self.repo.index.remove(deleted)
 
     def unstage_files(self, paths: list[str]):
-        existing = []
-        deleted = []
-        for path in paths:
-            if os.path.exists(path):
-                existing.append(path)
-            else:
-                deleted.append(path)
-
-        if len(existing) > 0:
-            self.repo.index.remove(existing)
-        if len(deleted) > 0:
-            self.repo.index.add(deleted)
+        self.repo.git.restore("--staged", *paths)
 
     def commit(self, message: str):
         self.repo.index.commit(message)
+
+    def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+        tool = None
+        if tool == "vscode" or tool == "code":
+            self.repo.git.config("merge.tool", "vscode")
+            self.repo.git.config("mergetool.vscode.cmd", "code -n --wait $MERGED")
+            tool = "vscode"
+        if paths is not None:
+            self.repo.git(c = "mergetool.keepBackup=false").mergetool(tool = tool, *paths)
+        else:
+            self.repo.git(c = "mergetool.keepBackup=false").mergetool(tool = tool)
+
+    def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+        tool = None
+        if tool == "vscode" or tool == "code":
+            self.repo.git.config("diff.tool", "vscode")
+            self.repo.git.config("difftool.vscode.cmd", "code -n --wait --diff $LOCAL $REMOTE")
+            tool = "vscode"
+        if paths is not None:
+            self.repo.git().difftool("--no-prompt", tool = tool, *paths)
+            self.repo.git().difftool("--no-prompt", "--cached", tool = tool, *paths)
+        else:
+            self.repo.git().difftool("--no-prompt", tool = tool)
+            self.repo.git().difftool("--no-prompt", "--cached", tool = tool)
 
     def _get_file_changes(self, diff: git.Diff, changes: Changes):
         for change in diff.iter_change_type("M"):

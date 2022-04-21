@@ -24,3 +24,9 @@ class VCRepository:
 
     def get_pending_changes(self, checked_out: bool = False) -> Changes:
         pass
+
+    def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+        pass
+
+    def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+        pass
