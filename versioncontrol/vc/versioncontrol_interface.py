@@ -1,7 +1,7 @@
 from typing import Optional
 from vc.models import *
 
-class CloneProgress:
+class Progress:
     def update(self, operation_code: str, current_count: int, max_count: int):
         pass
 
@@ -15,11 +15,14 @@ class VCRepository:
         pass
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, progress: Optional[CloneProgress] = None):
+    def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
         pass
 
     @classmethod
     def load(cls, path: str):
+        pass
+
+    def push(self, progress: Optional[Progress] = None):
         pass
 
     def get_pending_changes(self, checked_out: bool = False) -> Changes:

@@ -5,18 +5,18 @@
 
 version: 1.0
 action:
-  name: "Git Get Pending Changes"
+  name: Git Push
 
   version: 1
-  id: git::pendingchanges
+  id: git::push
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Prints pending changes to the console
+  description: ""
   icon:
     path: :/icons/version.svg
 
-  script: git_get_pending_changes.py
+  script: git_push.py
 
   register:
     folder:

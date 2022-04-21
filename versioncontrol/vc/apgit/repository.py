@@ -7,9 +7,25 @@ def _map_op_code(op_code: int) -> str:
         return "downloading"
     if op_code == 256:
         return "updating"
+    if op_code == 4:
+        return "counting"
+    if op_code == 64:
+        return "resolving"
+    if op_code == 16:
+        return "writing"
+    if op_code == 8:
+        return "compressing"
     return str(op_code)
 
-class _CloneProgressImpl(git.RemoteProgress):
+class _CloneProgress(git.RemoteProgress):
+    def __init__(self, progress) -> None:
+        super().__init__()
+        self.progress = progress
+
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        self.progress.update(_map_op_code(op_code), cur_count, max_count)
+
+class _PushProgress(git.RemoteProgress):
     def __init__(self, progress) -> None:
         super().__init__()
         self.progress = progress
@@ -32,10 +48,10 @@ class GitRepository(VCRepository):
         return repo
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, progress: Optional[CloneProgress] = None):
+    def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
         repo = cls()
         if progress is not None:
-            repo.repo = git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgressImpl(progress))
+            repo.repo = git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
         else:
             repo.repo = git.Repo.clone_from(remote_url, local_path)
             
@@ -48,6 +64,16 @@ class GitRepository(VCRepository):
         repo.repo = git.Repo(path, search_parent_directories=True)
         repo.repo.git.lfs("install", "--local")
         return repo
+
+    def push(self, progress: Optional[Progress] = None):
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if progress is not None:
+            for info in self.repo.remote(remote).push(progress = _PushProgress(progress)):
+                print(info.summary)
+        else: 
+            for info in self.repo.remote(remote).push():
+                print(info.summary)
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()
@@ -114,6 +140,12 @@ class GitRepository(VCRepository):
             self.repo.git().difftool("--no-prompt", tool = tool)
             self.repo.git().difftool("--no-prompt", "--cached", tool = tool)
 
+    def _get_current_branch(self):
+        return self.repo.git.rev_parse("--abbrev-ref", "HEAD")
+
+    def _get_default_remote(self, branch: str):
+        return self.repo.git.config("--get", f"branch.{branch}.remote")
+
     def _get_file_changes(self, diff: git.Diff, changes: Changes):
         for change in diff.iter_change_type("M"):
             changes.modified_files.append(Change(path = change.a_path)) 
@@ -122,5 +154,4 @@ class GitRepository(VCRepository):
         for change in diff.iter_change_type("R"):
             changes.renamed_files.append(Change(path = change.a_path, old_path = change.b_path)) 
         for change in diff.iter_change_type("D"):
-            print("DELETED ", change.a_path)
             changes.deleted_files.append(Change(path = change.a_path)) 
