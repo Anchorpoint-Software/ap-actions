@@ -21,7 +21,8 @@ def commit_async(repo: GitRepository, message: str):
 repo = GitRepository.load(path)
 
 def commit(dialog: ap.Dialog):
-    ctx.run_async(commit, repo, dialog.get_value("message"))
+    ctx.run_async(commit_async, repo, dialog.get_value("message"))
+    dialog.close()
 
 if repo:
     staged = repo.get_pending_changes(staged=True)
@@ -33,6 +34,6 @@ if repo:
     dialog = ap.Dialog()
     dialog.title = "Commit"
     dialog.icon = ctx.icon
-    dialog.add_input("fChanged {changecount} files", var="message")
+    dialog.add_input(f"Changed {changecount} files", var="message")
     dialog.add_button("Commit", callback=commit)
     dialog.show()
