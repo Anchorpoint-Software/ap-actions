@@ -152,6 +152,6 @@ class GitRepository(VCRepository):
         for change in diff.iter_change_type("A"):
             changes.new_files.append(Change(path = change.a_path)) 
         for change in diff.iter_change_type("R"):
-            changes.renamed_files.append(Change(path = change.a_path, old_path = change.b_path)) 
+            changes.renamed_files.append(Change(path = change.b_path, old_path = change.a_path)) 
         for change in diff.iter_change_type("D"):
             changes.deleted_files.append(Change(path = change.a_path)) 

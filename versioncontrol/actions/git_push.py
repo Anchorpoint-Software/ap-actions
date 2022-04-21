@@ -18,11 +18,8 @@ class PushProgress(Progress):
 
     def update(self, operation_code: str, current_count: int, max_count: int):
         print (operation_code, current_count, max_count)
-        if operation_code == "downloading":
-            self.ap_progress.set_text("Downloading Files")
-            self.ap_progress.report_progress(current_count / max_count)
-        elif operation_code == "updating":
-            self.ap_progress.set_text("Updating Files")
+        if operation_code == "writing":
+            self.ap_progress.set_text("Uploading Files")
             self.ap_progress.report_progress(current_count / max_count)
         else:
             self.ap_progress.set_text("Talking to Server")
