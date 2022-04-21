@@ -26,6 +26,7 @@ class GitRepository(VCRepository):
     def create(cls, path: str):
         repo = cls()
         repo.repo = git.Repo.init(path)
+        repo.repo.git.lfs("install", "--local")
         return repo
 
     @classmethod
@@ -36,5 +37,75 @@ class GitRepository(VCRepository):
         else:
             repo.repo = git.Repo.clone_from(remote_url, local_path)
             
-        repo.repo.git(local_path).lfs("--local", "install")
+        repo.repo.git.lfs("install", "--local")
         return repo
+
+    @classmethod
+    def load(cls, path: str):
+        repo = cls()
+        repo.repo = git.Repo(path, search_parent_directories=True)
+        repo.repo.git.lfs("install", "--local")
+        return repo
+
+    def get_pending_changes(self, staged: bool = False) -> Changes:
+        changes = Changes()
+        if staged:
+            diff = self.repo.head.commit.diff()
+        else:
+            diff = self.repo.index.diff(None) 
+        
+        self._get_file_changes(diff, changes)
+
+        if not staged:
+            for untracked_file in self.repo.untracked_files:
+                changes.new_files.append(Change(path = untracked_file)) 
+        
+        return changes
+
+    def stage_all_files(self):
+        self.repo.git.add(".")
+
+    def unstage_all_files(self):
+        self.repo.git.restore("--staged", ".")
+
+    def stage_files(self, paths: list[str]):
+        existing = []
+        deleted = []
+        for path in paths:
+            if os.path.exists(path):
+                existing.append(path)
+            else:
+                deleted.append(path)
+
+        if len(existing) > 0:
+            self.repo.index.add(existing)
+        if len(deleted) > 0:
+            self.repo.index.remove(deleted)
+
+    def unstage_files(self, paths: list[str]):
+        existing = []
+        deleted = []
+        for path in paths:
+            if os.path.exists(path):
+                existing.append(path)
+            else:
+                deleted.append(path)
+
+        if len(existing) > 0:
+            self.repo.index.remove(existing)
+        if len(deleted) > 0:
+            self.repo.index.add(deleted)
+
+    def commit(self, message: str):
+        self.repo.index.commit(message)
+
+    def _get_file_changes(self, diff: git.Diff, changes: Changes):
+        for change in diff.iter_change_type("M"):
+            changes.modified_files.append(Change(path = change.a_path)) 
+        for change in diff.iter_change_type("A"):
+            changes.new_files.append(Change(path = change.a_path)) 
+        for change in diff.iter_change_type("R"):
+            changes.renamed_files.append(Change(path = change.a_path, old_path = change.b_path)) 
+        for change in diff.iter_change_type("D"):
+            print("DELETED ", change.a_path)
+            changes.deleted_files.append(Change(path = change.a_path)) 

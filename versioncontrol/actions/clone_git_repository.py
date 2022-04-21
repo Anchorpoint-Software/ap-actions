@@ -1,20 +1,11 @@
 import anchorpoint as ap
 import apsync as aps
 
-import logging
-logging.basicConfig(level=logging.INFO)
-
 import sys, os, importlib
 sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
 
-from vc.apgit.repository import *
-
-import sys, importlib
-for k,v in sys.modules.items():
-    reload = []
-    reload.append(v)
-for module in reload:
-    importlib.reload(module)
+importlib.invalidate_caches()
+from vc.apgit.repository import * 
 
 ctx = ap.Context.instance()
 ui = ap.UI()

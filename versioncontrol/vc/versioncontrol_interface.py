@@ -1,5 +1,5 @@
 from typing import Optional
-
+from vc.models import *
 
 class CloneProgress:
     def update(self, operation_code: str, current_count: int, max_count: int):
@@ -16,4 +16,11 @@ class VCRepository:
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[CloneProgress] = None):
+        pass
+
+    @classmethod
+    def load(cls, path: str):
+        pass
+
+    def get_pending_changes(self, checked_out: bool = False) -> Changes:
         pass

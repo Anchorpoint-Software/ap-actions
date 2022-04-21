@@ -1,0 +1,23 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: "Git: Get Pending Changes"
+
+  version: 1
+  id: git::pendingchanges
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Prints pending changes to the console
+  icon:
+    path: :/icons/version.svg
+
+  script: git_get_pending_changes.py
+
+  register:
+    folder:
+      enable: true
