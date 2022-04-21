@@ -1,0 +1,23 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Clone Git Repository
+
+  version: 1
+  id: git::clone
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Clones a Git repository from a remote (e.g. GitHub)
+  icon:
+    path: :/icons/version.svg
+
+  script: clone_git_repository.py
+
+  register:
+    new_folder:
+      enable: true
