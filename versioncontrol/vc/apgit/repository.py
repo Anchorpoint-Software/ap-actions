@@ -1,5 +1,6 @@
 import os
 from shutil import ExecError
+import shutil
 import git
 from vc.versioncontrol_interface import *
 from typing import cast
@@ -199,6 +200,8 @@ class GitRepository(VCRepository):
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
+            if self._command_exists("code") == False:
+                raise Exception("Could not find external Diff Tool")
             self.repo.git.config("merge.tool", "vscode")
             self.repo.git.config("mergetool.vscode.cmd", "code -n --wait $MERGED")
             tool = "vscode"
@@ -211,6 +214,8 @@ class GitRepository(VCRepository):
 
     def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
+            if self._command_exists("code") == False:
+                raise Exception("Could not find external Diff Tool")
             self.repo.git.config("diff.tool", "vscode")
             self.repo.git.config("difftool.vscode.cmd", "code -n --wait --diff $LOCAL $REMOTE")
             tool = "vscode"
@@ -222,6 +227,9 @@ class GitRepository(VCRepository):
         else:
             self.repo.git().difftool("--no-prompt", tool = tool)
             self.repo.git().difftool("--no-prompt", "--cached", tool = tool)
+
+    def _command_exists(self, cmd: str):
+        return shutil.which(cmd) is not None
 
     def _get_current_branch(self):
         return self.repo.git.rev_parse("--abbrev-ref", "HEAD")
