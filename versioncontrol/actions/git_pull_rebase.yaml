@@ -8,7 +8,7 @@ action:
   name: Git Pull (Rebase)
 
   version: 1
-  id: user::FSK8X14WDL
+  id: git::pullrebase
   category: git
   type: python
   author: Anchorpoint Software GmbH

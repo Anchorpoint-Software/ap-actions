@@ -1,0 +1,43 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Git"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::git"
+  category: "vc/git"
+  type: package
+  enable: false
+  description: (WIP) Contribute to Git repositories
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: ":icons/version.svg"
+
+  dependencies: ../vc
+
+  actions:
+    - git::clone
+    - git::createrepo
+    - git::diff
+    - git::commit
+    - git::pendingchanges
+    - git::lfstrackall
+    - git::pullrebase
+    - git::push
+    - git::resolveconflicts
+    - git::restorefiles
+    - git::stageall
+    - git::stagefiles
+    - git::unstageallfiles
+    - git::unstagefiles
+
+
+    

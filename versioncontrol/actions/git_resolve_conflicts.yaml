@@ -8,7 +8,7 @@ action:
   name: Git Resolve Conflicts
 
   version: 1
-  id: user::SCJD51P396
+  id: git::resolveconflicts
   category: git
   type: python
   author: Anchorpoint Software GmbH

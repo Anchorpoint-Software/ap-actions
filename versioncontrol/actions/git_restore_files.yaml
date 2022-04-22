@@ -8,7 +8,7 @@ action:
   name: Git Restore Files
 
   version: 1
-  id: user::PMNACOPU5I
+  id: git::restorefiles
   category: git
   type: python
   author: Anchorpoint Software GmbH
