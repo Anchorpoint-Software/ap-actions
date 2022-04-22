@@ -198,22 +198,24 @@ class GitRepository(VCRepository):
         self.repo.git.rebase("--abort")
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
-        tool = None
         if tool == "vscode" or tool == "code":
             self.repo.git.config("merge.tool", "vscode")
             self.repo.git.config("mergetool.vscode.cmd", "code -n --wait $MERGED")
             tool = "vscode"
+        if tool is None:
+            raise Exception("No tool configured")
         if paths is not None:
             self.repo.git(c = "mergetool.keepBackup=false").mergetool(tool = tool, *paths)
         else:
             self.repo.git(c = "mergetool.keepBackup=false").mergetool(tool = tool)
 
     def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
-        tool = None
         if tool == "vscode" or tool == "code":
             self.repo.git.config("diff.tool", "vscode")
             self.repo.git.config("difftool.vscode.cmd", "code -n --wait --diff $LOCAL $REMOTE")
             tool = "vscode"
+        if tool is None:
+            raise Exception("No tool configured")
         if paths is not None:
             self.repo.git().difftool("--no-prompt", tool = tool, *paths)
             self.repo.git().difftool("--no-prompt", "--cached", tool = tool, *paths)

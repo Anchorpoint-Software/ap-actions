@@ -18,7 +18,7 @@ def diff():
     repo = GitRepository.load(path)
     if repo:
         if is_file_action:
-            repo.launch_external_diff("vscode", files)
+            repo.launch_external_diff(tool = "vscode", paths = files)
         else:
-            repo.launch_external_diff("vscode")
+            repo.launch_external_diff(tool = "vscode")
 diff()
