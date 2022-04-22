@@ -11,7 +11,9 @@ ctx = ap.Context.instance()
 ui = ap.UI()
 path = ctx.path
 
-def commit_async(repo: GitRepository, message: str):
+def commit_async(message: str):
+    repo = GitRepository.load(path)
+    if repo is None: return
     try:
         repo.commit(message)
         ui.show_success("Commit succeeded")
@@ -21,7 +23,7 @@ def commit_async(repo: GitRepository, message: str):
 repo = GitRepository.load(path)
 
 def commit(dialog: ap.Dialog):
-    ctx.run_async(commit_async, repo, dialog.get_value("message"))
+    ctx.run_async(commit_async, dialog.get_value("message"))
     dialog.close()
 
 if repo:
@@ -29,6 +31,7 @@ if repo:
     changecount = staged.size()
     if changecount == 0:
         ui.show_info("Nothing to commit", "Stage your changes first")
+        del repo
         sys.exit(0)
 
     dialog = ap.Dialog()
@@ -37,3 +40,5 @@ if repo:
     dialog.add_input(f"Changed {changecount} files", var="message")
     dialog.add_button("Commit", callback=commit)
     dialog.show()
+
+    del repo

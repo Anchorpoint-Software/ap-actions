@@ -11,10 +11,10 @@ ctx = ap.Context.instance()
 ui = ap.UI()
 path = ctx.path
 
-def stage_files(repo: GitRepository, files: list[str]):
+def stage_files(files: list[str]):
+    repo = GitRepository.load(path)
+    if repo is None: return
     repo.stage_files(files)
     ui.show_success("Files Staged")
 
-repo = GitRepository.load(path)
-if repo:
-    ctx.run_async(stage_files, repo, ctx.selected_files)
+ctx.run_async(stage_files, ctx.selected_files)

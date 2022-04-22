@@ -12,9 +12,9 @@ ui = ap.UI()
 path = ctx.path
 
 def unstage_files(repo: GitRepository, files: list[str]):
+    repo = GitRepository.load(path)
+    if repo is None: return
     repo.unstage_files(files)
     ui.show_success("Files Unstaged")
 
-repo = GitRepository.load(path)
-if repo:
-    ctx.run_async(unstage_files, repo, ctx.selected_files)
+ctx.run_async(unstage_files, ctx.selected_files)

@@ -17,22 +17,24 @@ class PushProgress(Progress):
         self.ap_progress = progress
 
     def update(self, operation_code: str, current_count: int, max_count: int):
-        print (operation_code, current_count, max_count)
         if operation_code == "writing":
             self.ap_progress.set_text("Uploading Files")
             self.ap_progress.report_progress(current_count / max_count)
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def clone_repo_async(repo: GitRepository):
+def clone_repo_async():
+    repo = GitRepository.load(path)
+    if repo == None: return
     try:
         progress = ap.Progress("Pushing Git Changes")
-        repo.push(progress=PushProgress(progress))
+        success = repo.push(progress=PushProgress(progress))
+        if not success:
+            ui.show_error("Failed to push Git Repository")    
+        else:
+            ui.show_success("Push Successful")
         progress.finish()
-        ui.show_success("Push Successful")
     except Exception as e:
         ui.show_error("Failed to push Git Repository", e)
 
-repo = GitRepository.load(path)
-if repo:
-    ctx.run_async(clone_repo_async, repo)
+ctx.run_async(clone_repo_async)

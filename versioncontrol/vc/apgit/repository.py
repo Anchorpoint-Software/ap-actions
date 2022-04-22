@@ -78,12 +78,16 @@ class GitRepository(VCRepository):
     def push(self, progress: Optional[Progress] = None):
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
+        success = True
         if progress is not None:
             for info in self.repo.remote(remote).push(progress = _PushProgress(progress)):
-                print(info.summary)
+                if info.flags & git.PushInfo.ERROR:
+                    success = False
         else: 
             for info in self.repo.remote(remote).push():
-                print(info.summary)
+                if info.flags & git.PushInfo.ERROR:
+                    success = False
+        return success
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()

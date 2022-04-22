@@ -11,10 +11,10 @@ ctx = ap.Context.instance()
 ui = ap.UI()
 path = ctx.path
 
-def stage_all(repo: GitRepository):
+def stage_all():
+    repo = GitRepository.load(path)
+    if repo is None: return
     repo.unstage_all_files()
     ui.show_success("All Files Unstaged")
 
-repo = GitRepository.load(path)
-if repo:
-    ctx.run_async(stage_all, repo)
+ctx.run_async(stage_all)
