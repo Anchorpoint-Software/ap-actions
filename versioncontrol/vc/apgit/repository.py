@@ -1,6 +1,9 @@
 import os
 import git
 from vc.versioncontrol_interface import *
+from typing import cast
+
+import gc
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -35,6 +38,13 @@ class _PushProgress(git.RemoteProgress):
 
 class GitRepository(VCRepository):
     repo: git.Repo
+
+    def __del__(self) -> None:
+        # GitPython tends to leak memory / keep git.exe processes dangling
+        del self.repo 
+        gc.collect()
+        
+        print("\n\nDELETING git repo. If this message does not show up we are leaking memory\n\n")
 
     @staticmethod
     def is_repo(path: str) -> bool:
@@ -87,7 +97,7 @@ class GitRepository(VCRepository):
         if not staged:
             for untracked_file in self.repo.untracked_files:
                 changes.new_files.append(Change(path = untracked_file)) 
-        
+
         return changes
 
     def stage_all_files(self):
