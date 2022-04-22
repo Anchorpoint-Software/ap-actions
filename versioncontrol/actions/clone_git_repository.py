@@ -34,7 +34,7 @@ def clone_repo_async(repo_path, url):
         ui.navigate_to_folder(repo_path)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
-        ui.show_error("Failed to clone Git Repository", e)
+        ui.show_error("Failed to clone Git Repository", str(e))
 
 def clone_repo(dialog: ap.Dialog):
     name = dialog.get_value("name")

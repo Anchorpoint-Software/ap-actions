@@ -18,7 +18,7 @@ def commit_async(message: str):
         repo.commit(message)
         ui.show_success("Commit succeeded")
     except Exception as e:
-        ui.show_error("Commit Failed", e)
+        ui.show_error("Commit Failed", str(e))
 
 repo = GitRepository.load(path)
 

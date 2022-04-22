@@ -35,6 +35,6 @@ def clone_repo_async():
             ui.show_success("Push Successful")
         progress.finish()
     except Exception as e:
-        ui.show_error("Failed to push Git Repository", e)
+        ui.show_error("Failed to push Git Repository", str(e))
 
 ctx.run_async(clone_repo_async)
