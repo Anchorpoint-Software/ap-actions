@@ -1,4 +1,5 @@
 import os
+from shutil import ExecError
 import git
 from vc.versioncontrol_interface import *
 from typing import cast
@@ -29,6 +30,14 @@ class _CloneProgress(git.RemoteProgress):
         self.progress.update(_map_op_code(op_code), cur_count, max_count)
 
 class _PushProgress(git.RemoteProgress):
+    def __init__(self, progress) -> None:
+        super().__init__()
+        self.progress = progress
+
+    def update(self, op_code, cur_count, max_count=None, message=''):
+        self.progress.update(_map_op_code(op_code), cur_count, max_count)
+
+class _PullProgress(git.RemoteProgress):
     def __init__(self, progress) -> None:
         super().__init__()
         self.progress = progress
@@ -75,19 +84,39 @@ class GitRepository(VCRepository):
         repo.repo.git.lfs("install", "--local")
         return repo
 
-    def push(self, progress: Optional[Progress] = None):
+    def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        success = True
+        state = UpdateState.OK
         if progress is not None:
             for info in self.repo.remote(remote).push(progress = _PushProgress(progress)):
                 if info.flags & git.PushInfo.ERROR:
-                    success = False
+                    state = UpdateState.ERROR
         else: 
             for info in self.repo.remote(remote).push():
                 if info.flags & git.PushInfo.ERROR:
-                    success = False
-        return success
+                    state = UpdateState.ERROR
+        return state
+
+    def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        state = UpdateState.OK
+        try:
+            if progress is not None:
+                for info in self.repo.remote(remote).pull(progress = _PullProgress(progress), rebase = rebase):
+                    if info.flags & git.FetchInfo.ERROR:
+                        state = UpdateState.ERROR
+            else: 
+                for info in self.repo.remote(remote).pull(rebase = rebase):
+                    if info.flags & git.FetchInfo.ERROR:
+                        state = UpdateState.ERROR
+        except Exception as e:
+            if self.has_conflicts():
+                return UpdateState.CONFLICT
+            raise e
+
+        return state
 
     def restore_files(self, files: list[str]):
         self.repo.git.checkout("--", *files)
@@ -140,6 +169,34 @@ class GitRepository(VCRepository):
         patterns = ["*" + ext for ext in extensions]
         self.repo.git.lfs("track", patterns)
 
+    def get_conflicts(self):
+        conflicts = []
+        status_lines = self.repo.git.status(porcelain=True).splitlines()
+        for status in status_lines:
+            split = status.split()
+            if len(split) == 2:
+                if split[0] == "UU":
+                    conflicts.append(split[1])    
+
+        return conflicts
+
+    def has_conflicts(self):
+        status_lines = self.repo.git.status(porcelain=True).split()
+        return "UU" in status_lines
+
+    def is_rebasing(self):
+        repodir = self._get_repo_internal_dir()
+        rebase_dirs = ["rebase-merge", "rebase-apply"]
+        for dir in rebase_dirs:
+            if os.path.exists(os.path.join(repodir, dir)): return True
+        return False
+
+    def continue_rebasing(self):
+        self.repo.git(c = "core.editor=true").rebase("--continue")
+
+    def abort_rebasing(self):
+        self.repo.git.rebase("--abort")
+
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         tool = None
         if tool == "vscode" or tool == "code":
@@ -179,3 +236,12 @@ class GitRepository(VCRepository):
             changes.renamed_files.append(Change(path = change.b_path, old_path = change.a_path)) 
         for change in diff.iter_change_type("D"):
             changes.deleted_files.append(Change(path = change.a_path)) 
+
+    def _make_relative_to_repo(self, path: str):
+        if os.path.isabs(path):
+            return os.path.relpath(path, self.repo.working_dir)
+        else:
+            return path
+
+    def _get_repo_internal_dir(self):
+        return os.path.join(self.repo.working_dir, ".git")

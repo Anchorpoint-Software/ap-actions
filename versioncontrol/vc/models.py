@@ -1,6 +1,12 @@
 from dataclasses import dataclass
 from types import new_class
 from typing import Optional
+from enum import Enum
+
+class UpdateState(Enum):
+    OK = 1
+    ERROR = 2
+    CONFLICT = 3
 
 @dataclass
 class Change:
@@ -61,3 +67,4 @@ class HistoryEntry:
     author: str
     message: str
     date: int
+

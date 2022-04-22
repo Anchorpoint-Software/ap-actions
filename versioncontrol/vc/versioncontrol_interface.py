@@ -22,7 +22,10 @@ class VCRepository:
     def load(cls, path: str):
         pass
 
-    def push(self, progress: Optional[Progress] = None):
+    def push(self, progress: Optional[Progress] = None) -> UpdateState:
+        pass
+
+    def update(self, progress: Optional[Progress] = None) -> UpdateState:
         pass
 
     def restore_files(self, files: list[str]):

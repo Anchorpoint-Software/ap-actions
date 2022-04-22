@@ -17,15 +17,26 @@ def print_changes():
 
     ui.clear_console()
     
-    print("Uncommitted Changes")
-    print("==================")
-    uncommitted = repo.get_pending_changes(staged = False)
-    print(uncommitted)
+    conflicts = repo.get_conflicts()
+    if len(conflicts) > 0:
+        if repo.is_rebasing():
+            print("***Rebasing***\nResolve conflicts or cancel merge")
+            print("==========================\n\n")
 
-    print("\n\nStaged Changes")
-    print("==============")
-    staged = repo.get_pending_changes(staged = True)
-    print(staged)
+        print("Conflicts")
+        print("=========")
+        for conflict in conflicts:
+            print(conflict)
+    else:    
+        print("Uncommitted Changes")
+        print("==================")
+        uncommitted = repo.get_pending_changes(staged = False)
+        print(uncommitted)
+
+        print("\n\nStaged Changes")
+        print("==============")
+        staged = repo.get_pending_changes(staged = True)
+        print(staged)
 
     ui.show_console()
 
