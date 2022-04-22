@@ -21,7 +21,8 @@ action:
   icon:
     path: ":icons/version.svg"
 
-  dependencies: ../vc
+  dependencies: 
+    - ../vc
 
   actions:
     - git::clone
