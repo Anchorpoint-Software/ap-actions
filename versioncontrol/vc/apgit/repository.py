@@ -64,7 +64,7 @@ class GitRepository(VCRepository):
     def create(cls, path: str):
         repo = cls()
         repo.repo = git.Repo.init(path)
-        repo.repo.git.lfs("install", "--local")
+        repo._init_git_lfs()
         return repo
 
     @classmethod
@@ -75,15 +75,25 @@ class GitRepository(VCRepository):
         else:
             repo.repo = git.Repo.clone_from(remote_url, local_path)
             
-        repo.repo.git.lfs("install", "--local")
+        repo._init_git_lfs()
         return repo
 
     @classmethod
     def load(cls, path: str):
         repo = cls()
         repo.repo = git.Repo(path, search_parent_directories=True)
-        repo.repo.git.lfs("install", "--local")
+        repo._init_git_lfs()
         return repo
+
+    def _preinit_git(self):
+        if self._command_exists("git") == False:
+            raise Exception("Git not installed")
+        if self._command_exists("git-credential-manager-core") == False:
+            raise Exception("Git not installed")
+        pass
+
+    def _init_git_lfs(self):
+        self.repo.git.lfs("install", "--local")
 
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
@@ -144,18 +154,7 @@ class GitRepository(VCRepository):
         self.repo.git.restore("--staged", ".")
 
     def stage_files(self, paths: list[str]):
-        existing = []
-        deleted = []
-        for path in paths:
-            if os.path.exists(path):
-                existing.append(os.path.normpath(path))
-            else:
-                deleted.append(os.path.normpath(path))
-
-        if len(existing) > 0:
-            self.repo.index.add(existing)
-        if len(deleted) > 0:
-            self.repo.index.remove(deleted)
+        self.repo.git.add(*paths)
 
     def unstage_files(self, paths: list[str]):
         self.repo.git.restore("--staged", *paths)
