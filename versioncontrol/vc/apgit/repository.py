@@ -1,9 +1,12 @@
 import os
+from platform import platform
 from shutil import ExecError
 import shutil
 import git
+import git.cmd
 from vc.versioncontrol_interface import *
 from typing import cast
+import platform
 
 import gc
 
@@ -64,12 +67,14 @@ class GitRepository(VCRepository):
     def create(cls, path: str):
         repo = cls()
         repo.repo = git.Repo.init(path)
+        repo._preinit_git()
         repo._init_git_lfs()
         return repo
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
         repo = cls()
+        repo._preinit_git()
         if progress is not None:
             repo.repo = git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
         else:
@@ -82,15 +87,20 @@ class GitRepository(VCRepository):
     def load(cls, path: str):
         repo = cls()
         repo.repo = git.Repo(path, search_parent_directories=True)
+        repo._preinit_git()
         repo._init_git_lfs()
         return repo
 
     def _preinit_git(self):
         if self._command_exists("git") == False:
             raise Exception("Git not installed")
-        if self._command_exists("git-credential-manager-core") == False:
-            raise Exception("Git not installed")
-        pass
+        if platform.system() == "Windows" and os.path.exists("C:\\Program Files\\Git\\mingw64\\libexec\\git-core\\git-credential-manager-core.exe") == False:
+            raise Exception("Git credential manager not installed")
+        elif self._command_exists("git-credential-manager-core") == False:
+            raise Exception("Git credential manager not installed")
+        if self._command_exists("git-lfs") == False:
+            raise Exception("Git LFS not installed")
+        git.Git().credential_manager_core("configure")
 
     def _init_git_lfs(self):
         self.repo.git.lfs("install", "--local")
