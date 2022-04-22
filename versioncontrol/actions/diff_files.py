@@ -14,12 +14,11 @@ path = ctx.path
 is_file_action = ctx.type == ap.Type.File
 files = ctx.selected_files
 
-def diff(repo: GitRepository):
-    if is_file_action:
-        repo.launch_external_diff("vscode", files)
-    else:
-        repo.launch_external_diff("vscode")
-
-repo = GitRepository.load(path)
-if repo:
-    diff(repo)
+def diff():
+    repo = GitRepository.load(path)
+    if repo:
+        if is_file_action:
+            repo.launch_external_diff("vscode", files)
+        else:
+            repo.launch_external_diff("vscode")
+diff()
