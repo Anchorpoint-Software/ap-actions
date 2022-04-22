@@ -11,7 +11,10 @@ ctx = ap.Context.instance()
 ui = ap.UI()
 path = ctx.path
 
-def print_changes(repo: GitRepository):
+def print_changes():
+    repo = GitRepository.load(path)
+    if repo == None: return
+
     ui.clear_console()
     
     print("Uncommitted Changes")
@@ -26,6 +29,4 @@ def print_changes(repo: GitRepository):
 
     ui.show_console()
 
-repo = GitRepository.load(path)
-if repo:
-    ctx.run_async(print_changes, repo)
+ctx.run_async(print_changes)
