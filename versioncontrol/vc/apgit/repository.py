@@ -89,6 +89,9 @@ class GitRepository(VCRepository):
                     success = False
         return success
 
+    def restore_files(self, files: list[str]):
+        self.repo.git.checkout("--", *files)
+
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()
         if staged:
@@ -129,6 +132,13 @@ class GitRepository(VCRepository):
 
     def commit(self, message: str):
         self.repo.index.commit(message)
+
+    def get_root_path(self):
+        return self.repo.working_dir
+
+    def track_lfs(self, extensions: list[str]):
+        patterns = ["*" + ext for ext in extensions]
+        self.repo.git.lfs("track", patterns)
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         tool = None

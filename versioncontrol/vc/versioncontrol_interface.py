@@ -25,7 +25,13 @@ class VCRepository:
     def push(self, progress: Optional[Progress] = None):
         pass
 
+    def restore_files(self, files: list[str]):
+        pass
+
     def get_pending_changes(self, checked_out: bool = False) -> Changes:
+        pass
+
+    def get_root_path(self):
         pass
 
     def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
