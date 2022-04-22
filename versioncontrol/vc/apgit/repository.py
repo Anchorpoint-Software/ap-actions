@@ -148,9 +148,9 @@ class GitRepository(VCRepository):
         deleted = []
         for path in paths:
             if os.path.exists(path):
-                existing.append(path)
+                existing.append(os.path.normpath(path))
             else:
-                deleted.append(path)
+                deleted.append(os.path.normpath(path))
 
         if len(existing) > 0:
             self.repo.index.add(existing)
