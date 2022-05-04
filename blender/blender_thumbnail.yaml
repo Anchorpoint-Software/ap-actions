@@ -12,7 +12,8 @@ action:
   #Optional Properties
   version: 1
   id: "ap::blender::thumbnail"
-  category: "blender/thumbnail"
+  category: "dcc/blender/thumbnail"
+  enable: false
   type: python
   author: "Anchorpoint Software GmbH"
   icon:
@@ -24,6 +25,9 @@ action:
       message: Path to Blender  # The message that is displayed to the user
       browse: file              # Show a browse button so that the user can browse to the executable
       store: user               # Only ask once, store in user settings
+
+  dependencies:
+    - blender_eevee_settings.py
 
   #Where to register this action
   register:

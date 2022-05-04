@@ -11,6 +11,7 @@ action:
   id: ap::mapasdrive
   category: map
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
   description: Maps (mounts) a folder to a drive
   icon:

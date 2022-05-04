@@ -1,0 +1,31 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action: 
+  #Must Have Properties
+  name: "UI / QML / Greetings Dialog"
+
+  #Optional Properties
+  version: 1
+  id: "ap::examples::qml::greetings"
+  category: "utility/code/examples/dialog"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+  description: "This is an advanced example action that uses PySide2 QML to create native QML dialogs"
+  icon:
+    path: ":icons/aplogo.svg"
+    
+  script: "greetings.py"
+
+  dependencies:
+    - dialog.qml
+
+  #Where to register this action: in all folders
+  register:
+    folder: 
+      enable: true 

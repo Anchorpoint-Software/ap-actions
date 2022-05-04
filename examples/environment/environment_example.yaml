@@ -1,0 +1,29 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Environment Example
+
+  version: 1
+  id: ap::examples::environment
+  category: utility/code/examples/environment
+  type: command
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Demonstrates how to set a custom environment when running a command action
+  icon:
+    path: :/icons/action.svg
+
+  command: cmd.exe # Will only work on windows, setting the environment as demonstrated works on all operating systems, however.
+  arguments: /c set MY_ENVIRONMENT
+
+  environment:
+    MY_ENVIRONMENT: my custom environment variable # A variable that only exists for this invocation
+    PATH: ${PATH};custom/path # You can append to existing enironment varialbes easily like this
+
+  register:
+    folder:
+      enable: true

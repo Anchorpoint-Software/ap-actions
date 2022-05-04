@@ -1,0 +1,28 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Save as Template
+
+  version: 1
+  id: ap::template::save
+  category: automation/template
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Saves the selected file or folder as a template
+  icon:
+    path: :/icons/folderCloud.svg
+
+  script: code/save_as_template.py
+  settings: code/template_action_settings.py
+  inputs:
+    template_dir: templates
+
+  register:
+    folder:
+      enable: true
+    file:
+      enable: true

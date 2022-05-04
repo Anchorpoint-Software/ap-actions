@@ -1,0 +1,41 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Blender"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::blender"
+  category: "dcc/blender"
+  type: package
+  enable: false
+  description: Render a thumbnail for Anchorpoint using Eevee
+  details: '
+    <p>This action can be found in the context menu on <b>.blend</b> files
+    <ol>
+      <li>Right click on the blend file</li>
+      <li>Select "Blender / Render Thumbnail"</li>
+      <li>Wait </li>
+    </ol>
+      At the first start you have to set the path to Blender. Anchorpoint saves the path so you never have to enter it again.</p>
+      <p><img src = "https://github.com/Anchorpoint-Software/ap-actions-data/blob/fab5ec6e66e55d5558006ed738e674ad1a6e6706/png/blender_thumbnail.png?raw=true" width="400"></p>
+      <p>Replaces the thumbnail with an Eevee rendering.</p>
+      <p><img src = "https://github.com/Anchorpoint-Software/ap-actions-data/blob/9c94231f3ffb3cd2650526cf2c00b0c8454f5959/png/blender_thumbnail_rendered.png?raw=true" width="400"></p>
+      <p>The result after replacing the thumbnail</p>
+    '
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "blender.svg"
+
+  actions:
+    - ap::blender::thumbnail 
+
+
+    

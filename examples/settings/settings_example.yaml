@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Unmap Drive
+  name: Settings Example
 
   version: 1
-  id: ap::unmapdrive
-  category: map
+  id: ap::examples::settings
+  category: utility/code/examples/settings
   type: python
   enable: false
   author: Anchorpoint Software GmbH
-  description: Unmaps (unmounts) a drive
+  description: An example action that demonstrates how to read and write action settings
   icon:
-    path: :/icons/hardDrive.svg
+    path: :/icons/settings.svg
 
-  script: unmap_drive.py
+  script: settings_example.py
 
   register:
     folder:

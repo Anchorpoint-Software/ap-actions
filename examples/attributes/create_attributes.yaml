@@ -5,20 +5,20 @@
 
 version: 1.0
 action:
-  name: Unmap Drive
+  name: Example / Create Attributes
 
   version: 1
-  id: ap::unmapdrive
-  category: map
+  id: ap::examples::attributes
+  category: utility/code/examples/attributes
   type: python
   enable: false
   author: Anchorpoint Software GmbH
-  description: Unmaps (unmounts) a drive
+  description: Example action to demonstrate how to create all kinds of attributes
   icon:
-    path: :/icons/hardDrive.svg
+    path: :/icons/action.svg
 
-  script: unmap_drive.py
+  script: create_attributes.py
 
   register:
-    folder:
+    file: 
       enable: true

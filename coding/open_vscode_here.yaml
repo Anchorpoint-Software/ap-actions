@@ -9,7 +9,8 @@ action:
 
   version: 1
   id: ap::openvscode
-  category: code
+  category: utility/code
+  enable: false
   type: command
   author: Anchorpoint Software GmbH
   description: Opens Visual Studio Code in the current Folder. Make sure that the VSCode shell command 'code' is installed
