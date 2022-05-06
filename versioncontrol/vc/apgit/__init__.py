@@ -1,11 +1,16 @@
-try:
-    import anchorpoint
-    ctx = anchorpoint.Context.instance()
-    try: 
-        import git
-    except:
-        ctx.install("GitPython")
-        import git
+import anchorpoint
 
-except:
-    print("Not running Anchorpoint")
+try:
+    import vc.apgit.utility as utility
+
+    if utility.guarantee_git():
+        try: 
+            import git
+        except:
+            ctx = anchorpoint.Context.instance()
+            ctx.install("GitPython")
+            import git
+    else: raise Warning("Git not installed")
+
+except Exception as e:
+    raise e

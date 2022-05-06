@@ -5,7 +5,11 @@ import sys, os, importlib
 sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
 
 importlib.invalidate_caches()
-from vc.apgit.repository import * 
+
+try:
+    from vc.apgit.repository import * 
+except Warning as e:
+    sys.exit(0)
 
 ctx = ap.Context.instance()
 ui = ap.UI()
