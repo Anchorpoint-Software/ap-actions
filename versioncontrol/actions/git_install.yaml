@@ -1,0 +1,23 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Install Git
+
+  version: 1
+  id: user::MGGYCPBWVR
+  category: user
+  type: python
+  author: j.hunz+test2
+  description: ""
+  icon:
+    path: :/icons/action.svg
+
+  script: git_install.py
+
+  register:
+    folder:
+      enable: true
