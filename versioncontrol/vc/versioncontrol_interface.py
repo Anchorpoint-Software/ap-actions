@@ -10,6 +10,14 @@ class VCRepository:
     def is_repo(path: str) -> bool:
         pass
 
+    @staticmethod
+    def is_authenticated(url: str) -> bool:
+        pass
+
+    @staticmethod
+    def authenticate(url: str, username: str, password: str):
+        pass
+
     @classmethod
     def create(cls, path: str):
         pass

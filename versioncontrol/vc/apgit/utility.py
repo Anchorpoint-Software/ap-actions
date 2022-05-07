@@ -1,6 +1,6 @@
 import anchorpoint as ap
 import vc.apgit.constants as constants
-import os, platform
+import os, platform, subprocess
 
 def _download_git():
     import requests
@@ -9,8 +9,11 @@ def _download_git():
     progress.finish()
     return r
     
+def _configure_gcm():
+    subprocess.check_call(["git", "credential-manager-core", "configure"])
+
 def _install_git_async():
-    import tempfile, subprocess
+    import tempfile
     request = _download_git()
     progress = ap.Progress("Installing Git", infinite=True)
     
@@ -20,7 +23,7 @@ def _install_git_async():
     
         try:
             subprocess.check_call([f.name, "/SILENT", "/COMPONENTS=gitlfs"])
-            subprocess.check_call(["git", "credential-manager-core", "configure"])
+            _configure_gcm()
             ap.UI().show_success("Git installed successfully")
         except:
             ap.UI().show_info("User cancelled Git installation")
@@ -50,8 +53,9 @@ def guarantee_git():
     elif not gcm_installed:
         ui.show_info("Git Credential Manager not installed", "The Git Credential Manager is required for Git to work correctly.") 
 
-    # if git_installed and lfs_installed and gcm_installed:
-    #     return True
+    if git_installed and lfs_installed and gcm_installed:
+        _configure_gcm()
+        return True
 
     print("Git must be installed")
 
