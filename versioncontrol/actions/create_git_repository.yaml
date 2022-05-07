@@ -20,4 +20,4 @@ action:
 
   register:
     new_folder:
-      enable: true
+      enable: can_create_git_repo.py
