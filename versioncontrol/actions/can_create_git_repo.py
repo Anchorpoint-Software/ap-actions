@@ -1,16 +1,9 @@
 import anchorpoint as ap
-import os
 from pathlib import Path
+import os, sys
 
-def contains_git_repo(path: str):
-    return os.path.exists(os.path.join(path, ".git"))
+sys.path.insert(0, os.path.split(__file__)[0])
+import is_git_repo as git
 
 def on_action_enable(path: str, ctx: ap.Context) -> bool:
-    if contains_git_repo(path): return False
-    p = Path(path)
-    
-    while p.parent is not p:
-        p = p.parent
-        if contains_git_repo(p): return False
-
-    return True
+    return git.is_git_repo(path)
