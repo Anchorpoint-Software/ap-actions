@@ -22,7 +22,7 @@ Everything where you have to do a lot of manual work (renaming files, copying fi
 ## 🚀 Getting Started 
 The best way to get started is looking and code examples and modify them.
 
-1. Download Anchorpoint
+1. [Download Anchorpoint](https://www.anchorpoint.app/)
 2. Go to your workspace settings
 
 ![Workspace settings](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gettingStartedstep_1.png)
