@@ -4,12 +4,11 @@ from platform import platform
 from shutil import ExecError
 import shutil
 
-from git import CommandError, GitCommandError, GitError
+from git import GitCommandError
 import git
 import git.cmd
 from vc.versioncontrol_interface import *
 from typing import cast
-import platform
 
 import gc
 
@@ -56,7 +55,7 @@ class GitRepository(VCRepository):
     repo: git.Repo = None
 
     def __del__(self) -> None:
-        # GitPython tends to leak memory / keep git.exe processes dangling
+        # GitPython tends to leak memory / keeps git.exe processes dangling
         if self.repo:
             del self.repo 
         
@@ -162,16 +161,19 @@ class GitRepository(VCRepository):
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()
-        if staged:
-            diff = self.repo.head.commit.diff()
-        else:
-            diff = self.repo.index.diff(None) 
-        
-        self._get_file_changes(diff, changes)
+        try:
+            if staged:
+                diff = self.repo.head.commit.diff()
+            else:
+                diff = self.repo.index.diff(None) 
+            
+            self._get_file_changes(diff, changes)
 
-        if not staged:
-            for untracked_file in self.repo.untracked_files:
-                changes.new_files.append(Change(path = untracked_file)) 
+            if not staged:
+                for untracked_file in self.repo.untracked_files:
+                    changes.new_files.append(Change(path = untracked_file)) 
+        except ValueError:
+            pass
 
         return changes
 
@@ -249,11 +251,54 @@ class GitRepository(VCRepository):
         if tool is None:
             raise Exception("No tool configured")
         if paths is not None:
-            self.repo.git().difftool("--no-prompt", tool = tool, *paths)
-            self.repo.git().difftool("--no-prompt", "--cached", tool = tool, *paths)
+            self.repo.git.difftool("--no-prompt", tool = tool, *paths)
+            self.repo.git.difftool("--no-prompt", "--cached", tool = tool, *paths)
         else:
-            self.repo.git().difftool("--no-prompt", tool = tool)
-            self.repo.git().difftool("--no-prompt", "--cached", tool = tool)
+            self.repo.git.difftool("--no-prompt", tool = tool)
+            self.repo.git.difftool("--no-prompt", "--cached", tool = tool)
+
+    def get_current_branch_name(self) -> str:
+        return self.repo.active_branch
+
+    def get_branches(self) -> list[Branch]:
+        def _map_ref(ref) -> Branch:
+            commit = ref.commit
+            model = Branch(ref.name)
+            model.id = commit.hexsha
+            model.last_changed = commit.committed_datetime
+            model.is_local = ref.is_remote == False
+            return model
+
+        branches = []
+        for ref in self.repo.branches:
+            model = _map_ref(ref)
+            branches.append(model)
+        for remote in self.repo.remotes:
+            for ref in remote.refs:
+                model = _map_ref(ref)
+                branches.append(model)
+
+        return branches
+
+    def get_current_change_id(self) -> str:
+        return self.repo.git.rev_parse("HEAD")
+
+    def get_remote_change_id(self) -> str:
+        return self.repo.git.rev_parse("@\{u\}")
+
+    def is_pull_required(self) -> bool:
+        try:
+            changes = self.repo.iter_commits(rev="HEAD..@{u}", max_count=1)
+            return next(changes, -1) != -1
+        except:
+            return False
+
+    def is_push_required(self) -> bool:
+        try:
+            changes = self.repo.iter_commits(rev="@{u}..HEAD", max_count=1)
+            return next(changes, -1) != -1
+        except:
+            return False
 
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None

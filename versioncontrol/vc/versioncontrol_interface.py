@@ -50,3 +50,15 @@ class VCRepository:
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         pass
+
+    def get_current_change_id(self) -> str:
+        pass
+
+    def get_remote_change_id(self) -> str:
+        pass
+
+    def is_pull_required(self) -> bool:
+        pass
+
+    def is_push_required(self) -> bool:
+        pass

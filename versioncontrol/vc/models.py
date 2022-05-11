@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from types import new_class
 from typing import Optional
 from enum import Enum
-
+from datetime import datetime
 class UpdateState(Enum):
     OK = 1
     ERROR = 2
@@ -68,3 +68,10 @@ class HistoryEntry:
     message: str
     date: int
 
+@dataclass
+class Branch:
+    """Represents a branch"""
+    name: str
+    id: Optional[str] = None
+    last_changed: Optional[datetime] = None
+    is_local: bool = True
