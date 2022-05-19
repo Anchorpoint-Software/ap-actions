@@ -206,10 +206,8 @@ def create_dialog():
             dialog.hide_row("secret_access_key_var",False)
             dialog.hide_row("root_folder_var",False)
 
-            dialog.hide_row("optional_text_var",False)
             dialog.hide_row("region_var",False)
             dialog.hide_row("location_constraint_var",False)
-            dialog.hide_row("optional_into_var",False)
 
         else:
             dialog.hide_row("b2_account_var",False)
@@ -221,10 +219,8 @@ def create_dialog():
             dialog.hide_row("secret_access_key_var",True)
             dialog.hide_row("root_folder_var",True)
 
-            dialog.hide_row("optional_text_var",True)
             dialog.hide_row("region_var",True)
             dialog.hide_row("location_constraint_var",True)
-            dialog.hide_row("optional_into_var",True)
 
         dialogSettings = aps.Settings()
         dialogSettings.set("dropdown_value",value)
@@ -255,10 +251,8 @@ def create_dialog():
     dialog.add_text("Bucket Name           ").add_input(configuration["b2_bucket_name"],placeholder="File_Bucket",var="b2_bucket_name_var")
     dialog.add_info("You can get these keys from your service provider, such as <br> the IAM console at AWS.")
 
-    dialog.add_text("Optional Settings", var="optional_text_var")
-    dialog.add_text("Region\t             ").add_input(configuration["region"],placeholder="eu-central-1",var="region_var")
-    dialog.add_text("Location Constraint").add_input(configuration["location_constraint"],placeholder="EU",var="location_constraint_var")
-    dialog.add_info("If you do not select anything the Anchorpoint will select a <br> region for you.", var="optional_into_var")
+    dialog.add_text("Region\t             ").add_input(configuration["region"],placeholder="eu-central-1 (Optional)",var="region_var")
+    dialog.add_text("Location Constraint").add_input(configuration["location_constraint"],placeholder="EU (Optional)",var="location_constraint_var")
 
     dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = keyring.get_password("AnchorpointCloudMount", "encryption_password") != None).add_button("Clear Configuration", callback = clear_config)
     dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
