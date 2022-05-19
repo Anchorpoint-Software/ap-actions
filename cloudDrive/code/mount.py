@@ -45,15 +45,12 @@ def check_rclone():
         # download zip
         progress = ap.Progress("Loading RClone", infinite = True)
         r = requests.get(RCLONE_INSTALL_URL)
-
-        # save zip as tmp
-        with tempfile.TemporaryDirectory() as tempdir:
-            with open(os.path.join(tempdir, "rclone.zip"), "wb") as f:
-                f.write(r.content)
-                # open zip file and extract rclone.exe to the right folder
-                z = zipfile.ZipFile(io.BytesIO(r.content))
-                source = z.open('rclone-v1.58.1-windows-386/rclone.exe')
-                target = open(rclone_path, "wb")
+                
+        # open zip file and extract rclone.exe to the right folder
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+        
+        with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
+            with open(rclone_path, "wb") as target:
                 shutil.copyfileobj(source, target)
 
         progress.finish()
