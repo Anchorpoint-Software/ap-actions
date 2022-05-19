@@ -1,16 +1,21 @@
 from ast import arguments
 from re import sub
+import shutil
+import zipfile
 import anchorpoint as ap
 import apsync as aps
 import platform
 import subprocess
 import os
-import urllib.request
+import io
+import requests
 import json
+import tempfile
 
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
+RCLONE_INSTALL_URL = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
 
 configuration = {
     "type": "",
@@ -35,9 +40,28 @@ def install_modules():
     progress.finish()
     check_winfsp()
 
+def check_rclone():
+    if not os.path.isfile(rclone_path):
+        # download zip
+        progress = ap.Progress("Loading RClone", infinite = True)
+        r = requests.get(RCLONE_INSTALL_URL)
+
+        # save zip as tmp
+        with tempfile.TemporaryDirectory() as tempdir:
+            with open(os.path.join(tempdir, "rclone.zip"), "wb") as f:
+                f.write(r.content)
+                # open zip file and extract rclone.exe to the right folder
+                z = zipfile.ZipFile(io.BytesIO(r.content))
+                source = z.open('rclone-v1.58.1-windows-386/rclone.exe')
+                target = open(rclone_path, "wb")
+                shutil.copyfileobj(source, target)
+
+        progress.finish()
+
 def check_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
     if os.path.isfile(winfsp_path):
+        check_rclone()
         get_settings()
     else:
         progress = ap.Progress("Loading WinFsp",infinite = True)
@@ -49,6 +73,7 @@ def check_winfsp():
             print(winget.stderr)
             ui.show_error("Failed to install WinFsp", description="Google WinFsp and install it manually.")
         else:
+            check_rclone()
             get_settings()
 
 def decrypt(encrypted: str, password: str) -> str:
