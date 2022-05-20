@@ -5,21 +5,18 @@
 
 version: 1.0
 action:
-  name: On Timeout
+  name: On Is Action Enabled Trigger
 
   version: 1
-  id: ap::examples::trigger::timer
+  id: ap::examples::trigger::actionenabled
   type: python
   author: Anchorpoint Software GmbH
-  description: "Example Python trigger that is executed every x seconds"
+  description: "Example that invokes a script to check if an action is enabled or not"
   icon:
     path: :/icons/action.svg
 
-  script: on_timeout.py
-
+  script: on_is_action_enabled_example.py
   register:
-    trigger:
-      on_timeout:
-        enable: true
-        interval: 60 #action is triggered every 60 seconds
+    folder:
+      enable: on_is_action_enabled_example.py
 
