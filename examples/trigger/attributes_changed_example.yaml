@@ -20,5 +20,5 @@ action:
 
   register:
     trigger:
-      attributes_changed:
+      on_attributes_changed:
         enable: true

@@ -20,7 +20,7 @@ action:
 
   register:
     trigger:
-      time:
+      on_timeout:
         enable: true
         interval: 60 #action is triggered every 60 seconds
 
