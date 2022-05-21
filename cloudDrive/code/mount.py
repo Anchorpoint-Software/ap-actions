@@ -10,7 +10,6 @@ import os
 import io
 import requests
 import json
-import tempfile
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -177,6 +176,10 @@ def setup_mount(dialog):
         "--volname=Anchorpoint",
         "--file-perms=0777",
         "--use-json-log",
+        "--stats",
+        "1s",
+        "--log-level",
+        "INFO"
     ]
 
     arguments = base_arguments + config_arguments + rclone_arguments
@@ -192,6 +195,7 @@ def setup_mount(dialog):
 
 def run_rclone(arguments, startupinfo):
     rclone_success = "The service rclone has been started"
+    progress = None
     
     p = subprocess.Popen(
         args=arguments,
@@ -205,13 +209,15 @@ def run_rclone(arguments, startupinfo):
     for line in p.stdout:
         myjson = is_json(line)
 
-        if myjson != None and myjson["level"] == "error":
+        if myjson != None and myjson["level"] == "error" and myjson["msg"] != "Unmounted rclone mount":
             ui.show_error("Mount Failed", str(p.stdout))
             return
         
         if rclone_success in line:
             ui.show_success("Mount Successful")
-            return
+        
+        if myjson and "Transferred" in myjson["msg"]:
+            progress = check_upload(myjson, progress)
 
 def is_json(myjson):
     try:
@@ -219,6 +225,26 @@ def is_json(myjson):
     except ValueError as e:
         return
     return myjson
+
+def check_upload(myjson, progress):
+    # get the percentage number without whitespaces
+    percentage = myjson["msg"].split(",")[1].strip()
+    upload_speed = myjson["msg"].split(",")[2].strip()
+    
+    if not progress and percentage != "100%" and percentage != "-":
+        progress = ap.Progress("Uploading Files", "Upload: " + upload_speed, infinite=True)
+    
+    if progress: 
+        if percentage == "-": percentage = "0"
+        percentage_int = int(percentage.split("%")[0])/100
+        progress.report_progress(percentage_int)
+        progress.set_text("Upload: " + upload_speed)
+
+    if progress and percentage == "100%":
+        progress.finish()
+        progress = None
+    
+    return progress
 
 def get_default_cache_path():
     app_data_roaming = os.getenv('APPDATA')
