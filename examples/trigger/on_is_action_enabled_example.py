@@ -1,7 +1,7 @@
 import anchorpoint as ap
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
-    print("on_action_enable called for ", path, type)
+    print("on_is_action_enabled called for ", path, type)
     return True
 
 # This check is required to avoid script execution when Anchorpoint loads the on_is_action_enabled function
