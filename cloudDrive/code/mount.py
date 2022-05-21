@@ -203,7 +203,6 @@ def run_rclone(arguments, startupinfo):
         universal_newlines=True)
       
     for line in p.stdout:
-        print(line)
         myjson = is_json(line)
 
         if myjson != None and myjson["level"] == "error":
@@ -226,10 +225,16 @@ def get_default_cache_path():
     app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
     return os.path.join(app_data,"Local/rclone").replace("/","\\")
 
+def is_admin():
+    return True
+
 def get_settings():
     import keyring, pyperclip as pc 
     if settings.get("Config")=="":
-        ui.show_info("No cloud drive configured", description="Ask your workspace owner to setup a cloud drive")
+        if is_admin:
+            ui.show_info("No cloud drive configured", description="Please setup a cloud drive")
+        else:
+            ui.show_info("No cloud drive configured", description="Ask your workspace owner to setup a cloud drive")
     else:
         password = keyring.get_password("AnchorpointCloudMount", "encryption_password")
         if password == None:
