@@ -175,7 +175,8 @@ def setup_mount(dialog):
         "--cache-dir",
         cache_path,
         "--volname=Anchorpoint",
-        "--file-perms=0777"
+        "--file-perms=0777",
+        "--use-json-log",
     ]
 
     arguments = base_arguments + config_arguments + rclone_arguments
@@ -184,13 +185,41 @@ def setup_mount(dialog):
     startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
     #startupinfo.wShowWindow = subprocess.SW_HIDE     
 
-    subprocess.Popen(
-        arguments, startupinfo = startupinfo
-    )  
+    ctx.run_async(run_rclone, arguments, startupinfo)
     
-    #ui.show_success("Mount Successful")
     #create_bat_file("process "+f'{drive}: "'+f'{ctx.path}"',drive)
     dialog.close()
+
+def run_rclone(arguments, startupinfo):
+    rclone_success = "The service rclone has been started"
+    
+    p = subprocess.Popen(
+        args=arguments,
+        startupinfo=startupinfo,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True)
+      
+    for line in p.stdout:
+        print(line)
+        myjson = is_json(line)
+
+        if myjson != None and myjson["level"] == "error":
+            ui.show_error("Mount Failed", str(p.stdout))
+            return
+        
+        if rclone_success in line:
+            ui.show_success("Mount Successful")
+            return
+
+def is_json(myjson):
+    try:
+        myjson = json.loads(myjson)
+    except ValueError as e:
+        return
+    return myjson
 
 def get_default_cache_path():
     app_data_roaming = os.getenv('APPDATA')
