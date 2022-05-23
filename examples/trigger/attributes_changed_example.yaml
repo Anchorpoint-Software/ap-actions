@@ -9,7 +9,6 @@ action:
 
   version: 1
   id: ap::examples::trigger::attributeschanged
-  category: user
   type: python
   author: Anchorpoint Software GmbH
   description: "An example trigger that is executed whenever attributes are changed"
@@ -20,5 +19,5 @@ action:
 
   register:
     trigger:
-      attributes_changed:
+      on_attributes_changed:
         enable: true
