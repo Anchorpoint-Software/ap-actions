@@ -8,10 +8,10 @@ action:
   name: Publish
 
   version: 1
-  id: ap::vc::3YKOOMG550
+  id: ap::vc::publish
   category: user
   type: python
-  author: Matthäus Niedoba
+  author: Anchorpoint Software GmbH
   description: Creates a copy of this file without the increment
   icon:
     path: publish.svg
