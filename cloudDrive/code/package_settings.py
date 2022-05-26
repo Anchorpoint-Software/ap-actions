@@ -7,12 +7,12 @@ import random
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
+local_settings = aps.Settings()
 
 def install_modules():
     progress = ap.Progress("Loading Security Module",infinite = True)
     ui.show_info("Loading Security Module")  
     ctx.install("pycryptodome")
-    ctx.install("keyring")
     ctx.install("pyperclip")
     progress.finish()
     init_dialog()
@@ -88,23 +88,24 @@ def apply_callback(dialog : ap.Dialog):
 
     settings.set("Config",encrypted_configuration)
     settings.store()
-    keyring.set_password("AnchorpointCloudMount", "encryption_password", password)  
+    local_settings.set("encryption_password", password)
+    local_settings.store()
 
     pc.copy(password)
     ui.show_success("Configuration Code copied to Clipboard")  
     dialog.close()
 
 def copy_configuration_key(dialog : ap.Dialog):
-    password = keyring.get_password("AnchorpointCloudMount", "encryption_password")
+    password = local_settings.get("encryption_password")
     pc.copy(str(password))
     ui.show_success("Configuration Code copied to Clipboard")  
     
 def init_dialog():
-    import keyring, pyperclip as pc 
+    import pyperclip as pc 
     if settings.get("Config")=="":
         create_dialog()
     else:
-        password = keyring.get_password("AnchorpointCloudMount", "encryption_password")
+        password = local_settings.get("encryption_password")
         if password == None:
             create_pw_dialog()
         else:
@@ -152,7 +153,8 @@ def enter_new_config(dialog : ap.Dialog):
     configuration["b2_bucket_name"] = ""
 
     try:
-        keyring.delete_password("AnchorpointCloudMount", "encryption_password")
+        local_settings.set("encryption_password", "")
+        local_settings.store()
     except:
         print("Key has been already deleted")
         
@@ -173,7 +175,8 @@ def clear_config(dialog : ap.Dialog):
     configuration["b2_bucket_name"] = ""
 
     try:
-        keyring.delete_password("AnchorpointCloudMount", "encryption_password")
+        local_settings.set("encryption_password", "")
+        local_settings.store()
     except:
         print("Key has been already deleted")
 
@@ -183,7 +186,8 @@ def clear_config(dialog : ap.Dialog):
     dialog.close()
 
 def set_password(dialog : ap.Dialog):
-    keyring.set_password("AnchorpointCloudMount", "encryption_password", dialog.get_value("pw_var"))
+    local_settings.set("encryption_password", dialog.get_value("pw_var"))
+    local_settings.store()
     init_dialog()
 
 def get_config_type(value):
@@ -254,7 +258,7 @@ def create_dialog():
     dialog.add_text("Region\t             ").add_input(configuration["region"],placeholder="eu-central-1 (Optional)",var="region_var")
     dialog.add_text("Location Constraint").add_input(configuration["location_constraint"],placeholder="EU (Optional)",var="location_constraint_var")
 
-    dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = keyring.get_password("AnchorpointCloudMount", "encryption_password") != None).add_button("Clear Configuration", callback = clear_config)
+    dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "").add_button("Clear Configuration", callback = clear_config)
     dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
     dialog.add_button("Apply", callback = apply_callback)
 
@@ -265,7 +269,7 @@ def create_dialog():
 
 
 try:
-    import keyring, pyperclip as pc
+    import pyperclip as pc
     from Crypto.Cipher import AES
     init_dialog()
 except:

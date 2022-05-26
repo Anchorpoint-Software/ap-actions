@@ -14,6 +14,7 @@ import json
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
+local_settings = aps.Settings()
 RCLONE_INSTALL_URL = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
 
 configuration = {
@@ -35,7 +36,6 @@ def install_modules():
     progress = ap.Progress("Loading Modules",infinite = True)
     ui.show_info("Loading Modules", description="This will only happen once")  
     ctx.install("pycryptodome")
-    ctx.install("keyring")
     progress.finish()
     check_winfsp()
 
@@ -205,9 +205,7 @@ def run_rclone(arguments, startupinfo):
         stderr=subprocess.STDOUT,
         stdin=subprocess.PIPE,
         bufsize=1,
-        universal_newlines=True)
-    
-    prepare_mount_progress.finish()
+        universal_newlines=True)    
       
     for line in p.stdout:
         myjson = is_json(line)
@@ -216,7 +214,9 @@ def run_rclone(arguments, startupinfo):
             ui.show_error("Something went wrong")
             print(line)
         
-        if rclone_success in line:
+        if rclone_success in line:            
+            prepare_mount_progress.finish()
+            prepare_mount_progress = None
             ui.show_success("Mount Successful")
         
         if myjson and "Transferred" in myjson["msg"]:
@@ -259,14 +259,14 @@ def is_admin():
     return True
 
 def get_settings():
-    import keyring, pyperclip as pc 
+    import pyperclip as pc 
     if settings.get("Config")=="":
         if is_admin:
             ui.show_info("No cloud drive configured", description="Please setup a cloud drive")
         else:
             ui.show_info("No cloud drive configured", description="Ask your workspace owner to setup a cloud drive")
     else:
-        password = keyring.get_password("AnchorpointCloudMount", "encryption_password")
+        password = local_settings.get("encryption_password")
         if password == None:
             print("no pw")
             create_pw_dialog()
@@ -300,7 +300,7 @@ def create_pw_dialog():
     dialog.show()
 
 def set_password(dialog : ap.Dialog):
-    keyring.set_password("AnchorpointCloudMount", "encryption_password", dialog.get_value("pw_var"))
+    local_settings.set("encryption_password", dialog.get_value("pw_var"))
     get_settings()
 
 def show_options():    
@@ -326,7 +326,6 @@ if platform.system() == "Darwin":
     ui.show_error("Unsupported Action", "This action is only supported on Windows :-(")
 else:
     try:
-        import keyring
         from Crypto.Cipher import AES        
         ctx.run_async(check_winfsp)        
     except:
