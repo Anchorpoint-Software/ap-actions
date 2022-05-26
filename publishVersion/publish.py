@@ -1,10 +1,15 @@
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, sys
 
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.project_path)
 ui = ap.UI()
+
+if project is None:
+    ui.show_info("Action only works with projects")
+    sys.exit(0)
+    
 settings = project.get_metadata()
 
 def contains_number(value):
