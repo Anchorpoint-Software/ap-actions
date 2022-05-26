@@ -1,0 +1,31 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Version Control (Experimental)"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::versionControl"
+  category: "dcc/blender"
+  type: package
+  enable: false
+  description: A simple version publishing workflow 
+  details: '
+    <p>Allows to publish an incrementally saved version by copying the version and removing the increment at the end of the file name. A custom appendix (e.g. _published) can be defined in the settings. In addition, a special folder can also be specified as the storage location.</p>
+    '
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "packageIcon.svg"
+
+  actions:
+    - ap::vc::3YKOOMG550
+
+
+    
