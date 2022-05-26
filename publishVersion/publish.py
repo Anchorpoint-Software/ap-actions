@@ -7,7 +7,7 @@ project = aps.get_project(ctx.project_path)
 ui = ap.UI()
 settings = project.get_metadata()
 
-def containsNumber(value):
+def contains_number(value):
     for character in value:
         if character.isdigit():
             return True
@@ -16,7 +16,7 @@ def containsNumber(value):
 def copy():
     splitted_name = ctx.filename.split("_")
     lastSplitPart = splitted_name[len(splitted_name)-1]
-    if(containsNumber(lastSplitPart)):
+    if(contains_number(lastSplitPart)):
         progress = ap.Progress("Publishing", "Creating a copy")
         splitted_name.pop()
 
