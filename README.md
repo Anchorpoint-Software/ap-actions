@@ -39,7 +39,7 @@ The best way to get started is looking and code examples and modify them.
 
 ![Execute Action](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gettingStartedstep_4.png)
 
-To get a good feeling just modify the greetins.yaml and greetings.py in the "ui" folder in the source code. Then in the folder context menu pick "UI / Greetings Dialog" which will execute that Action.
+To get a good feeling just modify the greetings.yaml and greetings.py in the "ui" folder in the source code. Then in the folder context menu pick "UI / Greetings Dialog" which will execute that Action.
 
 ## 📖 Documentation
 - [Actions Overview](https://docs.anchorpoint.app/docs/5-Actions/1-Intro)
