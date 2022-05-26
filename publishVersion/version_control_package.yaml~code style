@@ -22,7 +22,7 @@ action:
 
   author: "Anchorpoint Software GmbH"
   icon:
-    path: "packageIcon.svg"
+    path: "package_icon.svg"
 
   actions:
     - ap::vc::publish
