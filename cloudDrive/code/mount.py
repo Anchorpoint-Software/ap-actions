@@ -129,7 +129,7 @@ def setup_mount(dialog):
     
     def create_location_arguments():
         if(configuration["type"]=="s3"):
-            return f":s3{configuration['root_folder']}"
+            return f":s3:{configuration['root_folder']}"
         if(configuration["type"]=="b2"):
             return f":b2:{configuration['b2_bucket_name']}"
 
@@ -166,7 +166,7 @@ def setup_mount(dialog):
         "--vfs-read-chunk-size",
         "512M",
         "--transfers",
-        "10",
+        "20",
         "--network-mode",
         "--use-server-modtime",
         "--poll-interval",
@@ -194,6 +194,7 @@ def setup_mount(dialog):
     dialog.close()
 
 def run_rclone(arguments, startupinfo):
+    prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     progress = None
     
@@ -205,18 +206,22 @@ def run_rclone(arguments, startupinfo):
         stdin=subprocess.PIPE,
         bufsize=1,
         universal_newlines=True)
+    
+    prepare_mount_progress.finish()
       
     for line in p.stdout:
         myjson = is_json(line)
 
         if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
-            ui.show_error("Mount Failed", str(p.stdout))
+            ui.show_error("Something went wrong")
+            print(line)
         
         if rclone_success in line:
             ui.show_success("Mount Successful")
         
         if myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress)
+
 
 def is_json(myjson):
     try:
@@ -231,13 +236,13 @@ def check_upload(myjson, progress):
     upload_speed = myjson["msg"].split(",")[2].strip()
     
     if not progress and percentage != "100%" and percentage != "-":
-        progress = ap.Progress("Uploading Files", "Upload: " + upload_speed, infinite=True)
+        progress = ap.Progress("Syncing Files", percentage+ " at " + upload_speed, infinite=True)
     
     if progress: 
         if percentage == "-": percentage = "0"
         percentage_int = int(percentage.split("%")[0])/100
         progress.report_progress(percentage_int)
-        progress.set_text("Upload: " + upload_speed)
+        progress.set_text(percentage + " at " + upload_speed)
 
     if progress and percentage == "100%":
         progress.finish()

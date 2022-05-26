@@ -18,10 +18,7 @@ action:
 
   script: "code/mount.py"
   settings: code/mount_action_settings.py
-  inputs:
-    bucket_name: "ap-mounts"
-    bucket_folder: "projects"
 
   register:
-    folder:
+    new_drive:
       enable: true
