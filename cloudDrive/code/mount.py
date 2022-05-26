@@ -209,9 +209,8 @@ def run_rclone(arguments, startupinfo):
     for line in p.stdout:
         myjson = is_json(line)
 
-        if myjson != None and myjson["level"] == "error" and myjson["msg"] != "Unmounted rclone mount":
+        if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Mount Failed", str(p.stdout))
-            return
         
         if rclone_success in line:
             ui.show_success("Mount Successful")
