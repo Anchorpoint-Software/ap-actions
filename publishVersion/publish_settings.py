@@ -1,11 +1,15 @@
 from fileinput import filename
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, sys
 
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.path)
 ui = ap.UI()
+if project is None:
+    ui.show_info("Action only works with projects")
+    sys.exit(0)
+
 settings = project.get_metadata()
 print(settings)
 
