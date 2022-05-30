@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: On Folder Opened
+
+  version: 1
+  id: ap::examples::trigger::folderopened
+  type: python
+  author: Anchorpoint Software GmbH
+  description: "Example Python trigger that is executed when the user navigates to a folder"
+  icon:
+    path: :/icons/action.svg
+
+  script: on_folder_opened.py
+
+  register:
+    trigger:
+      on_folder_opened:
+        enable: true
+
