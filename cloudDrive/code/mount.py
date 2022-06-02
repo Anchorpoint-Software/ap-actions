@@ -72,6 +72,10 @@ def check_winfsp():
             check_rclone()
             get_settings()
 
+def generate_secret_key(password: str, salt: bytes) -> str:
+    from Crypto.Protocol.KDF import PBKDF2
+    return PBKDF2(password, salt, dkLen=32)
+
 def decrypt(encrypted: str, password: str) -> str:
     from Crypto.Cipher import AES
     from Crypto.Util.Padding import unpad
