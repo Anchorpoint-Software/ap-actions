@@ -166,7 +166,7 @@ def setup_mount(dialog):
         "--vfs-read-chunk-size",
         "512M",
         "--transfers",
-        "20",
+        "10",
         "--network-mode",
         "--use-server-modtime",
         "--poll-interval",

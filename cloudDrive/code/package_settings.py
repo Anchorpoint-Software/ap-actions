@@ -250,9 +250,9 @@ def create_dialog():
     dialog.add_text("Access Key\t             ").add_input(configuration["access_key_id"],placeholder="Get your access key from the IAM console",var="access_key_var")
     dialog.add_text("Secret Access Key  ").add_input(configuration["secret_access_key"],placeholder="Get your secret access key from the IAM console",var="secret_access_key_var")
     dialog.add_text("Bucket/ Folder Path").add_input(configuration["root_folder"],placeholder="bucketname/folder/subfolder",var="root_folder_var")
-    dialog.add_text("Account Id\t             ").add_input(configuration["b2_account"],placeholder="Account Id or App Key Id",var="b2_account_var")
-    dialog.add_text("App key\t             ").add_input(configuration["b2_key"],placeholder="Application Key",var="b2_app_key_var")
-    dialog.add_text("Bucket Name           ").add_input(configuration["b2_bucket_name"],placeholder="File_Bucket",var="b2_bucket_name_var")
+    dialog.add_text("Key Id\t             ").add_input(configuration["b2_account"],placeholder="039skN...",var="b2_account_var")
+    dialog.add_text("Application Key       ").add_input(configuration["b2_key"],placeholder="ca6bfe00...",var="b2_app_key_var")
+    dialog.add_text("Bucket Name           ").add_input(configuration["b2_bucket_name"],placeholder="MyStudioBucket",var="b2_bucket_name_var")
     dialog.add_info("You can get these keys from your service provider, such as <br> the IAM console at AWS.")
 
     dialog.add_text("Region\t             ").add_input(configuration["region"],placeholder="eu-central-1 (Optional)",var="region_var")
