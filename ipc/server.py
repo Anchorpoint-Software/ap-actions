@@ -5,12 +5,14 @@ aps.Api.configure_daemon("/Users/jochenhunz/Documents/Anchorpoint/development/an
 api = aps.Api.instance()
 api.set_client_name("server")
 
-sub = aps.ipc_subscribe("PythonTest")
+topic = "PythonTest"
+aps.ipc_subscribe(topic)
 
 def msg_hello(header: dict[str, str], body: str):
     print(msg.header, msg.body)
 
 def msg_shutdown():
+    aps.ipc_unsubscribe(topic)
     sys.exit(0)
 
 def handle_message(msg: aps.IpcMessage) -> bool:
@@ -24,8 +26,8 @@ def handle_message(msg: aps.IpcMessage) -> bool:
 
 print("Server Running")
 while True:
-    while sub.has_messages():
-        msg = sub.get_message()
+    while aps.ic_has_messages(topic):
+        msg = aps.ipc_get_message(topic)
         if not handle_message(msg):
             print("Message unknown")
 
