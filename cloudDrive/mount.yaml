@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Mount Cloud Drive
+
+  version: 1
+  id: "ap::cloudDrive::mount"
+  category: user
+  type: python
+  author: Matthäus Niedoba
+  description: "Mounts a cloud bucket as a network drive"
+  icon:
+    path: icons/driveCloud.svg
+
+  script: "code/mount.py"
+  settings: code/mount_action_settings.py
+
+  register:
+    new_drive:
+      enable: true
