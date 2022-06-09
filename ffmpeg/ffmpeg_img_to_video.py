@@ -4,9 +4,14 @@ import subprocess
 import os
 import random
 import string
+import zipfile
+import requests
+import shutil
+import io
 
 ui = ap.UI()
 ctx = ap.Context.instance()
+FFMPEG_INSTALL_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
 
 try:
     filename = ctx.filename.split("_")
@@ -38,6 +43,10 @@ def concat_demuxer(selected_files, fps):
     return output
 
 def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
+    # check for ffmpeg.exe and download if missing
+    if not os.path.isfile(ctx.inputs["ffmpeg_win"]):
+        install_ffmpeg()
+
     # Show Progress
     progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=True)
 
@@ -71,6 +80,20 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     # Do some cleanup
     os.remove(concat_file)
 
+def install_ffmpeg():
+    # download zip
+    progress = ap.Progress("Loading FFMPEG", infinite = True)
+    r = requests.get(FFMPEG_INSTALL_URL)
+            
+    # open zip file and extract ffmpeg.exe to the right folder
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    
+    with z.open('ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe') as source:
+        with open(ctx.inputs["ffmpeg_win"], "wb") as target:
+            shutil.copyfileobj(source, target)
+
+    progress.finish()
+
 # First, check if the tool can be found on the machine
 ffmpeg_path = None
 if platform == "darwin":
@@ -78,8 +101,7 @@ if platform == "darwin":
 elif platform == "win32":
     ffmpeg_path = ctx.inputs["ffmpeg_win"]
 
-if (ap.check_application(ffmpeg_path, f"Could not find ffmpeg! Make sure ffmpeg is set up correctly in {ctx.yaml}")):
-    if len(ctx.selected_files) > 0:
-        # Convert the image sequence to a video
-        # We don't want to block the Anchorpoint UI, hence we run on a background thread
-        ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, ctx.selected_files, ctx.folder, ctx.inputs["fps"])
+if len(ctx.selected_files) > 0:
+    # Convert the image sequence to a video
+    # We don't want to block the Anchorpoint UI, hence we run on a background thread
+    ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), ctx.folder, ctx.inputs["fps"])
