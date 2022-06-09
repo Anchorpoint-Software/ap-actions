@@ -19,5 +19,5 @@ action:
   script: "code/unmount.py"
 
   register:
-    drive:
-      enable: true
+      drive:
+        enable: "code/is_mount_drive.py"

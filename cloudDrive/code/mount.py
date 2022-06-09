@@ -192,12 +192,12 @@ def setup_mount(dialog):
     startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
     #startupinfo.wShowWindow = subprocess.SW_HIDE     
 
-    ctx.run_async(run_rclone, arguments, startupinfo)
+    ctx.run_async(run_rclone, arguments, startupinfo, drive)
     
     #create_bat_file("process "+f'{drive}: "'+f'{ctx.path}"',drive)
     dialog.close()
 
-def run_rclone(arguments, startupinfo):
+def run_rclone(arguments, startupinfo, drive):
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     progress = None
@@ -210,6 +210,8 @@ def run_rclone(arguments, startupinfo):
         stdin=subprocess.PIPE,
         bufsize=1,
         universal_newlines=True)    
+    
+    store_drive_settings(drive, p.pid)
       
     for line in p.stdout:
         myjson = is_json(line)
@@ -233,6 +235,11 @@ def is_json(myjson):
     except ValueError as e:
         return
     return myjson
+
+def store_drive_settings(drive, pid):
+    settings = aps.Settings("drive settings")
+    settings.set(drive, pid)
+    settings.store()
 
 def check_upload(myjson, progress):
     # get the percentage number without whitespaces
