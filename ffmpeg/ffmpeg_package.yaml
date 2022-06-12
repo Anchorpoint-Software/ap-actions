@@ -21,3 +21,4 @@ action:
   actions:
     - ap::ffmpeg::videotogif
     - ap::ffmpeg::seqtovideo
+    - ap::ffmpeg::videotomp4

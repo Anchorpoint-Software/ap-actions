@@ -1,0 +1,31 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "FFmpeg / Convert to MP4"
+
+  #Optional Properties
+  version: 1
+  id: "ap::ffmpeg::videotomp4"
+  category: "ffmpeg/video"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+
+  description: Converts a sequence of images to a video using FFmpeg
+  script: "ffmpeg_img_to_video.py"
+  inputs:
+    ffmpeg_win: "${yaml_dir}/ffmpeg.exe"
+    ffmpeg_mac: "/usr/local/bin/ffmpeg"
+    fps: "25"
+  settings: "ffmpeg_settings.py"
+
+  #Where to register this action: on all files matching the filter
+  register:
+    file:
+      filter: "*.mov;*.MOV;*.mp4;*.m4v;*.mpg;*.avi;*.wmv;*.3gp;*.3gp2;*.avchd;*.dv;*.mkv"

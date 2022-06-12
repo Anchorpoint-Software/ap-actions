@@ -1,6 +1,7 @@
 from cgitb import enable
 import anchorpoint as ap
 import apsync as aps
+import os
 
 ctx = ap.Context.instance()
 settings = aps.Settings("ffmpeg_settings")
@@ -34,7 +35,7 @@ def open_dialog():
         fps = ctx.inputs["fps"]
     
     if path == "":
-        path = "C:/Users/Desktop"
+        path = os.path.join(os.environ["HOMEPATH"], "Desktop")
     
     dialog = ap.Dialog()
     input_callback(dialog, dropdown_var)
