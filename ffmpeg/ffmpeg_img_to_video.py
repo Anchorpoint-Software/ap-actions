@@ -1,4 +1,5 @@
 import anchorpoint as ap
+import apsync as aps
 from sys import platform
 import subprocess
 import os
@@ -108,6 +109,17 @@ elif platform == "win32":
     ffmpeg_path = ctx.inputs["ffmpeg_win"]
 
 if len(ctx.selected_files) > 0:
+    settings = aps.Settings("ffmpeg_settings")
+    
+    # get settings from the ffmpeg settings menu
+    fps = settings.get("fps")
+    if fps == "":
+        fps = ctx.inputs["fps"]
+    
+    path = settings.get("path")
+    if path == "":
+        path = ctx.folder
+    
     # Convert the image sequence to a video
     # We don't want to block the Anchorpoint UI, hence we run on a background thread
-    ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), ctx.folder, ctx.inputs["fps"])
+    ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), path, fps)

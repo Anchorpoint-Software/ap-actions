@@ -23,6 +23,7 @@ action:
     ffmpeg_win: "${yaml_dir}/ffmpeg.exe"
     ffmpeg_mac: "/usr/local/bin/ffmpeg"
     fps: "25"
+  settings: "ffmpeg_settings.py"
 
   #Where to register this action: on all files matching the filter
   register:
