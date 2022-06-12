@@ -68,9 +68,15 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         arguments.insert(1,"-apply_trc")
         arguments.insert(2,"iec61966_2_1")
 
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
     ffmpeg = subprocess.run(
-        arguments, capture_output=True
+        args=arguments, 
+        capture_output=True,
+        startupinfo=startupinfo
     )
+    
     if ffmpeg.returncode != 0:
         print(ffmpeg.stderr)
         ui.show_error("Failed to export video", description="Check Anchorpoint Console")
