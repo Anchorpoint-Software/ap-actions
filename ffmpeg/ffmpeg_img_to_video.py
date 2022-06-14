@@ -1,3 +1,4 @@
+import re
 import anchorpoint as ap
 import apsync as aps
 from sys import platform
@@ -49,7 +50,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         install_ffmpeg()
 
     # Show Progress
-    progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=True)
+    progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=False)
 
     # Provide FFmpeg with the set of selected files through the concat demuxer
     concat_file = concat_demuxer(selected_files, fps)
@@ -72,11 +73,25 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-    ffmpeg = subprocess.run(
+    ffmpeg = subprocess.Popen(
         args=arguments, 
-        capture_output=True,
-        startupinfo=startupinfo
+        startupinfo=startupinfo, 
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        bufsize=1,
+        universal_newlines=True
     )
+    
+    # progress bar
+    for line in ffmpeg.stdout:
+        if 'frame=' in line:
+            current_frame = re.search(r'\d+', line).group()
+            percentage = int(current_frame)/(len(selected_files)+1)
+            progress.report_progress(percentage)
+        
+    # wait for subprocess to terminate
+    ffmpeg.communicate()
     
     if ffmpeg.returncode != 0:
         print(ffmpeg.stderr)
