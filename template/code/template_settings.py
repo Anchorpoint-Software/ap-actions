@@ -36,7 +36,7 @@ dialog.add_empty()
 
 dialog.add_text("Workspace Event Callbacks Location")
 dialog.add_input(placeholder="Optional", browse=ap.BrowseType.Folder, var="callback_dir")
-dialog.add_info("Use event callbacks to customize templates according to your needs<br>For projects, place event callbacks here: <b>project/.ap/templates/template_action_events.py</b>")
+dialog.add_info("Use event callbacks to customize templates according to your needs<br>For projects, place event callbacks here: <b>project/anchorpoint/templates/template_action_events.py</b>")
 
 dialog.add_button("Apply", callback = apply_callback)
 
