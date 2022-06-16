@@ -48,9 +48,15 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     # check for ffmpeg.exe and download if missing
     if not os.path.isfile(ctx.inputs["ffmpeg_win"]):
         install_ffmpeg()
-
+        
+    # check if its a video (one file)
+    p_infinite = False
+    
+    if len(selected_files) == 1:
+        p_infinite = True
+        
     # Show Progress
-    progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=False)
+    progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=p_infinite)
 
     # Provide FFmpeg with the set of selected files through the concat demuxer
     concat_file = concat_demuxer(selected_files, fps)
