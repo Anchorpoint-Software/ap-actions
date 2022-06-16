@@ -23,7 +23,9 @@ def _file_is_binary(path: str):
     if not isinstance(mime_type[1],str): return _file_bytes_binary(path)
     
     subtype = mime_type[1] 
-    return subtype not in ["json", "ld+json", "x-httpd-php", "x-sh", "x-csh", "xhtml+xml", "xml", "svg", "svg+xml"]
+    if subtype not in ["json", "ld+json", "x-httpd-php", "x-sh", "x-csh", "xhtml+xml", "xml", "svg", "svg+xml"]:
+        return _file_bytes_binary(path)
+    return False
 
 def _collect_binary_extensions(paths) -> set[str]:
     collected_extensions = set()
