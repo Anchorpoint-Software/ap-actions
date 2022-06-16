@@ -309,6 +309,9 @@ class GitRepository(VCRepository):
         except:
             return False
 
+    def has_remote(self) -> bool:
+        return len(self.repo.remotes) > 0
+
     def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
         history = []
         args = {}

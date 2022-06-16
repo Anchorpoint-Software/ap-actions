@@ -156,17 +156,27 @@ def on_vc_get_pending_changes(path: str, ctx: ap.Context) -> Optional[list[Pendi
     return list(changes)
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
-    print(channel_id)
-    info = ap.TimelineChannelVCInfo()
-    fetch = ap.TimelineChannelAction()
-    fetch.name = "Fetch"
-    fetch.identifier = "gitfetch"
-    info.actions.append(fetch)
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
 
-    push = ap.TimelineChannelAction()
-    push.name = "Push"
-    push.identifier = "gitpush"
-    info.actions.append(push)
+    info = ap.TimelineChannelVCInfo()
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return info
+
+    if repo.has_remote():
+        fetch = ap.TimelineChannelAction()
+        fetch.name = "Fetch"
+        fetch.identifier = "gitfetch"
+        info.actions.append(fetch)
+
+        push = ap.TimelineChannelAction()
+        push.name = "Push"
+        push.identifier = "gitpush"
+        info.actions.append(push)
 
     main = ap.VCBranch()
     main.name = "main"
@@ -208,7 +218,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     from vc.apgit.utility import get_repo_path
     
     path = get_repo_path(channel_id, ctx.project_path)
-    print("PATH", path)
     repo = GitRepository.load(path)
     if not repo:
         return []
@@ -237,12 +246,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     print("on_timeline_channel_action", channel_id, action_id)
-    pass
-
-def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
-    print("on_pending_changes_action", channel_id, action_id, message)
-    for change in changes:
-        print(change.path)
     pass
 
 if __name__ == "__main__":
