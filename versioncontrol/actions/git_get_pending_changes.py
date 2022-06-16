@@ -168,6 +168,11 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
     if not repo: return info
 
     if repo.has_remote():
+        pull = ap.TimelineChannelAction()
+        pull.name = "Pull (Rebase)"
+        pull.identifier = "gitpullrebase"
+        info.actions.append(pull)
+        
         fetch = ap.TimelineChannelAction()
         fetch.name = "Fetch"
         fetch.identifier = "gitfetch"
@@ -243,10 +248,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     info.actions.append(revert)
 
     return info
-
-def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
-    print("on_timeline_channel_action", channel_id, action_id)
-    pass
 
 if __name__ == "__main__":
 

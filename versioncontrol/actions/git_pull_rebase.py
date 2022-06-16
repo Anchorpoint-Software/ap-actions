@@ -3,14 +3,13 @@ import anchorpoint as ap
 import apsync as aps
 
 import sys, os, importlib
-sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+current_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(current_dir, ".."))
+sys.path.insert(0, current_dir)
 
 importlib.invalidate_caches()
 from vc.apgit.repository import * 
-
-ctx = ap.Context.instance()
-ui = ap.UI()
-path = ctx.path
+from vc.apgit.utility import get_repo_path
 
 class PullProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
@@ -25,21 +24,25 @@ class PullProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def pull_repo_async():
-    repo = GitRepository.load(path)
-    if repo == None: return
+def pull_async(channel_id: str, repo: GitRepository):
+    ui = ap.UI()
     try:
-        progress = ap.Progress("Pulling Git Changes")
+        progress = ap.Progress("Updating Git Changes")
         state = repo.update(progress=PullProgress(progress))
         if state != UpdateState.OK:
-            if state == UpdateState.CONFLICT:
-                ui.show_info("Conflicts Detected")    
-            else:
-                ui.show_error("Error when pulling changes")
+            ui.show_error("Failed to update Git Repository")    
         else:
-            ui.show_success("Pull Successful")
+            ui.show_success("Update Successful")
         progress.finish()
-    except GitCommandError as e:
-        ui.show_error("Failed to pull Git Repository", e.stderr, 10000)
+    except Exception as e:
+        ui.show_error("Failed to update Git Repository", str(e))
+    ap.refresh_timeline_channel(channel_id)
 
-ctx.run_async(pull_repo_async)
+def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
+    if action_id != "gitpullrebase": return
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    ctx.run_async(pull_async, channel_id, repo)

@@ -136,6 +136,21 @@ class GitRepository(VCRepository):
                     state = UpdateState.ERROR
         return state
 
+    def fetch(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        state = UpdateState.OK
+        if progress is not None:
+            for info in self.repo.remote(remote).fetch(progress = _PullProgress(progress)):
+                if info.flags & git.FetchInfo.ERROR:
+                    state = UpdateState.ERROR
+        else: 
+            for info in self.repo.remote(remote).pull(rebase = rebase):
+                if info.flags & git.FetchInfo.ERROR:
+                    state = UpdateState.ERROR
+
+        return state
+
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)

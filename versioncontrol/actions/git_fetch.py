@@ -1,3 +1,4 @@
+from git import GitCommandError
 import anchorpoint as ap
 import apsync as aps
 
@@ -10,40 +11,38 @@ importlib.invalidate_caches()
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 
-ctx = ap.Context.instance()
-ui = ap.UI()
-path = ctx.path
-
-class PushProgress(Progress):
+class FetchProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
         self.ap_progress = progress
 
     def update(self, operation_code: str, current_count: int, max_count: int):
+        print(operation_code)
         if operation_code == "writing":
             self.ap_progress.set_text("Uploading Files")
             self.ap_progress.report_progress(current_count / max_count)
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def push_async(channel_id: str, repo: GitRepository):
+def fetch_async(channel_id: str, repo: GitRepository):
+    ui = ap.UI()
     try:
-        progress = ap.Progress("Pushing Git Changes")
-        state = repo.push(progress=PushProgress(progress))
+        progress = ap.Progress("Fetching Git Changes")
+        state = repo.fetch(progress=FetchProgress(progress))
         if state != UpdateState.OK:
-            ui.show_error("Failed to push Git Repository")    
+            ui.show_error("Failed to fetch Git Repository")    
         else:
-            ui.show_success("Push Successful")
+            ui.show_success("Fetch Successful")
         progress.finish()
     except Exception as e:
-        ui.show_error("Failed to push Git Repository", str(e))
+        ui.show_error("Failed to fetch Git Repository", str(e))
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
-    if action_id != "gitpush": return
+    if action_id != "gitfetch": return
 
     path = get_repo_path(channel_id, ctx.project_path)
     repo = GitRepository.load(path)
     if not repo: return
 
-    ctx.run_async(push_async, channel_id, repo)
+    ctx.run_async(fetch_async, channel_id, repo)
