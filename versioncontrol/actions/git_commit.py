@@ -10,17 +10,13 @@ from vc.apgit.utility import get_repo_path
 
 def stage_files(changes, repo):
     to_stage = []
-    to_unstage = []
     for change in changes:
         if change.selected:
             to_stage.append(change.path)
-        else: 
-            to_unstage.append(change.path)
     
-    # TODO: Find a way to unstage files that the user has deselected
     # TODO: Handle Git LFS
     # repo.unstage_files(to_unstage)
-    repo.stage_files(to_stage)
+    repo.sync_staged_files(to_stage)
 
 def commit_async(message: str, changes, repo):
     ui = ap.UI()
