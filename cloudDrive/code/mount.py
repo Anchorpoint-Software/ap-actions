@@ -30,8 +30,6 @@ configuration = {
     "b2_bucket_name": ""
 }
 
-rclone_path = os.path.join(ctx.yaml_dir,"rclone.exe")
-
 def install_modules():
     progress = ap.Progress("Loading Modules",infinite = True)
     ui.show_info("Loading Modules", description="This will only happen once")  
@@ -40,25 +38,35 @@ def install_modules():
     check_winfsp()
 
 def check_rclone():
-    if not os.path.isfile(rclone_path):
-        # download zip
-        progress = ap.Progress("Loading RClone", infinite = True)
-        r = requests.get(RCLONE_INSTALL_URL)
-                
-        # open zip file and extract rclone.exe to the right folder
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        
-        with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
-            with open(rclone_path, "wb") as target:
-                shutil.copyfileobj(source, target)
+    if not os.path.isfile(ctx.inputs["rclone_win"]):
+        dialog = ap.Dialog()
+        dialog.title = "Install Rclone"
+        dialog.add_text("To use Anchorpoint with Rclone you have to install Rclone.")
+        dialog.add_info("When installing Rclone you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
+        dialog.add_button("Install", callback=install_rclone)
+        dialog.show()
+    else:
+        get_settings()
 
-        progress.finish()
+def install_rclone(dialog):
+    # download zip
+    progress = ap.Progress("Loading RClone", infinite = True)
+    r = requests.get(RCLONE_INSTALL_URL)
+            
+    # open zip file and extract rclone.exe to the right folder
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    
+    with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
+        with open(ctx.inputs["rclone_win"], "wb") as target:
+            shutil.copyfileobj(source, target)
+
+    progress.finish()
+    dialog.close()
 
 def check_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
     if os.path.isfile(winfsp_path):
         check_rclone()
-        get_settings()
     else:
         progress = ap.Progress("Loading WinFsp",infinite = True)
         winget = subprocess.run(
@@ -70,7 +78,6 @@ def check_winfsp():
             ui.show_error("Failed to install WinFsp", description="Google WinFsp and install it manually.")
         else:
             check_rclone()
-            get_settings()
 
 def generate_secret_key(password: str, salt: bytes) -> str:
     from Crypto.Protocol.KDF import PBKDF2

@@ -18,6 +18,8 @@ action:
 
   script: "code/mount.py"
   settings: code/mount_action_settings.py
+  inputs:
+    rclone_win: "${yaml_dir}/rclone.exe"
 
   register:
     new_drive:
