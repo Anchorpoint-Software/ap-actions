@@ -2,10 +2,13 @@ import anchorpoint as ap
 import apsync as aps
 
 import sys, os, importlib
-sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+current_dir = os.path.dirname(__file__)
+sys.path.insert(0, os.path.join(current_dir, ".."))
+sys.path.insert(0, current_dir)
 
 importlib.invalidate_caches()
 from vc.apgit.repository import * 
+from vc.apgit.utility import get_repo_path
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -23,9 +26,7 @@ class PushProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def clone_repo_async():
-    repo = GitRepository.load(path)
-    if repo == None: return
+def push_async(repo: GitRepository):
     try:
         progress = ap.Progress("Pushing Git Changes")
         state = repo.push(progress=PushProgress(progress))
@@ -37,4 +38,11 @@ def clone_repo_async():
     except Exception as e:
         ui.show_error("Failed to push Git Repository", str(e))
 
-ctx.run_async(clone_repo_async)
+def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
+    if action_id != "gitpush": return
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    ctx.run_async(push_async, repo)

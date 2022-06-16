@@ -12,12 +12,7 @@ action:
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: ""
   icon:
     path: :/icons/version.svg
 
   script: git_push.py
-
-  register:
-    folder:
-      enable: true

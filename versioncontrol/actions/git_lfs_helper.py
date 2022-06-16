@@ -17,14 +17,16 @@ def _file_is_binary(path: str):
     if not mime_type: return _file_bytes_binary(path)
     if not isinstance(mime_type[0],str): return _file_bytes_binary(path)
     
-    type = mime_type[0]
-    if type == "text": return False
-    if type != "application": return True
-    if not isinstance(mime_type[1],str): return _file_bytes_binary(path)
+    type_split = mime_type[0].split("/")
+    if len(type_split) is not 2: return _file_bytes_binary(path)
     
-    subtype = mime_type[1] 
+    type = type_split[0]
+    subtype = type_split[1]
+
+    if type == "text": return False
     if subtype not in ["json", "ld+json", "x-httpd-php", "x-sh", "x-csh", "xhtml+xml", "xml", "svg", "svg+xml"]:
         return _file_bytes_binary(path)
+
     return False
 
 def _collect_binary_extensions(paths) -> set[str]:
@@ -40,5 +42,6 @@ def _collect_binary_extensions(paths) -> set[str]:
 
 def lfs_track_binary_files(paths, repo):
     extensions = _collect_binary_extensions(paths)
-    repo.track_lfs(extensions)
-    paths.append(".gitattributes")
+    if len(extensions) > 0:
+        repo.track_lfs(extensions)
+        paths.append(".gitattributes")
