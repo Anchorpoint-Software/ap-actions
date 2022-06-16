@@ -108,7 +108,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     # Do some cleanup
     os.remove(concat_file)
 
-def install_ffmpeg():
+def install_ffmpeg(dialog):
     # download zip
     progress = ap.Progress("Loading FFMPEG", infinite = True)
     r = requests.get(FFMPEG_INSTALL_URL)
@@ -121,7 +121,18 @@ def install_ffmpeg():
             shutil.copyfileobj(source, target)
 
     progress.finish()
+    dialog.close()
+    
+    ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), path, fps)
 
+def ffmpeg_install_dialog():
+    dialog = ap.Dialog()
+    dialog.title = "Install FFmpeg"
+    dialog.add_text("To use Anchorpoint with FFmpeg you have to install FFmpeg.")
+    dialog.add_info("When installing FFmpeg you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
+    dialog.add_button("Install", callback=install_ffmpeg)
+    dialog.show()
+    
 # First, check if the tool can be found on the machine
 ffmpeg_path = None
 if platform == "darwin":
@@ -140,7 +151,11 @@ if len(ctx.selected_files) > 0:
     path = settings.get("path")
     if path == "":
         path = ctx.folder
-    
-    # Convert the image sequence to a video
-    # We don't want to block the Anchorpoint UI, hence we run on a background thread
-    ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), path, fps)
+        
+    # check for ffmpeg.exe and download if missing
+    if not os.path.isfile(ctx.inputs["ffmpeg_win"]):
+        ctx.run_async(ffmpeg_install_dialog)
+    else:
+        # Convert the image sequence to a video
+        # We don't want to block the Anchorpoint UI, hence we run on a background thread
+        ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), path, fps)
