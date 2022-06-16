@@ -191,7 +191,8 @@ class GitRepository(VCRepository):
 
     def sync_staged_files(self, paths: list[str]):
         staged_files = self.repo.git.diff("--name-only", "--staged").splitlines()
-        self.repo.git.restore("--staged", *staged_files)
+        if len(staged_files) > 0:
+            self.repo.git.restore("--staged", *staged_files)
         self.stage_files(paths)
 
     def commit(self, message: str):
