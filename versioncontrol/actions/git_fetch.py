@@ -24,9 +24,12 @@ class FetchProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def fetch_async(channel_id: str, repo: GitRepository):
+def fetch_async(channel_id: str, project_path):
     ui = ap.UI()
     try:
+        path = get_repo_path(channel_id, project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
         progress = ap.Progress("Fetching Git Changes")
         state = repo.fetch(progress=FetchProgress(progress))
         if state != UpdateState.OK:
@@ -40,9 +43,4 @@ def fetch_async(channel_id: str, repo: GitRepository):
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id != "gitfetch": return
-
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return
-
-    ctx.run_async(fetch_async, channel_id, repo)
+    ctx.run_async(fetch_async, channel_id, ctx.project_path)

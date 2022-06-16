@@ -24,9 +24,12 @@ class PullProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def pull_async(channel_id: str, repo: GitRepository):
+def pull_async(channel_id: str, project_path):
     ui = ap.UI()
     try:
+        path = get_repo_path(channel_id, project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
         progress = ap.Progress("Updating Git Changes")
         state = repo.update(progress=PullProgress(progress))
         if state != UpdateState.OK:
@@ -40,9 +43,4 @@ def pull_async(channel_id: str, repo: GitRepository):
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id != "gitpullrebase": return
-
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return
-
-    ctx.run_async(pull_async, channel_id, repo)
+    ctx.run_async(pull_async, channel_id, ctx.project_path)

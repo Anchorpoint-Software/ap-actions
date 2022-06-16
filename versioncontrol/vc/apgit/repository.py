@@ -61,7 +61,7 @@ class GitRepository(VCRepository):
         
         gc.collect()
         
-        print("\n\nDELETING git repo. If this message does not show up we are leaking memory\n\n")
+        # print("\n\nDELETING git repo. If this message does not show up we are leaking memory\n\n")
 
     @staticmethod
     def is_repo(path: str) -> bool:

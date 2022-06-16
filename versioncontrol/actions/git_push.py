@@ -9,11 +9,6 @@ sys.path.insert(0, current_dir)
 importlib.invalidate_caches()
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-
-ctx = ap.Context.instance()
-ui = ap.UI()
-path = ctx.path
-
 class PushProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
@@ -26,8 +21,12 @@ class PushProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
 
-def push_async(channel_id: str, repo: GitRepository):
+def push_async(channel_id: str, project_path):
+    ui = ap.UI()
     try:
+        path = get_repo_path(channel_id, project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
         progress = ap.Progress("Pushing Git Changes")
         state = repo.push(progress=PushProgress(progress))
         if state != UpdateState.OK:
@@ -41,9 +40,4 @@ def push_async(channel_id: str, repo: GitRepository):
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id != "gitpush": return
-
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return
-
-    ctx.run_async(push_async, channel_id, repo)
+    ctx.run_async(push_async, channel_id, ctx.project_path)

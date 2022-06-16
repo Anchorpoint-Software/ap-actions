@@ -20,9 +20,12 @@ def stage_files(changes, repo):
     lfs.lfs_track_binary_files(to_stage, repo)
     repo.sync_staged_files(to_stage)
 
-def commit_async(message: str, changes, repo):
+def commit_async(message: str, changes, channel_id, project_path):
     ui = ap.UI()
     try:
+        path = get_repo_path(channel_id, project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
         stage_files(changes, repo)
 
         staged = repo.get_pending_changes(staged=True)
@@ -38,10 +41,4 @@ def commit_async(message: str, changes, repo):
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
     if action_id != "gitcommit": return
-    ui = ap.UI()
-
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return
-
-    ctx.run_async(commit_async, message, changes, repo)
+    ctx.run_async(commit_async, message, changes, channel_id, ctx.project_path)
