@@ -62,6 +62,8 @@ def install_rclone(dialog):
 
     progress.finish()
     dialog.close()
+    
+    ctx.run_async(get_settings)
 
 def check_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
