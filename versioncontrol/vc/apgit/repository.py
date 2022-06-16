@@ -159,6 +159,9 @@ class GitRepository(VCRepository):
     def restore_files(self, files: list[str]):
         self.repo.git.checkout("--", *files)
 
+    def restore_all_files(self):
+        self.repo.git.checkout(".")
+
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()
         try:
