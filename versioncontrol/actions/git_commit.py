@@ -6,39 +6,44 @@ sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
 
 importlib.invalidate_caches()
 from vc.apgit.repository import * 
+from vc.apgit.utility import get_repo_path
 
-ctx = ap.Context.instance()
-ui = ap.UI()
-path = ctx.path
+def stage_files(changes, repo):
+    to_stage = []
+    to_unstage = []
+    for change in changes:
+        if change.selected:
+            to_stage.append(change.path)
+        else: 
+            to_unstage.append(change.path)
+    
+    # TODO: Find a way to unstage files that the user has deselected
+    # TODO: Handle Git LFS
+    # repo.unstage_files(to_unstage)
+    repo.stage_files(to_stage)
 
-def commit_async(message: str):
-    repo = GitRepository.load(path)
-    if repo is None: return
+def commit_async(message: str, changes, repo):
+    ui = ap.UI()
     try:
+        stage_files(changes, repo)
+
+        staged = repo.get_pending_changes(staged=True)
+        changecount = staged.size()
+        if changecount == 0:
+            ui.show_info("Nothing to commit")
+            return
+
         repo.commit(message)
         ui.show_success("Commit succeeded")
     except Exception as e:
         ui.show_error("Commit Failed", str(e))
 
-repo = GitRepository.load(path)
+def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
+    if action_id != "gitcommit": return
+    ui = ap.UI()
 
-def commit(dialog: ap.Dialog):
-    ctx.run_async(commit_async, dialog.get_value("message"))
-    dialog.close()
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
 
-if repo:
-    staged = repo.get_pending_changes(staged=True)
-    changecount = staged.size()
-    if changecount == 0:
-        ui.show_info("Nothing to commit", "Stage your changes first")
-        del repo
-        sys.exit(0)
-
-    dialog = ap.Dialog()
-    dialog.title = "Commit"
-    dialog.icon = ctx.icon
-    dialog.add_input(f"Changed {changecount} files", var="message")
-    dialog.add_button("Commit", callback=commit)
-    dialog.show()
-
-    del repo
+    ctx.run_async(commit_async, message, changes, repo)

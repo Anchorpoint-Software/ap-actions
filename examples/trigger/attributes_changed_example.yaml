@@ -16,8 +16,3 @@ action:
     path: :/icons/action.svg
 
   script: attributes_changed_example.py
-
-  register:
-    trigger:
-      on_attributes_changed:
-        enable: true

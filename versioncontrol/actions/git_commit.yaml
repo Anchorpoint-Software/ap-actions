@@ -13,11 +13,5 @@ action:
   type: python
   author: Anchorpoint Software GmbH
   description: Commits Staged Files
-  icon:
-    path: :/icons/version.svg
 
   script: git_commit.py
-
-  register:
-    folder:
-      enable: true

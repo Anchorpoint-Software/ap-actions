@@ -300,6 +300,21 @@ class GitRepository(VCRepository):
         except:
             return False
 
+    def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
+        history = []
+        args = {}
+        if skip != None:
+            args["skip"] = skip
+        if max_count != None:
+            args["max_count"] = max_count
+
+        commits = list(self.repo.iter_commits(rev=rev_spec, **args))
+
+        for commit in commits:
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date))
+
+        return history
+
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
 

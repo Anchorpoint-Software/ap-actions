@@ -1,4 +1,5 @@
 import anchorpoint as ap
+import apsync as aps
 import vc.apgit.constants as constants
 import os, platform, subprocess
 
@@ -74,3 +75,11 @@ def guarantee_git():
         dialog.show()
 
     return False
+
+def get_repo_path(channel_id: str, project_path: str):
+    project = aps.get_project(project_path)
+    if not project: return None
+    channel = aps.get_timeline_channel(project, channel_id)
+    if not channel: return None
+    if not "gitPathId" in channel.metadata: return None
+    return aps.get_folder_by_id(channel.metadata["gitPathId"], project)

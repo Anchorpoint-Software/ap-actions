@@ -16,9 +16,3 @@ action:
     path: :/icons/action.svg
 
   script: on_folder_opened.py
-
-  register:
-    trigger:
-      on_folder_opened:
-        enable: true
-
