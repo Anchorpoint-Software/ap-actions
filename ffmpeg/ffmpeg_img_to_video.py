@@ -108,7 +108,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     # Do some cleanup
     os.remove(concat_file)
 
-def install_ffmpeg(dialog):
+def _install_ffmpeg_async():
     # download zip
     progress = ap.Progress("Loading FFMPEG", infinite = True)
     r = requests.get(FFMPEG_INSTALL_URL)
@@ -121,16 +121,18 @@ def install_ffmpeg(dialog):
             shutil.copyfileobj(source, target)
 
     progress.finish()
-    dialog.close()
-    
     ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), path, fps)
+
+def _install_ffmpeg(dialog):
+    ctx.run_async(_install_ffmpeg_async)
+    dialog.close()
 
 def ffmpeg_install_dialog():
     dialog = ap.Dialog()
     dialog.title = "Install FFmpeg"
     dialog.add_text("To use Anchorpoint with FFmpeg you have to install FFmpeg.")
     dialog.add_info("When installing FFmpeg you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
-    dialog.add_button("Install", callback=install_ffmpeg)
+    dialog.add_button("Install", callback=_install_ffmpeg)
     dialog.show()
     
 # First, check if the tool can be found on the machine
