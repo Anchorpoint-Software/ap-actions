@@ -118,6 +118,8 @@ class GitRepository(VCRepository):
         repo._init_git_lfs()
         return repo
 
+    def _set_upstream(self, remote, branch):
+        self.repo.git.branch("-u", remote, branch)
 
     def _init_git_lfs(self):
         self.repo.git.lfs("install", "--local")
@@ -125,20 +127,33 @@ class GitRepository(VCRepository):
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        state = UpdateState.OK
-        if progress is not None:
-            for info in self.repo.remote(remote).push(progress = _PushProgress(progress)):
-                if info.flags & git.PushInfo.ERROR:
-                    state = UpdateState.ERROR
-        else: 
-            for info in self.repo.remote(remote).push():
-                if info.flags & git.PushInfo.ERROR:
-                    state = UpdateState.ERROR
-        return state
+        if remote is None: remote = "origin"
+
+        kwargs = {}
+        try:
+            self.get_remote_change_id()
+        except:
+            kwargs["set-upstream"] = True
+
+        try:
+            state = UpdateState.OK
+            if progress is not None:
+                for info in self.repo.remote(remote).push(refspec=branch, progress = _PushProgress(progress), **kwargs):
+                    if info.flags & git.PushInfo.ERROR:
+                        state = UpdateState.ERROR
+            else: 
+                for info in self.repo.remote(remote).push(refspec=branch, **kwargs):
+                    if info.flags & git.PushInfo.ERROR:
+                        state = UpdateState.ERROR
+            return state
+        except Exception as e:
+            raise e
 
     def fetch(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
+        if remote is None: remote = "origin"
+
         state = UpdateState.OK
         if progress is not None:
             for info in self.repo.remote(remote).fetch(progress = _PullProgress(progress)):
@@ -154,6 +169,8 @@ class GitRepository(VCRepository):
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
+        if remote is None: return UpdateState.NO_REMOTE
+
         state = UpdateState.OK
         try:
             if progress is not None:
@@ -369,10 +386,16 @@ class GitRepository(VCRepository):
         return shutil.which(cmd) is not None
 
     def _get_current_branch(self):
-        return self.repo.git.rev_parse("--abbrev-ref", "HEAD")
+        try:
+            return self.repo.git.rev_parse("--abbrev-ref", "HEAD")
+        except:
+            return self.repo.active_branch
 
     def _get_default_remote(self, branch: str):
-        return self.repo.git.config("--get", f"branch.{branch}.remote")
+        try:
+            return self.repo.git.config("--get", f"branch.{branch}.remote")
+        except:
+            return None
 
     def _get_file_changes(self, diff: git.Diff, changes: Changes):
         for change in diff.iter_change_type("M"):

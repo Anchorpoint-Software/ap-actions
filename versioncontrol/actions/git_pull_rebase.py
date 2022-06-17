@@ -32,13 +32,16 @@ def pull_async(channel_id: str, project_path):
         if not repo: return
         progress = ap.Progress("Updating Git Changes")
         state = repo.update(progress=PullProgress(progress))
-        if state != UpdateState.OK:
+        if state == UpdateState.NO_REMOTE:
+            ui.show_info("Branch does not track a remote branch", "Push your branch first")    
+        elif state != UpdateState.OK:
             ui.show_error("Failed to update Git Repository")    
         else:
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
         ui.show_error("Failed to update Git Repository", str(e))
+        raise e
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):

@@ -39,6 +39,7 @@ def fetch_async(channel_id: str, project_path):
         progress.finish()
     except Exception as e:
         ui.show_error("Failed to fetch Git Repository", str(e))
+        raise e
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):

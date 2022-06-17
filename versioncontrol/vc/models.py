@@ -7,6 +7,7 @@ class UpdateState(Enum):
     OK = 1
     ERROR = 2
     CONFLICT = 3
+    NO_REMOTE = 4
 
 @dataclass
 class Change:
