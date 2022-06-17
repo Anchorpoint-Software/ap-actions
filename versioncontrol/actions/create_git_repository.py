@@ -16,7 +16,7 @@ ctx = ap.Context.instance()
 ui = ap.UI()
 path = ctx.path
 
-def add_timeline_channel(repo_path: str):
+def update_metadata(repo_path: str):
     project = aps.get_project(path)
     if not project:
         print("did not add channel, no project")
@@ -24,7 +24,7 @@ def add_timeline_channel(repo_path: str):
     channel = aps.TimelineChannel()
     channel.id = "Git"
     channel.name = "Git Repository"
-    channel.icon = aps.Icon(":/icons/versioncontrol.svg", "#242629")
+    channel.icon = aps.Icon(":/icons/versioncontrol.svg", "#D4AA37")
 
     folder_id = aps.get_folder_id(repo_path)
 
@@ -32,6 +32,7 @@ def add_timeline_channel(repo_path: str):
     channel.metadata = metadata
 
     aps.add_timeline_channel(project, channel)
+    aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#D4AA37"))
 
 class CloneProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
@@ -59,7 +60,7 @@ def create_repo(dialog: ap.Dialog):
         ui.show_info("Already a Git repo")
     else:
         repo = GitRepository.create(repo_path)
-        add_timeline_channel(repo_path)
+        update_metadata(repo_path)
         ui.show_success("Git Repository Initialized")
         dialog.close()
 
@@ -100,7 +101,7 @@ def clone_repo_async(repo_path: str, url: str):
 
         repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
         progress.finish()
-        add_timeline_channel(repo_path)
+        update_metadata(repo_path)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
         ui.show_error("Failed to clone Git Repository", str(e))
