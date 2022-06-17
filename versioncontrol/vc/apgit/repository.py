@@ -348,7 +348,7 @@ class GitRepository(VCRepository):
         return self.repo.git.rev_parse("HEAD")
 
     def get_remote_change_id(self) -> str:
-        return self.repo.git.rev_parse("@\{u\}")
+        return self.repo.git.rev_parse("@{u}")
 
     def is_pull_required(self) -> bool:
         try:
@@ -377,6 +377,12 @@ class GitRepository(VCRepository):
 
         commits = list(self.repo.iter_commits(rev=rev_spec, **args))
 
+        try:
+            if self.has_remote():
+                commits.extend(list(self.repo.iter_commits(rev="HEAD..@{u}", **args)))
+        except Exception as e:
+            print (e)
+            
         for commit in commits:
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date))
 
