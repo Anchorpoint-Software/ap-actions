@@ -201,9 +201,12 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
     if not repo:
         return []
 
-    history = repo.get_history(count, rev_spec=last_id)
     history_list = list()
-
+    try:
+        history = repo.get_history(count, rev_spec=last_id)
+    except:
+        return history_list
+    
     for commit in history:
         entry = ap.TimelineChannelEntry()
         entry.id = commit.id

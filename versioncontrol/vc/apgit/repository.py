@@ -4,7 +4,7 @@ from platform import platform
 from shutil import ExecError
 import shutil
 
-from git import GitCommandError
+from git import BadObject, GitCommandError
 import git
 import git.cmd
 from vc.versioncontrol_interface import *
@@ -177,11 +177,32 @@ class GitRepository(VCRepository):
     def restore_all_files(self):
         self.repo.git.checkout(".")
 
+    def is_unborn(self):
+        try:
+            self.repo.rev_parse("HEAD")
+        except:
+            return True
+        return False
+
+    def _is_sha1(self):
+        format = self.repo.git.rev_parse("--show-object-format")
+        return format == "sha1"
+
+    def _get_empty_tree_id(self):
+        # Magic number, can be retrieved with "git hash-object -t tree /dev/null"
+        if self._is_sha1():
+            return "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+        else:
+            return "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
+
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()
         try:
             if staged:
-                diff = self.repo.head.commit.diff()
+                if not self.is_unborn():
+                    diff = self.repo.head.commit.diff()
+                else:
+                    diff = self.repo.index.diff(self._get_empty_tree_id())
             else:
                 diff = self.repo.index.diff(None) 
             
@@ -190,7 +211,8 @@ class GitRepository(VCRepository):
             if not staged:
                 for untracked_file in self.repo.untracked_files:
                     changes.new_files.append(Change(path = untracked_file)) 
-        except ValueError:
+        except ValueError as e:
+            print(e)
             pass
 
         return changes
@@ -208,9 +230,10 @@ class GitRepository(VCRepository):
         self.repo.git.restore("--staged", *paths)
 
     def sync_staged_files(self, paths: list[str]):
-        staged_files = self.repo.git.diff("--name-only", "--staged").splitlines()
-        if len(staged_files) > 0:
-            self.repo.git.restore("--staged", *staged_files)
+        if not self.is_unborn():
+            staged_files = self.repo.git.diff("--name-only", "--staged").splitlines()
+            if len(staged_files) > 0:
+                self.repo.git.restore("--staged", *staged_files)
         self.stage_files(paths)
 
     def commit(self, message: str):
