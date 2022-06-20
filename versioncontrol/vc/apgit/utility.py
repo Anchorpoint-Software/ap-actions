@@ -11,7 +11,7 @@ def _download_git():
     return r
     
 def _configure_gcm():
-    subprocess.check_call(["git", "credential-manager-core", "configure"])
+    subprocess.check_call(["git", "credential-manager-core", "configure"], creationflags=subprocess.CREATE_NO_WINDOW)
 
 def _install_git_async():
     import tempfile
@@ -43,10 +43,20 @@ def _check_application(name: str):
         return True
     return False
 
+def _check_gcm():
+    if platform.system() == "Darwin":
+        return _check_application("git-credential-manager-core")
+    else:
+        try:
+            _configure_gcm()
+            return True
+        except:
+            return False
+
 def guarantee_git():
     git_installed = _check_application("git")
     lfs_installed = _check_application("git-lfs")
-    gcm_installed = _check_application("git-credential-manager-core")
+    gcm_installed = _check_gcm()
 
     ui = ap.UI()
     if not lfs_installed:
