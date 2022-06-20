@@ -101,15 +101,14 @@ class GitRepository(VCRepository):
 
         try:
             if progress is not None:
-                repo.repo = git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
+                git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
             else:
-                repo.repo = git.Repo.clone_from(remote_url, local_path)
+                git.Repo.clone_from(remote_url, local_path)
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
 
-        repo._init_git_lfs()
-        return repo
+        return GitRepository.load(local_path)
 
     @classmethod
     def load(cls, path: str):
