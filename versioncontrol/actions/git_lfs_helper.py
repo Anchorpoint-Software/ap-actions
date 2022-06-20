@@ -18,7 +18,7 @@ def _file_is_binary(path: str):
     if not isinstance(mime_type[0],str): return _file_bytes_binary(path)
     
     type_split = mime_type[0].split("/")
-    if len(type_split) is not 2: return _file_bytes_binary(path)
+    if len(type_split) != 2: return _file_bytes_binary(path)
     
     type = type_split[0]
     subtype = type_split[1]
