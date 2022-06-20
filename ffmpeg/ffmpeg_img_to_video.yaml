@@ -7,17 +7,19 @@ version: "1.0"
 
 action:
   #Must Have Properties
-  name: "FFmpeg / Sequence to Video"
+  name: "Convert to Video"
 
   #Optional Properties
   version: 1
-  id: "ap::ffmpeg::seqtovideo"
-  category: "ffmpeg/video"
+  id: "ap::video::seqtovideo"
+  category: "video"
   type: python
   enable: false
   author: "Anchorpoint Software GmbH"
 
-  description: Converts a sequence of images to a video using FFmpeg
+  description: Converts a sequence of images to a video
+  icon:
+    path: icons/videoConversion.svg
   script: "ffmpeg_img_to_video.py"
   inputs:
     ffmpeg_win: "${yaml_dir}/ffmpeg.exe"

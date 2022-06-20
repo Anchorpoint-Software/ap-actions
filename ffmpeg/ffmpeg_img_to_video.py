@@ -56,7 +56,8 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         p_infinite = True
         
     # Show Progress
-    progress = ap.Progress("FFmpeg", "Converting Sequence to Video", infinite=p_infinite)
+    percentage = 0
+    progress = ap.Progress("Images to Video","Preparing...", infinite=p_infinite)
 
     # Provide FFmpeg with the set of selected files through the concat demuxer
     concat_file = concat_demuxer(selected_files, fps)
@@ -69,7 +70,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
             "-i", concat_file,
             "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
             "-vsync", "vfr",
-            "-pix_fmt", "yuv420p",
+            "-pix_fmt", "yuva420p",
             os.path.join(target_folder,f"{filename}.mp4"),
         ]
     if is_exr:
@@ -95,6 +96,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
             current_frame = re.search(r'\d+', line).group()
             percentage = int(current_frame)/(len(selected_files)+1)
             progress.report_progress(percentage)
+            progress.set_text(f"{int(percentage*100)}% encoded")
         
     # wait for subprocess to terminate
     ffmpeg.communicate()
@@ -103,14 +105,14 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         print(ffmpeg.stderr)
         ui.show_error("Failed to export video", description="Check Anchorpoint Console")
     else:
-        ui.show_success("Export Successful", description="Created video.mp4")
+        ui.show_success("Export Successful", description=f"Created {filename}.mp4")
 
     # Do some cleanup
     os.remove(concat_file)
 
 def _install_ffmpeg_async():
     # download zip
-    progress = ap.Progress("Loading FFMPEG", infinite = True)
+    progress = ap.Progress("Installing FFMPEG", infinite = True)
     r = requests.get(FFMPEG_INSTALL_URL)
             
     # open zip file and extract ffmpeg.exe to the right folder
@@ -129,8 +131,8 @@ def _install_ffmpeg(dialog):
 
 def ffmpeg_install_dialog():
     dialog = ap.Dialog()
-    dialog.title = "Install FFmpeg"
-    dialog.add_text("To use Anchorpoint with FFmpeg you have to install FFmpeg.")
+    dialog.title = "Install Conversion Tools"
+    dialog.add_text("Anchorpoint's video conversion tools are based on FFmpeg.")
     dialog.add_info("When installing FFmpeg you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
     dialog.add_button("Install", callback=_install_ffmpeg)
     dialog.show()

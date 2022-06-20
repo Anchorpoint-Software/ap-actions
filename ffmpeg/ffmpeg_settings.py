@@ -1,4 +1,3 @@
-from cgitb import enable
 import anchorpoint as ap
 import apsync as aps
 import os
@@ -25,7 +24,7 @@ def button_clicked(dialog):
     dialog.close()
     
 def input_callback(dialog, value):
-    dialog.set_enabled(path_var, value=="Custom Folder")
+    dialog.hide_row(path_var, value=="Same Folder")
     
 def open_dialog():
     fps = settings.get("fps")
@@ -40,10 +39,15 @@ def open_dialog():
     dialog = ap.Dialog()
     input_callback(dialog, dropdown_var)
     dialog.title = "Conversion Settings"
-    dialog.add_text("Framerate").add_input(fps, var = framerate_var)
-    dialog.add_dropdown("Same Folder", ["Same Folder", "Custom Folder"], var = dropdown_var, callback=input_callback)
-    dialog.add_text("Location").add_input(path, browse=ap.BrowseType.Folder, var = path_var, enabled=False)
+    dialog.add_text("Framerate \t").add_input(fps, var = framerate_var)
+    dialog.add_text("Location \t").add_dropdown("Same Folder", ["Same Folder", "Custom Folder"], var = dropdown_var, callback=input_callback)
+    dialog.add_text("Folder \t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
     dialog.add_button("Apply", callback=button_clicked)
+    dialog.hide_row(path_var, True)
+
+    if ctx.icon:
+        dialog.icon = ctx.icon   
+        
     dialog.show()
 
 open_dialog()
