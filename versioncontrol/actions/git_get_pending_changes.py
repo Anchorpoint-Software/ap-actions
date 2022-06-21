@@ -7,30 +7,6 @@ from enum import Enum
 from typing import Optional
 import os
 
-class Status(Enum):
-    NEW = 1
-    DELETED = 2
-    MODIFIED = 3
-    RENAMED = 4
-    CONFLICTED = 5
-
-@dataclass
-class PendingChange:
-    status: Status
-    path: str
-    old_path: Optional[str] = None
-    preview: Optional[str] = None
-
-    def __eq__(self, __o: object) -> bool:
-        return self.path == __o.path
-
-    def __ne__(self, __o: object) -> bool:
-        return self.path != object.path
-
-    def __hash__(self) -> int:
-        return self.path.__hash__()
-
-	
 def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool) -> ap.VCPendingChange:
     result = ap.VCPendingChange()
     result.status = status
@@ -39,20 +15,26 @@ def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool)
         result.selected = True
     return result
 
-def parse_changes(repo_dir: str, repo_changes, changes: set[ap.VCPendingChange], selected: bool):
+def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool):
     for file in repo_changes.new_files:
-        changes.add(parse_change(repo_dir, file, ap.VCFileStatus.New, selected))
+        change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
+        changes[change.path] = change
     for file in repo_changes.modified_files:
-        changes.add(parse_change(repo_dir, file, ap.VCFileStatus.Modified, selected))
+        change = parse_change(repo_dir, file, ap.VCFileStatus.Modified, selected)
+        changes[change.path] = change
     for file in repo_changes.deleted_files:
-        changes.add(parse_change(repo_dir, file, ap.VCFileStatus.Deleted, selected))
+        change = parse_change(repo_dir, file, ap.VCFileStatus.Deleted, selected)
+        changes[change.path] = change
     for file in repo_changes.renamed_files:
-        changes.add(parse_change(repo_dir, file, ap.VCFileStatus.Renamed, selected))
+        change = parse_change(repo_dir, file, ap.VCFileStatus.Renamed, selected)
+        changes[change.path] = change
 
-def parse_conflicts(conflicts, changes: set[ap.VCPendingChange]):
+def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
     for conflict in conflicts:
-        if conflict in changes:
-            changes[conflict].status = ap.VCFileStatus.Conflicted
+        conflict_path = os.path.join(repo_dir, conflict)
+        
+        if conflict_path in changes:
+            changes[conflict_path].status = ap.VCFileStatus.Conflicted
 
 @dataclass
 class VCBlockAction:
@@ -69,8 +51,8 @@ class VCBranch:
 
 @dataclass
 class VCPendingBlockContext:
-    selected_changes: list[PendingChange]
-    unselected_changes: list[PendingChange]
+    selected_changes: list()
+    unselected_changes: list()
 
 @dataclass
 class VCPendingBlockInfo:
@@ -127,33 +109,6 @@ def on_vc_load_block_info(path: str, block_ctx: VCPendingBlockContext, ctx: ap.C
 
     return info
 
-
-def on_vc_get_pending_changes(path: str, ctx: ap.Context) -> Optional[list[PendingChange]]:
-    import sys, os
-    sys.path.insert(0, os.path.split(__file__)[0])
-    import is_git_repo as git
-
-    if not git.path_contains_git_repo(path):
-        return None
-    
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
-    from vc.apgit.repository import GitRepository
-    
-    repo = GitRepository.load(path)
-    if repo == None: 
-        return
-
-    repo_dir = repo.get_root_path()
-    changes = set[PendingChange]()
-
-    parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
-    parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
-    parse_conflicts(repo.get_conflicts(), changes)
-    
-    if len(changes) == 0: 
-        return []
-    
-    return list(changes)
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
     import sys, os
@@ -231,14 +186,14 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         return []
 
     repo_dir = repo.get_root_path()
-    changes = set[ap.VCPendingChange]()
+    changes = dict[str,ap.VCPendingChange]()
 
     parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
     parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
-    parse_conflicts(repo.get_conflicts(), changes)
+    parse_conflicts(repo_dir, repo.get_conflicts(), changes)
 
     info = ap.VCPendingChangesInfo()
-    info.changes = ap.VCPendingChangeList(changes)
+    info.changes = ap.VCPendingChangeList(changes.values())
 
     commit = ap.TimelineChannelAction()
     commit.name = "Commit"
