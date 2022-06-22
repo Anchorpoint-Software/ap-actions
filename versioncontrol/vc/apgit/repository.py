@@ -290,12 +290,21 @@ class GitRepository(VCRepository):
     def abort_rebasing(self):
         self.repo.git.rebase("--abort")
 
+    def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
+        path_args = ["."] if paths is None else paths
+        if state is ConflictResolveState.TAKE_OURS:
+            self.repo.git.checkout("--ours", *path_args)
+        elif state is ConflictResolveState.TAKE_THEIRS:
+            self.repo.git.checkout("--theirs", *path_args)
+        self.repo.git.add(*path_args)
+
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
             if self._command_exists("code") == False:
                 raise Exception("Could not find external Diff Tool")
             self.repo.git.config("merge.tool", "vscode")
             self.repo.git.config("mergetool.vscode.cmd", "code -n --wait $MERGED")
+            self.repo.git.config("mergetool.writeToTemp", "true")
             tool = "vscode"
         if tool is None:
             raise Exception("No tool configured")
@@ -380,7 +389,7 @@ class GitRepository(VCRepository):
             if self.has_remote():
                 commits.extend(list(self.repo.iter_commits(rev="HEAD..@{u}", **args)))
         except Exception as e:
-            print (e)
+            pass
             
         for commit in commits:
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date))

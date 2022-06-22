@@ -11,7 +11,10 @@ def _download_git():
     return r
     
 def _configure_gcm():
-    subprocess.check_call(["git", "credential-manager-core", "configure"], creationflags=subprocess.CREATE_NO_WINDOW)
+    if platform.system() == "Windows":
+        subprocess.check_call(["git", "credential-manager-core", "configure"], creationflags=subprocess.CREATE_NO_WINDOW)
+    else:
+        subprocess.check_call(["git", "credential-manager-core", "configure"])
 
 def _install_git_async():
     import tempfile

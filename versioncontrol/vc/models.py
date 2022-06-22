@@ -9,6 +9,11 @@ class UpdateState(Enum):
     CONFLICT = 3
     NO_REMOTE = 4
 
+class ConflictResolveState(Enum):
+    TAKE_OURS = 1
+    TAKE_THEIRS = 2
+    RESOLVED = 3
+
 @dataclass
 class Change:
     """Represents a versioned controlled change"""

@@ -5,19 +5,12 @@
 
 version: 1.0
 action:
-  name: Git Resolve Conflicts
+  name: Git Rebase
 
   version: 1
-  id: git::resolveconflicts
+  id: git::rebase
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: ""
-  icon:
-    path: :/icons/version.svg
-
-  script: git_resolve_conflicts.py
-
-  register:
-    folder:
-      enable: true
+  
+  script: git_rebase.py

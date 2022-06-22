@@ -1,6 +1,5 @@
 from calendar import c
 from dataclasses import dataclass, field
-import time
 import anchorpoint as ap
 import apsync as aps
 from enum import Enum
@@ -36,80 +35,6 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
         if conflict_path in changes:
             changes[conflict_path].status = ap.VCFileStatus.Conflicted
 
-@dataclass
-class VCBlockAction:
-    name: str
-    action_id: str = None
-    enabled: bool = True
-    icon: Optional[str] = None
-    color: Optional[str] = None
-    tooltip: Optional[str] = None
-
-@dataclass
-class VCBranch:
-    name: str
-
-@dataclass
-class VCPendingBlockContext:
-    selected_changes: list()
-    unselected_changes: list()
-
-@dataclass
-class VCPendingBlockInfo:
-    settings: Optional[aps.Settings] = None
-    branches: list[VCBranch] = field(default_factory=list)
-    current_branch: Optional[VCBranch] = None
-    actions: list[VCBlockAction] = field(default_factory=list)
-    controls: list[VCBlockAction] = field(default_factory=list)
-
-def create_commit_action(repo, block_ctx: VCPendingBlockContext, actions: list[VCBlockAction], requires_commit_action: bool):
-    if requires_commit_action:
-        print("add commit button. Enabled: ", len(block_ctx.selected_changes) > 0)
-        actions.append(VCBlockAction("Commit", "ap::git::commit", enabled=len(block_ctx.selected_changes) > 0))
-
-def create_sync_action(repo, block_ctx: VCPendingBlockContext, actions: list[VCBlockAction]):
-    if repo.is_pull_required():
-        actions.append(VCBlockAction("Pull", "ap::git::pull"))
-    elif repo.is_push_required():
-        actions.append(VCBlockAction("Push", "ap::git::push"))
-
-def create_revert_all_action(repo, block_ctx: VCPendingBlockContext, actions: list[VCBlockAction]):
-    if (len(block_ctx.selected_changes) > 0 or len(block_ctx.unselected_changes) > 0):
-        actions.append(VCBlockAction("Revert All", "ap::git::revertall"))
-
-def get_settings():
-    return aps.Settings("git_commit_settings")
-
-def on_vc_load_block_info(path: str, block_ctx: VCPendingBlockContext, ctx: ap.Context) -> Optional[VCPendingBlockInfo]:
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
-    from vc.apgit.repository import GitRepository
-
-    repo = GitRepository.load(path)
-    if not repo:
-        return None
-
-    info = VCPendingBlockInfo()
-    info.settings = get_settings()
-    requires_commit_action = info.settings.get("Auto Push on Commit", True)
-
-    # branches = repo.get_branches()
-    # current_branch_name = repo.get_current_branch_name()
-    # for branch in branches:
-    #     if branch.name == current_branch_name:
-    #         info.current_branch = branch
-    #         break
-
-    info.branches = [VCBranch("main"), VCBranch("WIP/Anchorpoint")]
-    info.current_branch = info.branches[0]
-
-    create_commit_action(repo, block_ctx, info.actions, requires_commit_action)
-    create_sync_action(repo, block_ctx, info.actions)
-    create_revert_all_action(repo, block_ctx, info.actions)
-
-    return info
-
-
 def on_load_timeline_channel_info(channel_id: str, ctx):
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -122,7 +47,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
     repo = GitRepository.load(path)
     if not repo: return info
 
-    if repo.has_remote():
+    is_rebasing = repo.is_rebasing()
+    if repo.has_remote() and not is_rebasing:
         pull = ap.TimelineChannelAction()
         pull.name = "Pull (Rebase)"
         pull.identifier = "gitpullrebase"
@@ -137,6 +63,17 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         push.name = "Push"
         push.identifier = "gitpush"
         info.actions.append(push)
+    
+    if is_rebasing:
+        conflicts = ap.TimelineChannelAction()
+        conflicts.name = "Show Conflicts"
+        conflicts.identifier = "gitresolveconflicts"
+        info.actions.append(conflicts)
+
+        cancel = ap.TimelineChannelAction()
+        cancel.name = "Cancel Rebase"
+        cancel.identifier = "gitcancelrebase"
+        info.actions.append(cancel)
 
     main = ap.VCBranch()
     main.name = "main"
@@ -195,26 +132,25 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     info = ap.VCPendingChangesInfo()
     info.changes = ap.VCPendingChangeList(changes.values())
 
+    is_rebasing = repo.is_rebasing()
     commit = ap.TimelineChannelAction()
     commit.name = "Commit"
     commit.identifier = "gitcommit"
+    if is_rebasing:
+        commit.enabled = False
+        commit.tooltip = "Cannot commit when resolving conflicts"
+    else:
+        commit.tooltip = "Commit your changes to Git"
     info.actions.append(commit)
 
     revert = ap.TimelineChannelAction()
     revert.name = "Revert All"
     revert.identifier = "gitrevertall"
+    if is_rebasing:
+        revert.enabled = False
+        revert.tooltip = "Cannot revert files when resolving conflicts"
+    else:
+        revert.tooltip = "Reverts all your modifications (cannot be undone)"
     info.actions.append(revert)
 
     return info
-
-if __name__ == "__main__":
-
-    ctx = ap.Context.instance()
-    path = ctx.path
-
-    changes = on_vc_get_pending_changes(path, ctx)
-    if changes is None:
-        ap.UI().show_info("Not a Git repository")
-    else:
-        block_ctx = VCPendingBlockContext(changes, [])
-        info = on_vc_load_block_info(path, block_ctx,  ctx)
