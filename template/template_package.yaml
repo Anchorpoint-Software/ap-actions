@@ -65,6 +65,10 @@ action:
   inputs:
     template_dir: templates
 
+  dependencies:
+    - code/template_utility.py
+    - code/events.stub
+
   actions:
     - ap::template::newfile
     - ap::template::newfolder
