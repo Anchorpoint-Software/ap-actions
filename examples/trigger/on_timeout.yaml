@@ -1,0 +1,25 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: On Timeout
+
+  version: 1
+  id: ap::examples::trigger::timer
+  type: python
+  author: Anchorpoint Software GmbH
+  description: "Example Python trigger that is executed every x seconds"
+  icon:
+    path: :/icons/action.svg
+
+  script: on_timeout.py
+
+  register:
+    trigger:
+      on_timeout:
+        enable: true
+        interval: 60 #action is triggered every 60 seconds
+
