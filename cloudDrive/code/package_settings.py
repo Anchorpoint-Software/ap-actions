@@ -76,6 +76,7 @@ def get_configuration(dialog : ap.Dialog):
 
 def apply_callback(dialog : ap.Dialog):   
     from Crypto.Random import get_random_bytes
+    import pyperclip as pc 
 
     configuration = get_configuration(dialog)
     dumped_configuration = json.dumps(configuration)
