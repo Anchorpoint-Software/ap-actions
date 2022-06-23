@@ -259,7 +259,7 @@ def get_settings():
 def create_pw_dialog():
     dialog = ap.Dialog()
     dialog.title = "Enter Configuration Key"
-    dialog.icon = "icons/driveCloud.svg"
+    dialog.icon = ctx.icon
     dialog.add_text("Configuration Key").add_input(placeholder="Your configuration key", var="pw_var")
     dialog.add_button("Ok", callback = set_password)
     dialog.show()

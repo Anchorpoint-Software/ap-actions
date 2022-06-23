@@ -36,6 +36,7 @@ def check_rclone():
     if not os.path.isfile(ctx.inputs["rclone_win"]):
         dialog = ap.Dialog()
         dialog.title = "Install network drive tool"
+        dialog.icon = ctx.icon
         dialog.add_text("The Anchorpoint network drive is based on Rclone.")
         dialog.add_info("When installing Rclone you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
         dialog.add_button("Install", callback=_install_rclone)
