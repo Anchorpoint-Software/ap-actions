@@ -34,6 +34,7 @@ def install_modules():
     progress = ap.Progress("Loading Modules",infinite = True)
     ui.show_info("Loading Modules", description="This will only happen once")  
     ctx.install("pycryptodome")
+    ctx.install("pyperclip")
     progress.finish()
     check_winfsp()
 
@@ -159,7 +160,7 @@ def setup_mount(dialog):
         os.mkdir(cache_path)
 
     base_arguments = [
-        rclone_path,      
+        ctx.inputs["rclone_win"],      
         "mount"
     ]
     
