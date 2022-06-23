@@ -12,10 +12,16 @@ show_menu = None
 
 RCLONE_INSTALL_URL = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
 
-def check_winfsp(menu):
+def check_winfsp_and_rclone(menu):
     global show_menu
     show_menu = menu
-    
+
+    try:
+        check_winfsp()
+    except:
+        install_modules()
+
+def check_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
     if os.path.isfile(winfsp_path):
         check_rclone()
@@ -46,27 +52,30 @@ def check_rclone():
 
 def _install_rclone_async():
     # download zip
-        progress = ap.Progress("Loading RClone", infinite = True)
-        r = requests.get(RCLONE_INSTALL_URL)
-                
-        # open zip file and extract rclone.exe to the right folder
-        z = zipfile.ZipFile(io.BytesIO(r.content))
+    progress = ap.Progress("Loading RClone", infinite = True)
+    r = requests.get(RCLONE_INSTALL_URL)
+            
+    # open zip file and extract rclone.exe to the right folder
+    z = zipfile.ZipFile(io.BytesIO(r.content))
+    
+    with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
+        with open(ctx.inputs["rclone_win"], "wb") as target:
+            shutil.copyfileobj(source, target)
+            
+    # make rclone dir
+    app_data_roaming = os.getenv('APPDATA')
+    app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
+    rclone_dir = os.path.join(app_data,"Local/rclone").replace("/","\\")
+    
+    if not os.path.isdir(rclone_dir):
+        os.mkdir(rclone_dir)
         
-        with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
-            with open(ctx.inputs["rclone_win"], "wb") as target:
-                shutil.copyfileobj(source, target)
-                
-        # make rclone dir
-        app_data_roaming = os.getenv('APPDATA')
-        app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
-        rclone_dir = os.path.join(app_data,"Local/rclone").replace("/","\\")
-        
-        if not os.path.isdir(rclone_dir):
-            os.mkdir(rclone_dir)
-              
-        progress.finish()
-        
+    progress.finish()
+    
+    try:
         show_menu()
+    except:
+        install_modules()
         
 def _install_rclone(dialog):
     ctx.run_async(_install_rclone_async)

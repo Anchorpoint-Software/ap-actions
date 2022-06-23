@@ -56,7 +56,5 @@ def open_dialog():
     dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_emtpy)
     dialog.show()
 
-try:
-    ctx.run_async(rclone_install.check_winfsp, open_dialog)
-except:
-    ctx.run_async(rclone_install.install_modules)  
+
+ctx.run_async(rclone_install.check_winfsp_and_rclone, open_dialog)
