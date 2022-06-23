@@ -26,7 +26,7 @@ def apply_callback(dialog : ap.Dialog):
 # Create a dialog container
 dialog = ap.Dialog()
 dialog.title = "Template Action Settings"
-dialog.icon = ":/icons/settings.svg"
+dialog.icon = ctx.icon
 
 dialog.add_text("Workspace Templates Location")
 dialog.add_input(template_dir, browse=ap.BrowseType.Folder, var="template_dir")

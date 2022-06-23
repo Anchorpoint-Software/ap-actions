@@ -3,6 +3,7 @@ import anchorpoint as ap
 import apsync as aps
 import os
 import shutil
+import rclone_install_helper as rclone_install
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -55,4 +56,7 @@ def open_dialog():
     dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_emtpy)
     dialog.show()
 
-open_dialog()
+try:
+    ctx.run_async(rclone_install.check_winfsp, open_dialog)
+except:
+    ctx.run_async(rclone_install.install_modules)  

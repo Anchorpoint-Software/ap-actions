@@ -15,7 +15,7 @@ action:
   author: Anchorpoint Software GmbH
   description: Create a network drive that can connect to an S3 compatible cloud
   icon:
-    path: icons/cloudDrive.svg
+    path: icons/driveCloud.svg
 
   details: '
     Coming soon
