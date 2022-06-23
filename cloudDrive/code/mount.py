@@ -1,21 +1,17 @@
 from ast import arguments
 from re import sub
-import shutil
-import zipfile
 import anchorpoint as ap
 import apsync as aps
 import platform
 import subprocess
 import os
-import io
-import requests
 import json
+import rclone_install_helper as rclone_install
 
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings()
-RCLONE_INSTALL_URL = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
 
 configuration = {
     "type": "",
@@ -29,62 +25,6 @@ configuration = {
     "b2_key":"",
     "b2_bucket_name": ""
 }
-
-def install_modules():
-    progress = ap.Progress("Loading Modules",infinite = True)
-    ui.show_info("Loading Modules", description="This will only happen once")  
-    ctx.install("pycryptodome")
-    ctx.install("pyperclip")
-    progress.finish()
-    check_winfsp()
-
-def check_rclone():
-    if not os.path.isfile(ctx.inputs["rclone_win"]):
-        dialog = ap.Dialog()
-        dialog.title = "Install network drive tool"
-        dialog.add_text("The Anchorpoint network drive is based on Rclone.")
-        dialog.add_info("When installing Rclone you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
-        dialog.add_button("Install", callback=_install_rclone)
-        dialog.show()
-    else:
-        get_settings()
-        
-def _install_rclone_async():
-    # download zip
-        progress = ap.Progress("Loading RClone", infinite = True)
-        r = requests.get(RCLONE_INSTALL_URL)
-                
-        # open zip file and extract rclone.exe to the right folder
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        
-        with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
-            with open(ctx.inputs["rclone_win"], "wb") as target:
-                shutil.copyfileobj(source, target)
-
-        progress.finish()
-        ctx.run_async(get_settings)
-        
-def _install_rclone(dialog):
-    ctx.run_async(_install_rclone_async)
-    dialog.close()
-    
-    
-
-def check_winfsp():
-    winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
-    if os.path.isfile(winfsp_path):
-        check_rclone()
-    else:
-        progress = ap.Progress("Loading WinFsp",infinite = True)
-        winget = subprocess.run(
-            "winget install -e --id WinFsp.WinFsp --accept-source-agreements", capture_output=True
-        )
-        progress.finish()
-        if winget.returncode != 0:
-            print(winget.stderr)
-            ui.show_error("Failed to install WinFsp", description="Google WinFsp and install it manually.")
-        else:
-            check_rclone()
 
 def generate_secret_key(password: str, salt: bytes) -> str:
     from Crypto.Protocol.KDF import PBKDF2
@@ -350,8 +290,7 @@ def show_options():
 if platform.system() == "Darwin":
     ui.show_error("Unsupported Action", "This action is only supported on Windows :-(")
 else:
-    try:
-        from Crypto.Cipher import AES        
-        ctx.run_async(check_winfsp)        
+    try:     
+        ctx.run_async(rclone_install.check_winfsp, get_settings)
     except:
-        ctx.run_async(install_modules)  
+        ctx.run_async(rclone_install.install_modules)  
