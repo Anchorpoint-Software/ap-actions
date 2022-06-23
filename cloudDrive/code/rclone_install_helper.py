@@ -38,7 +38,7 @@ def check_rclone():
         dialog.title = "Install network drive tool"
         dialog.icon = ctx.icon
         dialog.add_text("The Anchorpoint network drive is based on Rclone.")
-        dialog.add_info("When installing Rclone you are accepting the <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING">license</a> of the owner.")
+        dialog.add_info("When installing Rclone you are accepting the <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">license</a> of the owner.")
         dialog.add_button("Install", callback=_install_rclone)
         dialog.show()
     else:
