@@ -24,6 +24,9 @@ action:
   platforms:
     - win
     
+  dependencies:
+    - code/rclone_install_helper.py
+    
   settings: code/package_settings.py
   actions:
     - ap::cloudDrive::mount
