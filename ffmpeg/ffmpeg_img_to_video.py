@@ -44,11 +44,7 @@ def concat_demuxer(selected_files, fps):
     file.close()
     return output
 
-def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
-    # check for ffmpeg.exe and download if missing
-    if not os.path.isfile(ctx.inputs["ffmpeg_win"]):
-        install_ffmpeg()
-        
+def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):        
     # check if its a video (one file)
     p_infinite = False
     
