@@ -22,20 +22,24 @@ Everything where you have to do a lot of manual work (renaming files, copying fi
 ## 🚀 Getting Started 
 The best way to get started is looking and code examples and modify them.
 
-1. Download Anchorpoint
+1. [Download Anchorpoint](https://www.anchorpoint.app/)
 2. Go to your workspace settings
+
 ![Workspace settings](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gettingStartedstep_1.png)
 
 3. Enable Coding Examples
+
 ![Coding examples](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gettingStartedstep_2.png)
 
 4. The “Show Code” button will navigate to the source files
+
 ![Source files](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gettingStartedstep_3.png)
 
 5. A right click on a folder will show the coding example actions. You can try them out.
+
 ![Execute Action](https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gettingStartedstep_4.png)
 
-To get a good feeling just modify the greetins.yaml and greetings.py in the "ui" folder in the source code. Then in the folder context menu pick "UI / Greetings Dialog" which will execute that Action.
+To get a good feeling just modify the greetings.yaml and greetings.py in the "ui" folder in the source code. Then in the folder context menu pick "UI / Greetings Dialog" which will execute that Action.
 
 ## 📖 Documentation
 - [Actions Overview](https://docs.anchorpoint.app/docs/5-Actions/1-Intro)
