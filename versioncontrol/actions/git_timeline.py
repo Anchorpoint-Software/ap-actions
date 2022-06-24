@@ -154,3 +154,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     info.actions.append(revert)
 
     return info
+
+def on_timeout(ctx):
+    ap.refresh_timeline_channel("Git")
