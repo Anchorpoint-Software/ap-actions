@@ -1,3 +1,4 @@
+from asyncio import constants
 import io
 import os
 import shutil
@@ -16,12 +17,30 @@ def check_winfsp_and_rclone(menu):
     global show_menu
     show_menu = menu
 
-    try:
-        check_winfsp()
-    except:
-        install_modules()
+    winfsp_path = os.path.isfile(os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe"))
+    rclone_path = os.path.isfile(ctx.inputs["rclone_win"])
 
-def check_winfsp():
+    if not winfsp_path or not rclone_path:
+        show_install_dialog()
+    else:
+        ctx.run_async(check_and_install_modules)
+        show_menu()
+
+def show_install_dialog():
+    dialog = ap.Dialog()
+    dialog.title = "Install network drive tools"
+    dialog.icon = ctx.icon
+    dialog.add_text("The Anchorpoint network drive is based on Rclone and WinFSP.")
+    dialog.add_info("When installing them you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a> and <a href=\"https://github.com/winfsp/winfsp/blob/master/License.txt\">WinFsp</a>.")
+    dialog.add_button("Install", callback=prepare_module_install)
+    dialog.show()
+
+def prepare_module_install(dialog):
+    ctx.run_async(check_and_install_modules)
+    ctx.run_async(check_and_install_winfsp)
+    dialog.close()
+
+def check_and_install_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
     if os.path.isfile(winfsp_path):
         check_rclone()
@@ -40,19 +59,13 @@ def check_winfsp():
 
 def check_rclone():
     if not os.path.isfile(ctx.inputs["rclone_win"]):
-        dialog = ap.Dialog()
-        dialog.title = "Install network drive tool"
-        dialog.icon = ctx.icon
-        dialog.add_text("The Anchorpoint network drive is based on Rclone.")
-        dialog.add_info("When installing Rclone you are accepting the <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">license</a> of the owner.")
-        dialog.add_button("Install", callback=_install_rclone)
-        dialog.show()
+        ctx.run_async(_install_rclone_async)
     else:
         show_menu()
 
 def _install_rclone_async():
     # download zip
-    progress = ap.Progress("Loading RClone", infinite = True)
+    progress = ap.Progress("Loading Rclone", infinite = True)
     r = requests.get(RCLONE_INSTALL_URL)
             
     # open zip file and extract rclone.exe to the right folder
@@ -72,19 +85,15 @@ def _install_rclone_async():
         
     progress.finish()
     
-    try:
-        show_menu()
-    except:
-        install_modules()
+    show_menu()
         
-def _install_rclone(dialog):
-    ctx.run_async(_install_rclone_async)
-    dialog.close()
-
-def install_modules():
-    progress = ap.Progress("Loading Modules",infinite = True)
-    ui.show_info("Loading Modules", description="This will only happen once")  
-    ctx.install("pycryptodome")
-    ctx.install("pyperclip")
-    progress.finish()
-    check_winfsp()
+def check_and_install_modules():
+    try:
+        import pyperclip as pc
+        from Crypto.Cipher import AES
+    except:
+        progress = ap.Progress("Loading Modules",infinite = True)
+        ui.show_info("Loading Modules", description="This will only happen once")  
+        ctx.install("pycryptodome")
+        ctx.install("pyperclip")
+        progress.finish()
