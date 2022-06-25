@@ -155,5 +155,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
     return info
 
+def on_project_directory_changed(ctx):
+    ap.refresh_timeline_channel("Git")
+
 def on_timeout(ctx):
     ap.refresh_timeline_channel("Git")
