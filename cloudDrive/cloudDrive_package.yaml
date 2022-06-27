@@ -18,8 +18,37 @@ action:
     path: icons/driveCloud.svg
 
   details: '
-    Coming soon
-    '
+    <p>Allows to mount a network drive. The data is cached and uploaded and downloaded in the background. So you can work fluently on the drive. Take a look at this <a href="https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud">tutorial</a>.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rcloneWinExplorer.png" width="300"></p>
+    <p>The drive is also accessible from the Explorer and thus any application.</p>
+
+    <h2>Configuration of a cloud drive</h2>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/settings.png" width="95"></p>
+    <p>Go to the settings. The Settings button is located in the upper right corner.</p>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rcloneSettingsUI.png" width="400"></p>
+    <p>Choose if you want to use a S3 compatible server or Backblaze B2. You can find the access data at your cloud storage provider.</p>
+
+    <h2>Mount your drive</h2>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rcloneMount.png" width="300"></p>
+    <p>Move your mouse to the place where the drives are shown. Click on <b>New</b> and choose <b>Mount Cloud Drive</b>.</p>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rcloneInstallRclone.png" width="500"></p>
+    <p>At the first start you have to install the corresponding modules. This happens automatically and only at the first start.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rclonePickLetter.png" width="300"></p>
+    <p>Pick a drive letter and press <b>Mount</b></p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rcloneWinExplorer.png" width="300"></p>
+    <p>Your drive appears both in Anchorpoint and in Explorer</p>
+
+    <h3>Unmount the Drive</h3>
+    <p>Right-click on your drive and select <b>Unmount.</b></p>
+
+    <h3>Change your cache settings</h3>
+    <p>Click on <b>New</b> in the Drives again and select the gear under <b>Mount Cloud Drive.</b> There you can adjust your cache location and clear the cache.</p>
+
+  '
 
   platforms:
     - win
