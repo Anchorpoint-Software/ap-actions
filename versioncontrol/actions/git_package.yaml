@@ -23,6 +23,8 @@ action:
 
   dependencies: 
     - ../vc
+    - can_create_git_repo.py
+    - is_git_repo.py
 
   actions:
     - git::clone
