@@ -229,7 +229,7 @@ def get_settings():
     import pyperclip as pc 
     if settings.get("Config")=="":
         if is_admin:
-            ui.show_info("No cloud drive configured", description="Please setup a cloud drive")
+            ui.show_info("No cloud drive configured", description="Please setup a cloud drive in your Workspace Settings inside the Actions entry.")
         else:
             ui.show_info("No cloud drive configured", description="Ask your workspace owner to setup a cloud drive")
     else:
