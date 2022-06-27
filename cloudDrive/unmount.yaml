@@ -5,20 +5,19 @@
 
 version: 1.0
 action:
-  name: Publish
+  name: Unmount
 
   version: 1
-  id: ap::vc::publish
+  id: "ap::cloudDrive::unmount"
   category: user
   type: python
-  author: Anchorpoint Software GmbH
-  description: Creates a copy of this file without the increment
+  author: Matthäus Niedoba
+  description: "Deactivates this cloud drive"
   icon:
-    path: publish.svg
+    path: icons/driveStrike.svg
 
-  script: publish.py
-  settings: publish_settings.py
+  script: "code/unmount.py"
 
   register:
-    file:
-      enable: true
+      drive:
+        enable: "code/is_mount_drive.py"

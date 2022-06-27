@@ -26,7 +26,7 @@ def apply_callback(dialog : ap.Dialog):
 # Create a dialog container
 dialog = ap.Dialog()
 dialog.title = "Template Action Settings"
-dialog.icon = ":/icons/settings.svg"
+dialog.icon = ctx.icon
 
 dialog.add_text("Workspace Templates Location")
 dialog.add_input(template_dir, browse=ap.BrowseType.Folder, var="template_dir")
@@ -36,7 +36,7 @@ dialog.add_empty()
 
 dialog.add_text("Workspace Event Callbacks Location")
 dialog.add_input(placeholder="Optional", browse=ap.BrowseType.Folder, var="callback_dir")
-dialog.add_info("Use event callbacks to customize templates according to your needs<br>For projects, place event callbacks here: <b>project/.ap/templates/template_action_events.py</b>")
+dialog.add_info("Use event callbacks to customize templates according to your needs<br>For projects, place event callbacks here: <b>project/anchorpoint/templates/template_action_events.py</b>")
 
 dialog.add_button("Apply", callback = apply_callback)
 
