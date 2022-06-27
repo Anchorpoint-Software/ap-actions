@@ -25,6 +25,7 @@ action:
     - ../vc
     - can_create_git_repo.py
     - is_git_repo.py
+    - git_lfs_helper.py
 
   actions:
     - git::clone
