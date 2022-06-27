@@ -262,6 +262,11 @@ class GitRepository(VCRepository):
         patterns = ["*" + ext for ext in extensions]
         self.repo.git.lfs("track", patterns)
 
+    def track_lfs_files(self, paths: list[str]):
+        repo_dir = self.get_root_path()
+        rel_paths = [os.path.relpath(path, repo_dir) for path in paths]
+        self.repo.git.lfs("track", rel_paths)
+
     def get_conflicts(self):
         conflicts = []
         status_lines = self.repo.git.status(porcelain=True).splitlines()

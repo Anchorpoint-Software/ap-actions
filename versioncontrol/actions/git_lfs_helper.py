@@ -29,19 +29,31 @@ def _file_is_binary(path: str):
 
     return False
 
-def _collect_binary_extensions(paths) -> set[str]:
+def _collect_binaries(paths, repo) -> set[str]:
     collected_extensions = set()
+    collected_paths = set()
     for path in paths:
         split = os.path.splitext(path)
         if len(split) < 2: continue
         extension = split[1]
-        if _file_is_binary(path):                
-            collected_extensions.add(extension)
+        if _file_is_binary(path):        
+            if len(extension) == 0:     
+                collected_paths.add(path)
+            else:
+                collected_extensions.add(extension)
 
-    return collected_extensions
+    return collected_paths, collected_extensions
 
 def lfs_track_binary_files(paths, repo):
-    extensions = _collect_binary_extensions(paths)
-    if len(extensions) > 0:
-        repo.track_lfs(extensions)
+    binary_paths, binary_extensions = _collect_binaries(paths, repo)
+    add_gitattributes = False
+    
+    if len(binary_extensions) > 0:
+        repo.track_lfs(binary_extensions)
+        add_gitattributes = True
+    if len(binary_paths) > 0:
+        repo.track_lfs_files(binary_paths)
+        add_gitattributes = True
+        
+    if add_gitattributes:
         paths.append(".gitattributes")
