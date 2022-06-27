@@ -18,7 +18,7 @@ action:
     path: icons/driveCloud.svg
 
   details: '
-    <p>Allows to mount a network drive. The data is cached and uploaded and downloaded in the background. So you can work fluently on the drive.</p>
+    <p>Allows to mount a network drive. The data is cached and uploaded and downloaded in the background. So you can work fluently on the drive. Take a look at this <a href="https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud">tutorial</a>.</p>
 
     <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/rcloneWinExplorer.png" width="300"></p>
     <p>The drive is also accessible from the Explorer and thus any application.</p>
