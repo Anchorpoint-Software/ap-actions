@@ -41,6 +41,7 @@ action:
     - git::stagefiles
     - git::unstageallfiles
     - git::unstagefiles
+    - git::timeline
 
 
     
