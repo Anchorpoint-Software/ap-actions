@@ -71,7 +71,8 @@ class GitRepository(VCRepository):
     def is_authenticated(url: str) -> bool:
         import subprocess
         try:
-            subprocess.check_call([utility.get_git_cmd_path(), f"--exec-path={utility.get_git_exec_path()}", "ls-remote", url])
+            env = GitRepository._get_git_environment()
+            subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=env)
         except:
             return False
         return True
@@ -115,7 +116,8 @@ class GitRepository(VCRepository):
         repo._init_git_lfs()
         return repo
 
-    def _setup_environment(self):
+    @staticmethod
+    def _get_git_environment():
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
             config[f"GIT_CONFIG_VALUE_{config_count}"] = value
@@ -126,9 +128,11 @@ class GitRepository(VCRepository):
         }
 
         add_config_env(env, "credential.helper", "", 0)
-        add_config_env(env, "credential.helper", utility.get_git_cmd_path(), 1)
-        
-        self.repo.git.update_environment(**env) 
+        add_config_env(env, "credential.helper", utility.get_gcm_path(), 1)
+        return env
+
+    def _setup_environment(self):
+        self.repo.git.update_environment(**GitRepository._get_git_environment()) 
 
     def _set_upstream(self, remote, branch):
         self.repo.git.branch("-u", remote, branch)
