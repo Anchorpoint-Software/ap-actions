@@ -1,14 +1,14 @@
 from ast import parse
+from ctypes import util
 import os
 from platform import platform
-from shutil import ExecError
 import shutil
 
-from git import BadObject, GitCommandError
+from git import GitCommandError
 import git
 import git.cmd
 from vc.versioncontrol_interface import *
-from typing import cast
+import vc.apgit.utility as utility
 
 import gc
 
@@ -69,8 +69,9 @@ class GitRepository(VCRepository):
 
     @staticmethod
     def is_authenticated(url: str) -> bool:
+        import subprocess
         try:
-            git.Git().ls_remote(url)
+            subprocess.check_call([utility.get_git_cmd_path(), f"--exec-path={utility.get_git_exec_path()}", "ls-remote", url])
         except:
             return False
         return True
@@ -82,23 +83,19 @@ class GitRepository(VCRepository):
         parsedurl = urlparse(url)
         host = parsedurl.hostname
         protocol = parsedurl.scheme
-
-        cmd = ["git", "credential-manager-core", "store"]
+        
+        cmd = [utility.get_gcm_path(), "store"]
         p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
 
     @classmethod
     def create(cls, path: str):
-        repo = cls()
-        repo.repo = git.Repo.init(path)
-        repo._init_git_lfs()
-        return repo
+        git.Repo.init(path)
+        return GitRepository.load(path)
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
-        repo = cls()
-
         try:
             if progress is not None:
                 git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
@@ -114,8 +111,24 @@ class GitRepository(VCRepository):
     def load(cls, path: str):
         repo = cls()
         repo.repo = git.Repo(path, search_parent_directories=True)
+        repo._setup_environment()
         repo._init_git_lfs()
         return repo
+
+    def _setup_environment(self):
+        def add_config_env(config, key, value, config_count):
+            config[f"GIT_CONFIG_KEY_{config_count}"] = key
+            config[f"GIT_CONFIG_VALUE_{config_count}"] = value
+            config["GIT_CONFIG_COUNT"] = str(config_count + 1)
+
+        env = {
+            "GIT_EXEC_PATH": utility.get_git_exec_path()
+        }
+
+        add_config_env(env, "credential.helper", "", 0)
+        add_config_env(env, "credential.helper", utility.get_git_cmd_path(), 1)
+        
+        self.repo.git.update_environment(**env) 
 
     def _set_upstream(self, remote, branch):
         self.repo.git.branch("-u", remote, branch)

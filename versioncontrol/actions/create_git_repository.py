@@ -99,7 +99,7 @@ def clone_repo_async(repo_path: str, url: str):
                 authenticate(repo_path, url)
             return
 
-        repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
+        GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
         progress.finish()
         update_metadata(repo_path)
         ui.show_success("Git Repository Cloned")
