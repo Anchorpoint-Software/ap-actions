@@ -97,11 +97,12 @@ class GitRepository(VCRepository):
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
+        env = GitRepository._get_git_environment()
         try:
             if progress is not None:
-                git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
+                git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress), env=env)
             else:
-                git.Repo.clone_from(remote_url, local_path)
+                git.Repo.clone_from(remote_url, local_path, env=env)
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
