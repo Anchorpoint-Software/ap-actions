@@ -59,7 +59,7 @@ def create_repo(dialog: ap.Dialog):
     if GitRepository.is_repo(repo_path):
         ui.show_info("Already a Git repo")
     else:
-        repo = GitRepository.create(repo_path)
+        GitRepository.create(repo_path)
         update_metadata(repo_path)
         ui.show_success("Git Repository Initialized")
         dialog.close()
@@ -97,6 +97,7 @@ def clone_repo_async(repo_path: str, url: str):
         if not GitRepository.is_authenticated(url):
             if not url_gcm_supported(url):
                 authenticate(repo_path, url)
+            ui.show_error("Could not clone repository")
             return
 
         GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
