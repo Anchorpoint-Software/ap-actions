@@ -1,14 +1,14 @@
 from ast import parse
+from ctypes import util
 import os
 from platform import platform
-from shutil import ExecError
 import shutil
 
-from git import BadObject, GitCommandError
+from git import GitCommandError
 import git
 import git.cmd
 from vc.versioncontrol_interface import *
-from typing import cast
+import vc.apgit.utility as utility
 
 import gc
 
@@ -69,9 +69,17 @@ class GitRepository(VCRepository):
 
     @staticmethod
     def is_authenticated(url: str) -> bool:
+        import subprocess, platform
         try:
-            git.Git().ls_remote(url)
-        except:
+            current_env = os.environ.copy()
+            current_env.update(GitRepository._get_git_environment())
+
+            if platform.system() == "Windows":
+                from subprocess import CREATE_NO_WINDOW
+                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, creationflags=CREATE_NO_WINDOW)
+            else:
+                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env)
+        except Exception as e:
             return False
         return True
 
@@ -82,28 +90,25 @@ class GitRepository(VCRepository):
         parsedurl = urlparse(url)
         host = parsedurl.hostname
         protocol = parsedurl.scheme
-
-        cmd = ["git", "credential-manager-core", "store"]
+        
+        cmd = [utility.get_gcm_path(), "store"]
         p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
 
     @classmethod
     def create(cls, path: str):
-        repo = cls()
-        repo.repo = git.Repo.init(path)
-        repo._init_git_lfs()
-        return repo
+        git.Repo.init(path)
+        return GitRepository.load(path)
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
-        repo = cls()
-
+        env = GitRepository._get_git_environment()
         try:
             if progress is not None:
-                git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress))
+                git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress), env=env)
             else:
-                git.Repo.clone_from(remote_url, local_path)
+                git.Repo.clone_from(remote_url, local_path, env=env)
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
@@ -114,8 +119,27 @@ class GitRepository(VCRepository):
     def load(cls, path: str):
         repo = cls()
         repo.repo = git.Repo(path, search_parent_directories=True)
+        repo._setup_environment()
         repo._init_git_lfs()
         return repo
+
+    @staticmethod
+    def _get_git_environment():
+        def add_config_env(config, key, value, config_count):
+            config[f"GIT_CONFIG_KEY_{config_count}"] = key
+            config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
+            config["GIT_CONFIG_COUNT"] = str(config_count + 1)
+
+        env = {
+            "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/")
+        }
+
+        add_config_env(env, "credential.helper", "", 0)
+        add_config_env(env, "credential.helper", utility.get_gcm_path(), 1)
+        return env
+
+    def _setup_environment(self):
+        self.repo.git.update_environment(**GitRepository._get_git_environment()) 
 
     def _set_upstream(self, remote, branch):
         self.repo.git.branch("-u", remote, branch)
