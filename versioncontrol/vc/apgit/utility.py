@@ -4,8 +4,6 @@ import vc.apgit.constants as constants
 import os, platform
 import io, shutil
 
-from vc.apgit.zip_helper import ZipFileWithPermissions
-
 def _download_git():
     import requests
     progress = ap.Progress("Downloading Git", infinite=True)
@@ -22,11 +20,22 @@ def _install_git_async():
     r = _download_git()
     progress = ap.Progress("Installing Git", infinite=True)
 
-    z = ZipFileWithPermissions(io.BytesIO(r.content))
     dir = _get_git_cmddir()
     if os.path.exists(dir):
         shutil.rmtree(dir)
-    z.extractall(path=dir)
+
+    if platform.system() == "Darwin":
+        # Don't use zipfile on mac as it messes up permissions and alias files
+        import subprocess, tempfile
+        with tempfile.TemporaryDirectory() as tempdir:
+            with open(os.path.join(tempdir, "mac.zip"), "wb") as f:
+                f.write(r.content)
+            print(f.name, dir)
+            subprocess.check_call(["unzip", f.name, "-d", dir])
+    else:
+        from zipfile import ZipFile
+        z = ZipFile(io.BytesIO(r.content))
+        z.extractall(path=dir)
 
     ap.UI().show_success("Git installed successfully")
     progress.finish()
