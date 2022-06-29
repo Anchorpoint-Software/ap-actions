@@ -113,7 +113,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         entry.time = commit.date
         entry.message = commit.message
         entry.has_details = True
-        entry.caption = f"Git Commit in {os.path.basename(path)}"
+        entry.caption = f"Made a Git Commit in {os.path.basename(path)}"
         history_list.append(entry)
 
     return history_list
@@ -138,6 +138,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
     info = ap.VCPendingChangesInfo()
     info.changes = ap.VCPendingChangeList(changes.values())
+    #info.caption = f"changes in {os.path.basename(path)}" @Jochen 
 
     is_rebasing = repo.is_rebasing()
     commit = ap.TimelineChannelAction()
