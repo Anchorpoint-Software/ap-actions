@@ -15,11 +15,11 @@ action:
   category: "vc/git"
   type: package
   enable: false
-  description: (WIP) Contribute to Git repositories
+  description: An artist friendly Git integration for large files
 
   author: "Anchorpoint Software GmbH"
   icon:
-    path: ":icons/version.svg"
+    path: "../icons/git.svg"
 
   dependencies: 
     - ../vc

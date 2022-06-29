@@ -49,19 +49,26 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
     is_rebasing = repo.is_rebasing()
     if repo.has_remote() and not is_rebasing:
-        pull = ap.TimelineChannelAction()
-        pull.name = "Pull (Rebase)"
-        pull.identifier = "gitpullrebase"
-        info.actions.append(pull)
+        if repo.is_pull_required():
+            pull = ap.TimelineChannelAction()
+            pull.name = "Pull"
+            pull.icon = aps.Icon(":/icons/cloud.svg", "#D4AA37")
+            pull.identifier = "gitpullrebase"
+            #pull.primary = True
+            info.actions.append(pull)
         
         fetch = ap.TimelineChannelAction()
         fetch.name = "Fetch"
+        fetch.icon = aps.Icon(":/icons/update.svg", "#D4AA37")
         fetch.identifier = "gitfetch"
+        #fetch.primary = False
         info.actions.append(fetch)
 
         push = ap.TimelineChannelAction()
         push.name = "Push"
+        push.icon = aps.Icon(":/icons/upload.svg", "#D4AA37")
         push.identifier = "gitpush"
+        #push.primary = False
         info.actions.append(push)
     
     if is_rebasing:
@@ -106,7 +113,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         entry.time = commit.date
         entry.message = commit.message
         entry.has_details = True
-        entry.caption = "Git Commit"
+        entry.caption = f"Made a Git Commit in {os.path.basename(path)}"
         history_list.append(entry)
 
     return history_list
@@ -131,6 +138,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
     info = ap.VCPendingChangesInfo()
     info.changes = ap.VCPendingChangeList(changes.values())
+    #info.caption = f"changes in {os.path.basename(path)}" @Jochen 
 
     is_rebasing = repo.is_rebasing()
     commit = ap.TimelineChannelAction()
