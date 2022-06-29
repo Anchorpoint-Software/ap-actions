@@ -50,7 +50,7 @@ def _check_application(path: str):
 def _get_git_cmddir():
     dir = os.path.dirname(__file__)
     dir = os.path.join(dir, "git-cmd")
-    return dir
+    return os.path.normpath(dir)
 
 def _check_installation():
     dir = _get_git_cmddir()

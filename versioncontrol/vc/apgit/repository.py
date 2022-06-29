@@ -69,11 +69,17 @@ class GitRepository(VCRepository):
 
     @staticmethod
     def is_authenticated(url: str) -> bool:
-        import subprocess
+        import subprocess, platform
         try:
-            env = GitRepository._get_git_environment()
-            subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=env)
-        except:
+            current_env = os.environ.copy()
+            current_env.update(GitRepository._get_git_environment())
+
+            if platform.system() == "Windows":
+                from subprocess import CREATE_NO_WINDOW
+                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, creationflags=CREATE_NO_WINDOW)
+            else:
+                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env)
+        except Exception as e:
             return False
         return True
 
@@ -121,11 +127,11 @@ class GitRepository(VCRepository):
     def _get_git_environment():
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
-            config[f"GIT_CONFIG_VALUE_{config_count}"] = value
+            config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
             config["GIT_CONFIG_COUNT"] = str(config_count + 1)
 
         env = {
-            "GIT_EXEC_PATH": utility.get_git_exec_path()
+            "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/")
         }
 
         add_config_env(env, "credential.helper", "", 0)
