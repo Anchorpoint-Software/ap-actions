@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Git Repository
+  name: Create Git Repository
 
   version: 1
   id: git::newrepo
@@ -19,5 +19,5 @@ action:
   script: create_git_repository.py
 
   register:
-    new_folder:
-      enable: can_create_git_repo.py
+    add_project_files:
+      enable: true

@@ -1,7 +1,6 @@
 from gc import callbacks
 import anchorpoint as ap
 import apsync as aps
-
 import sys, os, importlib
 sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
 
@@ -12,12 +11,16 @@ try:
 except Warning as e:
     sys.exit(0)
 
+import platform
+
 ctx = ap.Context.instance()
 ui = ap.UI()
-path = ctx.path
+project_id = ctx.project_id
+workspace_id = ctx.workspace_id
 
-def update_metadata(repo_path: str):
-    project = aps.get_project(path)
+def update_project(repo_path: str):
+    ap.add_path_to_project(repo_path, project_id, workspace_id)
+    project = aps.get_project(repo_path)
     if not project:
         print("did not add channel, no project")
         return 
@@ -31,7 +34,9 @@ def update_metadata(repo_path: str):
     metadata = {"gitPathId": folder_id}
     channel.metadata = metadata
 
-    aps.add_timeline_channel(project, channel)
+    if not aps.get_timeline_channel(project, channel.id):
+        aps.add_timeline_channel(project, channel)
+        
     aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#D4AA37"))
 
 class CloneProgress(Progress):
@@ -54,13 +59,13 @@ def url_gcm_supported(url: str):
     return any(provider in url for provider in gcm_supported_providers)
 
 def create_repo(dialog: ap.Dialog):
-    name = dialog.get_value("name")
-    repo_path = os.path.join(path, name)
+    location = dialog.get_value("location")
+    repo_path = location
     if GitRepository.is_repo(repo_path):
         ui.show_info("Already a Git repo")
     else:
         GitRepository.create(repo_path)
-        update_metadata(repo_path)
+        update_project(repo_path)
         ui.show_success("Git Repository Initialized")
         dialog.close()
 
@@ -102,15 +107,15 @@ def clone_repo_async(repo_path: str, url: str):
 
         GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
         progress.finish()
-        update_metadata(repo_path)
+        update_project(repo_path)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
         ui.show_error("Failed to clone Git Repository", str(e))
 
 def clone_repo(dialog: ap.Dialog):
-    name = dialog.get_value("name")
+    location = dialog.get_value("location")
     url = dialog.get_value("url")
-    repo_path = os.path.join(path, name)
+    repo_path = location
     if GitRepository.is_repo(repo_path):
         ui.show_info("Already a Git repo")
     else:
@@ -119,7 +124,7 @@ def clone_repo(dialog: ap.Dialog):
 
 def update_dialog(dialog: ap.Dialog, value):
     url = dialog.get_value("url")
-    name = dialog.get_value("name")
+    location = dialog.get_value("location")
     remote_enabled = dialog.get_value("remote")
     hide_remote_settings = not remote_enabled
 
@@ -136,10 +141,8 @@ def update_dialog(dialog: ap.Dialog, value):
     dialog.hide_row("join", hide_remote_settings)
     dialog.hide_row("create", remote_enabled)
 
-    dialog.set_enabled("join", len(name) > 0)
-    dialog.set_enabled("create", len(name) > 0)
-
-
+    dialog.set_enabled("join", len(location) > 0)
+    dialog.set_enabled("create", len(location) > 0)
 
 remote_enabled = True
 hide_remote_settings = not remote_enabled
@@ -147,8 +150,12 @@ hide_remote_settings = not remote_enabled
 dialog = ap.Dialog()
 dialog.title = "Git repository"
 dialog.icon = ctx.icon
-dialog.add_text("<b>Name</b>")
-dialog.add_input(placeholder="My Repository Name", var="name", width = 400, callback=update_dialog)
+
+dialog.add_text("<b>Project Folder</b>")
+if platform.system() == "Windows":
+    dialog.add_input(placeholder="D:/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
+else:
+    dialog.add_input(placeholder="/users/johndoe/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
 
 dialog.add_switch(remote_enabled, var="remote", callback=update_dialog).add_text("Remote Repository")
 dialog.add_info("Create a local Git repository or connect it to a remote like GitHub")
