@@ -21,3 +21,5 @@ action:
   register:
     add_project_files:
       enable: true
+    join_project_files:
+      enable: true

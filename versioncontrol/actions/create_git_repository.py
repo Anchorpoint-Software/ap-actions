@@ -1,4 +1,5 @@
 from gc import callbacks
+from time import time
 import anchorpoint as ap
 import apsync as aps
 import sys, os, importlib
@@ -13,39 +14,45 @@ except Warning as e:
 
 import platform
 
+channel_id = "Git"
+
 ctx = ap.Context.instance()
 ui = ap.UI()
+
 project_id = ctx.project_id
 workspace_id = ctx.workspace_id
+project = aps.get_project_by_id(project_id, workspace_id)
+if not project:
+    ui.show_error("Cannot create git repository", "You must create a project first")
+    sys.exit(0) 
+
+timeline_channel = aps.get_timeline_channel(project, channel_id)
+is_join = ctx.type == ap.Type.JoinProjectFiles
 
 def update_project(repo_path: str, remote_url: Optional[str]):
-    ap.add_path_to_project(repo_path, project_id, workspace_id)
-    project = aps.get_project(repo_path)
-    if not project:
-        print("did not add channel, no project")
-        return 
-    channel = aps.TimelineChannel()
-    channel.id = "Git"
-    channel.name = "Git Repository"
-    channel.icon = aps.Icon(":/icons/versioncontrol.svg", "#D4AA37")
+    if not is_join:
+        ap.add_path_to_project(repo_path, project_id, workspace_id)
 
-    folder_id = aps.get_folder_id(repo_path)
+        channel = aps.TimelineChannel()
+        channel.id = channel_id
+        channel.name = "Git Repository"
+        channel.icon = aps.Icon(":/icons/versioncontrol.svg", "#D4AA37")
 
-    metadata = {"gitPathId": folder_id}
-    channel.metadata = metadata
+        folder_id = aps.get_folder_id(repo_path)
 
-    if not aps.get_timeline_channel(project, channel.id):
-        aps.add_timeline_channel(project, channel)
+        metadata = {"gitPathId": folder_id}
+        if remote_url:
+            metadata["gitRemoteUrl"] = remote_url
 
-    metadata = project.get_metadata()
-    metadata["git"] = "1"
-    if remote_url:
-        metadata["git-remote"] = remote_url
-        
-    project.update_metadata(metadata)
-        
-    aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#D4AA37"))
+        channel.metadata = metadata
 
+        if not timeline_channel:
+            aps.add_timeline_channel(project, channel)
+            
+        aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#D4AA37"))
+    else:
+        ap.join_project_path(repo_path, project_id, workspace_id)
+    pass
 class CloneProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
@@ -154,6 +161,12 @@ def update_dialog(dialog: ap.Dialog, value):
     dialog.set_enabled("create", len(location) > 0)
 
 remote_enabled = True
+remote_toggleable = not timeline_channel or "gitRemoteUrl" not in timeline_channel.metadata
+if not remote_toggleable:
+    remote_url = timeline_channel.metadata["gitRemoteUrl"]
+else:
+    remote_url = ""
+
 hide_remote_settings = not remote_enabled
 
 dialog = ap.Dialog()
@@ -166,11 +179,11 @@ if platform.system() == "Windows":
 else:
     dialog.add_input(placeholder="/users/johndoe/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
 
-dialog.add_switch(remote_enabled, var="remote", callback=update_dialog).add_text("Remote Repository")
+dialog.add_switch(remote_enabled, var="remote", callback=update_dialog, enabled=remote_toggleable).add_text("Remote Repository")
 dialog.add_info("Create a local Git repository or connect it to a remote like GitHub")
 
 dialog.add_text("<b>Repository URL</b>", var="repotext").hide_row(hide=hide_remote_settings)
-dialog.add_input(placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 400, callback=update_dialog).hide_row(hide=hide_remote_settings)
+dialog.add_input(default=remote_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 400, callback=update_dialog).hide_row(hide=hide_remote_settings)
 
 dialog.add_empty()
 dialog.add_button("Create", var="create", callback=create_repo, enabled=False).hide_row(hide=remote_enabled)
