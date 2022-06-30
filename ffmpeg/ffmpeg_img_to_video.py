@@ -58,9 +58,11 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
             "-f", "concat",
             "-safe", "0",
             "-i", concat_file,
+            "-hide_banner",
+            "-progress", "pipe:{self.pipe_write}",
             "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
             "-fps_mode", "vfr",
-            "-pix_fmt", "yuva420p",
+            "-pix_fmt", "yuv420p",
             os.path.join(target_folder,f"{filename}.mp4"),
         ]
     if is_exr:
@@ -82,6 +84,8 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     
     # progress bar
     for line in ffmpeg.stdout:
+        print(line)
+        
         if 'frame=' in line:
             current_frame = re.search(r'\d+', line).group()
             percentage = int(current_frame)/(len(selected_files)+1)
@@ -90,7 +94,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
             if progress.canceled:
                 ui.show_info("Canceled")
                 os.system("taskkill /PID {}".format(ffmpeg.pid))
-                # wait until process ends, then delete txt file
+                # wait until subprocess terminates, then delete txt file
                 ffmpeg.communicate()
                 os.remove(concat_file)
                 return
