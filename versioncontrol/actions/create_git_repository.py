@@ -179,11 +179,11 @@ if platform.system() == "Windows":
 else:
     dialog.add_input(placeholder="/users/johndoe/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
 
-dialog.add_switch(remote_enabled, var="remote", callback=update_dialog, enabled=remote_toggleable).add_text("Remote Repository")
-dialog.add_info("Create a local Git repository or connect it to a remote like GitHub")
+dialog.add_switch(remote_enabled, var="remote", callback=update_dialog).add_text("Remote Repository").hide_row(hide=not remote_toggleable)
+dialog.add_info("Create a local Git repository or connect it to a remote like GitHub").hide_row(hide=not remote_toggleable)
 
 dialog.add_text("<b>Repository URL</b>", var="repotext").hide_row(hide=hide_remote_settings)
-dialog.add_input(default=remote_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 400, callback=update_dialog).hide_row(hide=hide_remote_settings)
+dialog.add_input(default=remote_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", enabled=remote_toggleable, width = 400, callback=update_dialog).hide_row(hide=hide_remote_settings)
 
 dialog.add_empty()
 dialog.add_button("Create", var="create", callback=create_repo, enabled=False).hide_row(hide=remote_enabled)
