@@ -18,7 +18,7 @@ ui = ap.UI()
 project_id = ctx.project_id
 workspace_id = ctx.workspace_id
 
-def update_project(repo_path: str):
+def update_project(repo_path: str, remote_url: Optional[str]):
     ap.add_path_to_project(repo_path, project_id, workspace_id)
     project = aps.get_project(repo_path)
     if not project:
@@ -36,6 +36,13 @@ def update_project(repo_path: str):
 
     if not aps.get_timeline_channel(project, channel.id):
         aps.add_timeline_channel(project, channel)
+
+    metadata = project.get_metadata()
+    metadata["git"] = "1"
+    if remote_url:
+        metadata["git-remote"] = remote_url
+        
+    project.update_metadata(metadata)
         
     aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#D4AA37"))
 
@@ -65,7 +72,7 @@ def create_repo(dialog: ap.Dialog):
         ui.show_info("Already a Git repo")
     else:
         repo = GitRepository.create(repo_path)
-        update_project(repo_path)
+        update_project(repo_path, None)
         repo.ignore(".ap/project.json", local_only=True)
         ui.show_success("Git Repository Initialized")
         dialog.close()
@@ -108,7 +115,7 @@ def clone_repo_async(repo_path: str, url: str):
 
         repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
         progress.finish()
-        update_project(repo_path)
+        update_project(repo_path, url)
         repo.ignore(".ap/project.json", local_only=True)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
