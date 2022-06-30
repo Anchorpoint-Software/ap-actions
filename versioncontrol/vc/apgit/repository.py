@@ -425,6 +425,18 @@ class GitRepository(VCRepository):
 
         return history
 
+    def ignore(self, pattern: str, local_only = False):
+        if local_only == False: 
+            raise NotImplementedError()
+        
+        dir = os.path.join(self.repo.git_dir, "info")
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        
+        with open(os.path.join(dir, "exclude"), "a") as f:
+            f.write(pattern)
+            
+
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
 

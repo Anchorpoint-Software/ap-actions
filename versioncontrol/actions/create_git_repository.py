@@ -64,8 +64,9 @@ def create_repo(dialog: ap.Dialog):
     if GitRepository.is_repo(repo_path):
         ui.show_info("Already a Git repo")
     else:
-        GitRepository.create(repo_path)
+        repo = GitRepository.create(repo_path)
         update_project(repo_path)
+        repo.ignore(".ap/project.json", local_only=True)
         ui.show_success("Git Repository Initialized")
         dialog.close()
 
@@ -105,9 +106,10 @@ def clone_repo_async(repo_path: str, url: str):
             ui.show_error("Could not clone repository")
             return
 
-        GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
+        repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
         progress.finish()
         update_project(repo_path)
+        repo.ignore(".ap/project.json", local_only=True)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
         ui.show_error("Failed to clone Git Repository", str(e))
