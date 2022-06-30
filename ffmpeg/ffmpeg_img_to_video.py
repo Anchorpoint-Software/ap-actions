@@ -44,16 +44,10 @@ def concat_demuxer(selected_files, fps):
     file.close()
     return output
 
-def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):        
-    # check if its a video (one file)
-    p_infinite = False
-    
-    if len(selected_files) == 1:
-        p_infinite = True
-        
+def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):      
     # Show Progress
     percentage = 0
-    progress = ap.Progress("Images to Video","Preparing...", infinite=p_infinite)
+    progress = ap.Progress("Images to Video","Preparing...", infinite=False, cancelable=True)
 
     # Provide FFmpeg with the set of selected files through the concat demuxer
     concat_file = concat_demuxer(selected_files, fps)
@@ -65,7 +59,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
             "-safe", "0",
             "-i", concat_file,
             "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
-            "-vsync", "vfr",
+            "-fps_mode", "vfr",
             "-pix_fmt", "yuva420p",
             os.path.join(target_folder,f"{filename}.mp4"),
         ]
@@ -93,6 +87,13 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
             percentage = int(current_frame)/(len(selected_files)+1)
             progress.report_progress(percentage)
             progress.set_text(f"{int(percentage*100)}% encoded")
+            if progress.canceled:
+                ui.show_info("Canceled")
+                os.system("taskkill /PID {}".format(ffmpeg.pid))
+                # wait until process ends, then delete txt file
+                ffmpeg.communicate()
+                os.remove(concat_file)
+                return
         
     # wait for subprocess to terminate
     ffmpeg.communicate()
