@@ -76,9 +76,9 @@ class GitRepository(VCRepository):
 
             if platform.system() == "Windows":
                 from subprocess import CREATE_NO_WINDOW
-                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, creationflags=CREATE_NO_WINDOW)
+                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, creationflags=CREATE_NO_WINDOW, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
             else:
-                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env)
+                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         except Exception as e:
             return False
         return True

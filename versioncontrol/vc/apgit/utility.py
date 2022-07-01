@@ -31,7 +31,7 @@ def _install_git_async():
             with open(os.path.join(tempdir, "mac.zip"), "wb") as f:
                 f.write(r.content)
             print(f.name, dir)
-            subprocess.check_call(["unzip", f.name, "-d", dir])
+            subprocess.check_call(["unzip", f.name, "-d", dir], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     else:
         from zipfile import ZipFile
         z = ZipFile(io.BytesIO(r.content))
