@@ -72,7 +72,7 @@ class GitRepository(VCRepository):
         import subprocess, platform
         try:
             current_env = os.environ.copy()
-            current_env.update(GitRepository._get_git_environment())
+            current_env.update(GitRepository.get_git_environment())
 
             if platform.system() == "Windows":
                 from subprocess import CREATE_NO_WINDOW
@@ -103,7 +103,7 @@ class GitRepository(VCRepository):
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
-        env = GitRepository._get_git_environment()
+        env = GitRepository.get_git_environment()
         try:
             if progress is not None:
                 git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress), env=env)
@@ -124,7 +124,7 @@ class GitRepository(VCRepository):
         return repo
 
     @staticmethod
-    def _get_git_environment():
+    def get_git_environment():
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
             config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
@@ -139,7 +139,7 @@ class GitRepository(VCRepository):
         return env
 
     def _setup_environment(self):
-        self.repo.git.update_environment(**GitRepository._get_git_environment()) 
+        self.repo.git.update_environment(**GitRepository.get_git_environment()) 
 
     def _set_upstream(self, remote, branch):
         self.repo.git.branch("-u", remote, branch)

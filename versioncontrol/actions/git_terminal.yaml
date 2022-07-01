@@ -1,0 +1,23 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Open Git Terminal
+
+  version: 1
+  id: git::openterminal
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Opens the Terminal / Command line with a set up git environment
+  icon:
+    path: :/icons/action.svg
+
+  script: git_terminal.py
+
+  register:
+    folder:
+      enable: git_terminal.py
