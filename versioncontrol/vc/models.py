@@ -14,6 +14,11 @@ class ConflictResolveState(Enum):
     TAKE_THEIRS = 2
     RESOLVED = 3
 
+class HistoryType(Enum):
+    SYNCED = 1  # Commit is local and, if configured, in sync with the server
+    REMOTE = 2  # Commit is only on the server
+    LOCAL = 3   # Commit is only local and not synced to the server
+
 @dataclass
 class Change:
     """Represents a versioned controlled change"""
@@ -73,6 +78,7 @@ class HistoryEntry:
     author: str
     message: str
     date: int
+    type: HistoryType
 
 @dataclass
 class Branch:

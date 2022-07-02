@@ -412,16 +412,25 @@ class GitRepository(VCRepository):
         if max_count != None:
             args["max_count"] = max_count
 
-        commits = list(self.repo.iter_commits(rev=rev_spec, **args))
+        base_commits = list(self.repo.iter_commits(rev=rev_spec, **args))
 
+        remote_commits = []
+        local_commit_set = set()
         try:
             if self.has_remote():
-                commits.extend(list(self.repo.iter_commits(rev="HEAD..@{u}", **args)))
+                remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}", **args))
+                local_commits = list(self.repo.iter_commits(rev="@{u}..HEAD", **args))
+                for commit in local_commits:
+                    local_commit_set.add(commit.hexsha)
         except Exception as e:
             pass
             
-        for commit in commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date))
+        for commit in base_commits:
+            type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=type))
+
+        for commit in remote_commits:
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.REMOTE))
 
         return history
 

@@ -94,6 +94,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
     from vc.apgit.repository import GitRepository
     from vc.apgit.utility import get_repo_path
+    from vc.models import HistoryType
     
     path = get_repo_path(channel_id, ctx.project_path)
     repo = GitRepository.load(path)
@@ -114,6 +115,15 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         entry.message = commit.message
         entry.has_details = True
         entry.caption = f"Made a Git Commit in {os.path.basename(path)}"
+
+        icon_color = "#d4aa37"
+        if commit.type is HistoryType.LOCAL:
+            entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
+        elif commit.type is HistoryType.REMOTE:
+            entry.icon = aps.Icon(":/icons/download.svg", icon_color)
+        elif commit.type is HistoryType.SYNCED:
+            entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
+        
         history_list.append(entry)
 
     return history_list
