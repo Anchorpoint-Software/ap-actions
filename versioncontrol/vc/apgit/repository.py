@@ -172,7 +172,7 @@ class GitRepository(VCRepository):
         except Exception as e:
             raise e
 
-    def fetch(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
+    def fetch(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: remote = "origin"
@@ -183,7 +183,7 @@ class GitRepository(VCRepository):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
         else: 
-            for info in self.repo.remote(remote).pull(rebase = rebase):
+            for info in self.repo.remote(remote).fetch():
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 

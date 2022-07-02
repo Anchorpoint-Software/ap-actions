@@ -185,6 +185,7 @@ def refresh_async(channel_id: str, project_path):
         if not repo: return
         repo.fetch()    
     except Exception as e:
+        print(e)
         pass
 
     ap.refresh_timeline_channel(channel_id)
