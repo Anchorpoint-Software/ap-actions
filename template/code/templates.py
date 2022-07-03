@@ -134,6 +134,16 @@ def resolve_tokens(variable_list):
             variables["YYYYMMDD"] = datetime.today().strftime('%Y%m%d')
         elif variable == "YYYY-MM-DD":
             variables["YYYY-MM-DD"] = datetime.today().strftime('%Y-%m-%d')
+        elif variable == "YY":
+            variables["YY"] = datetime.today().strftime('%y')
+        elif variable == "YYMM":
+            variables["YYMM"] = datetime.today().strftime('%y%m')
+        elif variable == "YY-MM":
+            variables["YY-MM"] = datetime.today().strftime('%y-%m')
+        elif variable == "YYMMDD":
+            variables["YYMMDD"] = datetime.today().strftime('%y%m%d')
+        elif variable == "YY-MM-DD":
+            variables["YY-MM-DD"] = datetime.today().strftime('%y-%m-%d')
         elif variable not in variables:
             variables[variable] = ""
 
