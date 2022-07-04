@@ -22,6 +22,7 @@ def stage_files(changes, repo):
 
 def commit_async(message: str, changes, channel_id, project_path):
     ui = ap.UI()
+    progress = ap.Progress("Committing Files", show_loading_screen=True)
     try:
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
