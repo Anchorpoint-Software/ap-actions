@@ -113,7 +113,7 @@ def authenticate(repo_path: str, url: str):
 
 def clone_repo_async(repo_path: str, url: str):
     try:
-        progress = ap.Progress("Cloning Git Repository")
+        progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
         if not GitRepository.is_authenticated(url):
             if not url_gcm_supported(url):
                 authenticate(repo_path, url)

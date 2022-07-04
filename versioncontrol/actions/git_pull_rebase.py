@@ -30,7 +30,7 @@ def pull_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        progress = ap.Progress("Updating Git Changes")
+        progress = ap.Progress("Updating Git Changes", show_loading_screen=True)
         state = repo.update(progress=PullProgress(progress))
         if state == UpdateState.NO_REMOTE:
             ui.show_info("Branch does not track a remote branch", "Push your branch first")    

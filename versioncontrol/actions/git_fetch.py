@@ -30,7 +30,7 @@ def fetch_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        progress = ap.Progress("Fetching Git Changes")
+        progress = ap.Progress("Fetching Git Changes", show_loading_screen=True)
         state = repo.fetch(progress=FetchProgress(progress))
         if state != UpdateState.OK:
             ui.show_error("Failed to fetch Git Repository")    
