@@ -407,6 +407,16 @@ class GitRepository(VCRepository):
     def has_remote(self) -> bool:
         return len(self.repo.remotes) > 0
 
+    def _get_local_commits(self):
+        return list(self.repo.iter_commits(rev="@{u}..HEAD"))
+        
+    def get_local_commits(self):
+        history = []
+        local_commits = self._get_local_commits()
+        for commit in local_commits:
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.LOCAL))
+        return history
+
     def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
         history = []
         args = {}
@@ -421,8 +431,8 @@ class GitRepository(VCRepository):
         local_commit_set = set()
         try:
             if self.has_remote():
-                remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}", **args))
-                local_commits = list(self.repo.iter_commits(rev="@{u}..HEAD", **args))
+                remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
+                local_commits = self._get_local_commits()
                 for commit in local_commits:
                     local_commit_set.add(commit.hexsha)
         except Exception as e:

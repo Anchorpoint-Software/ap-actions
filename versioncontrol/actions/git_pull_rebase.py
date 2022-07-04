@@ -1,3 +1,4 @@
+from threading import local
 from git import GitCommandError
 import anchorpoint as ap
 import apsync as aps
@@ -32,9 +33,14 @@ def pull_async(channel_id: str, project_path):
         if not repo: return
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True)
         
-        if repo.has_pending_changes() > 0:
+        if repo.has_pending_changes():
             ui.show_info("Cannot pull", "You have to commit all your files before you can continue")
             return
+
+        local_commits = repo.get_local_commits()
+        ids_to_delete = []
+        for commit in local_commits:
+            ids_to_delete.append(commit.id)
 
         state = repo.update(progress=PullProgress(progress))
         if state == UpdateState.NO_REMOTE:
@@ -48,6 +54,9 @@ def pull_async(channel_id: str, project_path):
         elif state != UpdateState.OK:
             ui.show_error("Failed to update Git Repository")    
         else:
+            if len(ids_to_delete) > 0:
+                ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
+                
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
