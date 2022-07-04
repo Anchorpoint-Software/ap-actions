@@ -20,9 +20,11 @@ if __name__ == "__main__":
     env = GitRepository.get_git_environment()
     for key,value in env.items():
         os.putenv(key, value)
-    
+
     ctx = ap.Context.instance()
     if platform.system() == "Darwin":
         os.system(f"open -a Terminal \"{ctx.path}\"")
     elif platform.system() == "Windows":
+        path = os.environ["PATH"]
+        os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
         os.system(f"start cmd /k cd \"{ctx.path}\"")

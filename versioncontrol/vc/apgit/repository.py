@@ -134,7 +134,7 @@ class GitRepository(VCRepository):
             "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/")
         }
 
-        add_config_env(env, "credential.helper", "", 0)
+        add_config_env(env, "credential.helper", "\"\"", 0)
         add_config_env(env, "credential.helper", utility.get_gcm_path(), 1)
         return env
 
