@@ -12,6 +12,7 @@ from vc.apgit.utility import get_repo_path
 
 def revert(channel_id, project_path, dialog):
     ui = ap.UI()
+    progress = ap.Progress("Reverting Files", show_loading_screen=True)
     
     path = get_repo_path(channel_id, project_path)
     repo = GitRepository.load(path)
