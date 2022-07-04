@@ -27,21 +27,16 @@ action:
     - git_lfs_helper.py
 
   actions:
-    - git::clone
-    - git::createrepo
-    - git::diff
+    - git::timeline
     - git::commit
-    - git::pendingchanges
-    - git::lfstrackall
+    - git::fetch
     - git::pullrebase
     - git::push
-    - git::resolveconflicts
-    - git::restorefiles
-    - git::stageall
-    - git::stagefiles
-    - git::unstageallfiles
-    - git::unstagefiles
-    - git::timeline
+    - git::rebase
+    - git::revert
+    - git::openterminal
+    - git::joinrepo
+    - git::addrepo
 
 
     
