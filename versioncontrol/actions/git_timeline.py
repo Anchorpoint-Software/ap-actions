@@ -147,6 +147,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     info.changes = ap.VCPendingChangeList(changes.values())
     info.caption = f"changes in {os.path.basename(path)}"
 
+    has_changes = len(info.changes)
+
     is_rebasing = repo.is_rebasing()
     commit = ap.TimelineChannelAction()
     commit.name = "Commit"
@@ -156,6 +158,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         commit.enabled = False
         commit.tooltip = "Cannot commit when resolving conflicts"
     else:
+        commit.enabled = has_changes
         commit.tooltip = "Commit your changes to Git"
     info.actions.append(commit)
 
@@ -167,6 +170,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.enabled = False
         revert.tooltip = "Cannot revert files when resolving conflicts"
     else:
+        revert.enabled = has_changes
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
     info.actions.append(revert)
 
