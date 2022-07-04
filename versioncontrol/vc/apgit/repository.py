@@ -233,6 +233,10 @@ class GitRepository(VCRepository):
             return "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
         else:
             return "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
+    
+    def has_pending_changes(self):
+        diff = self.repo.index.diff(None) 
+        return len(diff) > 0
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()

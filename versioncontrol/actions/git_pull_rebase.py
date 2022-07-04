@@ -31,6 +31,11 @@ def pull_async(channel_id: str, project_path):
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True)
+        
+        if repo.has_pending_changes() > 0:
+            ui.show_info("Cannot pull", "You have to commit all your files before you can continue")
+            return
+
         state = repo.update(progress=PullProgress(progress))
         if state == UpdateState.NO_REMOTE:
             ui.show_info("Branch does not track a remote branch", "Push your branch first")    
