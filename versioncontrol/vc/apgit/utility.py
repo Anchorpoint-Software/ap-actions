@@ -1,3 +1,4 @@
+from asyncio import subprocess
 import anchorpoint as ap
 import apsync as aps
 import vc.apgit.constants as constants
@@ -30,7 +31,6 @@ def _install_git_async():
         with tempfile.TemporaryDirectory() as tempdir:
             with open(os.path.join(tempdir, "mac.zip"), "wb") as f:
                 f.write(r.content)
-            print(f.name, dir)
             subprocess.check_call(["unzip", f.name, "-d", dir], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     else:
         from zipfile import ZipFile
@@ -91,11 +91,37 @@ def get_git_exec_path():
     else:
         raise RuntimeError("Unsupported Platform")
 
+def _get_git_version():
+    import subprocess
+    if platform.system() == "Windows":
+        from subprocess import CREATE_NO_WINDOW
+        return subprocess.check_output([get_git_cmd_path(), "--version"], creationflags=CREATE_NO_WINDOW).decode("utf-8").strip() 
+    else:
+        return subprocess.check_output([get_git_cmd_path(), "--version"]).decode("utf-8").strip()
+
+def _check_update_available():
+    try:
+        version = _get_git_version()
+    except:
+        return   
+
+    if platform.system() == "Windows": update_available = version != constants.GIT_VERSION_WIN
+    else: update_available = version != constants.GIT_VERSION_MAC
+
+    if update_available:
+        dialog = ap.Dialog()
+        dialog.title = "Git Update Available"
+        dialog.add_text("A new version of Git is available.")
+        dialog.add_info("When installing Git you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
+        dialog.add_button("Install", callback=_install_git)
+        dialog.show()
+        pass
+
 def guarantee_git():
     git_installed = _check_installation()
-    if git_installed: return True
-
-    print("Git must be installed")
+    if git_installed: 
+        _check_update_available()
+        return True
 
     dialog = ap.Dialog()
     dialog.title = "Install Git"
