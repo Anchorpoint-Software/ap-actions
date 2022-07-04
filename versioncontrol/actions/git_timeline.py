@@ -54,22 +54,19 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             pull.name = "Pull"
             pull.icon = aps.Icon(":/icons/cloud.svg", "#D4AA37")
             pull.identifier = "gitpullrebase"
-            #pull.primary = True
             info.actions.append(pull)
-        
-        fetch = ap.TimelineChannelAction()
-        fetch.name = "Fetch"
-        fetch.icon = aps.Icon(":/icons/update.svg", "#D4AA37")
-        fetch.identifier = "gitfetch"
-        #fetch.primary = False
-        info.actions.append(fetch)
-
-        push = ap.TimelineChannelAction()
-        push.name = "Push"
-        push.icon = aps.Icon(":/icons/upload.svg", "#D4AA37")
-        push.identifier = "gitpush"
-        #push.primary = False
-        info.actions.append(push)
+        elif repo.is_push_required():
+            push = ap.TimelineChannelAction()
+            push.name = "Push"
+            push.icon = aps.Icon(":/icons/upload.svg", "#D4AA37")
+            push.identifier = "gitpush"
+            info.actions.append(push)
+        else:
+            fetch = ap.TimelineChannelAction()
+            fetch.name = "Fetch"
+            fetch.icon = aps.Icon(":/icons/update.svg", "#D4AA37")
+            fetch.identifier = "gitfetch"
+            info.actions.append(fetch)
     
     if is_rebasing:
         conflicts = ap.TimelineChannelAction()
@@ -148,7 +145,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
     info = ap.VCPendingChangesInfo()
     info.changes = ap.VCPendingChangeList(changes.values())
-    #info.caption = f"changes in {os.path.basename(path)}" @Jochen 
+    info.caption = f"changes in {os.path.basename(path)}"
 
     is_rebasing = repo.is_rebasing()
     commit = ap.TimelineChannelAction()
