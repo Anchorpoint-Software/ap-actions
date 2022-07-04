@@ -52,19 +52,19 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         if repo.is_pull_required():
             pull = ap.TimelineChannelAction()
             pull.name = "Pull"
-            pull.icon = aps.Icon(":/icons/cloud.svg", "#D4AA37")
+            pull.icon = aps.Icon(":/icons/cloud.svg")
             pull.identifier = "gitpullrebase"
             info.actions.append(pull)
         elif repo.is_push_required():
             push = ap.TimelineChannelAction()
             push.name = "Push"
-            push.icon = aps.Icon(":/icons/upload.svg", "#D4AA37")
+            push.icon = aps.Icon(":/icons/upload.svg")
             push.identifier = "gitpush"
             info.actions.append(push)
         else:
             fetch = ap.TimelineChannelAction()
             fetch.name = "Fetch"
-            fetch.icon = aps.Icon(":/icons/update.svg", "#D4AA37")
+            fetch.icon = aps.Icon(":/icons/update.svg")
             fetch.identifier = "gitfetch"
             info.actions.append(fetch)
     
@@ -151,6 +151,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     commit = ap.TimelineChannelAction()
     commit.name = "Commit"
     commit.identifier = "gitcommit"
+    commit.icon = aps.Icon(":/icons/submit.svg")
     if is_rebasing:
         commit.enabled = False
         commit.tooltip = "Cannot commit when resolving conflicts"
@@ -161,6 +162,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     revert = ap.TimelineChannelAction()
     revert.name = "Revert All"
     revert.identifier = "gitrevertall"
+    revert.icon = aps.Icon(":/icons/revert.svg")
     if is_rebasing:
         revert.enabled = False
         revert.tooltip = "Cannot revert files when resolving conflicts"
