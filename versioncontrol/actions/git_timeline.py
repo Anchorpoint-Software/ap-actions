@@ -30,7 +30,7 @@ def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingCha
 
 def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
     for conflict in conflicts:
-        conflict_path = os.path.join(repo_dir, conflict)
+        conflict_path = os.path.join(repo_dir, conflict).replace(os.sep, "/")
         
         if conflict_path in changes:
             changes[conflict_path].status = ap.VCFileStatus.Conflicted
@@ -82,7 +82,6 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             cancel = ap.TimelineChannelAction()
             cancel.name = "Cancel Rebase"
             cancel.identifier = "gitcancelrebase"
-            cancel.type = ap.ActionButtonType.Danger
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
 
