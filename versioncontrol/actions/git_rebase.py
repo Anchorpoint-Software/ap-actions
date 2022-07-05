@@ -42,7 +42,7 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
     elif conflict_handling == ap.VCConflictHandling.External:
         repo.launch_external_merge("vscode", paths)    
     
-    if repo.has_conflicts() == False:
+    if repo.has_conflicts() == False and repo.is_rebasing():
         repo.continue_rebasing()
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
