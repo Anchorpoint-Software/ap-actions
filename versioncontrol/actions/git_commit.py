@@ -41,5 +41,6 @@ def commit_async(message: str, changes, channel_id, project_path):
         ui.show_error("Commit Failed", str(e))
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
-    if action_id != "gitcommit": return
+    if action_id != "gitcommit": return False
     ctx.run_async(commit_async, message, changes, channel_id, ctx.project_path)
+    return True

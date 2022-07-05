@@ -64,5 +64,6 @@ def pull_async(channel_id: str, project_path):
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
-    if action_id != "gitpullrebase": return
+    if action_id != "gitpullrebase": return False
     ctx.run_async(pull_async, channel_id, ctx.project_path)
+    return True

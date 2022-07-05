@@ -33,10 +33,12 @@ def button_pressed(channel_id, project_path, dialog):
     ctx.run_async(revert, channel_id, project_path, dialog)
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
-    if action_id != "gitrevertall": return
+    if action_id != "gitrevertall": return False
 
     dialog = ap.Dialog()
     dialog.title = "Revert Files"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
     dialog.add_button("Yes", callback=lambda d: button_pressed(channel_id, ctx.project_path, d))
     dialog.show()
+
+    return True

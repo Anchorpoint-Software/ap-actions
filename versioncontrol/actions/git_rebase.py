@@ -48,5 +48,8 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id == "gitcancelrebase":
         ctx.run_async(cancel_rebase, channel_id, ctx.project_path)
+        return True
     if action_id == "gitresolveconflicts": 
         ctx.run_async(resolve_conflicts, channel_id)
+        return True
+    return False
