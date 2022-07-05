@@ -299,15 +299,14 @@ class GitRepository(VCRepository):
         status_lines = self.repo.git.status(porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
-            if len(split) == 2:
-                if split[0] == "UU":
-                    conflicts.append(split[1])    
+            if len(split) >= 1:
+                if len(split[0]) > 1:
+                    conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 
         return conflicts
 
     def has_conflicts(self):
-        status_lines = self.repo.git.status(porcelain=True).split()
-        return "UU" in status_lines
+        return len(self.get_conflicts()) > 0
 
     def is_rebasing(self):
         repodir = self._get_repo_internal_dir()
