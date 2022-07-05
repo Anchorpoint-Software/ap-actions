@@ -73,7 +73,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         
         if is_rebasing:
             conflicts = ap.TimelineChannelAction()
-            conflicts.name = "Show Conflicts"
+            conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
             conflicts.icon = aps.Icon(":/icons/update.svg")
