@@ -55,12 +55,14 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 pull.name = "Pull"
                 pull.icon = aps.Icon(":/icons/cloud.svg")
                 pull.identifier = "gitpullrebase"
+                pull.type = ap.ActionButtonType.Primary
                 info.actions.append(pull)
             elif repo.is_push_required():
                 push = ap.TimelineChannelAction()
                 push.name = "Push"
                 push.icon = aps.Icon(":/icons/upload.svg")
                 push.identifier = "gitpush"
+                push.type = ap.ActionButtonType.Primary
                 info.actions.append(push)
             else:
                 fetch = ap.TimelineChannelAction()
@@ -73,11 +75,15 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Show Conflicts"
             conflicts.identifier = "gitresolveconflicts"
+            conflicts.type = ap.ActionButtonType.Danger
+            conflicts.icon = aps.Icon(":/icons/update.svg")
             info.actions.append(conflicts)
 
             cancel = ap.TimelineChannelAction()
             cancel.name = "Cancel Rebase"
             cancel.identifier = "gitcancelrebase"
+            cancel.type = ap.ActionButtonType.Danger
+            cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
 
         main = ap.VCBranch()
@@ -161,6 +167,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         commit.name = "Commit"
         commit.identifier = "gitcommit"
         commit.icon = aps.Icon(":/icons/submit.svg")
+        commit.type = ap.ActionButtonType.Primary
         if is_rebasing:
             commit.enabled = False
             commit.tooltip = "Cannot commit when resolving conflicts"
