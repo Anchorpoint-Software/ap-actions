@@ -32,14 +32,18 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
         return
 
     if conflict_handling == ap.VCConflictHandling.Cancel:
+        progress = ap.Progress("Canceling", show_loading_screen=True)
         cancel_rebase(channel_id, project_path)
     elif conflict_handling == ap.VCConflictHandling.TakeOurs:
+        progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
         # git checkout --theirs (theirs and ours is inverse when rebasing)
         repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
     elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
+        progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
         # git checkout --ours (theirs and ours is inverse when rebasing)
         repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
     elif conflict_handling == ap.VCConflictHandling.External:
+        progress = ap.Progress("Running External Program", show_loading_screen=True)
         repo.launch_external_merge("vscode", paths)    
     
     if repo.has_conflicts() == False and repo.is_rebasing():
