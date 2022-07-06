@@ -2,6 +2,7 @@ from asyncio import subprocess
 import anchorpoint as ap
 import apsync as aps
 import vc.apgit.constants as constants
+import vc.apgit.repository as GitRepository
 import os, platform
 import io, shutil
 
@@ -93,11 +94,13 @@ def get_git_exec_path():
 
 def _get_git_version():
     import subprocess
+    current_env = os.environ.copy()
+    current_env.update(GitRepository.get_git_environment())
     if platform.system() == "Windows":
         from subprocess import CREATE_NO_WINDOW
-        return subprocess.check_output([get_git_cmd_path(), "--version"], creationflags=CREATE_NO_WINDOW).decode("utf-8").strip() 
+        return subprocess.check_output([get_git_cmd_path(), "--version"], env=current_env, creationflags=CREATE_NO_WINDOW).decode("utf-8").strip() 
     else:
-        return subprocess.check_output([get_git_cmd_path(), "--version"]).decode("utf-8").strip()
+        return subprocess.check_output([get_git_cmd_path(), "--version"], env=current_env).decode("utf-8").strip()
 
 def _check_update_available():
     try:
