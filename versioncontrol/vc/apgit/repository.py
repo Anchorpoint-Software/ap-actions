@@ -98,7 +98,15 @@ class GitRepository(VCRepository):
 
     @classmethod
     def create(cls, path: str):
-        git.Repo.init(path)
+        import subprocess
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment())
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+            subprocess.check_output([utility.get_git_cmd_path(), "init"], env=current_env, creationflags=CREATE_NO_WINDOW)
+        else:
+            subprocess.check_output([utility.get_git_cmd_path(), "init"], env=current_env)
+
         return GitRepository.load(path)
 
     @classmethod
