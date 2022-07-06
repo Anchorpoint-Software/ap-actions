@@ -1,7 +1,6 @@
 from ast import parse
 from ctypes import util
 import os
-from platform import platform
 import shutil
 
 from git import GitCommandError
@@ -99,6 +98,7 @@ class GitRepository(VCRepository):
     @classmethod
     def create(cls, path: str):
         import subprocess
+        import platform
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
         if platform.system() == "Windows":
