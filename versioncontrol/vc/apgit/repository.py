@@ -310,7 +310,7 @@ class GitRepository(VCRepository):
         for status in status_lines:
             split = status.split()
             if len(split) >= 1:
-                if len(split[0]) > 1:
+                if len(split[0]) > 1 and split[0] != "??":
                     conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 
         return conflicts

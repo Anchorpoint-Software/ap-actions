@@ -49,6 +49,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         if not repo: return info
 
         is_rebasing = repo.is_rebasing()
+
         if repo.has_remote() and not is_rebasing:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
@@ -203,7 +204,6 @@ def refresh_async(channel_id: str, project_path):
         if not repo: return
         repo.fetch()    
     except Exception as e:
-        print(e)
         pass
 
     ap.refresh_timeline_channel(channel_id)

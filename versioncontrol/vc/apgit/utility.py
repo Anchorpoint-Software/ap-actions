@@ -2,7 +2,6 @@ from asyncio import subprocess
 import anchorpoint as ap
 import apsync as aps
 import vc.apgit.constants as constants
-import vc.apgit.repository as GitRepository
 import os, platform
 import io, shutil
 
@@ -93,6 +92,7 @@ def get_git_exec_path():
         raise RuntimeError("Unsupported Platform")
 
 def _get_git_version():
+    import vc.apgit.repository as GitRepository
     import subprocess
     current_env = os.environ.copy()
     current_env.update(GitRepository.get_git_environment())
