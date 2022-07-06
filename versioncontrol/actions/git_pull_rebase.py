@@ -33,7 +33,7 @@ def pull_async(channel_id: str, project_path):
         if not repo: return
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True)
         
-        if repo.has_pending_changes():
+        if repo.has_pending_changes(False):
             ui.show_info("Cannot pull", "You have to commit all your files before you can continue")
             return
 
@@ -51,7 +51,10 @@ def pull_async(channel_id: str, project_path):
             progress.finish()
             return
         elif state != UpdateState.OK:
-            ui.show_error("Failed to update Git Repository")    
+            if repo.has_pending_changes(True):
+                ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
+            else:
+                ui.show_error("Failed to update Git Repository")    
         else:
             if len(ids_to_delete) > 0:
                 ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
@@ -59,8 +62,12 @@ def pull_async(channel_id: str, project_path):
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
-        ui.show_error("Failed to update Git Repository", str(e))
-        raise e
+        if repo.has_pending_changes(True):
+            ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
+        else:
+            ui.show_error("Failed to update Git Repository")    
+            raise e
+        
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
