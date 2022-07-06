@@ -194,18 +194,18 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 def refresh_async(channel_id: str, project_path):
     import sys, os
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
-    from vc.apgit.repository import GitRepository
-    from vc.apgit.utility import get_repo_path
-
     try:
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
         repo.fetch()    
+
+        ap.refresh_timeline_channel(channel_id)
     except Exception as e:
         pass
-
-    ap.refresh_timeline_channel(channel_id)
 
 def on_project_directory_changed(ctx):
     ap.refresh_timeline_channel("Git")
