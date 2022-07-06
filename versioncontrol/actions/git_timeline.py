@@ -6,25 +6,26 @@ from enum import Enum
 from typing import Optional
 import os
 
-def parse_change(repo_dir: str, change, status: ap.VCFileStatus) -> ap.VCPendingChange:
+def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool) -> ap.VCPendingChange:
     result = ap.VCPendingChange()
     result.status = status
     result.path = os.path.join(repo_dir, change.path)
-    result.selected = True
+    if selected:
+        result.selected = True
     return result
 
-def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange]):
+def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool):
     for file in repo_changes.new_files:
-        change = parse_change(repo_dir, file, ap.VCFileStatus.New)
+        change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
         changes[change.path] = change
     for file in repo_changes.modified_files:
-        change = parse_change(repo_dir, file, ap.VCFileStatus.Modified)
+        change = parse_change(repo_dir, file, ap.VCFileStatus.Modified, selected)
         changes[change.path] = change
     for file in repo_changes.deleted_files:
-        change = parse_change(repo_dir, file, ap.VCFileStatus.Deleted)
+        change = parse_change(repo_dir, file, ap.VCFileStatus.Deleted, selected)
         changes[change.path] = change
     for file in repo_changes.renamed_files:
-        change = parse_change(repo_dir, file, ap.VCFileStatus.Renamed)
+        change = parse_change(repo_dir, file, ap.VCFileStatus.Renamed, selected)
         changes[change.path] = change
 
 def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
@@ -151,8 +152,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
 
-        parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes)
-        parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes)
+        parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
+        parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
         parse_conflicts(repo_dir, repo.get_conflicts(), changes)
 
         info = ap.VCPendingChangesInfo()
