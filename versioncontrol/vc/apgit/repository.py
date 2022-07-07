@@ -1,7 +1,7 @@
 from ast import parse
 from ctypes import util
 import os
-import shutil
+import shutil, tempfile
 
 from git import GitCommandError
 import git
@@ -268,6 +268,10 @@ class GitRepository(VCRepository):
 
         return changes
 
+    def _write_pathspec_file(self, paths, file):
+        with open(file, "w") as f:
+            f.writelines("{}\n".format(x) for x in paths)
+
     def stage_all_files(self):
         self.repo.git.add(".")
 
@@ -275,10 +279,22 @@ class GitRepository(VCRepository):
         self.repo.git.restore("--staged", ".")
 
     def stage_files(self, paths: list[str]):
-        self.repo.git.add(*paths)
+        if len(paths) > 20:
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "spec")
+                self._write_pathspec_file(paths, pathspec)
+                self.repo.git.add(pathspec_from_file=pathspec)        
+        else:
+            self.repo.git.add(*paths)
 
     def unstage_files(self, paths: list[str]):
-        self.repo.git.restore("--staged", *paths)
+        if len(paths) > 20:
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "spec")
+                self._write_pathspec_file(paths, pathspec)
+                self.repo.git.restore("--staged", pathspec_from_file=pathspec)        
+        else:
+            self.repo.git.restore("--staged", *paths)
 
     def sync_staged_files(self, paths: list[str]):
         if not self.is_unborn():
