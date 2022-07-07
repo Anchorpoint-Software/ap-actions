@@ -18,6 +18,8 @@ action:
   author: "Anchorpoint Software GmbH"
 
   description: Creates a proxy video file
+  icon:
+    path: icons/videoConversion.svg
   script: "ffmpeg_img_to_video.py"
   inputs:
     ffmpeg_win: "${yaml_dir}/ffmpeg.exe"
