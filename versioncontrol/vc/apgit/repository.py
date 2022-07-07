@@ -130,7 +130,6 @@ class GitRepository(VCRepository):
         repo = cls()
         repo.repo = git.Repo(path, search_parent_directories=True)
         repo._setup_environment()
-        repo._init_git_lfs()
         return repo
 
     @staticmethod
@@ -152,9 +151,6 @@ class GitRepository(VCRepository):
 
     def _set_upstream(self, remote, branch):
         self.repo.git.branch("-u", remote, branch)
-
-    def _init_git_lfs(self):
-        self.repo.git.lfs("install", "--local")
 
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()

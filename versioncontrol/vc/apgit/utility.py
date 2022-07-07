@@ -17,6 +17,17 @@ def _download_git():
     progress.finish()
     return r
 
+def _install_git_lfs():
+    from vc.apgit.repository import GitRepository
+    import subprocess
+    current_env = os.environ.copy()
+    current_env.update(GitRepository.get_git_environment())
+    if platform.system() == "Windows":
+        from subprocess import CREATE_NO_WINDOW
+        subprocess.check_call([get_lfs_path(), "install"], env=current_env, creationflags=CREATE_NO_WINDOW)
+    else:
+        subprocess.check_call([get_lfs_path(), "install"], env=current_env)
+
 def _install_git_async():
     r = _download_git()
     progress = ap.Progress("Installing Git", infinite=True)
@@ -36,6 +47,8 @@ def _install_git_async():
         from zipfile import ZipFile
         z = ZipFile(io.BytesIO(r.content))
         z.extractall(path=dir)
+
+    _install_git_lfs()
 
     ap.UI().show_success("Git installed successfully")
     progress.finish()
@@ -92,7 +105,7 @@ def get_git_exec_path():
         raise RuntimeError("Unsupported Platform")
 
 def _get_git_version():
-    import vc.apgit.repository as GitRepository
+    from vc.apgit.repository import GitRepository
     import subprocess
     current_env = os.environ.copy()
     current_env.update(GitRepository.get_git_environment())
