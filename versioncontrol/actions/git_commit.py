@@ -37,6 +37,7 @@ def commit_async(message: str, changes, channel_id, project_path):
 
         repo.commit(message)
         ui.show_success("Commit succeeded")
+        ap.refresh_timeline_channel(channel_id)
     except Exception as e:
         ui.show_error("Commit Failed", str(e))
 
