@@ -46,7 +46,6 @@ def concat_demuxer(selected_files, fps):
 
 def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):      
     # Show Progress
-    percentage = 0
     progress = ap.Progress("Images to Video","Preparing...", infinite=False, cancelable=True)
 
     # Provide FFmpeg with the set of selected files through the concat demuxer
@@ -82,13 +81,18 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         universal_newlines=True
     )
     
+    # progress bar calculation
+    percentage = 0
+    drop_frame = 0
+    
     # progress bar
-    for line in ffmpeg.stdout:
-        print(line)
-        
+    for line in ffmpeg.stdout:    
+        if 'drop_frames=' in line: 
+            drop_frame = re.search('(\d+)', line).group()
+             
         if 'frame=' in line:
             current_frame = re.search(r'\d+', line).group()
-            percentage = int(current_frame)/(len(selected_files)+1)
+            percentage = (int(current_frame)+int(drop_frame))/(len(selected_files)+1)
             progress.report_progress(percentage)
             progress.set_text(f"{int(percentage*100)}% encoded")
             if progress.canceled:
