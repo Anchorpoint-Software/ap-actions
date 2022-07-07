@@ -10,6 +10,7 @@ import zipfile
 import requests
 import shutil
 import io
+import mimetypes
 
 ui = ap.UI()
 ctx = ap.Context.instance()
@@ -44,9 +45,14 @@ def concat_demuxer(selected_files, fps):
     file.close()
     return output
 
-def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):      
+def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps): 
+    if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[0].startswith('video'):
+        progress_infinite = True
+    else:
+        progress_infinite = False
+
     # Show Progress
-    progress = ap.Progress("Images to Video","Preparing...", infinite=False, cancelable=True)
+    progress = ap.Progress("Images to Video","Preparing...", infinite=progress_infinite, cancelable=True)
 
     # Provide FFmpeg with the set of selected files through the concat demuxer
     concat_file = concat_demuxer(selected_files, fps)
@@ -69,8 +75,8 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         arguments.insert(2,"iec61966_2_1")
 
     startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW 
+    
     ffmpeg = subprocess.Popen(
         args=arguments, 
         startupinfo=startupinfo, 
@@ -86,22 +92,23 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     drop_frame = 0
     
     # progress bar
-    for line in ffmpeg.stdout:    
+    for line in ffmpeg.stdout:   
         if 'drop_frames=' in line: 
             drop_frame = re.search('(\d+)', line).group()
              
-        if 'frame=' in line:
-            current_frame = re.search(r'\d+', line).group()
+        if 'frame=' in line and progress_infinite==False:
+            current_frame = re.search('(\d+)', line).group()
             percentage = (int(current_frame)+int(drop_frame))/(len(selected_files)+1)
             progress.report_progress(percentage)
             progress.set_text(f"{int(percentage*100)}% encoded")
-            if progress.canceled:
-                ui.show_info("Canceled")
-                os.system("taskkill /PID {}".format(ffmpeg.pid))
-                # wait until subprocess terminates, then delete txt file
-                ffmpeg.communicate()
-                os.remove(concat_file)
-                return
+            
+        if progress.canceled:
+            ui.show_info("Canceled")
+            os.system("taskkill /PID {}".format(ffmpeg.pid))
+            # wait until subprocess terminates, then delete txt file
+            ffmpeg.communicate()
+            os.remove(concat_file)
+            return
         
     # wait for subprocess to terminate
     ffmpeg.communicate()
