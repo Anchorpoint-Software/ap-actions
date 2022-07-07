@@ -289,7 +289,4 @@ def show_options():
 
     dialog.show()
 
-if platform.system() == "Darwin":
-    ui.show_error("Unsupported Action", "This action is only supported on Windows :-(")
-else:
-    ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings)
+ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings)
