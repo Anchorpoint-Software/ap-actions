@@ -133,11 +133,13 @@ def clone_repo(dialog: ap.Dialog):
     location = dialog.get_value("location")
     url = dialog.get_value("url")
     repo_path = location
-    if GitRepository.is_repo(repo_path):
-        ui.show_info("Already a Git repo")
-    else:
-        dialog.close()
-        ctx.run_async(clone_repo_async, repo_path, url)
+    with os.scandir(repo_path) as it:
+        if any(it):
+            ui.show_info("Cannot Join Git repo", "Folder must be empty")
+            return
+    
+    dialog.close()
+    ctx.run_async(clone_repo_async, repo_path, url)
 
 def update_dialog(dialog: ap.Dialog, value):
     url = dialog.get_value("url")
