@@ -122,7 +122,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             entry.has_details = True
             entry.caption = f"Made a Git Commit in {os.path.basename(path)}"
 
-            icon_color = "#d4aa37"
+            icon_color = "#90CAF9"
             if commit.type is HistoryType.LOCAL:
                 entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
             elif commit.type is HistoryType.REMOTE:
