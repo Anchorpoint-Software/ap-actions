@@ -17,7 +17,3 @@ action:
     path: :/icons/version.svg
 
   script: git_pull_rebase.py
-
-  register:
-    folder:
-      enable: true
