@@ -28,6 +28,7 @@ if not project:
 
 timeline_channel = aps.get_timeline_channel(project, channel_id)
 is_join = ctx.type == ap.Type.JoinProjectFiles
+settings = aps.Settings()
 
 def update_project(repo_path: str, remote_url: Optional[str]):
     if not is_join:
@@ -160,6 +161,9 @@ def update_dialog(dialog: ap.Dialog, value):
     dialog.set_enabled("join", len(location) > 0)
     dialog.set_enabled("create", len(location) > 0)
 
+    settings.set("browse_path", location)
+    settings.store()
+
 remote_enabled = True
 remote_toggleable = not timeline_channel or "gitRemoteUrl" not in timeline_channel.metadata
 if not remote_toggleable:
@@ -178,6 +182,10 @@ if platform.system() == "Windows":
     dialog.add_input(placeholder="D:/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
 else:
     dialog.add_input(placeholder="/users/johndoe/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
+
+browse_path = settings.get("browse_path")
+if browse_path is not None:
+    dialog.set_browse_path(var="location", path=browse_path)
 
 dialog.add_switch(remote_enabled, var="remote", callback=update_dialog).add_text("Remote Repository").hide_row(hide=not remote_toggleable)
 dialog.add_info("Create a local Git repository or connect it to a remote like GitHub").hide_row(hide=not remote_toggleable)
