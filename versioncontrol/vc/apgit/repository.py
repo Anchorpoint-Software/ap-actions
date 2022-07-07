@@ -144,6 +144,7 @@ class GitRepository(VCRepository):
         }
 
         add_config_env(env, "credential.helper", utility.get_gcm_path(), 0)
+        add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", 1)
         return env
 
     def _setup_environment(self):
