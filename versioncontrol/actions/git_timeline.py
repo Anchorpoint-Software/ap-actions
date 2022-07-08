@@ -92,7 +92,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         info.branches.append(main)
 
         return info
-    except:
+    except Exception as e:
+        print (e)
         return None
 
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
@@ -137,7 +138,8 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             history_list.append(entry)
 
         return history_list
-    except:
+    except Exception as e:
+        print (e)
         return []
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
@@ -192,7 +194,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         info.actions.append(revert)
 
         return info
-    except:
+    except Exception as e:
+        print (e)
         return None
 
 def refresh_async(channel_id: str, project_path):
