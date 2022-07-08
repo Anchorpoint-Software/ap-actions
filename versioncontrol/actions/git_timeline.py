@@ -77,11 +77,11 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
-            conflicts.icon = aps.Icon(":/icons/update.svg")
+            conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
             cancel = ap.TimelineChannelAction()
-            cancel.name = "Cancel Rebase"
+            cancel.name = "Cancel"
             cancel.identifier = "gitcancelrebase"
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
