@@ -126,10 +126,13 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             icon_color = "#90CAF9"
             if commit.type is HistoryType.LOCAL:
                 entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
+                entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
             elif commit.type is HistoryType.REMOTE:
                 entry.icon = aps.Icon(":/icons/download.svg", icon_color)
+                entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
             elif commit.type is HistoryType.SYNCED:
                 entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
+                entry.tooltip = "This commit is in sync with your team"
             
             history_list.append(entry)
 
