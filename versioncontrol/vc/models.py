@@ -8,6 +8,7 @@ class UpdateState(Enum):
     ERROR = 2
     CONFLICT = 3
     NO_REMOTE = 4
+    CANCEL = 5
 
 class ConflictResolveState(Enum):
     TAKE_OURS = 1

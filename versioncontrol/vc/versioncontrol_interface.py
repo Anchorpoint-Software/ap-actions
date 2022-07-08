@@ -2,7 +2,7 @@ from typing import Optional
 from vc.models import *
 
 class Progress:
-    def update(self, operation_code: str, current_count: int, max_count: int):
+    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
         pass
 
 class VCRepository:

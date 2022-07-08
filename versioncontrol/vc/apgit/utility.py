@@ -1,4 +1,3 @@
-from asyncio import subprocess
 import anchorpoint as ap
 import apsync as aps
 import vc.apgit.constants as constants

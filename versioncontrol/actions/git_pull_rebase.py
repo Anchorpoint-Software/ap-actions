@@ -17,13 +17,19 @@ class PullProgress(Progress):
         super().__init__()
         self.ap_progress = progress
 
-    def update(self, operation_code: str, current_count: int, max_count: int):
-        print(operation_code)
-        if operation_code == "writing":
-            self.ap_progress.set_text("Uploading Files")
+    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
+        if operation_code == "downloading":
+            if info_text:
+                self.ap_progress.set_text(f"Downloading Files: {info_text}")
+            else:
+                self.ap_progress.set_text("Downloading Files")
+            self.ap_progress.report_progress(current_count / max_count)
+        elif operation_code == "updating":
+            self.ap_progress.set_text("Updating Files")
             self.ap_progress.report_progress(current_count / max_count)
         else:
             self.ap_progress.set_text("Talking to Server")
+            self.ap_progress.stop_progress()
 
 def pull_async(channel_id: str, project_path):
     ui = ap.UI()
@@ -31,7 +37,7 @@ def pull_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        progress = ap.Progress("Updating Git Changes", show_loading_screen=True)
+        progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=True)
         
         if repo.has_pending_changes(False):
             ui.show_info("Cannot pull", "You have to commit all your files before you can continue")
@@ -50,6 +56,8 @@ def pull_async(channel_id: str, project_path):
             ap.refresh_timeline_channel(channel_id)
             progress.finish()
             return
+        elif state == UpdateState.CANCEL:
+            ui.show_info("Pull Canceled")
         elif state != UpdateState.OK:
             if repo.has_pending_changes(True):
                 ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")

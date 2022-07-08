@@ -16,12 +16,16 @@ class FetchProgress(Progress):
         super().__init__()
         self.ap_progress = progress
 
-    def update(self, operation_code: str, current_count: int, max_count: int):
-        if operation_code == "writing":
-            self.ap_progress.set_text("Uploading Files")
+    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
+        if operation_code == "downloading":
+            if info_text:
+                self.ap_progress.set_text(f"Downloading Files: {info_text}")
+            else:
+                self.ap_progress.set_text("Downloading Files")
             self.ap_progress.report_progress(current_count / max_count)
         else:
             self.ap_progress.set_text("Talking to Server")
+            self.ap_progress.stop_progress()
 
 def fetch_async(channel_id: str, project_path):
     ui = ap.UI()

@@ -59,15 +59,20 @@ class CloneProgress(Progress):
         super().__init__()
         self.ap_progress = progress
 
-    def update(self, operation_code: str, current_count: int, max_count: int):
+    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
         if operation_code == "downloading":
-            self.ap_progress.set_text("Downloading Files")
+            if info_text:
+                self.ap_progress.set_text(f"Downloading Files: {info_text}")
+            else:
+                self.ap_progress.set_text("Downloading Files")
             self.ap_progress.report_progress(current_count / max_count)
         elif operation_code == "updating":
             self.ap_progress.set_text("Updating Files")
             self.ap_progress.report_progress(current_count / max_count)
         else:
             self.ap_progress.set_text("Talking to Server")
+            self.ap_progress.stop_progress()
+            
 
 def url_gcm_supported(url: str):
     gcm_supported_providers = ["github", "gitlab", "azure"]

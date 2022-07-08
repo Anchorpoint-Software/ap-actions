@@ -8,6 +8,7 @@ import git
 import git.cmd
 from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
+import vc.apgit.lfs as lfs
 
 import gc
 
@@ -26,29 +27,47 @@ def _map_op_code(op_code: int) -> str:
         return "compressing"
     return str(op_code)
 
-class _CloneProgress(git.RemoteProgress):
+def _parse_lfs_status(progress, line: str):
+    try:
+        import re
+        
+        def report_lfs_progress(text_identifier, op_code):
+            count_match = re.search("\(\d+\/\d+\)", line)
+            if count_match:
+                cur_count = re.search("\d+\/", count_match.group()).group()[:-1]
+                max_count = re.search("\d+\)", count_match.group()).group()[:-1]
+                progress_text = line.replace(text_identifier, "").strip()
+                progress.update(_map_op_code(op_code), int(cur_count), int(max_count), progress_text)
+
+        # Filtering content: 100% (23/23), 59.33 MiB | 8.63 MiB/s
+        if "Filtering content:" in line:     
+            report_lfs_progress("Filtering content: ", 32)
+        
+        # Uploading LFS objects: 100% (1/1), 3.6 KB | 0 B/s, done.
+        if "Uploading LFS objects:" in line:
+            report_lfs_progress("Uploading LFS objects: ", 16)
+
+        # Downloading LFS objects: 100% (1/1), 3.6 KB | 0 B/s, done.
+        if "Downloading LFS objects:" in line:
+            report_lfs_progress("Downloading LFS objects: ", 32)
+
+    except Exception as e:
+        print(e)
+    
+class _InternalProgress(git.RemoteProgress):
     def __init__(self, progress) -> None:
         super().__init__()
         self.progress = progress
 
     def update(self, op_code, cur_count, max_count=None, message=''):
-        self.progress.update(_map_op_code(op_code), cur_count, max_count)
+        self.progress.update(_map_op_code(op_code), cur_count, max_count, message if len(message) > 0 else None)
 
-class _PushProgress(git.RemoteProgress):
-    def __init__(self, progress) -> None:
-        super().__init__()
-        self.progress = progress
+    def line_dropped(self, line: str) -> None:
+        _parse_lfs_status(self, line)
+        return super().line_dropped(line)
 
-    def update(self, op_code, cur_count, max_count=None, message=''):
-        self.progress.update(_map_op_code(op_code), cur_count, max_count)
-
-class _PullProgress(git.RemoteProgress):
-    def __init__(self, progress) -> None:
-        super().__init__()
-        self.progress = progress
-
-    def update(self, op_code, cur_count, max_count=None, message=''):
-        self.progress.update(_map_op_code(op_code), cur_count, max_count)
+    def canceled(self):
+        return self.progress.ap_progress.canceled
 
 class GitRepository(VCRepository):
     repo: git.Repo = None
@@ -116,7 +135,7 @@ class GitRepository(VCRepository):
         env = GitRepository.get_git_environment()
         try:
             if progress is not None:
-                git.Repo.clone_from(remote_url, local_path,  progress = _CloneProgress(progress), env=env)
+                git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env)
             else:
                 git.Repo.clone_from(remote_url, local_path, env=env)
         except GitCommandError as e:
@@ -140,7 +159,8 @@ class GitRepository(VCRepository):
             config["GIT_CONFIG_COUNT"] = str(config_count + 1)
 
         env = {
-            "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/")
+            "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/"),
+            "GIT_LFS_FORCE_PROGRESS": "1" 
         }
 
         add_config_env(env, "credential.helper", utility.get_gcm_path(), 0)
@@ -165,15 +185,15 @@ class GitRepository(VCRepository):
             kwargs["set-upstream"] = True
 
         try:
+            current_env = os.environ.copy()
+            current_env.update(GitRepository.get_git_environment())
+            progress_wrapper = None if not progress else _InternalProgress(progress)
+            lfs.lfs_push(self.get_root_path(), remote, branch, progress_wrapper, current_env)
+            if progress_wrapper.canceled(): return UpdateState.CANCEL
             state = UpdateState.OK
-            if progress is not None:
-                for info in self.repo.remote(remote).push(refspec=branch, progress = _PushProgress(progress), **kwargs):
-                    if info.flags & git.PushInfo.ERROR:
-                        state = UpdateState.ERROR
-            else: 
-                for info in self.repo.remote(remote).push(refspec=branch, **kwargs):
-                    if info.flags & git.PushInfo.ERROR:
-                        state = UpdateState.ERROR
+            for info in self.repo.remote(remote).push(refspec=branch, progress = progress_wrapper, **kwargs):
+                if info.flags & git.PushInfo.ERROR:
+                    state = UpdateState.ERROR
             return state
         except Exception as e:
             raise e
@@ -185,7 +205,7 @@ class GitRepository(VCRepository):
 
         state = UpdateState.OK
         if progress is not None:
-            for info in self.repo.remote(remote).fetch(progress = _PullProgress(progress)):
+            for info in self.repo.remote(remote).fetch(progress = _InternalProgress(progress)):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
         else: 
@@ -202,14 +222,16 @@ class GitRepository(VCRepository):
 
         state = UpdateState.OK
         try:
-            if progress is not None:
-                for info in self.repo.remote(remote).pull(progress = _PullProgress(progress), rebase = rebase):
-                    if info.flags & git.FetchInfo.ERROR:
-                        state = UpdateState.ERROR
-            else: 
-                for info in self.repo.remote(remote).pull(rebase = rebase):
-                    if info.flags & git.FetchInfo.ERROR:
-                        state = UpdateState.ERROR
+            current_env = os.environ.copy()
+            current_env.update(GitRepository.get_git_environment())
+            progress_wrapper = None if not progress else _InternalProgress(progress)
+            lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
+            if progress_wrapper.canceled(): return UpdateState.CANCEL
+            
+            for info in self.repo.remote(remote).pull(progress = progress_wrapper, rebase = rebase):
+                if info.flags & git.FetchInfo.ERROR:
+                    state = UpdateState.ERROR
+
         except Exception as e:
             if self.has_conflicts():
                 return UpdateState.CONFLICT
