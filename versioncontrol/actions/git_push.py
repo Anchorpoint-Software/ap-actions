@@ -32,6 +32,7 @@ def push_async(channel_id: str, project_path):
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
+        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
         state = repo.push(progress=PushProgress(progress))
         if state == UpdateState.CANCEL:
             ui.show_info("Push Canceled")
@@ -39,9 +40,12 @@ def push_async(channel_id: str, project_path):
             ui.show_error("Failed to push Git Repository")    
         else:
             ui.show_success("Push Successful")
-        progress.finish()
     except Exception as e:
         ui.show_error("Failed to push Git Repository", str(e))
+    finally:
+        progress.finish()
+        ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
+
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
