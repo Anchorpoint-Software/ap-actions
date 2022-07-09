@@ -1,5 +1,5 @@
 from git import RemoteProgress
-from vc.apgit.utility import get_lfs_path
+from vc.apgit.utility import get_git_cmd_path
 import subprocess, platform
 
 def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
@@ -7,12 +7,11 @@ def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
     if platform.system() == "Windows":
         from subprocess import CREATE_NO_WINDOW
         kwargs["creationflags"] = CREATE_NO_WINDOW
-    
+
     process = subprocess.Popen(
         args, 
         env=env, 
         stdout=subprocess.PIPE, 
-        stderr=subprocess.PIPE, 
         universal_newlines=True,
         bufsize=1, 
         cwd=path,
@@ -32,12 +31,12 @@ def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
 
     process.wait()
     if process.returncode != 0:
-        raise RuntimeError(process.stderr)
+        raise RuntimeError("Git LFS error: " + str(process.stderr))
 
 def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env):
-    args = [get_lfs_path(), "fetch", remote, "@{u}"]
+    args = [get_git_cmd_path(), "lfs", "fetch", remote, "@{u}"]
     _run_lfs_command(path, args, progress, env)
 
 def lfs_push(path: str, remote: str, branch: str, progress: RemoteProgress, env):
-    args = [get_lfs_path(), "push", remote, branch]
+    args = [get_git_cmd_path(), "lfs", "push", remote, branch]
     _run_lfs_command(path, args, progress, env)
