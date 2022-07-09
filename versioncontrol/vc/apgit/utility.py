@@ -4,6 +4,19 @@ import vc.apgit.constants as constants
 import os, platform
 import io, shutil
 
+def run_git_command(args, cwd = None, **kwargs):
+    from vc.apgit.repository import GitRepository
+    import subprocess, platform
+    current_env = os.environ.copy()
+    current_env.update(GitRepository.get_git_environment())
+
+    if platform.system() == "Windows":
+        from subprocess import CREATE_NO_WINDOW
+        kwargs["creationflags"] = CREATE_NO_WINDOW
+    
+    subprocess.check_call(args, env=current_env, cwd=cwd, **kwargs)
+
+
 def _download_git():
     import requests
     progress = ap.Progress("Downloading Git", infinite=True)
@@ -17,15 +30,7 @@ def _download_git():
     return r
 
 def _install_git_lfs():
-    from vc.apgit.repository import GitRepository
-    import subprocess
-    current_env = os.environ.copy()
-    current_env.update(GitRepository.get_git_environment())
-    if platform.system() == "Windows":
-        from subprocess import CREATE_NO_WINDOW
-        subprocess.check_call([get_lfs_path(), "install"], env=current_env, creationflags=CREATE_NO_WINDOW)
-    else:
-        subprocess.check_call([get_lfs_path(), "install"], env=current_env)
+    run_git_command([get_lfs_path(), "install"])
 
 def _install_git_async():
     r = _download_git()

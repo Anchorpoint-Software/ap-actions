@@ -68,7 +68,6 @@ class _InternalProgress(git.RemoteProgress):
 
     def canceled(self):
         return self.progress.ap_progress.canceled
-
 class GitRepository(VCRepository):
     repo: git.Repo = None
 
@@ -86,17 +85,10 @@ class GitRepository(VCRepository):
         return os.path.exists(os.path.join(path, ".git"))
 
     @staticmethod
-    def is_authenticated(url: str) -> bool:
-        import subprocess, platform
+    def is_authenticated(url: str) -> bool: 
         try:
-            current_env = os.environ.copy()
-            current_env.update(GitRepository.get_git_environment())
-
-            if platform.system() == "Windows":
-                from subprocess import CREATE_NO_WINDOW
-                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, creationflags=CREATE_NO_WINDOW, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-            else:
-                subprocess.check_call([utility.get_git_cmd_path(), "ls-remote", url], env=current_env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            import subprocess
+            utility.run_git_command([utility.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         except Exception as e:
             return False
         return True
@@ -116,18 +108,7 @@ class GitRepository(VCRepository):
 
     @classmethod
     def create(cls, path: str):
-        import subprocess
-        import platform
-        
-        current_env = os.environ.copy()
-        current_env.update(GitRepository.get_git_environment())
-        
-        if platform.system() == "Windows":
-            from subprocess import CREATE_NO_WINDOW
-            subprocess.check_call([utility.get_git_cmd_path(), "init"], cwd=path, env=current_env, creationflags=CREATE_NO_WINDOW)
-        else:
-            subprocess.check_call([utility.get_git_cmd_path(), "init"], cwd=path, env=current_env)
-
+        utility.run_git_command([utility.get_git_cmd_path(), "init"], cwd=path)
         return GitRepository.load(path)
 
     @classmethod
@@ -326,7 +307,7 @@ class GitRepository(VCRepository):
         self.stage_files(paths)
 
     def commit(self, message: str):
-        self.repo.index.commit(message)
+        utility.run_git_command([utility.get_git_cmd_path(), "commit", "-m", message], cwd=self.get_root_path())
 
     def get_root_path(self):
         return self.repo.working_dir
