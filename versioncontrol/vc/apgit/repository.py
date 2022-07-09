@@ -151,6 +151,13 @@ class GitRepository(VCRepository):
     def _setup_environment(self):
         self.repo.git.update_environment(**GitRepository.get_git_environment()) 
 
+    def _has_upstream(self):
+        try:
+            self.get_remote_change_id()
+            return True
+        except:
+            return False
+
     def _set_upstream(self, remote, branch):
         self.repo.git.branch("-u", remote, branch)
 
@@ -160,9 +167,7 @@ class GitRepository(VCRepository):
         if remote is None: remote = "origin"
 
         kwargs = {}
-        try:
-            self.get_remote_change_id()
-        except:
+        if not self._has_upstream():
             kwargs["set-upstream"] = True
 
         try:
@@ -418,7 +423,10 @@ class GitRepository(VCRepository):
 
     def is_pull_required(self) -> bool:
         try:
-            changes = self.repo.iter_commits(rev="HEAD..@{u}", max_count=1)
+            if self.is_unborn():
+                changes = self.repo.iter_commits(rev="@{u}", max_count=1)
+            else:
+                changes = self.repo.iter_commits(rev="HEAD..@{u}", max_count=1)
             return next(changes, -1) != -1
         except:
             return False
@@ -428,17 +436,25 @@ class GitRepository(VCRepository):
             changes = self.repo.iter_commits(rev="@{u}..HEAD", max_count=1)
             return next(changes, -1) != -1
         except:
-            return False
+            return self.is_unborn() == False
 
     def has_remote(self) -> bool:
         return len(self.repo.remotes) > 0
 
-    def _get_local_commits(self):
-        return list(self.repo.iter_commits(rev="@{u}..HEAD"))
+    def _get_local_commits(self, has_upstream):
+        if has_upstream:
+            if self.is_unborn(): 
+                return []
+            return list(self.repo.iter_commits(rev="@{u}..HEAD"))
+        else:
+            if self.is_unborn():
+                return []
+            return list(self.repo.iter_commits())
         
     def get_local_commits(self):
         history = []
-        local_commits = self._get_local_commits()
+        local_commits = self._get_local_commits(self._has_upstream())
+        
         for commit in local_commits:
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.LOCAL))
         return history
@@ -451,16 +467,28 @@ class GitRepository(VCRepository):
         if max_count != None:
             args["max_count"] = max_count
 
-        base_commits = list(self.repo.iter_commits(rev=rev_spec, **args))
+        unborn = self.is_unborn()
+        if not unborn:
+            base_commits = list(self.repo.iter_commits(rev=rev_spec, **args))
+        else:
+            base_commits = []
 
         remote_commits = []
         local_commit_set = set()
         try:
             if self.has_remote():
-                remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
-                local_commits = self._get_local_commits()
-                for commit in local_commits:
-                    local_commit_set.add(commit.hexsha)
+                has_upstream = self._has_upstream()
+                if has_upstream:
+                    if unborn:
+                        remote_commits = list(self.repo.iter_commits(rev="@{u}"))
+                    else:
+                        remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
+                
+                if not unborn:
+                    local_commits = self._get_local_commits(has_upstream)
+                    for commit in local_commits:
+                        local_commit_set.add(commit.hexsha)
+
         except Exception as e:
             pass
             
