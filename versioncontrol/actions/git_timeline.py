@@ -199,6 +199,14 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         return None
 
 def refresh_async(channel_id: str, project_path):
+    project = aps.get_project(project_path)
+    if not project: 
+        return
+    
+    timeline_channel = aps.get_timeline_channel(project, channel_id)
+    if not timeline_channel:
+        return
+
     import sys, os
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
     try:
