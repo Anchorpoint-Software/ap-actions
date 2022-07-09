@@ -12,6 +12,7 @@ def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
         args, 
         env=env, 
         stdout=subprocess.PIPE, 
+        stderr=subprocess.PIPE, 
         universal_newlines=True,
         bufsize=1, 
         cwd=path,
@@ -25,7 +26,12 @@ def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
             progress.line_dropped(line)
             
             if progress.canceled():
-                process.terminate()
+                if platform.system() == "Windows":
+                    from subprocess import CREATE_NO_WINDOW
+                    subprocess.call(['taskkill', '/F', '/T', '/PID', str(process.pid)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=CREATE_NO_WINDOW)
+                else:
+                    process.terminate()
+                
                 process.wait()
                 return
 
