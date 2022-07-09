@@ -30,7 +30,7 @@ def _download_git():
     return r
 
 def _install_git_lfs():
-    run_git_command([get_lfs_path(), "install"])
+    run_git_command([get_git_cmd_path(), "lfs", "install"])
 
 def _install_git_async():
     r = _download_git()
