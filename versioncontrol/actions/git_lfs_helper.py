@@ -1,13 +1,7 @@
 import os
 import mimetypes
 
-try:
-    from binaryornot.check import is_binary
-except:
-    import anchorpoint
-    ctx = anchorpoint.Context.instance()
-    ctx.install("binaryornot")
-    from binaryornot.check import is_binary
+from binaryornot.check import is_binary
 
 def _file_bytes_binary(path: str):
     return is_binary(path)

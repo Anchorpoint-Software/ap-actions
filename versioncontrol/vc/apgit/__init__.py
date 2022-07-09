@@ -9,9 +9,7 @@ try:
         try: 
             import git
         except:
-            ctx = anchorpoint.Context.instance()
-            ctx.install("GitPython")
-            import git
+            raise Warning("Git not installed")
     else: raise Warning("Git not installed")
 
 except Exception as e:
