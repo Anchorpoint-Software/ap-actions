@@ -3,7 +3,7 @@ import apsync as aps
 
 # checks if the selected drive is a clouddrive
 def on_is_action_enabled(drive: str, type: ap.Type, ctx: ap.Context) -> bool:
-    if drive is "":
+    if drive == "":
         return False
     
     settings = aps.Settings("drive settings")
