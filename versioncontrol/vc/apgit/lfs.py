@@ -4,7 +4,7 @@ import subprocess, platform
 
 def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
     kwargs = {}
-    if platform == "Windows":
+    if platform.system() == "Windows":
         from subprocess import CREATE_NO_WINDOW
         kwargs["creationflags"] = CREATE_NO_WINDOW
     
