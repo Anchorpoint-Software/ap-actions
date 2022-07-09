@@ -54,6 +54,11 @@ def _install_git_async():
 
     _install_git_lfs()
 
+    dialog = ap.Dialog()
+    dialog.title = "Git Installation Successful"
+    dialog.add_text("Please restart Anchorpoint to complete the installation of Git.")
+    dialog.show()
+
     ap.UI().show_success("Git installed successfully")
     progress.finish()
 
