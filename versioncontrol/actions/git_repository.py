@@ -90,49 +90,16 @@ def create_repo(dialog: ap.Dialog):
         ui.show_success("Git Repository Initialized")
         dialog.close()
 
-def retry_clone(dialog: ap.Dialog, repo_path: str, url: str):
-    username = dialog.get_value("user")
-    password = dialog.get_value("password")
-    dialog.close()
-
-    GitRepository.authenticate(url, username, password)
-    ctx.run_async(clone_repo_async, repo_path, url)
-
-def authenticate(repo_path: str, url: str):    
-    from urllib.parse import urlparse
-
-    dialog = ap.Dialog()
-    dialog.title = "Authentication Failed"
-    dialog.icon = ctx.icon
-    
-    host = urlparse(url).hostname
-    dialog.add_text(f"We could not authenticate with <b>{host}</b>.<br>Please enter your credentials and try again.")
-    dialog.add_text("<b>Username or Email</b>")
-    dialog.add_input(var="user", width = 400)
-
-    dialog.add_text("<b>Password</b>")
-    dialog.add_input(var="password", width = 400, password=True)
-
-    dialog.add_empty()
-    dialog.add_button("Save and Retry", callback=lambda d: retry_clone(d, repo_path, url))
-    dialog.show()
-
 def clone_repo_async(repo_path: str, url: str):
     try:
         progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-        if not GitRepository.is_authenticated(url):
-            if not url_gcm_supported(url):
-                authenticate(repo_path, url)
-            ui.show_error("Could not clone repository")
-            return
-
         repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
         progress.finish()
         update_project(repo_path, url)
         repo.ignore(".ap/project.json", local_only=True)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
-        ui.show_error("Failed to clone Git Repository", str(e))
+        ui.show_error("Failed to clone Git Repository", "Could not authenticate, please try again.")
 
 def clone_repo(dialog: ap.Dialog):
     location = dialog.get_value("location")
