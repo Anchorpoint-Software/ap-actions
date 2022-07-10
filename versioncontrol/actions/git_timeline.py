@@ -1,8 +1,5 @@
-from calendar import c
-from dataclasses import dataclass, field
 import anchorpoint as ap
 import apsync as aps
-from enum import Enum
 from typing import Optional
 import os
 
@@ -216,9 +213,19 @@ def refresh_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        repo.fetch()    
 
-        ap.refresh_timeline_channel(channel_id)
+        lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
+        if os.path.exists(lockfile):
+            print("fetch is already running")
+            return
+
+        try:
+            with open(lockfile, "w") as f:
+                repo.fetch()    
+        finally:
+            ap.refresh_timeline_channel(channel_id)
+            os.remove(lockfile)
+
     except Exception as e:
         pass
 

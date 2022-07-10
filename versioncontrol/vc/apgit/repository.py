@@ -314,6 +314,9 @@ class GitRepository(VCRepository):
     def commit(self, message: str):
         utility.run_git_command([utility.get_git_cmd_path(), "commit", "-m", message], cwd=self.get_root_path())
 
+    def get_git_dir(self):
+        return self.repo.git_dir
+
     def get_root_path(self):
         return self.repo.working_dir
 
