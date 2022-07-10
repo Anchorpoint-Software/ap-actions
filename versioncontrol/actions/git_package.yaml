@@ -14,7 +14,7 @@ action:
   id: "ap::package::git"
   category: "vc/git"
   type: package
-  enable: false
+  enable: true
   description: An artist friendly Git integration for large files
 
   author: "Anchorpoint Software GmbH"
