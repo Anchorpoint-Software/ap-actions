@@ -108,7 +108,7 @@ class GitRepository(VCRepository):
 
     @classmethod
     def create(cls, path: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "init"], cwd=path)
+        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
         return GitRepository.load(path)
 
     @classmethod
