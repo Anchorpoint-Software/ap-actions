@@ -213,8 +213,7 @@ class GitRepository(VCRepository):
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
-            
-            for info in self.repo.remote(remote).pull(progress = progress_wrapper, rebase = rebase):
+            for info in self.repo.remote(remote).pull(progress = progress_wrapper, rebase = rebase, refspec=branch):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 
