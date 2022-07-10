@@ -81,8 +81,8 @@ def _check_application(path: str):
     return os.path.exists(path)
 
 def _get_git_cmddir():
-    dir = os.path.dirname(__file__)
-    dir = os.path.join(dir, "git-cmd")
+    dir = os.path.expanduser("~/Documents/Anchorpoint/actions")
+    dir = os.path.join(dir, "git")
     return os.path.normpath(dir)
 
 def _check_installation():
