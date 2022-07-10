@@ -31,6 +31,11 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
         
         if conflict_path in changes:
             changes[conflict_path].status = ap.VCFileStatus.Conflicted
+        else:
+            conflict_change = ap.VCPendingChange()
+            conflict_change.status = ap.VCFileStatus.Conflicted
+            conflict_change.path = conflict_path
+            changes[conflict_path] = conflict_change
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
     try:
