@@ -24,11 +24,10 @@ def get_tab_location(template_dir: str):
 
 template_dir = get_tab_location(template_dir)
 
-project_templates_location = get_tab_location(template_utility.get_template_dir(project.path))
-
 # Open the template directories in new tabs
 has_project_templates = False
 if project:
+    project_templates_location = get_tab_location(template_utility.get_template_dir(project.path))
     if os.path.exists(project_templates_location):
         has_project_templates = True
         ui.open_tab(project_templates_location)
