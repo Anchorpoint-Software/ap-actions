@@ -63,7 +63,7 @@ if __name__ == "__main__":
             if not timeline_channel:
                 aps.add_timeline_channel(project, channel)
                 
-            aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#D4AA37"))
+            aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
         else:
             ap.join_project_path(repo_path, project_id, workspace_id)
         pass
