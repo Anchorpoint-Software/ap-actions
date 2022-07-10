@@ -311,6 +311,15 @@ class GitRepository(VCRepository):
                 self.repo.git.restore("--staged", *staged_files)
         self.stage_files(paths)
 
+    def remove_files(self, paths: list[str]):
+        if len(paths) > 20:
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "spec")
+                self._write_pathspec_file(paths, pathspec)
+                self.repo.git.rm(pathspec_from_file=pathspec)        
+        else:
+            self.repo.git.rm(*paths)
+
     def commit(self, message: str):
         utility.run_git_command([utility.get_git_cmd_path(), "commit", "-m", message], cwd=self.get_root_path())
 
@@ -329,12 +338,33 @@ class GitRepository(VCRepository):
         rel_paths = [os.path.relpath(path, repo_dir) for path in paths]
         self.repo.git.lfs("track", rel_paths)
 
+    def get_deleted_files(self):
+        unstaged_files = []
+        staged_files = []
+        status_lines = self.repo.git.status(porcelain=True).splitlines()
+        for status in status_lines:
+            split = status.split()
+            if len(split) > 1:
+                marker = split[0]
+                marker_length = len(marker)
+                if marker_length == 0: 
+                    continue
+
+                file = " ".join(split[1:]).replace("\"", "")
+                if marker[0] == "D":
+                    unstaged_files.append(file)
+
+                if marker_length > 1 and marker[1] == "D":
+                    staged_files.append(file)
+                
+        return unstaged_files, staged_files
+
     def get_conflicts(self):
         conflicts = []
         status_lines = self.repo.git.status(porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
-            if len(split) >= 1:
+            if len(split) > 1:
                 if len(split[0]) > 1 and split[0] != "??":
                     conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 

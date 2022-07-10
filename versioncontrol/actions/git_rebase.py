@@ -21,7 +21,6 @@ def cancel_rebase(channel_id, project_path):
 def resolve_conflicts(channel_id):
     ap.vc_resolve_conflicts(channel_id)
 
-
 def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHandling, paths: Optional[list[str]], ctx):
     from vc.apgit.utility import get_repo_path
     
@@ -34,17 +33,26 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
     if conflict_handling == ap.VCConflictHandling.Cancel:
         progress = ap.Progress("Canceling", show_loading_screen=True)
         cancel_rebase(channel_id, project_path)
-    elif conflict_handling == ap.VCConflictHandling.TakeOurs:
-        progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
-        # git checkout --theirs (theirs and ours is inverse when rebasing)
-        repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
-    elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
-        progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
-        # git checkout --ours (theirs and ours is inverse when rebasing)
-        repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
     elif conflict_handling == ap.VCConflictHandling.External:
         progress = ap.Progress("Running External Program", show_loading_screen=True)
         repo.launch_external_merge("vscode", paths)    
+    else:
+        unstaged_files, staged_files = repo.get_deleted_files()
+        if conflict_handling == ap.VCConflictHandling.TakeOurs:
+            progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
+            
+            # git checkout --theirs (theirs and ours is inverse when rebasing)
+            if len(staged_files) > 0:
+                repo.remove_files(staged_files)
+            repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
+
+        elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
+            progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
+            
+            # git checkout --ours (theirs and ours is inverse when rebasing)
+            if len(unstaged_files) > 0:
+                repo.remove_files(unstaged_files)
+            repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
     
     if repo.has_conflicts() == False and repo.is_rebasing():
         repo.continue_rebasing()
