@@ -20,4 +20,4 @@ action:
 
   register:
     join_project_files:
-      enable: true
+      enable: git_repository.py
