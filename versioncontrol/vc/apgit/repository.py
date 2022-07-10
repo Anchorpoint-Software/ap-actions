@@ -526,7 +526,10 @@ class GitRepository(VCRepository):
             pass
             
         for commit in base_commits:
-            type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
+            if self._is_head_detached():
+                type = HistoryType.SYNCED
+            else:
+                type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=type))
 
         for commit in remote_commits:
@@ -548,6 +551,9 @@ class GitRepository(VCRepository):
 
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
+
+    def _is_head_detached(self):
+        return self._get_current_branch() == "HEAD"
 
     def _get_current_branch(self):
         try:
