@@ -37,7 +37,7 @@ def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
 
     process.wait()
     if process.returncode != 0:
-        raise RuntimeError("Git LFS error: " + str(process.stderr))
+        raise RuntimeError("Git LFS error: " + str(process.stderr.read()))
 
 def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env):
     args = [get_git_cmd_path(), "lfs", "fetch", remote, "@{u}"]
