@@ -14,8 +14,7 @@ def run_git_command(args, cwd = None, **kwargs):
         from subprocess import CREATE_NO_WINDOW
         kwargs["creationflags"] = CREATE_NO_WINDOW
     
-    subprocess.check_call(args, env=current_env, cwd=cwd, **kwargs)
-
+    return subprocess.check_output(args, env=current_env, cwd=cwd, **kwargs).decode("utf-8").strip() 
 
 def _download_git():
     import requests
@@ -31,6 +30,22 @@ def _download_git():
 
 def _install_git_lfs():
     run_git_command([get_git_cmd_path(), "lfs", "install"])
+
+def _setup_git():
+    try:
+        email = run_git_command([get_git_cmd_path(), "config", "--global", "user.email"])
+    except:
+        email = None
+    try:
+        name = run_git_command([get_git_cmd_path(), "config", "--global", "user.name"])
+    except:
+        name = None
+
+    ctx = ap.Context.instance()
+    if not email or email == "":
+        run_git_command([get_git_cmd_path(), "config", "--global", "user.email", ctx.email])
+    if not name or name == "":
+        run_git_command([get_git_cmd_path(), "config", "--global", "user.name", ctx.username])
 
 def _install_git_async():
     r = _download_git()
@@ -53,6 +68,7 @@ def _install_git_async():
         z.extractall(path=dir)
 
     _install_git_lfs()
+    _setup_git()
 
     ap.UI().show_success("Git installed successfully")
     progress.finish()
@@ -109,15 +125,7 @@ def get_git_exec_path():
         raise RuntimeError("Unsupported Platform")
 
 def _get_git_version():
-    from vc.apgit.repository import GitRepository
-    import subprocess
-    current_env = os.environ.copy()
-    current_env.update(GitRepository.get_git_environment())
-    if platform.system() == "Windows":
-        from subprocess import CREATE_NO_WINDOW
-        return subprocess.check_output([get_git_cmd_path(), "--version"], env=current_env, creationflags=CREATE_NO_WINDOW).decode("utf-8").strip() 
-    else:
-        return subprocess.check_output([get_git_cmd_path(), "--version"], env=current_env).decode("utf-8").strip()
+    return run_git_command([get_git_cmd_path(), "--version"])
 
 def _check_update_available():
     try:
