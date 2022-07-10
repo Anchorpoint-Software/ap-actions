@@ -99,7 +99,7 @@ def clone_repo_async(repo_path: str, url: str):
         repo.ignore(".ap/project.json", local_only=True)
         ui.show_success("Git Repository Cloned")
     except Exception as e:
-        ui.show_error("Failed to clone Git Repository", "Could not authenticate, please try again.")
+        ui.show_error("Could not add Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
 
 def clone_repo(dialog: ap.Dialog):
     location = dialog.get_value("location")
@@ -107,7 +107,7 @@ def clone_repo(dialog: ap.Dialog):
     repo_path = location
     with os.scandir(repo_path) as it:
         if any(it):
-            ui.show_info("Cannot Join Git repo", "Folder must be empty")
+            ui.show_info("Cannot Join Git repository", "Folder must be empty")
             return
     
     dialog.close()
