@@ -1,0 +1,17 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Git Commit
+
+  version: 1
+  id: git::commit
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Commits Staged Files
+
+  script: git_commit.py
