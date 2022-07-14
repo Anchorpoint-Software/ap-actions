@@ -1,0 +1,116 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Git"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::git"
+  category: "vc/git"
+  type: package
+  enable: true
+  description: An artist friendly Git integration for large files
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "../icons/git.svg"
+
+  details: '
+    <p>The Git integration allows to connect to common Git repositories and perform basic operations like commit, push and pull.<br>
+Git and the associated LFS module are included. Take a look at this <a href="https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/">tutorial</a>.</p>
+
+    <h2>Enable Git</h2>
+    <p>If you are using Git integration for the first time, Anchorpoint needs to install Git module. This happens only once and usually takes a minute.</p>
+
+    <h2>Create a new Git Repository</h2>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitWorkspace.png" width="400"></p>
+
+    <p>To create a Git repository you must first create an Anchorpoint project. Go to the top left of the project list and select <b>New</b>. In the next step you have to give the project a name.</p>
+    
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitCreateRepo.png" width="400"></p>
+
+    <p>Then select the option <b>Add Git Repository</b> in <b>Add Project Files</b>.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitRepoDialog.png" width="600"></p>
+
+    <p>Browse to an empty folder on your hard disk. In the next step you can add a remote repository e.g. from GitHub, GitLab or Azure Devops.<br>
+If the repository contains data, Anchorpoint will download it directly. This may take a moment.<br>
+You can also work locally first without a remote repository if you are not working in a team.</p>
+
+    <h2>The version history</h2>
+
+    <p>The version history is located in the timeline. From there you can see who did what when and you can publish your changes yourself. In the Git language this is called committing.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitBasicTimeline.png" width="600"></p>
+
+    <p>Go to the “Timeline”. Each entry with a blue symbol marks a Git commit. There you can also see who made the commit and when. The comment says what was changed. The Uncommitted Changes list all your changes that you still need to publish.<br>
+The "Fetch" button asks the remote repository if there are any changes.</p>
+
+    <h2>Add or edit files</h2>
+
+    <p>Add new files to your project folder, which is also your Git repository.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitTimelineUncommittedChanges.png" width="400"></p>
+
+    <p>Add new files to your project folder, which is also your Git repository.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitUncommittedChanges.png" width="400"></p>
+
+    <p>The files you have newly added show up here. They have a small plus symbol. If you have edited (i.e. overwritten) files, they will also appear here. They have a small pencil icon.
+If you want to make these files available for your team now, you have to enter a message and press commit.</p>
+
+    <h2>Publish a commit to the server</h2>
+
+    <p>In Git, operations are performed explicitly. You have to tell Git that you want to upload the changes.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitLocalCommit.png" width="600"></p>
+
+    <p>Now your commit shows up in the history. The blue upload icon says that it has not been uploaded yet. Press "Push" to upload your commit to the server and make it available to your team.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitPushedCommit.png" width="600"></p>
+
+    <p>Your commit is now on the server. The blue icon changes.</p>
+
+    <h2>Syncing changes from the server</h2>
+
+    <p>Git does not automatically download changes, but gives you more control.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitRemoteCommit.png" width="600"></p>
+
+    <p>If one of your team members has modified something, the commit will show up in the timeline after you press "Fetch". The blue icon is a download icon, which means that the commit has not been synchronized yet. Press "Pull" to synchronize the commit with your project.</p>
+
+    <h2>What if something goes wrong</h2>
+
+    <p>Sometimes it can happen that Git gets into a weird state. If you have someone on your team who knows about Git, then you are in luck. Otherwise, you can always ask us in Discord.</p>
+
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitTerminal.png" width="200"></p>
+
+    <p>Git has countless commands that help you get back to a normal state. You can select "Open Git Terminal" from the context menu. Someone who knows Git (or Google) will tell you what commands to type there.</p>
+    
+    '
+
+  dependencies: 
+    - ../vc
+    - is_git_repo.py
+    - git_lfs_helper.py
+
+  actions:
+    - git::timeline
+    - git::commit
+    - git::fetch
+    - git::pullrebase
+    - git::push
+    - git::rebase
+    - git::revert
+    - git::openterminal
+    - git::joinrepo
+    - git::addrepo
+
+
+    

@@ -1,0 +1,34 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Video Conversion"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::video"
+  category: "video"
+  type: package
+  enable: false
+  author: "Anchorpoint Software GmbH"
+  description: Creates video files from image sequences or other videos with a single click
+  details: '
+    <p>This simple action converts an image sequence or a raw video into a small mp4 video. 
+      The frame rate and the location can be adjusted in the settings.</p>
+    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/videoConversion.png" width="400"></p>
+    '
+  icon:
+    path: "icons/packageIcon.svg"
+
+  actions:
+    - ap::video::videotogif
+    - ap::video::seqtovideo
+    - ap::video::videotomp4
+
+  platforms:
+    - win
