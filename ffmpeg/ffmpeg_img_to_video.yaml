@@ -7,7 +7,7 @@ version: "1.0"
 
 action:
   #Must Have Properties
-  name: "Convert to Video"
+  name: "Convert to mp4"
 
   #Optional Properties
   version: 1
