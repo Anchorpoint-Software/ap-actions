@@ -99,8 +99,7 @@ def _install_rclone_async():
         os.mkdir(rclone_dir)
         
     progress.finish()
-    
-    show_menu()
+
         
 def check_and_install_modules():
     try:
@@ -112,3 +111,5 @@ def check_and_install_modules():
         ctx.install("pycryptodome")
         ctx.install("pyperclip")
         progress.finish()
+        
+        show_menu()

@@ -166,8 +166,6 @@ def run_rclone(arguments, startupinfo, drive):
         stdin=subprocess.PIPE,
         bufsize=1,
         universal_newlines=True)    
-    
-    store_drive_settings(drive, p.pid)
       
     for line in p.stdout:
         myjson = is_json(line)
@@ -192,10 +190,6 @@ def is_json(myjson):
         return
     return myjson
 
-def store_drive_settings(drive, pid):
-    settings = aps.Settings("drive settings")
-    settings.set(drive, pid)
-    settings.store()
 
 def check_upload(myjson, progress):
     # get the percentage number without whitespaces
