@@ -145,7 +145,7 @@ def ffmpeg_install_dialog():
     dialog = ap.Dialog()
     dialog.title = "Install Conversion Tools"
     dialog.add_text("Anchorpoint's video conversion tools are based on FFmpeg.")
-    dialog.add_info("When installing FFmpeg you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
+    dialog.add_info("When installing <a href=\"http://ffmpeg.org\">FFmpeg</a> you are accepting the <a href=\"http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html\">license</a> of the owner.")
     dialog.add_button("Install", callback=_install_ffmpeg)
     dialog.show()
     
