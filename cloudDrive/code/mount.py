@@ -102,7 +102,7 @@ def setup_mount(dialog):
         os.mkdir(cache_path)
 
     base_arguments = [
-        ctx.inputs["rclone_win"],      
+        rclone_install._get_rclone_cmddir(),      
         "mount"
     ]
     
