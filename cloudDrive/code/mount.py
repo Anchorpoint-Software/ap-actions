@@ -199,7 +199,7 @@ def check_upload(myjson, progress):
     upload_speed = myjson["msg"].split(",")[2].strip()
     
     if not progress and percentage != "100%" and percentage != "-":
-        progress = ap.Progress("Syncing Files", percentage+ " at " + upload_speed, infinite=True)
+        progress = ap.Progress("Syncing Files", percentage+ " at " + upload_speed, infinite=False)
     
     if progress: 
         if percentage == "-": percentage = "0"
