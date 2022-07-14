@@ -3,6 +3,9 @@ import apsync as aps
 import os, re, sys
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(__file__))
+import template_utility
+
 ctx = ap.Context.instance()
 ui = ap.UI()
 
@@ -44,10 +47,11 @@ template_dir = os.path.join(settings.get("template_dir", template_dir), template
 callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
 
 if project:
-    project_callbacks = os.path.join(project.path, ".ap/templates/template_action_events.py")
+    project_templates_location = template_utility.get_template_dir(project.path)
+    project_callbacks = template_utility.get_template_callbacks(project_templates_location)
     if os.path.exists(project_callbacks):
         callback_file = project_callbacks
-    project_template_dir = os.path.join(project.path, ".ap/templates", template_subdir)
+    project_template_dir = os.path.join(project_templates_location, template_subdir)
 else:
     project_template_dir = ""
 
@@ -130,6 +134,16 @@ def resolve_tokens(variable_list):
             variables["YYYYMMDD"] = datetime.today().strftime('%Y%m%d')
         elif variable == "YYYY-MM-DD":
             variables["YYYY-MM-DD"] = datetime.today().strftime('%Y-%m-%d')
+        elif variable == "YY":
+            variables["YY"] = datetime.today().strftime('%y')
+        elif variable == "YYMM":
+            variables["YYMM"] = datetime.today().strftime('%y%m')
+        elif variable == "YY-MM":
+            variables["YY-MM"] = datetime.today().strftime('%y-%m')
+        elif variable == "YYMMDD":
+            variables["YYMMDD"] = datetime.today().strftime('%y%m%d')
+        elif variable == "YY-MM-DD":
+            variables["YY-MM-DD"] = datetime.today().strftime('%y-%m-%d')
         elif variable not in variables:
             variables[variable] = ""
 

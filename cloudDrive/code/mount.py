@@ -1,21 +1,19 @@
 from ast import arguments
 from re import sub
-import shutil
-import zipfile
 import anchorpoint as ap
 import apsync as aps
 import platform
 import subprocess
-import os
-import io
-import requests
+import os, sys
 import json
+
+sys.path.insert(0, os.path.dirname(__file__))
+import rclone_install_helper as rclone_install
 
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings()
-RCLONE_INSTALL_URL = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
 
 configuration = {
     "type": "",
@@ -29,48 +27,6 @@ configuration = {
     "b2_key":"",
     "b2_bucket_name": ""
 }
-
-rclone_path = os.path.join(ctx.yaml_dir,"rclone.exe")
-
-def install_modules():
-    progress = ap.Progress("Loading Modules",infinite = True)
-    ui.show_info("Loading Modules", description="This will only happen once")  
-    ctx.install("pycryptodome")
-    progress.finish()
-    check_winfsp()
-
-def check_rclone():
-    if not os.path.isfile(rclone_path):
-        # download zip
-        progress = ap.Progress("Loading RClone", infinite = True)
-        r = requests.get(RCLONE_INSTALL_URL)
-                
-        # open zip file and extract rclone.exe to the right folder
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        
-        with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
-            with open(rclone_path, "wb") as target:
-                shutil.copyfileobj(source, target)
-
-        progress.finish()
-
-def check_winfsp():
-    winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
-    if os.path.isfile(winfsp_path):
-        check_rclone()
-        get_settings()
-    else:
-        progress = ap.Progress("Loading WinFsp",infinite = True)
-        winget = subprocess.run(
-            "winget install -e --id WinFsp.WinFsp --accept-source-agreements", capture_output=True
-        )
-        progress.finish()
-        if winget.returncode != 0:
-            print(winget.stderr)
-            ui.show_error("Failed to install WinFsp", description="Google WinFsp and install it manually.")
-        else:
-            check_rclone()
-            get_settings()
 
 def generate_secret_key(password: str, salt: bytes) -> str:
     from Crypto.Protocol.KDF import PBKDF2
@@ -146,7 +102,7 @@ def setup_mount(dialog):
         os.mkdir(cache_path)
 
     base_arguments = [
-        rclone_path,      
+        ctx.inputs["rclone_win"],      
         "mount"
     ]
     
@@ -192,12 +148,12 @@ def setup_mount(dialog):
     startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
     #startupinfo.wShowWindow = subprocess.SW_HIDE     
 
-    ctx.run_async(run_rclone, arguments, startupinfo)
+    ctx.run_async(run_rclone, arguments, startupinfo, drive)
     
     #create_bat_file("process "+f'{drive}: "'+f'{ctx.path}"',drive)
     dialog.close()
 
-def run_rclone(arguments, startupinfo):
+def run_rclone(arguments, startupinfo, drive):
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     progress = None
@@ -210,6 +166,8 @@ def run_rclone(arguments, startupinfo):
         stdin=subprocess.PIPE,
         bufsize=1,
         universal_newlines=True)    
+    
+    store_drive_settings(drive, p.pid)
       
     for line in p.stdout:
         myjson = is_json(line)
@@ -233,6 +191,11 @@ def is_json(myjson):
     except ValueError as e:
         return
     return myjson
+
+def store_drive_settings(drive, pid):
+    settings = aps.Settings("drive settings")
+    settings.set(drive, pid)
+    settings.store()
 
 def check_upload(myjson, progress):
     # get the percentage number without whitespaces
@@ -266,7 +229,7 @@ def get_settings():
     import pyperclip as pc 
     if settings.get("Config")=="":
         if is_admin:
-            ui.show_info("No cloud drive configured", description="Please setup a cloud drive")
+            ui.show_info("No cloud drive configured", description="Please setup a cloud drive in your Workspace Settings inside the Actions entry.")
         else:
             ui.show_info("No cloud drive configured", description="Ask your workspace owner to setup a cloud drive")
     else:
@@ -298,7 +261,7 @@ def get_settings():
 def create_pw_dialog():
     dialog = ap.Dialog()
     dialog.title = "Enter Configuration Key"
-    dialog.icon = "icons/driveCloud.svg"
+    dialog.icon = ctx.icon
     dialog.add_text("Configuration Key").add_input(placeholder="Your configuration key", var="pw_var")
     dialog.add_button("Ok", callback = set_password)
     dialog.show()
@@ -329,8 +292,4 @@ def show_options():
 if platform.system() == "Darwin":
     ui.show_error("Unsupported Action", "This action is only supported on Windows :-(")
 else:
-    try:
-        from Crypto.Cipher import AES        
-        ctx.run_async(check_winfsp)        
-    except:
-        ctx.run_async(install_modules)  
+    ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings)

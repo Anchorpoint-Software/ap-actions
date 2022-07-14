@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Unmount all Cloud Drives
+  name: Unmount
 
   version: 1
   id: "ap::cloudDrive::unmount"
   category: user
   type: python
   author: Matthäus Niedoba
-  description: "Deactivates all AWS Drives"
+  description: "Deactivates this cloud drive"
   icon:
     path: icons/driveStrike.svg
 
   script: "code/unmount.py"
 
   register:
-    drive:
-      enable: true
+      drive:
+        enable: "code/is_mount_drive.py"

@@ -76,6 +76,7 @@ def get_configuration(dialog : ap.Dialog):
 
 def apply_callback(dialog : ap.Dialog):   
     from Crypto.Random import get_random_bytes
+    import pyperclip as pc 
 
     configuration = get_configuration(dialog)
     dumped_configuration = json.dumps(configuration)
@@ -241,7 +242,7 @@ def create_dialog():
     current_dropdown = dialogSettings.get("dropdown_value",dropdown_values[0])
 
     dialog.add_text("Server\t            ").add_dropdown(current_dropdown, dropdown_values, var="dropdown_var",callback = toggleOptions)
-    dialog.add_info("Choose an S3 compatible server such as AWS, MinIO and <br> Digital Ocean or choose a Backblaze B2 server.")
+    dialog.add_info("Choose an S3 compatible server such as AWS, MinIO and <br> Digital Ocean or choose a Backblaze B2 server. Take a look <br> at this <a href='https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud'>tutorial</a> for more information.")
 
     dialog.add_text("Provider\t             ").add_input(configuration["provider"],placeholder="AWS", var="provider_var")
 

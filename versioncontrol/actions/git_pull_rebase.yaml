@@ -5,20 +5,15 @@
 
 version: 1.0
 action:
-  name: Publish
+  name: Git Pull (Rebase)
 
   version: 1
-  id: ap::vc::publish
-  category: user
+  id: git::pullrebase
+  category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Creates a copy of this file without the increment
+  description: ""
   icon:
-    path: publish.svg
+    path: :/icons/version.svg
 
-  script: publish.py
-  settings: publish_settings.py
-
-  register:
-    file:
-      enable: true
+  script: git_pull_rebase.py

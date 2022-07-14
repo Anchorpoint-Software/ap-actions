@@ -54,7 +54,7 @@ action:
       <li>[YYYYMMDD] <br> Date of today <br> e.g. [YYYYMMDD]_WIP -> 20220414_WIP</li>
     </ul>
 
-    For [YYYYMMDD], variants such as [YYYY], [YYYYMM] or [YYYY-MM-DD] are also possible.
+    For [YYYYMMDD], variants such as [YYMMDD], [YYYY], [YYYYMM] or [YYYY-MM-DD] are also possible.
 
     <h3>Implement your own logic with Python</h3>
 
@@ -64,6 +64,10 @@ action:
   settings: code/template_settings.py
   inputs:
     template_dir: templates
+
+  dependencies:
+    - code/template_utility.py
+    - code/events.stub
 
   actions:
     - ap::template::newfile
