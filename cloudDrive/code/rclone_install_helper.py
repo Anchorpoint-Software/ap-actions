@@ -13,13 +13,25 @@ ui = ap.UI()
 show_menu = None
 isWin = None
 rclone_folder_path = "~/Documents/Anchorpoint/actions/rclone"
+rclone_folder_path_mac = "~/library/application support/anchorpoint software/anchorpoint/actions/rclone"
 
 RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
 RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-osx-arm64.zip"
 
-def _get_rclone_cmddir():
-    dir = os.path.expanduser(rclone_folder_path)
-    dir = os.path.join(dir, "rclone.exe")
+def _get_rclone_folder():
+    if isWin:
+        dir = os.path.expanduser(rclone_folder_path)
+    else:
+        dir = os.path.expanduser(rclone_folder_path_mac)
+    return os.path.normpath(dir)
+
+def _get_rclone_path():
+    if isWin:
+        dir = os.path.expanduser(rclone_folder_path)
+        dir = os.path.join(dir, "rclone.exe")
+    else:
+        dir = os.path.expanduser(rclone_folder_path_mac)
+        dir = os.path.join(dir, "rclone")
     return os.path.normpath(dir)
 
 def check_winfsp_and_rclone(menu):
@@ -29,11 +41,10 @@ def check_winfsp_and_rclone(menu):
     global isWin
     isWin = False if platform.system() == "Darwin" else True
 
-    if not isWin:
-        rclone_path = os.path.isfile(_get_rclone_cmddir())
-    else:
+    if isWin:
         winfsp_path = os.path.isfile(os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe"))
-        rclone_path = os.path.isfile(_get_rclone_cmddir())
+        
+    rclone_path = os.path.isfile(_get_rclone_path())
 
     if (isWin and not winfsp_path) or not rclone_path:
         show_install_dialog()
@@ -76,14 +87,14 @@ def check_and_install_winfsp():
             ui.show_error("Failed to install WinFsp", description="Google WinFsp and install it manually.")
 
 def check_rclone():
-    if not os.path.isfile(_get_rclone_cmddir()):
+    if not os.path.isfile(_get_rclone_path()):
         ctx.run_async(_install_rclone_async)
     else:
         show_menu()
 
 def _install_rclone_async():
-    if not os.path.isdir(os.path.expanduser(rclone_folder_path)):
-        os.mkdir(os.path.expanduser(rclone_folder_path))
+    if not os.path.isdir(_get_rclone_folder()):
+        os.mkdir(_get_rclone_folder())
     
     # download zip
     progress = ap.Progress("Loading Rclone", infinite = True)
@@ -95,18 +106,22 @@ def _install_rclone_async():
     # open zip file and extract rclone.exe to the right folder
     z = zipfile.ZipFile(io.BytesIO(r.content))
     
-    with z.open('rclone-v1.58.1-windows-386/rclone.exe') as source:
-        with open(_get_rclone_cmddir(), "wb") as target:
+    
+    if isWin:
+        openFile = 'rclone-v1.58.1-windows-386/rclone.exe'
+    else:
+        openFile = 'rclone-v1.58.1-osx-arm64/rclone'
+    
+    with z.open(openFile) as source:
+        with open(_get_rclone_path(), "wb") as target:
             shutil.copyfileobj(source, target)
             
     # make rclone dir
-    app_data_roaming = os.getenv('APPDATA')
-    app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
-    rclone_dir = os.path.join(app_data,"Local/rclone").replace("/","\\")
-    
-    if not os.path.isdir(rclone_dir):
-        os.mkdir(rclone_dir)
-        
+    # app_data_roaming = os.getenv('APPDATA')
+    # app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
+    # rclone_dir = os.path.join(app_data,"Local/rclone").replace("/","\\")
+    # if not os.path.isdir(rclone_dir):
+    #     os.mkdir(rclone_dir)
     progress.finish()
 
         

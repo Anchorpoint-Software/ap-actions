@@ -51,7 +51,6 @@ def decrypt(encrypted: str, password: str) -> str:
 def get_unused_drives():
     import string
     from ctypes import windll
-
     drives = []
     bitmask = windll.kernel32.GetLogicalDrives()
     for letter in string.ascii_uppercase:
@@ -238,7 +237,6 @@ def get_settings():
             try:
                 decrypted_configuration = decrypt(encrypted_configuration, password)
                 undumped_configuration = json.loads(decrypted_configuration)
-
                 configuration["type"] = undumped_configuration["type"]
                 configuration["provider"] = undumped_configuration["provider"]
                 configuration["access_key_id"] = undumped_configuration["access_key_id"]
@@ -249,7 +247,6 @@ def get_settings():
                 configuration["b2_account"] = undumped_configuration ["b2_account"]
                 configuration["b2_key"] = undumped_configuration ["b2_key"]
                 configuration["b2_bucket_name"] = undumped_configuration ["b2_bucket_name"]
-                
                 show_options()
             except: 
                 create_pw_dialog()
