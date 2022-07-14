@@ -156,6 +156,7 @@ def setup_mount(dialog):
 def run_rclone(arguments, startupinfo, drive):
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
+    rlcone_wrong_credentials = "401 bad_auth_token"
     progress = None
     
     p = subprocess.Popen(
@@ -173,11 +174,12 @@ def run_rclone(arguments, startupinfo, drive):
         if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Something went wrong")
             print(line)
-        
-        if rclone_success in line:            
+        elif rclone_success in line:            
             prepare_mount_progress.finish()
             prepare_mount_progress = None
             ui.show_success("Mount Successful")
+        elif rlcone_wrong_credentials in line:
+            ui.show_info(title="Invalid Settings", description="Your settings do not seem to be right. Go to the settings of Connect Cloud Drive and see if you made a typo.")
         
         if myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress)
@@ -247,7 +249,7 @@ def get_settings():
                 configuration["b2_account"] = undumped_configuration ["b2_account"]
                 configuration["b2_key"] = undumped_configuration ["b2_key"]
                 configuration["b2_bucket_name"] = undumped_configuration ["b2_bucket_name"]
-
+                
                 show_options()
             except: 
                 create_pw_dialog()
