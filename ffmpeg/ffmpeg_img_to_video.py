@@ -15,6 +15,7 @@ import mimetypes
 ui = ap.UI()
 ctx = ap.Context.instance()
 FFMPEG_INSTALL_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+ffmpeg_folder_path = "~/Documents/Anchorpoint/actions/ffmpeg"
 
 try:
     filename = ctx.filename.split("_")
@@ -123,6 +124,9 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
     os.remove(concat_file)
 
 def _install_ffmpeg_async():
+    if not os.path.isdir(os.path.expanduser(ffmpeg_folder_path)):
+        os.mkdir(os.path.expanduser(ffmpeg_folder_path))
+    
     # download zip
     progress = ap.Progress("Installing FFMPEG", infinite = True)
     r = requests.get(FFMPEG_INSTALL_URL)
@@ -131,7 +135,7 @@ def _install_ffmpeg_async():
     z = zipfile.ZipFile(io.BytesIO(r.content))
     
     with z.open('ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe') as source:
-        with open(ctx.inputs["ffmpeg_win"], "wb") as target:
+        with open(_get_ffmpeg_cmddir(), "wb") as target:
             shutil.copyfileobj(source, target)
 
     progress.finish()
@@ -149,12 +153,17 @@ def ffmpeg_install_dialog():
     dialog.add_button("Install", callback=_install_ffmpeg)
     dialog.show()
     
+def _get_ffmpeg_cmddir():
+    dir = os.path.expanduser(ffmpeg_folder_path)
+    dir = os.path.join(dir, "ffmpeg.exe")
+    return os.path.normpath(dir)
+    
 # First, check if the tool can be found on the machine
 ffmpeg_path = None
 if platform == "darwin":
     ffmpeg_path = ctx.inputs["ffmpeg_mac"]
 elif platform == "win32":
-    ffmpeg_path = ctx.inputs["ffmpeg_win"]
+    ffmpeg_path = _get_ffmpeg_cmddir()
 
 if len(ctx.selected_files) > 0:
     settings = aps.Settings("ffmpeg_settings")
@@ -169,7 +178,7 @@ if len(ctx.selected_files) > 0:
         path = ctx.folder
         
     # check for ffmpeg.exe and download if missing
-    if not os.path.isfile(ctx.inputs["ffmpeg_win"]):
+    if not os.path.isfile(_get_ffmpeg_cmddir()):
         ctx.run_async(ffmpeg_install_dialog)
     else:
         # Convert the image sequence to a video
