@@ -1,0 +1,33 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Convert to Video"
+
+  #Optional Properties
+  version: 1
+  id: "ap::video::seqtovideo"
+  category: "video"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+
+  description: Converts a sequence of images to a video
+  icon:
+    path: icons/videoConversion.svg
+  script: "ffmpeg_img_to_video.py"
+  inputs:
+    ffmpeg_win: "${yaml_dir}/ffmpeg.exe"
+    ffmpeg_mac: "/usr/local/bin/ffmpeg"
+    fps: "25"
+  settings: "ffmpeg_settings.py"
+
+  #Where to register this action: on all files matching the filter
+  register:
+    file:
+      filter: "*.png;*.exr;*.jpg;*.jpeg;*.tif;*.tiff" #Wildcard matching

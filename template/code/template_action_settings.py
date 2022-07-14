@@ -1,7 +1,10 @@
 from re import template
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, sys
+
+sys.path.insert(0, os.path.dirname(__file__))
+import template_utility
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -24,10 +27,10 @@ template_dir = get_tab_location(template_dir)
 # Open the template directories in new tabs
 has_project_templates = False
 if project:
-    project_templates_dir = get_tab_location(os.path.join(project.path, ".ap/templates"))
-    if os.path.exists(project_templates_dir):
+    project_templates_location = get_tab_location(template_utility.get_template_dir(project.path))
+    if os.path.exists(project_templates_location):
         has_project_templates = True
-        ui.open_tab(project_templates_dir)
+        ui.open_tab(project_templates_location)
 
 if os.path.exists(template_dir):
     if has_project_templates:

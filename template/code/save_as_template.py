@@ -1,6 +1,9 @@
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, sys
+
+sys.path.insert(0, os.path.dirname(__file__))
+import template_utility
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -16,7 +19,8 @@ callback_file = os.path.join(settings.get("callback_dir"), "template_action_even
 
 project = aps.get_project(source)
 if project:
-    project_callbacks = os.path.join(project.path, ".ap/templates/template_action_events.py")
+    project_templates_location = template_utility.get_template_dir(project.path)
+    project_callbacks = template_utility.get_template_callbacks(project_templates_location)
     if os.path.exists(project_callbacks):
         callback_file = project_callbacks
 
@@ -27,7 +31,7 @@ else:
 
 def get_template_dir(save_in_project: bool):
     if project and save_in_project:
-        return os.path.join(project.path, ".ap/templates")
+        return project_templates_location
     return template_dir
 
 def get_target(name: str, save_in_project: bool):
@@ -100,7 +104,7 @@ if project:
     dialog.add_separator()
     project_dir = os.path.split(project.path)[1]
     dialog.add_checkbox(True, var="project", callback=project_check_changed).add_text("Save in Project")
-    dialog.add_info(f"Project templates are stored here:<br><b>{project_dir}</b>/.ap/templates")    
+    dialog.add_info(f"Project templates are stored here:<br><b>{project_dir}</b>/anchorpoint/templates")    
 
 dialog.add_button("Create Template", callback=create_template, enabled=False, var="button")
 

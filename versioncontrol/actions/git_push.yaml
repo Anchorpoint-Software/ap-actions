@@ -1,0 +1,18 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Git Push
+
+  version: 1
+  id: git::push
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  icon:
+    path: :/icons/version.svg
+
+  script: git_push.py
