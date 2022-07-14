@@ -23,7 +23,7 @@ action:
 
   details: '
     <p>The Git integration allows to connect to common Git repositories and perform basic operations like commit, push and pull.<br>
-Git and the associated LFS module are included. All binaries are treated as LFS files.</p>
+Git and the associated LFS module are included. Take a look at this <a href="https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/">tutorial</a>.</p>
 
     <h2>Enable Git</h2>
     <p>If you are using Git integration for the first time, Anchorpoint needs to install Git module. This happens only once and usually takes a minute.</p>
