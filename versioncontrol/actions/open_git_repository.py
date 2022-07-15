@@ -1,5 +1,86 @@
+import sys, os
+import time
 import anchorpoint as ap
 import apsync as aps
+
+def connect_repo_async(dialog, path, project):
+    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    import git_repository_helper as helper
+    try:
+        from vc.apgit.repository import GitRepository 
+    except Warning as e:
+        return
+
+    repo = GitRepository.load(path)
+    url = repo.get_remote_url()
+
+    if project is None:
+        project_name = dialog.get_value("name")
+        project = ap.Context.instance().create_project(path, project_name)
+
+    helper.update_project(path, url, False, None, project, add_path=False)
+    repo.ignore(".ap/project.json", local_only=True)
+    time.sleep(0.5)
+    ap.UI().reload()
+
+    dialog.close()
+
+def on_folder_opened(ctx: ap.Context):
+    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    import git_repository_helper as helper
+    
+    path = ctx.path
+    
+    def update_settings(dialog: ap.Dialog, value):
+        settings = aps.Settings("connect_git_repo")
+        settings.set(path, value)
+        settings.store()
+
+    def update_dialog(dialog: ap.Dialog, value):
+        name = dialog.get_value("name")
+        dialog.set_enabled("yes", len(name) > 0)
+        
+    def connect_repo(dialog: ap.Dialog, project):
+        ctx.run_async(connect_repo_async, dialog, path, project)
+
+    git_dir = os.path.join(ctx.path, ".git")
+    if not os.path.exists(git_dir):
+        return
+    
+    access = aps.get_workspace_access(ctx.workspace_id)
+    if access not in [aps.AccessLevel.Owner, aps.AccessLevel.Admin]:
+        return
+
+    has_project = False
+    project = None
+    project_name = ""
+
+    if len(ctx.project_id) > 0:
+        project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
+        project_name = project.name
+
+        channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
+        if channel: 
+            return
+
+    settings = aps.Settings("connect_git_repo")
+    neveraskagain = settings.get(path, False)
+    if neveraskagain: 
+        return
+
+    dialog = ap.Dialog()
+    dialog.title = "Connect Git repository"
+    dialog.icon = ctx.icon
+
+    dialog.add_text("<b>This folder contains a Git project. Do you want to connect it?</b>")
+    dialog.add_info("Connecting a Git repository to Anchorpoint enables certain actions in the project timeline.<br>Learn more about Git <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/\">here</a>.")
+    dialog.add_text("Project Name:").add_input(default=project_name, enabled=project is None, var="name", callback=update_dialog)
+    dialog.add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
+
+    dialog.add_empty()
+    dialog.add_button("Yes", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("No", callback=lambda d: d.close())
+    dialog.show()
+    
 
 if __name__ == "__main__":
     import sys, os, importlib
@@ -40,7 +121,7 @@ if __name__ == "__main__":
                 return
 
             try:
-                helper.update_project(repo_path, None, False, project_id, workspace_id, timeline_channel, project)
+                helper.update_project(repo_path, None, False, timeline_channel, project)
             except:
                 ui.show_error("Could not connect Git Repository", "Folder does already contain an Anchorpoint project")
                 return

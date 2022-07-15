@@ -8,13 +8,13 @@ def update_project(
         repo_path: str, 
         remote_url: Optional[str], 
         is_join: bool, 
-        project_id: str,
-        workspace_id: str, 
         timeline_channel, 
-        project):
+        project: aps.Project, 
+        add_path: bool = True):
 
     if not is_join:
-        ap.add_path_to_project(repo_path, project_id, workspace_id)
+        if add_path:
+            ap.add_path_to_project(repo_path, project.id, project.workspace_id)
 
         channel = aps.TimelineChannel()
         channel.id = CHANNEL_ID
@@ -34,5 +34,12 @@ def update_project(
             
         aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
     else:
-        ap.join_project_path(repo_path, project_id, workspace_id)
+        update_project_join(repo_path, project.id, project.workspace_id)
     pass
+
+def update_project_join(
+        repo_path: str, 
+        project_id: str,
+        workspace_id: str):
+
+    ap.join_project_path(repo_path, project_id, workspace_id)

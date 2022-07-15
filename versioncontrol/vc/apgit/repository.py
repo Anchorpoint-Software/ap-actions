@@ -230,6 +230,15 @@ class GitRepository(VCRepository):
     def restore_all_files(self):
         self.repo.git.checkout(".")
 
+    def get_remote_url(self):
+        if self.has_remote():
+            branch = self._get_current_branch()
+            remote = self._get_default_remote(branch)
+            urls = self.repo.remote(remote).urls
+            return next(urls)
+            
+        return None
+
     def is_unborn(self):
         try:
             self.repo.rev_parse("HEAD")

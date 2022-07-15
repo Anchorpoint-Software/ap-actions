@@ -37,7 +37,7 @@ if __name__ == "__main__":
 
     timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
     is_join = ctx.type == ap.Type.JoinProjectFiles
-    settings = aps.Settings()
+    settings = aps.Settings("git_repository")
     class CloneProgress(Progress):
         def __init__(self, progress: ap.Progress) -> None:
             super().__init__()
@@ -69,7 +69,7 @@ if __name__ == "__main__":
             ui.show_info("Already a Git repo")
         else:
             repo = GitRepository.create(repo_path)
-            helper.update_project(repo_path, None, is_join, project_id, workspace_id, timeline_channel, project)
+            helper.update_project(repo_path, None, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
             ui.show_success("Git Repository Initialized")
             dialog.close()
@@ -79,7 +79,7 @@ if __name__ == "__main__":
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
             repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
             progress.finish()
-            helper.update_project(repo_path, url, is_join, project_id, workspace_id, timeline_channel, project)
+            helper.update_project(repo_path, url, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
             ui.show_success("Git Repository Cloned")
         except Exception as e:
