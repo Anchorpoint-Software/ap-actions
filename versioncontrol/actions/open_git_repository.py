@@ -56,16 +56,20 @@ def on_folder_opened(ctx: ap.Context):
     project_name = ""
 
     if len(ctx.project_id) > 0:
-        project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
+        project = aps.get_project(path)
         project_name = project.name
 
         channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
         if channel: 
             return
 
+        # Only allow the git repository to be in the root of the project
+        if project.path != path:
+            return
+
     settings = aps.Settings("connect_git_repo")
-    neveraskagain = settings.get(path, False)
-    if neveraskagain: 
+    never_ask_again = settings.get(path, False)
+    if never_ask_again: 
         return
 
     dialog = ap.Dialog()
