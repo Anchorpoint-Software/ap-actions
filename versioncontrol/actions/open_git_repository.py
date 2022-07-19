@@ -66,6 +66,9 @@ def on_folder_opened(ctx: ap.Context):
         # Only allow the git repository to be in the root of the project
         if project.path != path:
             return
+    
+    else:
+        project_name = os.path.basename(path)
 
     settings = aps.Settings("connect_git_repo")
     never_ask_again = settings.get(path, False)
@@ -79,10 +82,10 @@ def on_folder_opened(ctx: ap.Context):
     dialog.add_text("<b>This folder contains a Git project. Do you want to connect it?</b>")
     dialog.add_info("Connecting a Git repository to Anchorpoint enables certain actions in the project timeline.<br>Learn more about Git <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/\">here</a>.")
     dialog.add_text("Project Name:").add_input(default=project_name, enabled=project is None, var="name", callback=update_dialog)
-    dialog.add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
-
+    
     dialog.add_empty()
-    dialog.add_button("Yes", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("No", callback=lambda d: d.close())
+    dialog.add_button("Yes", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("No", callback=lambda d: d.close()).add_empty().add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
+    
     dialog.show()
     
 
