@@ -42,6 +42,9 @@ class VCRepository:
     def get_pending_changes(self, checked_out: bool = False) -> Changes:
         pass
 
+    def get_changes_for_changelist(self, id: str) -> Changes:
+        pass
+
     def get_root_path(self):
         pass
 

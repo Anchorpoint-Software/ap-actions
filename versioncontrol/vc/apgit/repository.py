@@ -6,6 +6,7 @@ import shutil, tempfile
 from git import GitCommandError
 import git
 import git.cmd
+from gitdb.util import to_bin_sha
 from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit.lfs as lfs
@@ -281,6 +282,24 @@ class GitRepository(VCRepository):
         except ValueError as e:
             print(e)
             pass
+
+        return changes
+
+    def get_changes_for_changelist(self, id: str) -> Changes:
+        changes = Changes()
+        try:
+            commit = self.repo.commit(id)
+            if len(commit.parents) >= 1:
+                parent = commit.parents[0]
+                diff = parent.diff(commit)
+            else:
+                empty_tree = git.Tree(self.repo, to_bin_sha(self._get_empty_tree_id()))
+                diff = empty_tree.diff(commit)
+
+            self._get_file_changes(diff, changes)
+
+        except Exception as e:
+            print (e)
 
         return changes
 
