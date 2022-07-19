@@ -76,15 +76,14 @@ def on_folder_opened(ctx: ap.Context):
         return
 
     dialog = ap.Dialog()
-    dialog.title = "Connect Git repository"
+    dialog.title = "Open Git Repository"
     dialog.icon = ctx.icon
 
-    dialog.add_text("<b>This folder contains a Git project. Do you want to connect it?</b>")
-    dialog.add_info("Connecting a Git repository to Anchorpoint enables certain actions in the project timeline.<br>Learn more about Git <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/\">here</a>.")
-    dialog.add_text("Project Name:").add_input(default=project_name, enabled=project is None, var="name", callback=update_dialog)
-    
-    dialog.add_empty()
-    dialog.add_button("Yes", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("No", callback=lambda d: d.close()).add_empty().add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
+    dialog.add_text("<b>Project Name</b>")
+    dialog.add_input(default=project_name, enabled=project is None, var="name", callback=update_dialog, width = 360)  
+    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/\">about Git</a>.")
+    dialog.add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
+    dialog.add_button("Open Repository", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("Cancel", callback=lambda d: d.close())
     
     dialog.show()
     
