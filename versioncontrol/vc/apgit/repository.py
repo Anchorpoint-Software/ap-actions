@@ -368,12 +368,18 @@ class GitRepository(VCRepository):
         return unstaged_files, staged_files
 
     def get_conflicts(self):
+        def is_conflict(status_ids: str):
+            if len(status_ids) <= 1: return False
+            if "U" in status_ids: return True
+            return status_ids in ["DD", "AA"]
+
         conflicts = []
         status_lines = self.repo.git.status(porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
-                if len(split[0]) > 1 and split[0] != "??":
+                status_ids = split[0]
+                if is_conflict(status_ids):
                     conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 
         return conflicts
