@@ -37,65 +37,43 @@ if __name__ == "__main__":
 
     timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
     is_join = ctx.type == ap.Type.JoinProjectFiles
-    settings = aps.Settings("git_repository")
-    class CloneProgress(Progress):
-        def __init__(self, progress: ap.Progress) -> None:
-            super().__init__()
-            self.ap_progress = progress
-
-        def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
-            if operation_code == "downloading":
-                if info_text:
-                    self.ap_progress.set_text(f"Downloading Files: {info_text}")
-                else:
-                    self.ap_progress.set_text("Downloading Files")
-                self.ap_progress.report_progress(current_count / max_count)
-            elif operation_code == "updating":
-                self.ap_progress.set_text("Updating Files")
-                self.ap_progress.report_progress(current_count / max_count)
-            else:
-                self.ap_progress.set_text("Talking to Server")
-                self.ap_progress.stop_progress()
-                
-
-    def url_gcm_supported(url: str):
-        gcm_supported_providers = ["github", "gitlab", "azure"]
-        return any(provider in url for provider in gcm_supported_providers)
+    settings = aps.Settings("git_repository")               
 
     def create_repo(dialog: ap.Dialog):
-        location = dialog.get_value("location")
-        repo_path = location
+        repo_path = dialog.get_value("location")
+        
         if GitRepository.is_repo(repo_path):
-            ui.show_info("Already a Git repo")
+            ap.UI().show_info("Already a Git repo")
+            return False
         else:
             repo = GitRepository.create(repo_path)
             helper.update_project(repo_path, None, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
-            ui.show_success("Git Repository Initialized")
+            ap.UI().show_success("Git Repository Initialized")
             dialog.close()
+            return True
 
-    def clone_repo_async(repo_path: str, url: str):
+    def clone_repo_async(repo_path: str, url: str, join_project_files):
+        with os.scandir(repo_path) as it:
+            if any(it):
+                ap.UI().show_info("Cannot Clone Git repository", "Folder must be empty")
+                return
+            
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-            repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
+            repo = GitRepository.clone(url, repo_path, progress=helper.CloneProgress(progress))
             progress.finish()
-            helper.update_project(repo_path, url, is_join, timeline_channel, project)
+            helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)
-            ui.show_success("Git Repository Cloned")
+            ap.UI().show_success("Git Repository Cloned")
         except Exception as e:
-            ui.show_error("Could not add Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
+            ap.UI().show_error("Could not clone Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
 
     def clone_repo(dialog: ap.Dialog):
         location = dialog.get_value("location")
         url = dialog.get_value("url")
-        repo_path = location
-        with os.scandir(repo_path) as it:
-            if any(it):
-                ui.show_info("Cannot Join Git repository", "Folder must be empty")
-                return
-        
         dialog.close()
-        ctx.run_async(clone_repo_async, repo_path, url)
+        ctx.run_async(clone_repo_async, location, url, is_join)
 
     def update_dialog(dialog: ap.Dialog, value):
         url = dialog.get_value("url")
