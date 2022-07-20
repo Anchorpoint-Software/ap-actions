@@ -554,7 +554,7 @@ class GitRepository(VCRepository):
             os.makedirs(dir)
         
         with open(os.path.join(dir, "exclude"), "a") as f:
-            f.write(pattern)
+            f.write(f"\n{pattern}")
             
 
     def _command_exists(self, cmd: str):
