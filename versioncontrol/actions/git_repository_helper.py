@@ -2,6 +2,10 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 
+import sys, os, importlib
+sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+import vc.versioncontrol_interface as vc
+
 CHANNEL_ID = "Git"
 
 def update_project(
