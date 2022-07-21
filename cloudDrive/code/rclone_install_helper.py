@@ -3,6 +3,7 @@ import io
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import zipfile
 import anchorpoint as ap
@@ -19,18 +20,14 @@ RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.
 RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-osx-arm64.zip"
 
 def _get_rclone_folder():
-    if isWin:
-        dir = os.path.expanduser(rclone_folder_path)
-    else:
-        dir = os.path.expanduser(rclone_folder_path_mac)
+    dir = os.path.expanduser(rclone_folder_path)
     return os.path.normpath(dir)
 
 def _get_rclone_path():
+    dir = os.path.expanduser(rclone_folder_path)
     if isWin:
-        dir = os.path.expanduser(rclone_folder_path)
         dir = os.path.join(dir, "rclone.exe")
     else:
-        dir = os.path.expanduser(rclone_folder_path_mac)
         dir = os.path.join(dir, "rclone")
     return os.path.normpath(dir)
 
@@ -92,9 +89,19 @@ def check_rclone():
     else:
         show_menu()
 
-def _install_rclone_async():
+def make_dirs():
+    if not os.path.isdir(os.path.expanduser("~/Documents/Anchorpoint")):
+        os.mkdir(os.path.expanduser("~/Documents/Anchorpoint"))
+    
+    if not os.path.isdir(os.path.expanduser("~/Documents/Anchorpoint/actions")):
+        os.mkdir(os.path.expanduser("~/Documents/Anchorpoint/actions"))
+
     if not os.path.isdir(_get_rclone_folder()):
         os.mkdir(_get_rclone_folder())
+
+def _install_rclone_async():
+    if not os.path.isdir(_get_rclone_folder()):
+        make_dirs()
     
     # download zip
     progress = ap.Progress("Loading Rclone", infinite = True)
@@ -106,7 +113,6 @@ def _install_rclone_async():
     # open zip file and extract rclone.exe to the right folder
     z = zipfile.ZipFile(io.BytesIO(r.content))
     
-    
     if isWin:
         openFile = 'rclone-v1.58.1-windows-386/rclone.exe'
     else:
@@ -115,7 +121,9 @@ def _install_rclone_async():
     with z.open(openFile) as source:
         with open(_get_rclone_path(), "wb") as target:
             shutil.copyfileobj(source, target)
-            
+
+    os.chmod(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone/rclone"), stat.S_IRWXU)     
+
     # make rclone dir
     # app_data_roaming = os.getenv('APPDATA')
     # app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
@@ -123,6 +131,7 @@ def _install_rclone_async():
     # if not os.path.isdir(rclone_dir):
     #     os.mkdir(rclone_dir)
     progress.finish()
+    
 
         
 def check_and_install_modules():

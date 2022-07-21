@@ -14,6 +14,7 @@ ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings()
+path_var = "path"
 
 configuration = {
     "type": "",
@@ -49,14 +50,17 @@ def decrypt(encrypted: str, password: str) -> str:
     return original_data.decode()
 
 def get_unused_drives():
-    import string
-    from ctypes import windll
-    drives = []
-    bitmask = windll.kernel32.GetLogicalDrives()
-    for letter in string.ascii_uppercase:
-        if not bitmask & 1:
-            drives.append(letter)
-        bitmask >>= 1
+    if platform.system() == "Darwin":
+        drives = ["A"]
+    else:
+        import string
+        from ctypes import windll
+        drives = []
+        bitmask = windll.kernel32.GetLogicalDrives()
+        for letter in string.ascii_uppercase:
+            if not bitmask & 1:
+                drives.append(letter)
+            bitmask >>= 1
 
     return drives
 
@@ -95,13 +99,11 @@ def setup_mount(dialog):
     settings = aps.Settings()    
     cache_path = settings.get("cachepath",default=get_default_cache_path())
 
-    drive = dialog.get_value("drive_var")
-
     if not os.path.isdir(cache_path):
         os.mkdir(cache_path)
 
     base_arguments = [
-        rclone_install._get_rclone_cmddir(),      
+        rclone_install._get_rclone_path(),      
         "mount"
     ]
     
@@ -115,7 +117,13 @@ def setup_mount(dialog):
         config_arguments.append(f"{configuration['location_constraint']}")
 
     config_arguments.append(create_location_arguments())
-    config_arguments.append(f"{drive}:")
+
+    if platform.system() == "Darwin":
+        path = dialog.get_value(path_var)
+        config_arguments.append(path)
+    else:
+        drive = dialog.get_value("drive_var")
+        config_arguments.append(f"{drive}:")
 
     rclone_arguments = [
         "--vfs-cache-mode",
@@ -144,15 +152,13 @@ def setup_mount(dialog):
     arguments = base_arguments + config_arguments + rclone_arguments
 
     startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW
-    #startupinfo.wShowWindow = subprocess.SW_HIDE     
+    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
 
-    ctx.run_async(run_rclone, arguments, startupinfo, drive)
+    ctx.run_async(run_rclone, arguments, startupinfo)
     
-    #create_bat_file("process "+f'{drive}: "'+f'{ctx.path}"',drive)
     dialog.close()
 
-def run_rclone(arguments, startupinfo, drive):
+def run_rclone(arguments, startupinfo):
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "401 bad_auth_token"
@@ -213,9 +219,15 @@ def check_upload(myjson, progress):
     return progress
 
 def get_default_cache_path():
-    app_data_roaming = os.getenv('APPDATA')
-    app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
-    return os.path.join(app_data,"Local/rclone").replace("/","\\")
+    if platform.system() == "Darwin":
+        ap_cache_path = os.path.normpath(os.path.expanduser("~/library/caches/anchorpoint software/anchorpoint/rclone"))
+        if not os.path.isdir(ap_cache_path):
+            os.mkdir(ap_cache_path)
+        return ap_cache_path
+    else:
+        app_data_roaming = os.getenv('APPDATA')
+        app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
+        return os.path.join(app_data,"Local/rclone").replace("/","\\")
 
 def is_admin():
     return True
@@ -248,7 +260,7 @@ def get_settings():
                 configuration["b2_key"] = undumped_configuration ["b2_key"]
                 configuration["b2_bucket_name"] = undumped_configuration ["b2_bucket_name"]
                 show_options()
-            except: 
+            except:
                 create_pw_dialog()
 
 def create_pw_dialog():
@@ -264,22 +276,30 @@ def set_password(dialog : ap.Dialog):
     get_settings()
 
 def show_options():    
-
-    drives = get_unused_drives()
-
-    if len(drives) == 0:
-        ui.show_error("No drives to mount", "Unmount another drive first")
-        return
-
     dialog = ap.Dialog()
     dialog.title = "Mount Cloud Drive"
 
-    if ctx.icon:
-        dialog.icon = ctx.icon    
+    if platform.system() == "Darwin":
+        path = settings.get("mount_path")
+        if path ==  "":
+            path = os.path.normpath(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone"))
 
-    dialog.add_text("Drive Letter:\t").add_dropdown(drives[0], drives, var="drive_var")
-    dialog.add_button("Mount", callback=setup_mount)
+        dialog.add_text("Drive Location:\t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
+        dialog.add_button("Mount", callback=setup_mount)
+        dialog.show()
+    else:
+        drives = get_unused_drives()
 
-    dialog.show()
+        if len(drives) == 0:
+            ui.show_error("No drives to mount", "Unmount another drive first")
+            return
+
+        if ctx.icon:
+            dialog.icon = ctx.icon    
+
+        dialog.add_text("Drive Letter:\t").add_dropdown(drives[0], drives, var="drive_var")
+        dialog.add_button("Mount", callback=setup_mount)
+
+        dialog.show()
 
 ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings)
