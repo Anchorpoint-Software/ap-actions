@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Create Git Repository
+  name: Git Repository
 
   version: 1
   id: git::createrepo
