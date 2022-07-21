@@ -2,6 +2,10 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 
+import sys, os, importlib
+sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+import vc.versioncontrol_interface as vc
+
 CHANNEL_ID = "Git"
 
 def update_project(
@@ -43,3 +47,22 @@ def update_project_join(
         workspace_id: str):
 
     ap.join_project_path(repo_path, project_id, workspace_id)
+
+class CloneProgress(vc.Progress):
+    def __init__(self, progress: ap.Progress) -> None:
+        super().__init__()
+        self.ap_progress = progress
+
+    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
+        if operation_code == "downloading":
+            if info_text:
+                self.ap_progress.set_text(f"Downloading Files: {info_text}")
+            else:
+                self.ap_progress.set_text("Downloading Files")
+            self.ap_progress.report_progress(current_count / max_count)
+        elif operation_code == "updating":
+            self.ap_progress.set_text("Updating Files")
+            self.ap_progress.report_progress(current_count / max_count)
+        else:
+            self.ap_progress.set_text("Talking to Server")
+            self.ap_progress.stop_progress()

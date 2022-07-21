@@ -11,7 +11,7 @@ def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool)
         result.selected = True
     return result
 
-def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool):
+def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool = False):
     for file in repo_changes.new_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
         changes[change.path] = change
@@ -199,6 +199,26 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     except Exception as e:
         print (e)
         return None
+
+def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
+
+    if channel_id != "Git": return None
+    details = ap.TimelineChannelEntryVCDetails()
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return details
+
+    changes = dict[str,ap.VCPendingChange]()
+    parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
+
+    # details.actions.append(None)
+    details.changes = ap.VCChangeList(changes.values())
+    return details
 
 def refresh_async(channel_id: str, project_path):
     project = aps.get_project(project_path)
