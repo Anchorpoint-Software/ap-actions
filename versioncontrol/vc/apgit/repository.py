@@ -377,7 +377,13 @@ class GitRepository(VCRepository):
             self.repo.git.rm(*paths)
 
     def commit(self, message: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "commit", "-m", message], cwd=self.get_root_path())
+        args = [utility.get_git_cmd_path(), "commit", "-m", message]
+        gpg = shutil.which("gpg")
+        if not gpg:
+            args.insert(1, "commit.gpgsign=false")
+            args.insert(1, "-c") 
+            
+        utility.run_git_command(args, cwd=self.get_root_path())
 
     def get_git_dir(self):
         return self.repo.git_dir
