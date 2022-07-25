@@ -88,10 +88,15 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
 
-        main = ap.VCBranch()
-        main.name = "main"
-        info.current_branch = main
-        info.branches.append(main)
+        current_branch_name = repo.get_current_branch_name()
+        branches = repo.get_branches()
+        for b in branches:
+            branch = ap.VCBranch()
+            branch.name = b.name
+            info.branches.append(branch)
+
+            if b.name == current_branch_name:
+                info.current_branch = branch
 
         return info
     except Exception as e:
@@ -220,7 +225,31 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     details.changes = ap.VCChangeList(changes.values())
     return details
 
+def on_vc_switch_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
+    if channel_id != "Git": return None
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
+    try:
+        commits = repo.get_new_commits("HEAD", branch)
+        repo.switch_branch(branch)
+    except Exception as e:
+        ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
+        return
+
+    if len(commits) > 0:
+        print(commits)
+        ap.delete_timeline_channel_entries(channel_id, commits)
+
 def refresh_async(channel_id: str, project_path):
+    if channel_id != "Git": return None
     project = aps.get_project(project_path)
     if not project: 
         return
