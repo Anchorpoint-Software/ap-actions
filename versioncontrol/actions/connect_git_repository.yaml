@@ -5,14 +5,14 @@
 
 version: 1.0
 action:
-  name: Connect Existing Git Repository
+  name: Open Existing Git Repository
 
   version: 1
   id: git::connectrepo
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Connects an existing Git Repository
+  description: Adds an existing Git Repository to your project
   icon:
     path: :/icons/versioncontrol.svg
 
