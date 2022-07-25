@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Open Existing Git Repository
+  name: Open Git Repository
 
   version: 1
   id: git::connectrepo
