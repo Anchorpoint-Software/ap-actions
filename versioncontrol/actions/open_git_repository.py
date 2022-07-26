@@ -4,6 +4,9 @@ import anchorpoint as ap
 import apsync as aps
 
 def connect_repo_async(dialog, path, project):
+    progress = ap.Progress("Opening Git Repository", show_loading_screen = True)
+    dialog.close()
+
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
     import git_repository_helper as helper
     try:
@@ -22,8 +25,6 @@ def connect_repo_async(dialog, path, project):
     repo.ignore(".ap/project.json", local_only=True)
     time.sleep(0.5)
     ap.UI().reload()
-
-    dialog.close()
 
 def on_folder_opened(ctx: ap.Context):
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
