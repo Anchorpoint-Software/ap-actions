@@ -520,11 +520,13 @@ class GitRepository(VCRepository):
         branches = []
         local_branches = set()
         for ref in self.repo.branches:
+            if ref.name == "HEAD": continue
             model = _map_ref(ref)
             branches.append(model)
             local_branches.add(model.name)
         for remote in self.repo.remotes:
             for ref in remote.refs:
+                if "HEAD" in ref.name: continue
                 model = _map_ref(ref)
                 remote_prefix = f"{remote}/"
                 if model.name.startswith(remote_prefix):
