@@ -230,6 +230,15 @@ class GitRepository(VCRepository):
     def restore_all_files(self):
         self.repo.git.checkout(".")
 
+    def get_remote_url(self):
+        if self.has_remote():
+            branch = self._get_current_branch()
+            remote = self._get_default_remote(branch)
+            urls = self.repo.remote(remote).urls
+            return next(urls)
+            
+        return None
+
     def is_unborn(self):
         try:
             self.repo.rev_parse("HEAD")
@@ -253,6 +262,35 @@ class GitRepository(VCRepository):
         diff = self.repo.index.diff(None) 
         return len(diff) > 0
 
+    def _get_untracked_files(self, *args, **kwargs):
+        from git.util import finalize_process
+        import sys
+        defenc = sys.getfilesystemencoding()
+
+        # make sure we get all files, not only untracked directories
+        proc = self.repo.git.status(*args,
+                               porcelain=True,
+                               untracked_files=True,
+                               as_process=True,
+                               **kwargs)
+        # Untracked files preffix in porcelain mode
+        prefix = "?? "
+        untracked_files = []
+        for line in proc.stdout:
+            line_decoded = line.decode(defenc)
+            if not line_decoded.startswith(prefix):
+                continue
+            filename = line_decoded[len(prefix):].rstrip('\n')
+            
+            # Special characters are escaped
+            if filename[0] == filename[-1] == '"':
+                filename = line_decoded[len(prefix):].rstrip('\n')
+                filename = filename[1:-1].replace("\\","")
+                
+            untracked_files.append(filename)
+        finalize_process(proc)
+        return untracked_files
+
     def get_pending_changes(self, staged: bool = False) -> Changes:
         changes = Changes()
         try:
@@ -265,9 +303,9 @@ class GitRepository(VCRepository):
                 diff = self.repo.index.diff(None) 
             
             self._get_file_changes(diff, changes)
-
+            
             if not staged:
-                for untracked_file in self.repo.untracked_files:
+                for untracked_file in self._get_untracked_files():
                     changes.new_files.append(Change(path = untracked_file)) 
         except ValueError as e:
             print(e)
@@ -320,7 +358,13 @@ class GitRepository(VCRepository):
             self.repo.git.rm(*paths)
 
     def commit(self, message: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "commit", "-m", message], cwd=self.get_root_path())
+        args = [utility.get_git_cmd_path(), "commit", "-m", message]
+        gpg = shutil.which("gpg")
+        if not gpg:
+            args.insert(1, "commit.gpgsign=false")
+            args.insert(1, "-c") 
+            
+        utility.run_git_command(args, cwd=self.get_root_path())
 
     def get_git_dir(self):
         return self.repo.git_dir
@@ -359,12 +403,18 @@ class GitRepository(VCRepository):
         return unstaged_files, staged_files
 
     def get_conflicts(self):
+        def is_conflict(status_ids: str):
+            if len(status_ids) <= 1: return False
+            if "U" in status_ids: return True
+            return status_ids in ["DD", "AA"]
+
         conflicts = []
         status_lines = self.repo.git.status(porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
-                if len(split[0]) > 1 and split[0] != "??":
+                status_ids = split[0]
+                if is_conflict(status_ids):
                     conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 
         return conflicts
@@ -545,7 +595,7 @@ class GitRepository(VCRepository):
             os.makedirs(dir)
         
         with open(os.path.join(dir, "exclude"), "a") as f:
-            f.write(pattern)
+            f.write(f"\n{pattern}")
             
 
     def _command_exists(self, cmd: str):

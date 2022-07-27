@@ -11,7 +11,7 @@ def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool)
         result.selected = True
     return result
 
-def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool):
+def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool = False):
     for file in repo_changes.new_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
         changes[change.path] = change

@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Create new Git Repository
+  name: Git Repository
 
   version: 1
-  id: git::addrepo
+  id: git::createrepo
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Creates a new or joins a Git Repository for your project
+  description: Creates a new project with a Git Repository
   icon:
     path: :/icons/versioncontrol.svg
 
-  script: git_repository.py
+  script: new_git_repository.py
 
   register:
-    add_project_files:
-      enable: true
+    new_folder: 
+      enable: new_git_repository.py

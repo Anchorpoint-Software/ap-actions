@@ -12,9 +12,6 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
         return False
 
 if __name__ == "__main__":
-    from gc import callbacks
-    from time import time
-
     import sys, os, importlib
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
 
@@ -26,8 +23,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     import platform
-
-    channel_id = "Git"
+    import git_repository_helper as helper
 
     ctx = ap.Context.instance()
     ui = ap.UI()
@@ -39,92 +35,45 @@ if __name__ == "__main__":
         ui.show_error("Cannot create git repository", "You must create a project first")
         sys.exit(0) 
 
-    timeline_channel = aps.get_timeline_channel(project, channel_id)
+    timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
     is_join = ctx.type == ap.Type.JoinProjectFiles
-    settings = aps.Settings()
-
-    def update_project(repo_path: str, remote_url: Optional[str]):
-        if not is_join:
-            ap.add_path_to_project(repo_path, project_id, workspace_id)
-
-            channel = aps.TimelineChannel()
-            channel.id = channel_id
-            channel.name = "Git Repository"
-            channel.icon = aps.Icon(":/icons/versioncontrol.svg", "#D4AA37")
-
-            folder_id = aps.get_folder_id(repo_path)
-
-            metadata = {"gitPathId": folder_id}
-            if remote_url:
-                metadata["gitRemoteUrl"] = remote_url
-
-            channel.metadata = metadata
-
-            if not timeline_channel:
-                aps.add_timeline_channel(project, channel)
-                
-            aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
-        else:
-            ap.join_project_path(repo_path, project_id, workspace_id)
-        pass
-    class CloneProgress(Progress):
-        def __init__(self, progress: ap.Progress) -> None:
-            super().__init__()
-            self.ap_progress = progress
-
-        def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
-            if operation_code == "downloading":
-                if info_text:
-                    self.ap_progress.set_text(f"Downloading Files: {info_text}")
-                else:
-                    self.ap_progress.set_text("Downloading Files")
-                self.ap_progress.report_progress(current_count / max_count)
-            elif operation_code == "updating":
-                self.ap_progress.set_text("Updating Files")
-                self.ap_progress.report_progress(current_count / max_count)
-            else:
-                self.ap_progress.set_text("Talking to Server")
-                self.ap_progress.stop_progress()
-                
-
-    def url_gcm_supported(url: str):
-        gcm_supported_providers = ["github", "gitlab", "azure"]
-        return any(provider in url for provider in gcm_supported_providers)
+    settings = aps.Settings("git_repository")               
 
     def create_repo(dialog: ap.Dialog):
-        location = dialog.get_value("location")
-        repo_path = location
+        repo_path = dialog.get_value("location")
+        
         if GitRepository.is_repo(repo_path):
-            ui.show_info("Already a Git repo")
+            ap.UI().show_info("Already a Git repo")
+            return False
         else:
             repo = GitRepository.create(repo_path)
-            update_project(repo_path, None)
+            helper.update_project(repo_path, None, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
-            ui.show_success("Git Repository Initialized")
+            ap.UI().show_success("Git Repository Initialized")
             dialog.close()
+            return True
 
-    def clone_repo_async(repo_path: str, url: str):
+    def clone_repo_async(repo_path: str, url: str, join_project_files):
+        with os.scandir(repo_path) as it:
+            if any(it):
+                ap.UI().show_info("Cannot Clone Git repository", "Folder must be empty")
+                return
+            
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-            repo = GitRepository.clone(url, repo_path, progress=CloneProgress(progress))
+            repo = GitRepository.clone(url, repo_path, progress=helper.CloneProgress(progress))
             progress.finish()
-            update_project(repo_path, url)
+            helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)
-            ui.show_success("Git Repository Cloned")
+            ap.UI().show_success("Git Repository Cloned")
         except Exception as e:
-            ui.show_error("Could not add Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
+            ap.UI().show_error("Could not clone Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
 
     def clone_repo(dialog: ap.Dialog):
         location = dialog.get_value("location")
         url = dialog.get_value("url")
-        repo_path = location
-        with os.scandir(repo_path) as it:
-            if any(it):
-                ui.show_info("Cannot Join Git repository", "Folder must be empty")
-                return
-        
         dialog.close()
-        ctx.run_async(clone_repo_async, repo_path, url)
+        ctx.run_async(clone_repo_async, location, url, is_join)
 
     def update_dialog(dialog: ap.Dialog, value):
         url = dialog.get_value("url")
@@ -134,19 +83,16 @@ if __name__ == "__main__":
 
         dialog.hide_row("repotext", hide_remote_settings)
         dialog.hide_row("url", hide_remote_settings)
-
-        # Providers such as Gitea do not work with GCM, ask the user for credentials instead
-        no_credentials_required = url_gcm_supported(url)
-        dialog.hide_row("usertext",  no_credentials_required or hide_remote_settings)
-        dialog.hide_row("user",  no_credentials_required or hide_remote_settings)
-        dialog.hide_row("passwordtext", no_credentials_required or hide_remote_settings)
-        dialog.hide_row("password", no_credentials_required or hide_remote_settings)
         
         dialog.hide_row("join", hide_remote_settings)
         dialog.hide_row("create", remote_enabled)
 
-        dialog.set_enabled("join", len(location) > 0)
-        dialog.set_enabled("create", len(location) > 0)
+        enable = len(location) > 0
+        if not hide_remote_settings:
+            enable = enable and len(url) > 0
+
+        dialog.set_enabled("join", enable)
+        dialog.set_enabled("create", enable)
 
         settings.set("browse_path", location)
         settings.store()
