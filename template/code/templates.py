@@ -174,7 +174,6 @@ def create_template(dialog):
     else:
         ui.show_error("Template does not exist", f"Please add a proper template")
 
-    dialog.store_settings()
     dialog.close()
 
 def create_dialog():
