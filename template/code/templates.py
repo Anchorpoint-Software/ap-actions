@@ -174,6 +174,7 @@ def create_template(dialog):
     else:
         ui.show_error("Template does not exist", f"Please add a proper template")
 
+    dialog.store_settings()
     dialog.close()
 
 def create_dialog():
@@ -198,9 +199,12 @@ def create_dialog():
         for key in user_inputs.keys():
             dialog.add_text(str(key).replace("_"," ")+":\t").add_input("" , var = str(key))
         dialog.add_info("Tokens (placeholders) were found in your template. <br> They will be replaced with the entries in the text fields.")    
+
+    # Present the dialog to the user
+    dialog.show(settings)   
    
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
-    set_variable_availability(dialog,folder_templates[0])
+    set_variable_availability(dialog,dialog.get_value("dropdown"))
 
     if file_mode == False and allow_project_creation:
         dialog.add_checkbox(var="create_project").add_text("This is a project")
@@ -210,10 +214,9 @@ def create_dialog():
     dialog.add_button("Create", callback = create_template)
 
     # Deactivate input fields if necessary
-    set_variable_availability(dialog,folder_templates[0])
+    set_variable_availability(dialog,dialog.get_value("dropdown"))
 
-    # Present the dialog to the user
-    dialog.show()   
+    
 
 def strip_spaces(string):
     return "".join(string.rstrip().lstrip())
