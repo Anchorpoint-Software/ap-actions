@@ -232,6 +232,16 @@ class GitRepository(VCRepository):
         self.repo.git.checkout(".")
 
     def switch_branch(self, branch_name: str):
+        split = branch_name.split("/")
+        if len(split) > 1:
+            try:
+                remote = self.repo.remote(split[0])
+                if remote:
+                    branch_name = "/".join(split[1:])
+            except Exception as e:
+                print(str(e))
+                pass
+        
         self.repo.git.switch(branch_name)
 
     def create_branch(self, branch_name: str):

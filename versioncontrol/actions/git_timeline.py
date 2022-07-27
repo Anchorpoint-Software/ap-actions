@@ -239,6 +239,10 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     try:
         commits = repo.get_new_commits("HEAD", branch)
+    except Exception as e:
+        commits = []
+    
+    try:
         repo.switch_branch(branch)
     except Exception as e:
         ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
