@@ -227,6 +227,9 @@ class GitRepository(VCRepository):
     def restore_files(self, files: list[str]):
         self.repo.git.checkout("--", *files)
 
+    def clean(self):
+        self.repo.git.clean("-fd")
+
     def restore_all_files(self):
         self.repo.git.checkout(".")
 
