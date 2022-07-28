@@ -238,7 +238,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
 
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     try:
-        commits = repo.get_new_commits("HEAD", branch)
+        commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
     except Exception as e:
         commits = []
     

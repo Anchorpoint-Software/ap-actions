@@ -593,6 +593,10 @@ class GitRepository(VCRepository):
         return history
 
     def get_new_commits(self, base, target):
+        remote = self._get_default_remote(base)
+        if remote:
+            base = remote + "/" + base
+
         commits = list(self.repo.iter_commits(rev=f"{target}..{base}"))
         ids = []
         for commit in commits:
