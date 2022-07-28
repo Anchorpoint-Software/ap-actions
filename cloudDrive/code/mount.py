@@ -50,17 +50,14 @@ def decrypt(encrypted: str, password: str) -> str:
     return original_data.decode()
 
 def get_unused_drives():
-    if platform.system() == "Darwin":
-        drives = ["A"]
-    else:
-        import string
-        from ctypes import windll
-        drives = []
-        bitmask = windll.kernel32.GetLogicalDrives()
-        for letter in string.ascii_uppercase:
-            if not bitmask & 1:
-                drives.append(letter)
-            bitmask >>= 1
+    import string
+    from ctypes import windll
+    drives = []
+    bitmask = windll.kernel32.GetLogicalDrives()
+    for letter in string.ascii_uppercase:
+        if not bitmask & 1:
+            drives.append(letter)
+        bitmask >>= 1
 
     return drives
 
@@ -118,12 +115,12 @@ def setup_mount(dialog):
 
     config_arguments.append(create_location_arguments())
 
-    if platform.system() == "Darwin":
-        path = dialog.get_value(path_var)
-        config_arguments.append(path)
-    else:
+    if isWin():
         drive = dialog.get_value("drive_var")
         config_arguments.append(f"{drive}:")
+    else:
+        path = dialog.get_value(path_var)
+        config_arguments.append(path)
 
     rclone_arguments = [
         "--vfs-cache-mode",
@@ -151,14 +148,16 @@ def setup_mount(dialog):
 
     arguments = base_arguments + config_arguments + rclone_arguments
 
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
-
-    ctx.run_async(run_rclone, arguments, startupinfo)
+    if isWin():
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
+        ctx.run_async(run_rclone, arguments, startupinfo)
+    else:
+        ctx.run_async(run_rclone, arguments)
     
     dialog.close()
 
-def run_rclone(arguments, startupinfo):
+def run_rclone(arguments, startupinfo=None):
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "401 bad_auth_token"
@@ -219,15 +218,15 @@ def check_upload(myjson, progress):
     return progress
 
 def get_default_cache_path():
-    if platform.system() == "Darwin":
+    if isWin():
+        app_data_roaming = os.getenv('APPDATA')
+        app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
+        return os.path.join(app_data,"Local/rclone").replace("/","\\")
+    else:
         ap_cache_path = os.path.normpath(os.path.expanduser("~/library/caches/anchorpoint software/anchorpoint/rclone"))
         if not os.path.isdir(ap_cache_path):
             os.mkdir(ap_cache_path)
         return ap_cache_path
-    else:
-        app_data_roaming = os.getenv('APPDATA')
-        app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
-        return os.path.join(app_data,"Local/rclone").replace("/","\\")
 
 def is_admin():
     return True
@@ -279,15 +278,7 @@ def show_options():
     dialog = ap.Dialog()
     dialog.title = "Mount Cloud Drive"
 
-    if platform.system() == "Darwin":
-        path = settings.get("mount_path")
-        if path ==  "":
-            path = os.path.normpath(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone"))
-
-        dialog.add_text("Drive Location:\t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
-        dialog.add_button("Mount", callback=setup_mount)
-        dialog.show()
-    else:
+    if isWin():
         drives = get_unused_drives()
 
         if len(drives) == 0:
@@ -301,5 +292,18 @@ def show_options():
         dialog.add_button("Mount", callback=setup_mount)
 
         dialog.show()
+    else:
+        path = settings.get("mount_path")
+        if path ==  "":
+            path = os.path.normpath(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone"))
+
+        dialog.add_text("Drive Location:\t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
+        dialog.add_button("Mount", callback=setup_mount)
+        dialog.show()
+
+def isWin():
+    if platform.system() == "Windows":
+        return True
+    return False
 
 ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings)
