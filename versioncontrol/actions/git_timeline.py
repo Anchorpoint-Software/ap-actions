@@ -249,7 +249,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         return
 
     if len(commits) > 0:
-        ap.delete_timeline_channel_entries(channel_id, commits)
+        ap.delete_timeline_channel_entries(channel_id, list(commits))
 
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
