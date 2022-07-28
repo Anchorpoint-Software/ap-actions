@@ -119,7 +119,17 @@ def setup_mount(dialog):
         drive = dialog.get_value("drive_var")
         config_arguments.append(f"{drive}:")
     else:
-        path = dialog.get_value(path_var)
+        bucket_name = "bucket_name"
+        path = os.path.normpath(os.path.join(dialog.get_value(path_var), bucket_name))
+        if not os.path.isdir(path):
+            if(dialog.get_value(path_var) == "/Volumes"):
+                properties = "{name:\"%s\"}" % bucket_name
+                args = ["/usr/bin/osascript", "-e", f"tell application \"Finder\" to make new folder at POSIX file \"/volumes\" with properties {properties}"]
+                p=subprocess.Popen(
+                args=args)   
+                p.wait() 
+            else:
+                os.mkdir(path)
         config_arguments.append(path)
 
     rclone_arguments = [
@@ -295,7 +305,7 @@ def show_options():
     else:
         path = settings.get("mount_path")
         if path ==  "":
-            path = os.path.normpath(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone"))
+            path = os.path.normpath("/Volumes")
 
         dialog.add_text("Drive Location:\t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
         dialog.add_button("Mount", callback=setup_mount)
