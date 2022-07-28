@@ -1,8 +1,12 @@
 import os
 import shutil
+import platform
 
 def kill_rclone():
-    os.system("taskkill /im rclone.exe")
+    if platform.system() == "Windows":
+        os.system("taskkill /im rclone.exe")
+    else:
+        os.system("umount -A")
 
 kill_rclone()
 
