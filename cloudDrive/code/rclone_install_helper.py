@@ -15,8 +15,16 @@ show_menu = None
 rclone_folder_path = "~/Documents/Anchorpoint/actions/rclone"
 rclone_folder_path_mac = "~/library/application support/anchorpoint software/anchorpoint/actions/rclone"
 
-RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-windows-386.zip"
-RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.58.1/rclone-v1.58.1-osx-arm64.zip"
+RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-windows-amd64.zip"
+RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-arm64.zip"
+RCLONE_INSTALL_URL_MAC_X86 = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-amd64.zip"
+
+def _get_zip_executable(url: str):
+    base = os.path.splitext(os.path.basename(url))[0]
+    if isWin():
+        return os.path.join(base, "rclone.exe")
+    else:
+        return os.path.join(base, "rclone")
 
 def _get_rclone_folder():
     dir = os.path.expanduser(rclone_folder_path)
@@ -102,17 +110,19 @@ def _install_rclone_async():
     # download zip
     progress = ap.Progress("Loading Rclone", infinite = True)
 
-    request_url = RCLONE_INSTALL_URL_WIN if isWin() else RCLONE_INSTALL_URL_MAC
+    if isWin():
+        request_url = RCLONE_INSTALL_URL_WIN
+    else:
+        machine = platform.uname().machine
+        apple_silicon = machine != "x86_64"
+        request_url = RCLONE_INSTALL_URL_MAC_X86 if not apple_silicon else RCLONE_INSTALL_URL_MAC
 
     r = requests.get(request_url)
             
     # open zip file and extract rclone.exe to the right folder
     z = zipfile.ZipFile(io.BytesIO(r.content))
     
-    if isWin():
-        openFile = 'rclone-v1.58.1-windows-386/rclone.exe'
-    else:
-        openFile = 'rclone-v1.58.1-osx-arm64/rclone'
+    openFile = _get_zip_executable(request_url)
     
     with z.open(openFile) as source:
         with open(_get_rclone_path(), "wb") as target:
@@ -127,6 +137,8 @@ def _install_rclone_async():
     # if not os.path.isdir(rclone_dir):
     #     os.mkdir(rclone_dir)
     progress.finish()
+
+    ui.show_success("Installation Successful")
         
 def check_and_install_modules():
     try:
