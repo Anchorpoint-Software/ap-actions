@@ -119,7 +119,7 @@ def setup_mount(dialog):
         drive = dialog.get_value("drive_var")
         config_arguments.append(f"{drive}:")
     else:
-        bucket_name = "bucket_name"
+        bucket_name = "anchorpoint"
         path = os.path.normpath(os.path.join(dialog.get_value(path_var), bucket_name))
         if not os.path.isdir(path):
             if(dialog.get_value(path_var) == "/Volumes"):
@@ -180,7 +180,7 @@ def run_rclone(arguments, startupinfo=None):
         stderr=subprocess.STDOUT,
         stdin=subprocess.PIPE,
         bufsize=1,
-        universal_newlines=True)    
+        universal_newlines=True)
       
     for line in p.stdout:
         myjson = is_json(line)
@@ -194,7 +194,10 @@ def run_rclone(arguments, startupinfo=None):
             ui.show_success("Mount Successful")
         elif rlcone_wrong_credentials in line:
             ui.show_info(title="Invalid Settings", description="Your settings do not seem to be right. Go to the settings of Connect Cloud Drive and see if you made a typo.")
-        
+        elif not isWin() and prepare_mount_progress is not None:
+            prepare_mount_progress.finish()
+            prepare_mount_progress = None
+            ui.show_success("Mount Successful")
         if myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress)
 

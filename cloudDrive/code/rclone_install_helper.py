@@ -1,4 +1,3 @@
-from asyncio import constants
 import io
 import os
 import platform
@@ -14,10 +13,12 @@ ui = ap.UI()
 show_menu = None
 rclone_folder_path = "~/Documents/Anchorpoint/actions/rclone"
 rclone_folder_path_mac = "~/library/application support/anchorpoint software/anchorpoint/actions/rclone"
+macFUSE_folder_path = "/Library/Frameworks/macFUSE.framework"
 
 RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-windows-amd64.zip"
 RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-arm64.zip"
 RCLONE_INSTALL_URL_MAC_X86 = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-amd64.zip"
+MACFUSE_INSTALL_URL = "https://github.com/osxfuse/osxfuse/releases/download/macfuse-4.4.0/macfuse-4.4.0.dmg"
 
 def _get_zip_executable(url: str):
     base = os.path.splitext(os.path.basename(url))[0]
@@ -44,10 +45,12 @@ def check_winfsp_and_rclone(menu):
 
     if isWin():
         winfsp_path = os.path.isfile(os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe"))
+    else:
+        macFuse = True if os.path.isdir(macFUSE_folder_path) else False
         
     rclone_path = os.path.isfile(_get_rclone_path())
 
-    if (isWin() and not winfsp_path) or not rclone_path:
+    if (isWin() and not winfsp_path) or not rclone_path or (not macFuse and not isWin()):
         show_install_dialog()
     else:
         ctx.run_async(check_and_install_modules)
@@ -62,7 +65,7 @@ def show_install_dialog():
         dialog.add_text("The Anchorpoint network drive is based on Rclone and WinFSP.")
         dialog.add_info("When installing them you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a> and <a href=\"https://github.com/winfsp/winfsp/blob/master/License.txt\">WinFsp</a>.")
     else:
-        dialog.add_text("The Anchorpoint network drive is based on Rclone.")
+        dialog.add_text("The Anchorpoint network drive is based on Rclone and macFUSE.")
         dialog.add_info("When installing them you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a>.")
     
     dialog.add_button("Install", callback=prepare_module_install)
@@ -73,6 +76,8 @@ def prepare_module_install(dialog):
     if isWin():
         ctx.run_async(check_and_install_winfsp)
     check_rclone()
+    if not isWin(): # install after rclone
+        check_macfuse()
     dialog.close()
 
 def check_and_install_winfsp():
@@ -140,6 +145,32 @@ def _install_rclone_async():
 
     ui.show_success("Installation Successful")
         
+def check_macfuse():
+    if not os.path.isdir(macFUSE_folder_path):
+        ctx.run_async(_install_mac_fuse_async)
+
+def _install_mac_fuse_async():
+    # download zip
+    progress = ap.Progress("Loading macFUSE", infinite = True)
+
+    request_url = MACFUSE_INSTALL_URL
+    r = requests.get(request_url)
+
+    folder_macfuse = os.path.expanduser("~/Downloads")
+    path_macfuse = os.path.join(folder_macfuse, 'macfuse.dmg')
+
+    with open(path_macfuse, 'wb') as f:
+        f.write(r.content)
+
+    os.chdir(folder_macfuse) 
+
+    os.system('hdiutil mount macfuse.dmg')
+    os.system(f'sudo installer -package "/Volumes/macFUSE/Extras/macFUSE 4.4.0.pkg" -target "/Volumes/Macintosh HD"') # TODO install macfuse
+    os.system('cd ~')
+    os.system('hdiutil unmount "/Volumes/macFUSE/"')
+
+    progress.finish()
+
 def check_and_install_modules():
     try:
         import pyperclip as pc
