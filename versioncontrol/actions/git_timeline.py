@@ -72,6 +72,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 fetch.name = "Fetch"
                 fetch.icon = aps.Icon(":/icons/update.svg")
                 fetch.identifier = "gitfetch"
+                fetch.tooltip = "Fetches new commits from the server"
                 info.actions.append(fetch)
         
         if is_rebasing:
@@ -79,12 +80,14 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
+            conflicts.tooltip = "Resolve conflicts from other commits or branches"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
             cancel = ap.TimelineChannelAction()
             cancel.name = "Cancel"
             cancel.identifier = "gitcancelrebase"
+            cancel.tooltip = "Cancel"
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
 
