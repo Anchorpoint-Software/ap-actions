@@ -6,6 +6,7 @@ import shutil, tempfile
 from git import GitCommandError
 import git
 import git.cmd
+from gitdb.util import to_bin_sha
 from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit.lfs as lfs
@@ -227,8 +228,33 @@ class GitRepository(VCRepository):
     def restore_files(self, files: list[str]):
         self.repo.git.checkout("--", *files)
 
+    def clean(self):
+        self.repo.git.clean("-fd")
+
     def restore_all_files(self):
         self.repo.git.checkout(".")
+
+    def switch_branch(self, branch_name: str):
+        split = branch_name.split("/")
+        if len(split) > 1:
+            try:
+                remote = self.repo.remote(split[0])
+                if remote:
+                    branch_name = "/".join(split[1:])
+            except Exception as e:
+                print(str(e))
+                pass
+        
+        self.repo.git.switch(branch_name)
+
+    def create_branch(self, branch_name: str):
+        self.repo.git.switch("-c", branch_name)
+
+    def stash(self):
+        self.repo.git.stash()
+
+    def pop_stash(self):
+        self.repo.git.stash("pop")
 
     def get_remote_url(self):
         if self.has_remote():
@@ -310,6 +336,24 @@ class GitRepository(VCRepository):
         except ValueError as e:
             print(e)
             pass
+
+        return changes
+
+    def get_changes_for_changelist(self, id: str) -> Changes:
+        changes = Changes()
+        try:
+            commit = self.repo.commit(id)
+            if len(commit.parents) >= 1:
+                parent = commit.parents[0]
+                diff = parent.diff(commit)
+            else:
+                empty_tree = git.Tree(self.repo, to_bin_sha(self._get_empty_tree_id()))
+                diff = empty_tree.diff(commit)
+
+            self._get_file_changes(diff, changes)
+
+        except Exception as e:
+            print (e)
 
         return changes
 
@@ -475,7 +519,7 @@ class GitRepository(VCRepository):
             self.repo.git.difftool("--no-prompt", "--cached", tool = tool)
 
     def get_current_branch_name(self) -> str:
-        return self.repo.active_branch
+        return self.repo.git.branch("--show-current")
 
     def get_branches(self) -> list[Branch]:
         def _map_ref(ref) -> Branch:
@@ -487,12 +531,22 @@ class GitRepository(VCRepository):
             return model
 
         branches = []
+        local_branches = set()
         for ref in self.repo.branches:
+            if ref.name == "HEAD": continue
             model = _map_ref(ref)
             branches.append(model)
+            local_branches.add(model.name)
         for remote in self.repo.remotes:
             for ref in remote.refs:
+                if "HEAD" in ref.name: continue
                 model = _map_ref(ref)
+                remote_prefix = f"{remote}/"
+                if model.name.startswith(remote_prefix):
+                    branch_name = model.name[len(remote_prefix):]
+                    if branch_name in local_branches:
+                        continue
+
                 branches.append(model)
 
         return branches
@@ -540,6 +594,21 @@ class GitRepository(VCRepository):
         for commit in local_commits:
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.LOCAL))
         return history
+
+    def get_new_commits(self, base, target):
+        ids = set()
+        commits = list(self.repo.iter_commits(rev=f"{target}..{base}"))
+        for commit in commits:
+            ids.add(commit.hexsha)
+
+        remote = self._get_default_remote(base)
+        if remote:
+            base = remote + "/" + base
+            commits = list(self.repo.iter_commits(rev=f"{target}..{base}"))    
+            for commit in commits:
+                ids.add(commit.hexsha)
+        
+        return ids
 
     def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
         history = []
