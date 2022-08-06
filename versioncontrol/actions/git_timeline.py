@@ -254,6 +254,25 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     if len(commits) > 0:
         ap.delete_timeline_channel_entries(channel_id, list(commits))
 
+def on_vc_create_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
+    if channel_id != "Git": return None
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    progress = ap.Progress(f"Creating Branch: {branch}", show_loading_screen = True)
+    
+    try:
+        repo.create_branch(branch)
+    except Exception as e:
+        ap.UI().show_info("Cannot create branch")
+        return
+
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
