@@ -7,7 +7,7 @@ version: "1.0"
 
 action:
   #Must Have Properties
-  name: "Convert to Video"
+  name: "Convert to mp4"
 
   #Optional Properties
   version: 1
@@ -22,7 +22,6 @@ action:
     path: icons/videoConversion.svg
   script: "ffmpeg_img_to_video.py"
   inputs:
-    ffmpeg_win: "${yaml_dir}/ffmpeg.exe"
     ffmpeg_mac: "/usr/local/bin/ffmpeg"
     fps: "25"
   settings: "ffmpeg_settings.py"

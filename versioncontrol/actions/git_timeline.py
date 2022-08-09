@@ -11,7 +11,7 @@ def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool)
         result.selected = True
     return result
 
-def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool):
+def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool = False):
     for file in repo_changes.new_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
         changes[change.path] = change
@@ -72,6 +72,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 fetch.name = "Fetch"
                 fetch.icon = aps.Icon(":/icons/update.svg")
                 fetch.identifier = "gitfetch"
+                fetch.tooltip = "Fetches new commits from the server"
                 info.actions.append(fetch)
         
         if is_rebasing:
@@ -79,19 +80,26 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
+            conflicts.tooltip = "Resolve conflicts from other commits or branches"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
             cancel = ap.TimelineChannelAction()
             cancel.name = "Cancel"
             cancel.identifier = "gitcancelrebase"
+            cancel.tooltip = "Cancel"
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
 
-        main = ap.VCBranch()
-        main.name = "main"
-        info.current_branch = main
-        info.branches.append(main)
+        current_branch_name = repo.get_current_branch_name()
+        branches = repo.get_branches()
+        for b in branches:
+            branch = ap.VCBranch()
+            branch.name = b.name
+            info.branches.append(branch)
+
+            if b.name == current_branch_name:
+                info.current_branch = branch
 
         return info
     except Exception as e:
@@ -200,7 +208,53 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         print (e)
         return None
 
+def on_vc_switch_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
+    if channel_id != "Git": return None
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
+    try:
+        commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
+    except Exception as e:
+        commits = []
+    
+    try:
+        repo.switch_branch(branch)
+    except Exception as e:
+        ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
+        return
+
+    if len(commits) > 0:
+        ap.delete_timeline_channel_entries(channel_id, list(commits))
+
+def on_vc_create_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
+    if channel_id != "Git": return None
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    progress = ap.Progress(f"Creating Branch: {branch}", show_loading_screen = True)
+    
+    try:
+        repo.create_branch(branch)
+    except Exception as e:
+        ap.UI().show_info("Cannot create branch")
+        return
+
 def refresh_async(channel_id: str, project_path):
+    if channel_id != "Git": return None
     project = aps.get_project(project_path)
     if not project: 
         return

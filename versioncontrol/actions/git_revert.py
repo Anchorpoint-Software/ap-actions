@@ -18,8 +18,11 @@ def revert(channel_id, project_path, dialog):
     repo = GitRepository.load(path)
     if not repo: return
 
+    new_files = dialog.get_value("newfiles")
     try:
         repo.restore_all_files()
+        if new_files:
+            repo.clean()
     except:
         pass
     
@@ -38,6 +41,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     dialog = ap.Dialog()
     dialog.title = "Revert Files"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
+    dialog.add_checkbox(default=False, var="newfiles").add_text("Revert New Files")
     dialog.add_button("Yes", callback=lambda d: button_pressed(channel_id, ctx.project_path, d))
     dialog.show()
 
