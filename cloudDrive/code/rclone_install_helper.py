@@ -65,8 +65,8 @@ def show_install_dialog():
         dialog.add_text("The Anchorpoint network drive is based on Rclone and WinFSP.")
         dialog.add_info("When installing them you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a> and <a href=\"https://github.com/winfsp/winfsp/blob/master/License.txt\">WinFsp</a>.")
     else:
-        dialog.add_text("The Anchorpoint network drive is based on Rclone and macFUSE.")
-        dialog.add_info("When installing them you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a>.")
+        dialog.add_text("The Anchorpoint network drive is based on Rclone and macFUSE.<br>When clicking <b>Install</b> we will download and launch the macFUSE installer.")
+        dialog.add_info("When installing you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a>.")
     
     dialog.add_button("Install", callback=prepare_module_install)
     dialog.show()
@@ -162,12 +162,13 @@ def _install_mac_fuse_async():
     with open(path_macfuse, 'wb') as f:
         f.write(r.content)
 
-    os.chdir(folder_macfuse) 
-
-    os.system('hdiutil mount macfuse.dmg')
-    os.system(f'sudo installer -package "/Volumes/macFUSE/Extras/macFUSE 4.4.0.pkg" -target "/Volumes/Macintosh HD"') # TODO install macfuse
-    os.system('cd ~')
-    os.system('hdiutil unmount "/Volumes/macFUSE/"')
+    try:
+        subprocess.check_call(["hdiutil", "mount", "macfuse.dmg"], cwd=folder_macfuse)
+        subprocess.check_call(["open", "-W", "/Volumes/macFUSE/Install macFUSE.pkg"])
+    finally:
+        if os.path.exists(path_macfuse):
+            os.remove(path_macfuse)
+        subprocess.check_call(["hdiutil", "unmount", "/Volumes/macFUSE/"], cwd=folder_macfuse)
 
     progress.finish()
 
