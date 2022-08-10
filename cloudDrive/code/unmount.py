@@ -6,8 +6,6 @@ def kill_rclone():
     if platform.system() == "Windows":
         os.system("taskkill /im rclone.exe")
     else:
-        os.system("umount -A")
+        os.system("umount /Volumes/Anchorpoint")
 
 kill_rclone()
-
-print(shutil.which("WinFsp"))
