@@ -191,12 +191,17 @@ def run_rclone(arguments, startupinfo=None):
         elif rclone_success in line:            
             prepare_mount_progress.finish()
             prepare_mount_progress = None
+            if not isWin() and "reload_drives" in dir(ui):
+                ui.reload_drives()
             ui.show_success("Mount Successful")
+
         elif rlcone_wrong_credentials in line:
             ui.show_info(title="Invalid Settings", description="Your settings do not seem to be right. Go to the settings of Connect Cloud Drive and see if you made a typo.")
         elif not isWin() and prepare_mount_progress is not None:
             prepare_mount_progress.finish()
             prepare_mount_progress = None
+            if not isWin() and "reload_drives" in dir(ui):
+                ui.reload_drives()
             ui.show_success("Mount Successful")
         if myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress)
