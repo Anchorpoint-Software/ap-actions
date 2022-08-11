@@ -153,7 +153,8 @@ def setup_mount(dialog):
         "--stats",
         "1s",
         "--log-level",
-        "INFO"
+        "INFO", 
+        "--daemon"
     ]
 
     arguments = base_arguments + config_arguments + rclone_arguments
@@ -180,7 +181,8 @@ def run_rclone(arguments, startupinfo=None):
         stderr=subprocess.STDOUT,
         stdin=subprocess.PIPE,
         bufsize=1,
-        universal_newlines=True)
+        universal_newlines=True,
+        )
       
     for line in p.stdout:
         myjson = is_json(line)
