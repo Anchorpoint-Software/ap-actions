@@ -191,6 +191,7 @@ def run_rclone(arguments, startupinfo=None):
         if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Something went wrong")
             print(line)
+            return
         elif rclone_success in line:            
             prepare_mount_progress.finish()
             prepare_mount_progress = None
@@ -199,16 +200,20 @@ def run_rclone(arguments, startupinfo=None):
             ui.show_success("Mount Successful")
 
         elif rlcone_wrong_credentials in line:
-            ui.show_info(title="Invalid Settings", description="Your settings do not seem to be right. Go to the settings of Connect Cloud Drive and see if you made a typo.")
-        elif not isWin() and prepare_mount_progress is not None:
-            prepare_mount_progress.finish()
-            prepare_mount_progress = None
-            if not isWin() and "reload_drives" in dir(ui):
-                ui.reload_drives()
-            ui.show_success("Mount Successful")
+            ui.show_info(title="Invalid Settings", duration=6000, description="Your settings do not seem to be correct. Go to the settings of \"Connect Cloud Drive\" and check if you have made a typing error.")
+            return
+
         if myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress)
 
+    if not isWin() and prepare_mount_progress is not None:
+        # Mac runs in daemon mode, so we assume everything has worked when we reach this point
+        prepare_mount_progress.finish()
+        prepare_mount_progress = None
+        if not isWin() and "reload_drives" in dir(ui):
+            ui.reload_drives()
+        ui.show_success("Mount Successful")
+    
 
 def is_json(myjson):
     try:
