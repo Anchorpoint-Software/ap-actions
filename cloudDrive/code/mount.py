@@ -18,12 +18,12 @@ path_var = "path"
 
 configuration = {
     "type": "",
-    "provider": "",
-    "access_key_id": "",
-    "secret_access_key": "",
-    "region": "",
-    "location_constraint": "",
-    "root_folder":"",
+    "s3_provider": "",
+    "s3_access_key_id": "",
+    "s3_secret_access_key": "",
+    "s3_region": "",
+    "s3_location_constraint": "",
+    "s3_root_folder":"",
     "b2_account": "",
     "b2_key":"",
     "b2_bucket_name": ""
@@ -73,11 +73,11 @@ def setup_mount(dialog):
         if(configuration["type"]=="s3"):
             return [
                     "--s3-provider",
-                    f"{configuration['provider']}",
+                    f"{configuration['s3_provider']}",
                     "--s3-access-key-id",
-                    f"{configuration['access_key_id']}",
+                    f"{configuration['s3_access_key_id']}",
                     "--s3-secret-access-key",
-                    f"{configuration['secret_access_key']}"
+                    f"{configuration['s3_secret_access_key']}"
                     ]
         if(configuration["type"]=="b2"):
             return [
@@ -89,7 +89,7 @@ def setup_mount(dialog):
     
     def create_location_arguments():
         if(configuration["type"]=="s3"):
-            return f":s3:{configuration['root_folder']}"
+            return f":s3:{configuration['s3_root_folder']}"
         if(configuration["type"]=="b2"):
             return f":b2:{configuration['b2_bucket_name']}"
 
@@ -106,12 +106,12 @@ def setup_mount(dialog):
     
     config_arguments = create_config_arguments()
 
-    if(configuration["region"] and configuration["type"]=="s3"):
+    if(configuration["s3_region"] and configuration["type"]=="s3"):
         config_arguments.append("--s3-region")  
-        config_arguments.append(f"{configuration['region']}")
-    if(configuration["location_constraint"] and configuration["type"]=="s3"):
+        config_arguments.append(f"{configuration['s3_region']}")
+    if(configuration["s3_location_constraint"] and configuration["type"]=="s3"):
         config_arguments.append("--s3-location-constraint")  
-        config_arguments.append(f"{configuration['location_constraint']}")
+        config_arguments.append(f"{configuration['s3_location_constraint']}")
 
     config_arguments.append(create_location_arguments())
 
@@ -269,12 +269,12 @@ def get_settings():
                 decrypted_configuration = decrypt(encrypted_configuration, password)
                 undumped_configuration = json.loads(decrypted_configuration)
                 configuration["type"] = undumped_configuration["type"]
-                configuration["provider"] = undumped_configuration["provider"]
-                configuration["access_key_id"] = undumped_configuration["access_key_id"]
-                configuration["secret_access_key"] = undumped_configuration["secret_access_key"]
-                configuration["region"] = undumped_configuration["region"]
-                configuration["location_constraint"] = undumped_configuration ["location_constraint"]
-                configuration["root_folder"] = undumped_configuration ["root_folder"]
+                configuration["s3_provider"] = undumped_configuration["s3_provider"]
+                configuration["s3_access_key_id"] = undumped_configuration["s3_access_key_id"]
+                configuration["s3_secret_access_key"] = undumped_configuration["s3_secret_access_key"]
+                configuration["s3_region"] = undumped_configuration["s3_region"]
+                configuration["s3_location_constraint"] = undumped_configuration ["s3_location_constraint"]
+                configuration["s3_root_folder"] = undumped_configuration ["s3_root_folder"]
                 configuration["b2_account"] = undumped_configuration ["b2_account"]
                 configuration["b2_key"] = undumped_configuration ["b2_key"]
                 configuration["b2_bucket_name"] = undumped_configuration ["b2_bucket_name"]
