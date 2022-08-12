@@ -153,8 +153,7 @@ def setup_mount(dialog):
         "--stats",
         "1s",
         "--log-level",
-        "INFO", 
-        "--daemon"
+        "INFO"
     ]
 
     arguments = base_arguments + config_arguments + rclone_arguments
@@ -164,6 +163,8 @@ def setup_mount(dialog):
         startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
         ctx.run_async(run_rclone, arguments, startupinfo)
     else:
+        #add daemon for mac
+        arguments.append("--daemon")
         ctx.run_async(run_rclone, arguments)
     
     dialog.close()
@@ -268,16 +269,8 @@ def get_settings():
             try:
                 decrypted_configuration = decrypt(encrypted_configuration, password)
                 undumped_configuration = json.loads(decrypted_configuration)
-                configuration["type"] = undumped_configuration["type"]
-                configuration["s3_provider"] = undumped_configuration["s3_provider"]
-                configuration["s3_access_key_id"] = undumped_configuration["s3_access_key_id"]
-                configuration["s3_secret_access_key"] = undumped_configuration["s3_secret_access_key"]
-                configuration["s3_region"] = undumped_configuration["s3_region"]
-                configuration["s3_location_constraint"] = undumped_configuration ["s3_location_constraint"]
-                configuration["s3_root_folder"] = undumped_configuration ["s3_root_folder"]
-                configuration["b2_account"] = undumped_configuration ["b2_account"]
-                configuration["b2_key"] = undumped_configuration ["b2_key"]
-                configuration["b2_bucket_name"] = undumped_configuration ["b2_bucket_name"]
+                for i in configuration.keys():
+                    configuration[i] = undumped_configuration[i]
                 show_options()
             except:
                 create_pw_dialog()
