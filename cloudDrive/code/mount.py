@@ -9,6 +9,7 @@ import json
 
 sys.path.insert(0, os.path.dirname(__file__))
 import rclone_install_helper as rclone_install
+import rclone_config_helper as rclone_config
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -16,18 +17,7 @@ settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings()
 path_var = "path"
 
-configuration = {
-    "type": "",
-    "s3_provider": "",
-    "s3_access_key_id": "",
-    "s3_secret_access_key": "",
-    "s3_region": "",
-    "s3_location_constraint": "",
-    "s3_root_folder":"",
-    "b2_account": "",
-    "b2_key":"",
-    "b2_bucket_name": ""
-}
+configuration = rclone_config.get_config()
 
 def generate_secret_key(password: str, salt: bytes) -> str:
     from Crypto.Protocol.KDF import PBKDF2
@@ -70,8 +60,10 @@ def create_bat_file(command,drive):
 def setup_mount(dialog):
 
     def create_config_arguments():
+        config = []
+        #AWS
         if(configuration["type"]=="s3"):
-            return [
+            config += [
                     "--s3-provider",
                     f"{configuration['s3_provider']}",
                     "--s3-access-key-id",
@@ -79,19 +71,41 @@ def setup_mount(dialog):
                     "--s3-secret-access-key",
                     f"{configuration['s3_secret_access_key']}"
                     ]
+        if(configuration["s3_region"] and configuration["type"]=="s3"):
+            config += ["--s3-region", f"{configuration['s3_region']}"]
+        if(configuration["s3_location_constraint"] and configuration["type"]=="s3"):
+            config += ["--s3-location-constraint",f"{configuration['s3_location_constraint']}"]
+        
+        #Backblaze
         if(configuration["type"]=="b2"):
-            return [
+            config += [
                 "--b2-account",
                 f"{configuration['b2_account']}", 
                 "--b2-key",
                 f"{configuration['b2_key']}"
                 ]
+
+        #Azure
+        if(configuration["type"]=="azureblob"):
+            config += [
+                    "--azureblob-sas-url",
+                    f"{configuration['azureblob_sas_url']}"
+                    ]
+
+        return config
     
     def create_location_arguments():
+        #AWS
         if(configuration["type"]=="s3"):
             return f":s3:{configuration['s3_root_folder']}"
+
+        #Backblaze 
         if(configuration["type"]=="b2"):
             return f":b2:{configuration['b2_bucket_name']}"
+
+        #Azure
+        if(configuration["type"]=="azureblob"):
+            return f":azureblob:{configuration['azureblob_container_path']}"
 
     settings = aps.Settings()    
     cache_path = settings.get("cachepath",default=get_default_cache_path())
@@ -102,17 +116,8 @@ def setup_mount(dialog):
     base_arguments = [
         rclone_install._get_rclone_path(),      
         "mount"
-    ]
-    
+    ]    
     config_arguments = create_config_arguments()
-
-    if(configuration["s3_region"] and configuration["type"]=="s3"):
-        config_arguments.append("--s3-region")  
-        config_arguments.append(f"{configuration['s3_region']}")
-    if(configuration["s3_location_constraint"] and configuration["type"]=="s3"):
-        config_arguments.append("--s3-location-constraint")  
-        config_arguments.append(f"{configuration['s3_location_constraint']}")
-
     config_arguments.append(create_location_arguments())
 
     if isWin():

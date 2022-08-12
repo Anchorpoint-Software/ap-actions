@@ -3,6 +3,9 @@ import apsync as aps
 import json
 import string
 import random
+import os,sys
+sys.path.insert(0, os.path.dirname(__file__))
+import rclone_config_helper as rclone_config
 
 ctx = ap.Context.instance()
 ui = ap.UI()
@@ -10,34 +13,8 @@ settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings()
 
 password = ""
-dropdown_values = ["S3 (Amazon AWS)\t", "B2 (Backblaze)\t"]
-
-configuration = {
-    "type": "",
-    "s3_provider": "",
-    "s3_access_key_id": "",
-    "s3_secret_access_key": "",
-    "s3_region": "",
-    "s3_location_constraint": "",
-    "s3_root_folder":"",
-    "b2_account": "",
-    "b2_key":"",
-    "b2_bucket_name": ""
-}
-
-def get_config_type(value):
-    if(value == dropdown_values[0]):
-        return "s3"
-    if(value == dropdown_values[1]):
-        return "b2"
-    return ""
-
-def get_dropdown_label(config_type):
-    if(config_type == "s3"):
-        return dropdown_values[0]
-    if(config_type == "b2"):
-        return dropdown_values[1]
-    return dropdown_values[0]
+dropdown_values = rclone_config.get_remote_options()
+configuration = rclone_config.get_config()
 
 def create_dialog():
 
@@ -46,7 +23,7 @@ def create_dialog():
             row_var = f"{str(key)}_var"
             if str(key) != "type":
                 hide = True
-                if get_config_type(dialog.get_value("type_var")) in str(key):
+                if rclone_config.get_config_type(dialog.get_value("type_var")) in str(key):
                     hide = False
                 dialog.hide_row(row_var,hide)
             
@@ -57,19 +34,25 @@ def create_dialog():
     if ctx.icon:
         dialog.icon = ctx.icon 
 
-    dialog.add_text("Server\t\t").add_dropdown(get_dropdown_label(configuration["type"]), dropdown_values, var="type_var",callback = toggleOptions)
+    dialog.add_text("Server\t\t").add_dropdown(rclone_config.get_dropdown_label(configuration["type"]), dropdown_values, var="type_var",callback = toggleOptions)
     dialog.add_info("Choose an S3 compatible server such as AWS, MinIO and <br> Digital Ocean or choose a Backblaze B2 server. Take a look <br> at this <a href='https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud'>tutorial</a> for more information.")
 
+    #AWS
     dialog.add_text("Provider\t\t").add_input(configuration["s3_provider"],placeholder="AWS", var="s3_provider_var")
     dialog.add_text("Access Key\t\t").add_input(configuration["s3_access_key_id"],placeholder="Get your access key from the IAM console",var="s3_access_key_id_var")
     dialog.add_text("Secret Access Key\t").add_input(configuration["s3_secret_access_key"],placeholder="Get your secret access key from the IAM console",var="s3_secret_access_key_var")
-    dialog.add_text("Bucket/ Folder Path\t").add_input(configuration["s3_root_folder"],placeholder="bucketname/folder/subfolder",var="s3_root_folder_var")
+    dialog.add_text("Bucket/Folder\t").add_input(configuration["s3_root_folder"],placeholder="bucketname/folder/subfolder",var="s3_root_folder_var")
     dialog.add_text("Region\t\t").add_input(configuration["s3_region"],placeholder="eu-central-1 (Optional)",var="s3_region_var")
     dialog.add_text("Location Constraint\t").add_input(configuration["s3_location_constraint"],placeholder="EU (Optional)",var="s3_location_constraint_var")
     
+    #Backblaze
     dialog.add_text("Key Id\t\t").add_input(configuration["b2_account"],placeholder="039skN...",var="b2_account_var")
     dialog.add_text("Application Key\t").add_input(configuration["b2_key"],placeholder="ca6bfe00...",var="b2_key_var")
-    dialog.add_text("Bucket Name/Folder\t").add_input(configuration["b2_bucket_name"],placeholder="MyStudioBucket",var="b2_bucket_name_var")
+    dialog.add_text("Bucket Name/Folder\t").add_input(configuration["b2_bucket_name"],placeholder="myBucket/mySubfolder",var="b2_bucket_name_var")
+
+    #Azure
+    dialog.add_text("Shared access signature").add_input(configuration["azureblob_sas_url"],placeholder="https://myazureaccount...",var="azureblob_sas_url_var")
+    dialog.add_text("Container Name/Folder\t").add_input(configuration["azureblob_container_path"],placeholder="myContainer/mySubfolder",var="azureblob_container_path_var")
 
     dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "").add_button("Clear Configuration", callback = clear_config)
     dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
@@ -118,7 +101,7 @@ def decrypt(encrypted: str, password: str) -> str:
     return original_data.decode()
 
 def get_configuration(dialog : ap.Dialog):
-    configuration["type"] = get_config_type(dialog.get_value("type_var"))
+    configuration["type"] = rclone_config.get_config_type(dialog.get_value("type_var"))
     for i in configuration.keys():
         if i !="type":
             configuration_val = dialog.get_value(f"{i}_var")
