@@ -42,7 +42,8 @@ def _get_rclone_path():
 def check_winfsp_and_rclone(menu):
     global show_menu
     show_menu = menu
-
+    macFuse = False
+    
     if isWin():
         winfsp_path = os.path.isfile(os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe"))
     else:
