@@ -11,6 +11,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 import rclone_install_helper as rclone_install
 import rclone_config_helper as rclone_config
 
+path_var = "path"
+
 def generate_secret_key(password: str, salt: bytes) -> str:
     from Crypto.Protocol.KDF import PBKDF2
     return PBKDF2(password, salt, dkLen=32)
@@ -49,7 +51,7 @@ def create_bat_file(command,drive):
     with open(startup_path,'w') as f:
         f.write(command)
 
-def setup_mount(dialog):
+def setup_mount(dialog, workspace_id):
 
     def create_config_arguments():
         config = []
@@ -102,8 +104,8 @@ def setup_mount(dialog):
         if(configuration["type"]=="azureblob"):
             return f":azureblob:{configuration['azureblob_container_path']}"
 
-    settings = aps.Settings()    
-    cache_path = settings.get("cachepath",default=get_default_cache_path())
+    local_settings = aps.Settings("rclone")    
+    cache_path = local_settings.get("cachepath",default=get_default_cache_path())
 
     if not os.path.isdir(cache_path):
         os.mkdir(cache_path)
@@ -161,15 +163,15 @@ def setup_mount(dialog):
     if isWin():
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
-        ctx.run_async(run_rclone, arguments, drive, startupinfo)
+        ctx.run_async(run_rclone, arguments, drive, workspace_id, startupinfo)
     else:
         #add daemon for mac
         arguments.append("--daemon")
-        ctx.run_async(run_rclone, arguments, drive)
+        ctx.run_async(run_rclone, arguments, drive, workspace_id)
     
     dialog.close()
 
-def store_auto_mount(success: bool, drive: str):
+def store_auto_mount(success: bool, drive: str, workspace_id: str):
     local_settings = aps.Settings(workspace_id)
     if success:
         local_settings.set("rclone-automount", True)
@@ -178,7 +180,8 @@ def store_auto_mount(success: bool, drive: str):
         local_settings.remove("rclone-automount")
     local_settings.store()
 
-def run_rclone(arguments, drive, startupinfo=None):
+def run_rclone(arguments, drive, workspace_id, startupinfo=None):
+    ui = ap.UI()
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "401"
@@ -199,7 +202,7 @@ def run_rclone(arguments, drive, startupinfo=None):
 
         if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Something went wrong")
-            store_auto_mount(False, drive)
+            store_auto_mount(False, drive, workspace_id)
             print(line)
             return
         elif rclone_success in line:            
@@ -207,12 +210,12 @@ def run_rclone(arguments, drive, startupinfo=None):
             prepare_mount_progress = None
             if not isWin() and "reload_drives" in dir(ui):
                 ui.reload_drives()
-            store_auto_mount(True, drive)
+            store_auto_mount(True, drive, workspace_id)
             ui.show_success("Mount Successful")
 
         elif rlcone_wrong_credentials in line:
             ui.show_info(title="Invalid Settings", duration=6000, description="Your settings do not seem to be correct. Go to the settings of \"Connect Cloud Drive\" and check if you have made a typing error.")
-            store_auto_mount(False, drive)
+            store_auto_mount(False, drive, workspace_id)
             return
 
         if myjson and "Transferred" in myjson["msg"]:
@@ -225,7 +228,7 @@ def run_rclone(arguments, drive, startupinfo=None):
         if not isWin() and "reload_drives" in dir(ui):
             ui.reload_drives()
         ui.show_success("Mount Successful")
-        store_auto_mount(True, drive)
+        store_auto_mount(True, drive, workspace_id)
     
 
 def is_json(myjson):
@@ -270,8 +273,14 @@ def get_default_cache_path():
 def is_admin():
     return True
 
-def get_settings():
+def get_settings(workspace_id: str):
     import pyperclip as pc 
+
+    ctx = ap.Context.instance()
+    ui = ap.UI()
+    shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
+    local_settings = aps.Settings("rclone")
+    
     if shared_settings.get("Config")=="":
         if is_admin:
             ui.show_info("No cloud drive configured", description="Please setup a cloud drive in your Workspace Settings inside the Actions entry.")
@@ -289,7 +298,7 @@ def get_settings():
                 undumped_configuration = json.loads(decrypted_configuration)
                 for i in configuration.keys():
                     configuration[i] = undumped_configuration[i]
-                show_options()
+                show_options(shared_settings.get("mount_path"), workspace_id)
             except:
                 create_pw_dialog()
 
@@ -302,10 +311,13 @@ def create_pw_dialog():
     dialog.show()
 
 def set_password(dialog : ap.Dialog):
+    local_settings = aps.Settings("rclone")
     local_settings.set("encryption_password", dialog.get_value("pw_var"))
+    local_settings.store()
     get_settings()
 
-def show_options():    
+def show_options(mount_path: str, workspace_id: str):    
+    ui = ap.UI()
     dialog = ap.Dialog()
     dialog.title = "Mount Cloud Drive"
 
@@ -320,16 +332,16 @@ def show_options():
             dialog.icon = ctx.icon    
 
         dialog.add_text("Drive Letter:\t").add_dropdown(drives[0], drives, var="drive_var")
-        dialog.add_button("Mount", callback=setup_mount)
+        dialog.add_button("Mount", callback=lambda d: setup_mount(d, workspace_id))
 
         dialog.show()
     else:
-        path = shared_settings.get("mount_path")
+        path = mount_path
         if path ==  "":
             path = os.path.normpath("/Volumes")
 
         dialog.add_text("Drive Location:\t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
-        dialog.add_button("Mount", callback=setup_mount)
+        dialog.add_button("Mount", callback=lambda d: setup_mount(d, workspace_id))
         dialog.show()
 
 def isWin():
@@ -340,11 +352,6 @@ def isWin():
 
 if __name__ == "__main__":
     ctx = ap.Context.instance()
-    ui = ap.UI()
-    shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
-    local_settings = aps.Settings()
-    path_var = "path"
-    workspace_id = ctx.workspace_id
-
+    
     configuration = rclone_config.get_config()
-    ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings)
+    ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)

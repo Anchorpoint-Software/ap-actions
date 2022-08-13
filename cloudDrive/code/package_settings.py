@@ -10,7 +10,7 @@ import rclone_config_helper as rclone_config
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
-local_settings = aps.Settings()
+local_settings = aps.Settings("rclone")
 
 password = ""
 dropdown_values = rclone_config.get_remote_options()

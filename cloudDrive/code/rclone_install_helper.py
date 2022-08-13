@@ -39,7 +39,7 @@ def _get_rclone_path():
         dir = os.path.join(dir, "rclone")
     return os.path.normpath(dir)
 
-def check_winfsp_and_rclone(menu):
+def check_winfsp_and_rclone(menu, *args, **kwargs):
     global show_menu
     show_menu = menu
     macFuse = False
@@ -55,7 +55,7 @@ def check_winfsp_and_rclone(menu):
         show_install_dialog()
     else:
         ctx.run_async(check_and_install_modules)
-        show_menu()
+        show_menu(*args, **kwargs)
 
 def show_install_dialog():
     dialog = ap.Dialog()

@@ -9,7 +9,7 @@ import rclone_install_helper as rclone_install
 
 ctx = ap.Context.instance()
 ui = ap.UI()
-settings = aps.Settings()
+settings = aps.Settings("rclone")
 
 def isWin():
     if platform.system() == "Windows":
@@ -25,7 +25,7 @@ def store_settings(dialog : ap.Dialog):
         dialog.close()
 
 def clear_cache(dialog : ap.Dialog):
-    settings = aps.Settings()    
+    settings = aps.Settings("rclone")    
     cache_path = settings.get("cachepath",default=get_default_cache_path())
 
     vfs_path = os.path.join(cache_path,"vfs")
