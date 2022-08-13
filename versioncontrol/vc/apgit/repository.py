@@ -331,7 +331,7 @@ class GitRepository(VCRepository):
             self._get_file_changes(diff, changes)
             
             if not staged:
-                for untracked_file in self._get_untracked_files():
+                for untracked_file in self._get_untracked_files("-uall"):
                     changes.new_files.append(Change(path = untracked_file)) 
         except ValueError as e:
             print(e)
