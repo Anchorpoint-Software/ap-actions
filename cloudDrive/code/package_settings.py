@@ -35,20 +35,21 @@ def create_dialog():
         dialog.icon = ctx.icon 
 
     dialog.add_text("Server\t\t").add_dropdown(rclone_config.get_dropdown_label(configuration["type"]), dropdown_values, var="type_var",callback = toggleOptions)
-    dialog.add_info("Choose an S3 compatible server such as AWS, MinIO and <br> Digital Ocean or choose a Backblaze B2 server. Take a look <br> at this <a href='https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud'>tutorial</a> for more information.")
+    dialog.add_info("Choose an S3 compatible server such as AWS, MinIO and <br> Wasabi or choose a Backblaze B2 server. Take a look <br> at this <a href='https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud'>tutorial</a> for more information.")
 
-    #AWS
-    dialog.add_text("Provider\t\t").add_input(configuration["s3_provider"],placeholder="AWS", var="s3_provider_var")
-    dialog.add_text("Access Key\t\t").add_input(configuration["s3_access_key_id"],placeholder="Get your access key from the IAM console",var="s3_access_key_id_var")
-    dialog.add_text("Secret Access Key\t").add_input(configuration["s3_secret_access_key"],placeholder="Get your secret access key from the IAM console",var="s3_secret_access_key_var")
-    dialog.add_text("Bucket/Folder\t").add_input(configuration["s3_root_folder"],placeholder="bucketname/folder/subfolder",var="s3_root_folder_var")
-    dialog.add_text("Region\t\t").add_input(configuration["s3_region"],placeholder="eu-central-1 (Optional)",var="s3_region_var")
-    dialog.add_text("Location Constraint\t").add_input(configuration["s3_location_constraint"],placeholder="EU (Optional)",var="s3_location_constraint_var")
-    
     #Backblaze
     dialog.add_text("Key Id\t\t").add_input(configuration["b2_account"],placeholder="039skN...",var="b2_account_var")
     dialog.add_text("Application Key\t").add_input(configuration["b2_key"],placeholder="ca6bfe00...",var="b2_key_var")
     dialog.add_text("Bucket Name/Folder\t").add_input(configuration["b2_bucket_name"],placeholder="myBucket/mySubfolder",var="b2_bucket_name_var")
+
+    #S3
+    dialog.add_text("Provider\t\t").add_input(configuration["s3_provider"],placeholder="AWS, Wasabi etc.", var="s3_provider_var")
+    dialog.add_text("Access Key\t\t").add_input(configuration["s3_access_key_id"],placeholder="Get your access key from the IAM console",var="s3_access_key_id_var")
+    dialog.add_text("Secret Access Key\t").add_input(configuration["s3_secret_access_key"],placeholder="Get your secret access key from the IAM console",var="s3_secret_access_key_var")
+    dialog.add_text("Endpoint\t\t").add_input(configuration["s3_endpoint"],placeholder="s3.eu-central-1.wasabisys.com (Required for Wasabi)",var="s3_endpoint_var")
+    dialog.add_text("Bucket/Folder\t").add_input(configuration["s3_root_folder"],placeholder="bucketname/folder/subfolder",var="s3_root_folder_var")
+    dialog.add_text("Region\t\t").add_input(configuration["s3_region"],placeholder="eu-central-1 (Required for Wasabi)",var="s3_region_var")
+    dialog.add_text("Location Constraint\t").add_input(configuration["s3_location_constraint"],placeholder="EU (Optional)",var="s3_location_constraint_var")
 
     #Azure
     dialog.add_text("Shared access signature").add_input(configuration["azureblob_sas_url"],placeholder="https://myazureaccount...",var="azureblob_sas_url_var")
