@@ -51,7 +51,7 @@ def create_bat_file(command,drive):
     with open(startup_path,'w') as f:
         f.write(command)
 
-def setup_mount(dialog, workspace_id):
+def setup_mount(dialog, workspace_id, configuration):
 
     def create_config_arguments():
         config = []
@@ -280,6 +280,7 @@ def get_settings(workspace_id: str):
     ui = ap.UI()
     shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
     local_settings = aps.Settings("rclone")
+    configuration = rclone_config.get_config()
     
     if shared_settings.get("Config")=="":
         if is_admin:
@@ -298,7 +299,7 @@ def get_settings(workspace_id: str):
                 undumped_configuration = json.loads(decrypted_configuration)
                 for i in configuration.keys():
                     configuration[i] = undumped_configuration[i]
-                show_options(shared_settings.get("mount_path"), workspace_id)
+                show_options(shared_settings.get("mount_path"), workspace_id, configuration)
             except:
                 create_pw_dialog()
 
@@ -316,7 +317,7 @@ def set_password(dialog : ap.Dialog):
     local_settings.store()
     get_settings()
 
-def show_options(mount_path: str, workspace_id: str):    
+def show_options(mount_path: str, workspace_id: str, configuration):    
     ui = ap.UI()
     dialog = ap.Dialog()
     dialog.title = "Mount Cloud Drive"
@@ -332,7 +333,7 @@ def show_options(mount_path: str, workspace_id: str):
             dialog.icon = ctx.icon    
 
         dialog.add_text("Drive Letter:\t").add_dropdown(drives[0], drives, var="drive_var")
-        dialog.add_button("Mount", callback=lambda d: setup_mount(d, workspace_id))
+        dialog.add_button("Mount", callback=lambda d: setup_mount(d, workspace_id, configuration))
 
         dialog.show()
     else:
@@ -341,7 +342,7 @@ def show_options(mount_path: str, workspace_id: str):
             path = os.path.normpath("/Volumes")
 
         dialog.add_text("Drive Location:\t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
-        dialog.add_button("Mount", callback=lambda d: setup_mount(d, workspace_id))
+        dialog.add_button("Mount", callback=lambda d: setup_mount(d, workspace_id, configuration))
         dialog.show()
 
 def isWin():
@@ -353,5 +354,4 @@ def isWin():
 if __name__ == "__main__":
     ctx = ap.Context.instance()
     
-    configuration = rclone_config.get_config()
     ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
