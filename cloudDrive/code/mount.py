@@ -193,6 +193,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "401"
     progress = None
+    global_progress = ap.Progress("Mounting Cloud Drive", show_loading_screen=True)
     
     p = subprocess.Popen(
         args=arguments,
@@ -218,6 +219,8 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
                 ui.reload_drives()
             store_auto_mount(True, drive, workspace_id)
             ui.show_success("Mount Successful")
+            global_progress.finish()
+            ui.reload()
 
         elif rlcone_wrong_credentials in line:
             ui.show_info(title="Invalid Settings", duration=6000, description="Your settings do not seem to be correct. Go to the settings of \"Connect Cloud Drive\" and check if you have made a typing error.")
@@ -235,6 +238,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             ui.reload_drives()
         ui.show_success("Mount Successful")
         store_auto_mount(True, drive, workspace_id)
+        ui.reload()
     
 
 def is_json(myjson):
