@@ -389,8 +389,6 @@ def on_application_started(ctx: ap.Context):
     except:
         return
 
-    ap.UI().show_info("Mounting Cloud Drive")
-
     ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
     
 
