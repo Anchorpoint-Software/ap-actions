@@ -1,0 +1,53 @@
+from shutil import copyfile
+import anchorpoint as ap
+import apsync as aps
+import sys, os
+
+def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
+    try:
+        sys.path.insert(0, os.path.split(__file__)[0])
+        import is_git_repo as git
+        return git.is_git_repo(path)
+    except Exception as e:
+        print(str(e))
+    return False
+
+def get_ignore_dir(yaml_dir: str):
+    return os.path.join(yaml_dir, "gitignore templates")
+
+def get_ignore_file(yaml_dir: str, name: str):
+    return os.path.join(get_ignore_dir(yaml_dir), f"{name}.gitignore")
+
+def add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
+    dropdown = dialog.get_value("dropdown")
+    ignore_src = get_ignore_file(yaml_dir, dropdown)
+    ignore_target = os.path.join(path, ".gitignore")
+    if os.path.exists(ignore_target):
+        os.remove(ignore_target)
+    
+    copyfile(ignore_src, ignore_target)
+    dialog.close()
+    ap.UI().show_success("Ignore File Created")
+
+if __name__ == "__main__":
+    ctx = ap.Context.instance()
+    ui = ap.UI()
+    ignore_files_dir = get_ignore_dir(ctx.yaml_dir)
+
+    settings = aps.Settings("gitignore")
+
+    dialog = ap.Dialog() 
+    dialog.title = "Add Git Ignore File"
+    dialog.icon = ctx.icon
+
+    dropdown_values = []
+    dropdown_values = [os.path.splitext(f)[0] for f in os.listdir(ignore_files_dir) if os.path.isfile(os.path.join(ignore_files_dir, f))]
+    if len(dropdown_values) == 0:
+        ui.show_info("No gitignore templates found")
+        sys.exit(0)
+
+    dialog.add_text("Template: ").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
+    dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).")
+    dialog.add_button("Create", callback=lambda d: add_git_ignore(ctx.path, ctx.yaml_dir, d))
+
+    dialog.show(settings)
