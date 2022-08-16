@@ -225,6 +225,12 @@ class GitRepository(VCRepository):
 
         return state
 
+    def revert_changelist(self, changelist_id: str):
+        self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+
+    def restore_changelist(self, changelist_id: str):
+        self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
+
     def restore_files(self, files: list[str]):
         self.repo.git.checkout("--", *files)
 
@@ -299,7 +305,7 @@ class GitRepository(VCRepository):
                                untracked_files=True,
                                as_process=True,
                                **kwargs)
-        # Untracked files preffix in porcelain mode
+        # Untracked files prefix in porcelain mode
         prefix = "?? "
         untracked_files = []
         for line in proc.stdout:

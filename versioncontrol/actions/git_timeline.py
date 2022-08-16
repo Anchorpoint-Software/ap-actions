@@ -224,7 +224,14 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     changes = dict[str,ap.VCPendingChange]()
     parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
 
-    # details.actions.append(None)
+    revert = ap.TimelineChannelAction()
+    revert.name = "Undo Commit"
+    revert.icon = aps.Icon(":/icons/revert.svg")
+    revert.identifier = "gitrevertcommit"
+    revert.type = ap.ActionButtonType.Primary
+    revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
+
+    details.actions.append(revert)
     details.changes = ap.VCChangeList(changes.values())
     return details
 
