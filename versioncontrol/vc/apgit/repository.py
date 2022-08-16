@@ -284,9 +284,9 @@ class GitRepository(VCRepository):
             return "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
 
     def has_pending_changes(self, include_untracked):
-        if include_untracked: return self.get_pending_changes().size() > 0
+        if include_untracked: return self.get_pending_changes().size() > 0 or self.get_pending_changes(True).size() > 0
         diff = self.repo.index.diff(None) 
-        return len(diff) > 0
+        return len(diff) > 0 or self.get_pending_changes(True).size() > 0
 
     def _get_untracked_files(self, *args, **kwargs):
         from git.util import finalize_process
