@@ -208,6 +208,33 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         print (e)
         return None
 
+def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+    from vc.apgit.utility import get_repo_path
+    from vc.apgit.repository import GitRepository
+
+    if channel_id != "Git": return None
+    details = ap.TimelineChannelEntryVCDetails()
+
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return details
+
+    changes = dict[str,ap.VCPendingChange]()
+    parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
+
+    revert = ap.TimelineChannelAction()
+    revert.name = "Undo Commit"
+    revert.icon = aps.Icon(":/icons/revert.svg")
+    revert.identifier = "gitrevertcommit"
+    revert.type = ap.ActionButtonType.Primary
+    revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
+
+    details.actions.append(revert)
+    details.changes = ap.VCChangeList(changes.values())
+    return details
+
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))

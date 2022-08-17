@@ -225,6 +225,12 @@ class GitRepository(VCRepository):
 
         return state
 
+    def revert_changelist(self, changelist_id: str):
+        self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+
+    def restore_changelist(self, changelist_id: str):
+        self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
+
     def restore_files(self, files: list[str]):
         self.repo.git.checkout("--", *files)
 
@@ -284,9 +290,9 @@ class GitRepository(VCRepository):
             return "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
 
     def has_pending_changes(self, include_untracked):
-        if include_untracked: return self.get_pending_changes().size() > 0
+        if include_untracked: return self.get_pending_changes().size() > 0 or self.get_pending_changes(True).size() > 0
         diff = self.repo.index.diff(None) 
-        return len(diff) > 0
+        return len(diff) > 0 or self.get_pending_changes(True).size() > 0
 
     def _get_untracked_files(self, *args, **kwargs):
         from git.util import finalize_process
@@ -299,7 +305,7 @@ class GitRepository(VCRepository):
                                untracked_files=True,
                                as_process=True,
                                **kwargs)
-        # Untracked files preffix in porcelain mode
+        # Untracked files prefix in porcelain mode
         prefix = "?? "
         untracked_files = []
         for line in proc.stdout:
