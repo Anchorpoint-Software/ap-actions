@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Unmount
+  name: Unmount All
 
   version: 1
   id: "ap::cloudDrive::unmount"
@@ -20,4 +20,4 @@ action:
 
   register:
       drive:
-        enable: "code/is_mount_drive.py"
+        enable: True
