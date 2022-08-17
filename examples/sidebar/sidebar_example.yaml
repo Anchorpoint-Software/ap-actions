@@ -1,0 +1,22 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Sidebar Example
+
+  version: 1
+  id: ap::examples::sidebar
+  category: utility/code/examples/sidebar
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: An example action that shows up as a button on the left sidebar
+
+  script: sidebar_example.py
+
+  register:
+    sidebar:
+      enable: true
