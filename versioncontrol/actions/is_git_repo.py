@@ -8,8 +8,7 @@ def path_contains_git_repo(path: str) -> bool:
 def is_git_repo(path: str) -> bool:
     if path_contains_git_repo(path): return True
     p = Path(path)
-
-    while p.parent is not p:
+    while p.parent != p:
         p = p.parent
         if path_contains_git_repo(p): return True
 
