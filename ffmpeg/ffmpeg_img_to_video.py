@@ -49,6 +49,8 @@ def concat_demuxer(selected_files, fps):
 def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps): 
     if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[0].startswith('video'):
         progress_infinite = True
+        global filename
+        filename = ctx.filename
     else:
         progress_infinite = False
 
