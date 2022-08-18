@@ -191,7 +191,9 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     ui = ap.UI()
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
-    rlcone_wrong_credentials = "401"
+    rlcone_wrong_credentials = "SignatureDoesNotMatch"
+    count_msg = "queuing for upload"
+    upload_succeeded_msg = "upload succeeded"
     progress = None
     global_progress = ap.Progress("Mounting Cloud Drive", show_loading_screen=True)
     
@@ -205,8 +207,17 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
         universal_newlines=True,
         )
     
+    count = 0
+    count_uploaded = 0
+    
     for line in p.stdout:
         myjson = is_json(line)
+        
+        if count_msg in line:
+            count = add_to_count(count, 1)
+        
+        if upload_succeeded_msg in line:
+            count_uploaded = add_to_count(count_uploaded, 1)
 
         if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Something went wrong")
@@ -228,7 +239,11 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             return
 
         if myjson and "Transferred" in myjson["msg"]:
-            progress = check_upload(myjson, progress)
+            progress = check_upload(myjson, progress, count, count_uploaded)
+            
+        if progress == None:
+            count = set_count_to(count, 0)
+            count_uploaded = set_count_to(count_uploaded, 0)
 
     if not isWin() and prepare_mount_progress is not None:
         # Mac runs in daemon mode, so we assume everything has worked when we reach this point
@@ -249,7 +264,7 @@ def is_json(myjson):
     return myjson
 
 
-def check_upload(myjson, progress):
+def check_upload(myjson, progress, count, count_uploaded):
     # get the percentage number without whitespaces
     percentage = myjson["msg"].split(",")[1].strip()
     upload_speed = myjson["msg"].split(",")[2].strip()
@@ -258,16 +273,28 @@ def check_upload(myjson, progress):
         progress = ap.Progress("Syncing Files", percentage+ " at " + upload_speed, infinite=False)
     
     if progress: 
-        if percentage == "-": percentage = "0"
-        percentage_int = int(percentage.split("%")[0])/100
-        progress.report_progress(percentage_int)
-        progress.set_text(percentage + " at " + upload_speed)
+        if count > 1:
+            progress.report_progress(count_uploaded/count)
+            progress.set_text(str(int((count_uploaded/count)*100)) + "%" + " at " + upload_speed)
+        else:
+            if percentage == "-": percentage = "0"
+            percentage_int = int(percentage.split("%")[0])/100
+            progress.report_progress(percentage_int)
+            progress.set_text(percentage + " at " + upload_speed)
 
     if progress and percentage == "100%":
         progress.finish()
         progress = None
     
     return progress
+
+def set_count_to(count, number):
+    count = number
+    return count
+
+def add_to_count(count, number):
+    count += number
+    return count
 
 def get_default_cache_path():
     if isWin():
