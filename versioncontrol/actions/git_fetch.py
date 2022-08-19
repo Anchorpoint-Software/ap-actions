@@ -4,13 +4,12 @@ import apsync as aps
 
 import sys, os, importlib
 current_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.join(current_dir, ".."))
-sys.path.insert(0, current_dir)
+parent_dir = os.path.join(current_dir, "..")
+sys.path.insert(0, parent_dir)
 
-importlib.invalidate_caches()
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-
+sys.path.remove(parent_dir)
 class FetchProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()

@@ -3,6 +3,8 @@ import apsync as aps
 from typing import Optional
 import os
 
+script_dir = os.path.join(os.path.dirname(__file__), "..")
+
 def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool) -> ap.VCPendingChange:
     result = ap.VCPendingChange()
     result.status = status
@@ -40,7 +42,7 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
 def on_load_timeline_channel_info(channel_id: str, ctx):
     try:
         import sys, os
-        sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        sys.path.insert(0, script_dir)
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
 
@@ -105,11 +107,13 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
     except Exception as e:
         print (e)
         return None
+    finally:
+        sys.path.remove(script_dir)
 
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
         import sys, os
-        sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+        sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
         from vc.models import HistoryType
@@ -151,11 +155,13 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
     except Exception as e:
         print (e)
         return []
+    finally:
+        sys.path.remove(script_dir)
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
         import sys, os
-        sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+        sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
         
@@ -207,78 +213,89 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     except Exception as e:
         print (e)
         return None
+    finally:
+        sys.path.remove(script_dir)
 
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from vc.apgit.utility import get_repo_path
-    from vc.apgit.repository import GitRepository
+    sys.path.insert(0, script_dir)
+    try:
+        from vc.apgit.utility import get_repo_path
+        from vc.apgit.repository import GitRepository
 
-    if channel_id != "Git": return None
-    details = ap.TimelineChannelEntryVCDetails()
+        if channel_id != "Git": return None
+        details = ap.TimelineChannelEntryVCDetails()
 
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return details
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return details
 
-    changes = dict[str,ap.VCPendingChange]()
-    parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
+        changes = dict[str,ap.VCPendingChange]()
+        parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
 
-    revert = ap.TimelineChannelAction()
-    revert.name = "Undo Commit"
-    revert.icon = aps.Icon(":/icons/undo.svg")
-    revert.identifier = "gitrevertcommit"
-    revert.type = ap.ActionButtonType.SecondaryText
-    revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
+        revert = ap.TimelineChannelAction()
+        revert.name = "Undo Commit"
+        revert.icon = aps.Icon(":/icons/undo.svg")
+        revert.identifier = "gitrevertcommit"
+        revert.type = ap.ActionButtonType.SecondaryText
+        revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
 
-    details.actions.append(revert)
-    details.changes = ap.VCChangeList(changes.values())
-    return details
+        details.actions.append(revert)
+        details.changes = ap.VCChangeList(changes.values())
+        return details
+    finally:
+        sys.path.remove(script_dir)
 
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from vc.apgit.utility import get_repo_path
-    from vc.apgit.repository import GitRepository
-    if channel_id != "Git": return None
-
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return
-
-    progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
+    sys.path.insert(0, script_dir)
     try:
-        commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
-    except Exception as e:
-        commits = []
-    
-    try:
-        repo.switch_branch(branch)
-    except Exception as e:
-        ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
-        return
+        from vc.apgit.utility import get_repo_path
+        from vc.apgit.repository import GitRepository
+        if channel_id != "Git": return None
 
-    if len(commits) > 0:
-        ap.delete_timeline_channel_entries(channel_id, list(commits))
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
+
+        progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
+        try:
+            commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
+        except Exception as e:
+            commits = []
+        
+        try:
+            repo.switch_branch(branch)
+        except Exception as e:
+            ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
+            return
+
+        if len(commits) > 0:
+            ap.delete_timeline_channel_entries(channel_id, list(commits))
+    finally:
+        sys.path.remove(script_dir)
 
 def on_vc_create_branch(channel_id: str, branch: str, ctx):
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-    from vc.apgit.utility import get_repo_path
-    from vc.apgit.repository import GitRepository
-    if channel_id != "Git": return None
-
-    path = get_repo_path(channel_id, ctx.project_path)
-    repo = GitRepository.load(path)
-    if not repo: return
-
-    progress = ap.Progress(f"Creating Branch: {branch}", show_loading_screen = True)
-    
+    import sys
+    sys.path.insert(0, script_dir)
     try:
-        repo.create_branch(branch)
-    except Exception as e:
-        ap.UI().show_info("Cannot create branch")
-        return
+        from vc.apgit.utility import get_repo_path
+        from vc.apgit.repository import GitRepository
+        if channel_id != "Git": return None
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
+
+        progress = ap.Progress(f"Creating Branch: {branch}", show_loading_screen = True)
+        
+        try:
+            repo.create_branch(branch)
+        except Exception as e:
+            ap.UI().show_info("Cannot create branch")
+            return
+    finally:
+        sys.path.remove(script_dir)
 
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
@@ -291,7 +308,7 @@ def refresh_async(channel_id: str, project_path):
         return
 
     import sys, os
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    sys.path.insert(0, script_dir)
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -314,6 +331,8 @@ def refresh_async(channel_id: str, project_path):
 
     except Exception as e:
         pass
+    finally:
+        sys.path.remove(script_dir)
 
 def on_project_directory_changed(ctx):
     ap.refresh_timeline_channel("Git")

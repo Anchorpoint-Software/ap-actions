@@ -1,10 +1,9 @@
 from cgitb import enable
 import anchorpoint as ap
 import apsync as aps
-import os, sys
+import os
 import shutil, platform
 
-sys.path.insert(0, os.path.dirname(__file__))
 import rclone_install_helper as rclone_install
 
 ctx = ap.Context.instance()

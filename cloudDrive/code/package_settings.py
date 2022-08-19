@@ -3,8 +3,7 @@ import apsync as aps
 import json
 import string
 import random
-import os,sys
-sys.path.insert(0, os.path.dirname(__file__))
+
 import rclone_config_helper as rclone_config
 
 ctx = ap.Context.instance()

@@ -13,9 +13,8 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
 
 if __name__ == "__main__":
     import sys, os, importlib
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
-
-    importlib.invalidate_caches()
+    script_dir = os.path.join(os.path.dirname(__file__), "..")
+    sys.path.insert(0, script_dir)
 
     try:
         from vc.apgit.repository import * 
@@ -24,6 +23,7 @@ if __name__ == "__main__":
 
     import platform
     import git_repository_helper as helper
+    sys.path.remove(script_dir)
 
     ctx = ap.Context.instance()
     ui = ap.UI()

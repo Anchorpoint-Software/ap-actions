@@ -1,7 +1,7 @@
-from logging import PlaceHolder
 import anchorpoint as ap
-import apsync as aps
-import time
+import time, os
+
+script_dir = os.path.join(os.path.dirname(__file__), "..")
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
     return len(ctx.project_id) == 0
@@ -73,8 +73,8 @@ def clone_repo(dialog: ap.Dialog):
     ctx.run_async(clone_repo_async, path, url, name)
 
 if __name__ == "__main__":
-    import sys, os, importlib
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    import sys, os
+    sys.path.insert(0, script_dir)
 
     try:
         from vc.apgit.repository import * 
@@ -82,6 +82,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     import git_repository_helper as helper
+    sys.path.remove(script_dir)
 
     remote_enabled = True
     remote_url = ""

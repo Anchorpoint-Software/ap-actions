@@ -1,14 +1,13 @@
 import anchorpoint as ap
 import apsync as aps
 
-import sys, os, importlib
-current_dir = os.path.dirname(__file__)
-sys.path.insert(0, os.path.join(current_dir, ".."))
-sys.path.insert(0, current_dir)
+import sys, os
+script_dir = os.path.join(os.path.dirname(__file__), "..")
+sys.path.insert(0, script_dir)
 
-importlib.invalidate_caches()
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+sys.path.remove(script_dir)
 
 def revert(channel_id, project_path, dialog):
     ui = ap.UI()

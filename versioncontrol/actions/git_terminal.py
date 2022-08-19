@@ -4,7 +4,6 @@ import platform, sys
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
     try:
-        sys.path.insert(0, os.path.split(__file__)[0])
         import is_git_repo as git
         return git.is_git_repo(path)
     except Exception as e:

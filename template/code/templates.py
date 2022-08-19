@@ -3,7 +3,6 @@ import apsync as aps
 import os, re, sys
 from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(__file__))
 import template_utility
 
 ctx = ap.Context.instance()

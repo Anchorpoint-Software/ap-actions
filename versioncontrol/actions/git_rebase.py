@@ -3,11 +3,12 @@ import anchorpoint as ap
 import apsync as aps
 
 import sys, os, importlib
-sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+script_dir = os.path.join(os.path.dirname(__file__), "..")
+sys.path.insert(0, script_dir)
 
-importlib.invalidate_caches()
 from vc.apgit.repository import * 
 from vc.models import ConflictResolveState
+sys.path.remove(script_dir)
 
 def cancel_rebase(channel_id, project_path):
     from vc.apgit.utility import get_repo_path
