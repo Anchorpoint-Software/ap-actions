@@ -226,7 +226,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
 
     revert = ap.TimelineChannelAction()
     revert.name = "Undo Commit"
-    revert.icon = aps.Icon(":/icons/revert.svg")
+    revert.icon = aps.Icon(":/icons/undo.svg")
     revert.identifier = "gitrevertcommit"
     revert.type = ap.ActionButtonType.SecondaryText
     revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
