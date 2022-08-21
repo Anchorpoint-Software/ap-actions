@@ -672,6 +672,18 @@ class GitRepository(VCRepository):
         with open(os.path.join(dir, "exclude"), "a") as f:
             f.write(f"\n{pattern}")
             
+    def prune_lfs(self):
+        output = self.repo.git.lfs("prune")
+
+        if "Deleting objects: 100%" not in output: return 0
+
+        import re
+        try:
+            pruned_match = re.search("Deleting objects: 100% \(\d+\/\d+\), done", output)
+            if pruned_match:
+                return int(re.search("\d+\)", pruned_match.group()).group()[:-1])
+        except:
+            return 0        
 
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
