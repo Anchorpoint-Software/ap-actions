@@ -47,6 +47,6 @@ if __name__ == "__main__":
     dialog.title = "Git Settings"
 
     dialog.add_button("Clear Cache", callback=prune_pressed)
-    dialog.add_info("Removes local files from the Git LFS cache that are old.<br>This will never delete any data on the server or data that is not pushed to a Git remote.")
+    dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
     dialog.show(settings)
