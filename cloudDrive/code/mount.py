@@ -65,22 +65,36 @@ def setup_mount(drive, workspace_id, configuration):
                 f"{configuration['b2_key']}"
                 ]
 
-        #S3
-        if(configuration["type"]=="s3"):
+        #S3 AWS
+        if(configuration["type"]=="s3aws"):
             config += [
                     "--s3-provider",
-                    f"{configuration['s3_provider']}",
+                    "AWS",
                     "--s3-access-key-id",
-                    f"{configuration['s3_access_key_id']}",
+                    f"{configuration['s3aws_access_key_id']}",
                     "--s3-secret-access-key",
-                    f"{configuration['s3_secret_access_key']}"
+                    f"{configuration['s3aws_secret_access_key']}"
                     ]
-        if(configuration["s3_endpoint"] and configuration["type"]=="s3"):
-            config += ["--s3-endpoint", f"{configuration['s3_endpoint']}"]
-        if(configuration["s3_region"] and configuration["type"]=="s3"):
-            config += ["--s3-region", f"{configuration['s3_region']}"]
-        if(configuration["s3_location_constraint"] and configuration["type"]=="s3"):
-            config += ["--s3-location-constraint",f"{configuration['s3_location_constraint']}"]
+        if(configuration["s3aws_region"] and configuration["type"]=="s3aws"):
+            config += ["--s3-region", f"{configuration['s3aws_region']}"]
+        if(configuration["s3aws_location_constraint"] and configuration["type"]=="s3aws"):
+            config += ["--s3-location-constraint",f"{configuration['s3aws_location_constraint']}"]
+
+        #S3 Wasabi
+        if(configuration["type"]=="s3wasabi"):
+            config += [
+                    "--s3-provider",
+                    "Wasabi",
+                    "--s3-access-key-id",
+                    f"{configuration['s3wasabi_access_key_id']}",
+                    "--s3-secret-access-key",
+                    f"{configuration['s3wasabi_secret_access_key']}",
+                    "--s3-endpoint",
+                    f"{configuration['s3wasabi_endpoint']}",
+                    "--s3-region",
+                    f"{configuration['s3wasabi_region']}"
+                    ]
+        
         
         #Azure
         if(configuration["type"]=="azureblob"):
@@ -96,9 +110,13 @@ def setup_mount(drive, workspace_id, configuration):
         if(configuration["type"]=="b2"):
             return f":b2:{configuration['b2_bucket_name']}"
 
-        #AWS
-        if(configuration["type"]=="s3"):
-            return f":s3:{configuration['s3_root_folder']}"
+        #S3 AWS
+        if(configuration["type"]=="s3aws"):
+            return f":s3:{configuration['s3aws_root_folder']}"
+
+        #S3 Wasabi
+        if(configuration["type"]=="s3wasabi"):
+            return f":s3:{configuration['s3wasabi_root_folder']}"
 
         #Azure
         if(configuration["type"]=="azureblob"):
