@@ -13,7 +13,6 @@ configuration = {
     "s3wasabi_access_key_id": "",
     "s3wasabi_secret_access_key": "",
     "s3wasabi_region": "",
-    "s3wasabi_endpoint": "",
     "s3wasabi_root_folder":"",
 
     #Backblaze

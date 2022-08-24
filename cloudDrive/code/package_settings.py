@@ -52,7 +52,6 @@ def create_dialog():
     #s3 Wasabi
     dialog.add_text("Access Key\t\t").add_input(configuration["s3wasabi_access_key_id"],placeholder="XXXBTBISU...",var="s3wasabi_access_key_id_var")
     dialog.add_text("Secret Access Key\t").add_input(configuration["s3wasabi_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3wasabi_secret_access_key_var")
-    dialog.add_text("Endpoint\t\t").add_input(configuration["s3wasabi_endpoint"],placeholder="s3wasabi.eu-central-1.wasabisys.com",var="s3wasabi_endpoint_var")    
     dialog.add_text("Region\t\t").add_input(configuration["s3wasabi_region"],placeholder="eu-central-1",var="s3wasabi_region_var")
     dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3wasabi_root_folder"],placeholder="myBucket/myFolder...",var="s3wasabi_root_folder_var")
 

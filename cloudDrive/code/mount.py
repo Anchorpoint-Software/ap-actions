@@ -90,7 +90,7 @@ def setup_mount(drive, workspace_id, configuration):
                     "--s3-secret-access-key",
                     f"{configuration['s3wasabi_secret_access_key']}",
                     "--s3-endpoint",
-                    f"{configuration['s3wasabi_endpoint']}",
+                    f"s3.{configuration['s3wasabi_region']}.wasabisys.com",
                     "--s3-region",
                     f"{configuration['s3wasabi_region']}"
                     ]
@@ -210,6 +210,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "SignatureDoesNotMatch"
+    rlcone_wrong_access_key = "InvalidAccessKeyId"
     count_msg = "queuing for upload"
     upload_succeeded_msg = "upload succeeded"
     progress = None
@@ -252,7 +253,11 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             ui.reload()
 
         elif rlcone_wrong_credentials in line:
-            ui.show_info(title="Invalid Settings", duration=6000, description="Your settings do not seem to be correct. Go to the settings of \"Connect Cloud Drive\" and check if you have made a typing error.")
+            ui.show_error(title="Invalid Settings", duration=6000, description="Your settings do not seem to be correct. Go to the settings of \"Connect Cloud Drive\" and check if you have made a typing error.")
+            store_auto_mount(False, drive, workspace_id)
+            return
+        elif rlcone_wrong_access_key in line:
+            ui.show_error(title="Invalid Settings", duration=6000, description="Your Access Key seems to be wrong. Go to the settings of \"Connect Cloud Drive\" and check if you have made a typing error.")
             store_auto_mount(False, drive, workspace_id)
             return
 
