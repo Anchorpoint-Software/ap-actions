@@ -162,6 +162,8 @@ def setup_mount(drive, workspace_id, configuration):
         "--use-server-modtime",
         "--poll-interval",
         "10s",
+        "--dir-cache-time",
+        "15s",
         "--cache-dir",
         cache_path,
         "--volname=Anchorpoint",
