@@ -147,7 +147,7 @@ def _install_rclone_async():
     #     os.mkdir(rclone_dir)
     progress.finish()
 
-    ui.show_success("Installation Successful")
+    ui.show_success("Installation Successful","You can now mount your Cloud Drive")
         
 def check_macfuse():
     if not os.path.isdir(macFUSE_folder_path):
