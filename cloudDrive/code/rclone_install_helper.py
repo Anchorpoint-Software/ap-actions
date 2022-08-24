@@ -128,13 +128,16 @@ def _install_rclone_async():
     # open zip file and extract rclone.exe to the right folder
     z = zipfile.ZipFile(io.BytesIO(r.content))
     
-    openFile = _get_zip_executable(request_url)
+    openFile = _get_zip_executable(request_url).replace("\\","/")
     
     with z.open(openFile) as source:
         with open(_get_rclone_path(), "wb") as target:
             shutil.copyfileobj(source, target)
-
-    os.chmod(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone/rclone"), stat.S_IRWXU)     
+    
+    if isWin():
+        os.chmod(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone/rclone.exe"), stat.S_IRWXU)     
+    else:
+        os.chmod(os.path.expanduser("~/Documents/Anchorpoint/actions/rclone/rclone"), stat.S_IRWXU)
 
     # make rclone dir
     # app_data_roaming = os.getenv('APPDATA')
