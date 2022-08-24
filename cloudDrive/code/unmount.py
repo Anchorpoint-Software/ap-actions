@@ -1,18 +1,20 @@
 import os
-import shutil
+import platform
 import apsync as aps
 import anchorpoint as ap
 
-ctx = ap.Context.instance()
-drive = ctx.path[0]
-
 def kill_rclone():
-    settings = aps.Settings("drive settings")
-    pid = settings.get(drive)
-    settings.remove(drive)
-    settings.store()
-    os.system("taskkill /PID {}".format(pid))
+    if platform.system() == "Windows":
+        os.system("taskkill /im rclone.exe")
+    else:
+        os.system("umount /Volumes/Anchorpoint")
+
+def remove_auto_mount():
+    ctx = ap.Context.instance()
+    local_settings = aps.Settings(ctx.workspace_id)
+    local_settings.remove("rclone-automount")
+    local_settings.remove("rclone-drive")
+    local_settings.store()
 
 kill_rclone()
-
-print(shutil.which("WinFsp"))
+remove_auto_mount()

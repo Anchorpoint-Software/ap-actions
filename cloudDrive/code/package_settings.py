@@ -4,10 +4,72 @@ import json
 import string
 import random
 
+import rclone_config_helper as rclone_config
+
 ctx = ap.Context.instance()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
-local_settings = aps.Settings()
+local_settings = aps.Settings("rclone")
+
+password = ""
+dropdown_values = rclone_config.get_remote_options()
+configuration = rclone_config.get_config()
+
+def create_dialog():
+
+    def toggleOptions(dialog,value):
+        for key in configuration.keys():
+            row_var = f"{str(key)}_var"
+            if str(key) != "type":
+                hide = True
+                if rclone_config.get_config_type(dialog.get_value("type_var")) in str(key):
+                    hide = False
+                dialog.hide_row(row_var,hide)
+            
+
+    # Create a dialog container
+    dialog = ap.Dialog()
+    dialog.title = "Cloud Drive Settings"
+    if ctx.icon:
+        dialog.icon = ctx.icon 
+
+    dialog.add_text("Server\t\t").add_dropdown(rclone_config.get_dropdown_label(configuration["type"]), dropdown_values, var="type_var",callback = toggleOptions)
+    dialog.add_info("Choose an S3 compatible server such as AWS, Wasabi or choose <br>a Backblaze B2 server. Take a look at this <a href='https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud'>tutorial</a>.")
+
+    #Backblaze
+    dialog.add_text("Key Id\t\t").add_input(configuration["b2_account"],placeholder="039skN...",var="b2_account_var")
+    dialog.add_text("Application Key\t").add_input(configuration["b2_key"],placeholder="ca6bfe00...",var="b2_key_var")
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["b2_bucket_name"],placeholder="myBucket/myFolder...",var="b2_bucket_name_var")
+
+    #S3 AWS
+    dialog.add_text("Access Key\t\t").add_input(configuration["s3aws_access_key_id"],placeholder="XXXBTBISU...",var="s3aws_access_key_id_var")
+    dialog.add_text("Secret Access Key\t").add_input(configuration["s3aws_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3aws_secret_access_key_var")
+    dialog.add_text("Region\t\t").add_input(configuration["s3aws_region"],placeholder="eu-central-1 (Optional)",var="s3aws_region_var")
+    dialog.add_text("Location Constraint\t").add_input(configuration["s3aws_location_constraint"],placeholder="EU (Optional)",var="s3aws_location_constraint_var")
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3aws_root_folder"],placeholder="myBucket/myFolder...",var="s3aws_root_folder_var")
+
+
+    #s3 Wasabi
+    dialog.add_text("Access Key\t\t").add_input(configuration["s3wasabi_access_key_id"],placeholder="XXXBTBISU...",var="s3wasabi_access_key_id_var")
+    dialog.add_text("Secret Access Key\t").add_input(configuration["s3wasabi_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3wasabi_secret_access_key_var")
+    dialog.add_text("Region\t\t").add_input(configuration["s3wasabi_region"],placeholder="eu-central-1",var="s3wasabi_region_var")
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3wasabi_root_folder"],placeholder="myBucket/myFolder...",var="s3wasabi_root_folder_var")
+
+    #Azure
+    dialog.add_text("Shared access signature").add_input(configuration["azureblob_sas_url"],placeholder="https://myazureaccount...",var="azureblob_sas_url_var")
+    dialog.add_text("Container/ Folder\t").add_input(configuration["azureblob_container_path"],placeholder="myContainer/myFolder...",var="azureblob_container_path_var")
+
+    dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "").add_button("Clear Configuration", callback = clear_config)
+    dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
+    dialog.add_button("Apply", callback = apply_callback)
+
+    toggleOptions(dialog,dropdown_values[0])
+
+    # Present the dialog to the user
+    dialog.show()
+
+def is_optional(var):
+    return var == "s3aws_region_var" or var == "s3aws_location_constraint_var"
 
 def install_modules():
     progress = ap.Progress("Loading Security Module",infinite = True)
@@ -17,21 +79,6 @@ def install_modules():
     progress.finish()
     init_dialog()
     
-configuration = {
-    "type": "",
-    "provider": "",
-    "access_key_id": "",
-    "secret_access_key": "",
-    "region": "",
-    "location_constraint": "",
-    "root_folder":"",
-    "b2_account": "",
-    "b2_key":"",
-    "b2_bucket_name": ""
-}
-password = ""
-dropdown_values = ["S3 (e.g. AWS)\t", "B2 (Backblaze)\t"]
-
 def generate_secret_key(password: str, salt: bytes) -> str:
     from Crypto.Protocol.KDF import PBKDF2
     return PBKDF2(password, salt, dkLen=32)
@@ -62,16 +109,20 @@ def decrypt(encrypted: str, password: str) -> str:
     return original_data.decode()
 
 def get_configuration(dialog : ap.Dialog):
-    configuration["type"] = get_config_type(dialog.get_value("dropdown_var"))
-    configuration["provider"] = dialog.get_value("provider_var")
-    configuration["access_key_id"] = dialog.get_value("access_key_var")
-    configuration["secret_access_key"] = dialog.get_value("secret_access_key_var")
-    configuration["region"] = dialog.get_value("region_var")
-    configuration["location_constraint"] = dialog.get_value("location_constraint_var")    
-    configuration["root_folder"] = dialog.get_value("root_folder_var")  
-    configuration["b2_account"] = dialog.get_value("b2_account_var")    
-    configuration["b2_key"] = dialog.get_value("b2_app_key_var")   
-    configuration["b2_bucket_name"] = dialog.get_value("b2_bucket_name_var")   
+    configuration["type"] = rclone_config.get_config_type(dialog.get_value("type_var"))
+    for i in configuration.keys():
+        if i !="type" and configuration["type"] in str(i):
+            configuration_val = str(dialog.get_value(f"{i}_var")).strip()
+            #print (i,configuration_val,f"{i}_var")
+            if configuration_val is not "":
+                configuration[i] = configuration_val
+            elif is_optional(f"{i}_var"): 
+                configuration[i] = configuration_val
+            else:
+                return False
+            optional_configuration_val = dialog.get_value(f"{i}_var_opt")
+            if optional_configuration_val is not None:
+                configuration[i] = str(optional_configuration_val).strip()
     return configuration
 
 def apply_callback(dialog : ap.Dialog):   
@@ -79,6 +130,10 @@ def apply_callback(dialog : ap.Dialog):
     import pyperclip as pc 
 
     configuration = get_configuration(dialog)
+    if(not configuration):
+        ui.show_error("Configuration is incomplete","The cloud drive needs the necessary information to work properly")  
+        return
+
     dumped_configuration = json.dumps(configuration)
 
     password = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
@@ -114,17 +169,9 @@ def init_dialog():
             try:
                 decrypted_configuration = decrypt(encrypted_configuration, password)
                 undumped_configuration = json.loads(decrypted_configuration)
-
-                configuration["type"] = undumped_configuration["type"]
-                configuration["provider"] = undumped_configuration["provider"]
-                configuration["access_key_id"] = undumped_configuration["access_key_id"]
-                configuration["secret_access_key"] = undumped_configuration["secret_access_key"]
-                configuration["region"] = undumped_configuration["region"]
-                configuration["location_constraint"] = undumped_configuration ["location_constraint"]
-                configuration["root_folder"] = undumped_configuration ["root_folder"]
-                configuration["b2_account"] = undumped_configuration ["b2_account"]
-                configuration["b2_key"] = undumped_configuration ["b2_key"]
-                configuration["b2_bucket_name"] = undumped_configuration ["b2_bucket_name"]
+                 
+                for i in configuration.keys():
+                    configuration[i] = undumped_configuration[i]
 
                 create_dialog()
             except: 
@@ -142,16 +189,8 @@ def create_pw_dialog():
     dialog.show()
 
 def enter_new_config(dialog : ap.Dialog):
-    configuration["type"] = ""
-    configuration["provider"] = ""
-    configuration["access_key_id"] = ""
-    configuration["secret_access_key"] = ""
-    configuration["region"] = ""
-    configuration["location_constraint"] = ""
-    configuration["root_folder"] = ""
-    configuration["b2_account"] = ""
-    configuration["b2_key"] = ""
-    configuration["b2_bucket_name"] = ""
+    #clears the dictionary
+    for key in configuration: configuration[key] = ""
 
     try:
         local_settings.set("encryption_password", "")
@@ -164,16 +203,8 @@ def enter_new_config(dialog : ap.Dialog):
     create_dialog()
 
 def clear_config(dialog : ap.Dialog):
-    configuration["type"] = ""
-    configuration["provider"] = ""
-    configuration["access_key_id"] = ""
-    configuration["secret_access_key"] = ""
-    configuration["region"] = ""
-    configuration["location_constraint"] = ""
-    configuration["root_folder"] = ""
-    configuration["b2_account"] = ""
-    configuration["b2_key"] = ""
-    configuration["b2_bucket_name"] = ""
+    #clears the dictionary
+    for key in configuration: configuration[key] = ""
 
     try:
         local_settings.set("encryption_password", "")
@@ -190,84 +221,6 @@ def set_password(dialog : ap.Dialog):
     local_settings.set("encryption_password", dialog.get_value("pw_var"))
     local_settings.store()
     init_dialog()
-
-def get_config_type(value):
-    if(value == dropdown_values[0]):
-        return "s3"
-    if(value == dropdown_values[1]):
-        return "b2"
-    return ""
-
-def create_dialog():
-
-    def toggleOptions(dialog,value):
-        if(value==dropdown_values[0]):
-            dialog.hide_row("b2_account_var",True)
-            dialog.hide_row("b2_app_key_var",True)
-            dialog.hide_row("b2_bucket_name_var",True)
-
-            dialog.hide_row("provider_var",False)
-            dialog.hide_row("access_key_var",False)
-            dialog.hide_row("secret_access_key_var",False)
-            dialog.hide_row("root_folder_var",False)
-
-            dialog.hide_row("region_var",False)
-            dialog.hide_row("location_constraint_var",False)
-
-        else:
-            dialog.hide_row("b2_account_var",False)
-            dialog.hide_row("b2_app_key_var",False)
-            dialog.hide_row("b2_bucket_name_var",False)
-
-            dialog.hide_row("provider_var",True)
-            dialog.hide_row("access_key_var",True)
-            dialog.hide_row("secret_access_key_var",True)
-            dialog.hide_row("root_folder_var",True)
-
-            dialog.hide_row("region_var",True)
-            dialog.hide_row("location_constraint_var",True)
-
-        dialogSettings = aps.Settings()
-        dialogSettings.set("dropdown_value",value)
-        dialogSettings.store()
-        
-
-    # Create a dialog container
-    dialog = ap.Dialog()
-    dialog.title = "Cloud Drive Settings"
-    if ctx.icon:
-        dialog.icon = ctx.icon 
-
-    dialogSettings = aps.Settings()
-    current_dropdown = dialogSettings.get("dropdown_value",dropdown_values[0])
-
-    dialog.add_text("Server\t            ").add_dropdown(current_dropdown, dropdown_values, var="dropdown_var",callback = toggleOptions)
-    dialog.add_info("Choose an S3 compatible server such as AWS, MinIO and <br> Digital Ocean or choose a Backblaze B2 server. Take a look <br> at this <a href='https://www.anchorpoint.app/blog/manage-your-vfx-assets-in-the-cloud'>tutorial</a> for more information.")
-
-    dialog.add_text("Provider\t             ").add_input(configuration["provider"],placeholder="AWS", var="provider_var")
-
-    #dialog.add_info("Set a location that your team can access, such as a folder in your Dropbox")
-
-    dialog.add_text("Access Key\t             ").add_input(configuration["access_key_id"],placeholder="Get your access key from the IAM console",var="access_key_var")
-    dialog.add_text("Secret Access Key  ").add_input(configuration["secret_access_key"],placeholder="Get your secret access key from the IAM console",var="secret_access_key_var")
-    dialog.add_text("Bucket/ Folder Path").add_input(configuration["root_folder"],placeholder="bucketname/folder/subfolder",var="root_folder_var")
-    dialog.add_text("Key Id\t             ").add_input(configuration["b2_account"],placeholder="039skN...",var="b2_account_var")
-    dialog.add_text("Application Key       ").add_input(configuration["b2_key"],placeholder="ca6bfe00...",var="b2_app_key_var")
-    dialog.add_text("Bucket Name           ").add_input(configuration["b2_bucket_name"],placeholder="MyStudioBucket",var="b2_bucket_name_var")
-    dialog.add_info("You can get these keys from your service provider, such as <br> the IAM console at AWS.")
-
-    dialog.add_text("Region\t             ").add_input(configuration["region"],placeholder="eu-central-1 (Optional)",var="region_var")
-    dialog.add_text("Location Constraint").add_input(configuration["location_constraint"],placeholder="EU (Optional)",var="location_constraint_var")
-
-    dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "").add_button("Clear Configuration", callback = clear_config)
-    dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
-    dialog.add_button("Apply", callback = apply_callback)
-
-    toggleOptions(dialog,current_dropdown)
-
-    # Present the dialog to the user
-    dialog.show()
-
 
 try:
     import pyperclip as pc

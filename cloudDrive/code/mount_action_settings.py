@@ -1,15 +1,19 @@
 from cgitb import enable
 import anchorpoint as ap
 import apsync as aps
-import os, sys
-import shutil
+import os
+import shutil, platform
 
-sys.path.insert(0, os.path.dirname(__file__))
 import rclone_install_helper as rclone_install
 
 ctx = ap.Context.instance()
 ui = ap.UI()
-settings = aps.Settings()
+settings = aps.Settings("rclone")
+
+def isWin():
+    if platform.system() == "Windows":
+        return True
+    return False
 
 def store_settings(dialog : ap.Dialog):
     cache_path = dialog.get_value("cache_var")
@@ -20,7 +24,7 @@ def store_settings(dialog : ap.Dialog):
         dialog.close()
 
 def clear_cache(dialog : ap.Dialog):
-    settings = aps.Settings()    
+    settings = aps.Settings("rclone")    
     cache_path = settings.get("cachepath",default=get_default_cache_path())
 
     vfs_path = os.path.join(cache_path,"vfs")
@@ -36,9 +40,12 @@ def clear_cache(dialog : ap.Dialog):
     dialog.close()
 
 def get_default_cache_path():
-    app_data_roaming = os.getenv('APPDATA')
-    app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
-    return os.path.join(app_data,"Local/rclone").replace("/","\\")
+    if isWin():
+        app_data_roaming = os.getenv('APPDATA')
+        app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
+        return os.path.join(app_data,"Local/rclone").replace("/","\\")
+    else: 
+        return os.path.normpath(os.path.expanduser("~/library/caches/anchorpoint software/anchorpoint/rclone"))
 
 def open_dialog():    
     cache_path = settings.get("cachepath")

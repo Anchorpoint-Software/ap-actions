@@ -28,6 +28,7 @@ action:
     - ap::examples::qml::greetings
     - ap::examples::widgets::greetings
     - ap::examples::settings
+    - ap::examples::sidebar
     - ap::examples::environment
     - ap::examples::trigger::timer
     - ap::examples::trigger::actionenabled

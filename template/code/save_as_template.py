@@ -1,8 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys
+import os
 
-sys.path.insert(0, os.path.dirname(__file__))
 import template_utility
 
 ctx = ap.Context.instance()

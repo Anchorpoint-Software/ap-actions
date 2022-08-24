@@ -52,6 +52,7 @@ action:
 
   platforms:
     - win
+    - mac
     
   dependencies:
     - code/rclone_install_helper.py

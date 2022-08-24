@@ -111,6 +111,7 @@ If you want to make these files available for your team now, you have to enter a
     - git::openterminal
     - git::joinrepo
     - git::addrepo
+    - git::settings
 
 
     

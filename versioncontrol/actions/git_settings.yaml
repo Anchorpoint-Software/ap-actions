@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Unmount All
+  name: Git Settings
 
   version: 1
-  id: "ap::cloudDrive::unmount"
-  category: user
+  id: git::settings
+  category: git
   type: python
-  author: Matthäus Niedoba
-  description: "Deactivates this cloud drive"
+  author: Anchorpoint Software GmbH
+  description: Shows settings for Git
   icon:
-    path: icons/driveStrike.svg
+    path: :/icons/versioncontrol.svg
 
-  script: "code/unmount.py"
+  script: git_settings.py
 
   register:
-      drive:
-        enable: True
+    sidebar:
+      enable: git_settings.py

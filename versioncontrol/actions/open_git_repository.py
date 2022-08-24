@@ -3,16 +3,20 @@ import time
 import anchorpoint as ap
 import apsync as aps
 
+script_dir = os.path.join(os.path.dirname(__file__), "..")
+
 def connect_repo_async(dialog, path, project):
     progress = ap.Progress("Opening Git Repository", show_loading_screen = True)
     dialog.close()
 
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    sys.path.insert(0, script_dir)
     import git_repository_helper as helper
     try:
         from vc.apgit.repository import GitRepository 
     except Warning as e:
         return
+    
+    sys.path.remove(script_dir)
 
     repo = GitRepository.load(path)
     url = repo.get_remote_url()
@@ -27,8 +31,9 @@ def connect_repo_async(dialog, path, project):
     ap.UI().reload()
 
 def on_folder_opened(ctx: ap.Context):
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    sys.path.insert(0, script_dir)
     import git_repository_helper as helper
+    sys.path.remove(script_dir)
     
     path = ctx.path
     
@@ -90,10 +95,8 @@ def on_folder_opened(ctx: ap.Context):
     
 
 if __name__ == "__main__":
-    import sys, os, importlib
-    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
-
-    importlib.invalidate_caches()
+    import sys, os
+    sys.path.insert(0, script_dir)
 
     try:
         from vc.apgit.repository import * 
@@ -102,6 +105,8 @@ if __name__ == "__main__":
 
     import platform
     import git_repository_helper as helper
+    
+    sys.path.remove(script_dir)
 
     ctx = ap.Context.instance()
     ui = ap.UI()
