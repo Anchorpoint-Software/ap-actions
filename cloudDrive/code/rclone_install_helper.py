@@ -172,7 +172,7 @@ def _install_mac_fuse_async():
     finally:
         if os.path.exists(path_macfuse):
             os.remove(path_macfuse)
-        subprocess.check_call(["hdiutil", "unmount", "/Volumes/macFUSE/"], cwd=folder_macfuse)
+        #subprocess.check_call(["hdiutil", "unmount", "/Volumes/macFUSE/"], cwd=folder_macfuse)
 
     progress.finish()
 
