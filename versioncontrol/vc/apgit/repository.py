@@ -52,6 +52,13 @@ def _parse_lfs_status(progress, line: str):
         if "Downloading LFS objects:" in line:
             report_lfs_progress("Downloading LFS objects: ", 32)
 
+        if "Smudge error" in line:
+            index = line.find("batch response: ")
+            if index >= 0:
+                import anchorpoint
+                error_message = line[index:]
+                anchorpoint.UI().show_error("Git LFS Error", error_message, duration=8000)
+
     except Exception as e:
         print(e)
     
@@ -122,6 +129,9 @@ class GitRepository(VCRepository):
                 git.Repo.clone_from(remote_url, local_path, env=env)
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
+            raise e
+        except Exception as e:
+            print(str(e))
             raise e
 
         return GitRepository.load(local_path)

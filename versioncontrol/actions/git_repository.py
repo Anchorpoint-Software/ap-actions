@@ -67,7 +67,7 @@ if __name__ == "__main__":
             repo.ignore(".ap/project.json", local_only=True)
             ap.UI().show_success("Git Repository Cloned")
         except Exception as e:
-            ap.UI().show_error("Could not clone Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
+            ap.UI().show_error("Could not clone Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository or have exceeded the quotas of your Git provider", duration=8000)
 
     def clone_repo(dialog: ap.Dialog):
         location = dialog.get_value("location")
