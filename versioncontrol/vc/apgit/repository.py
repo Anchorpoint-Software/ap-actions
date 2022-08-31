@@ -666,7 +666,7 @@ class GitRepository(VCRepository):
         if not branch_name: return False
 
         result = self.repo.git.branch(branch_name, "--contains", changelist_id)
-        return result is not ""
+        return result != ""
 
     def ignore(self, pattern: str, local_only = False):
         if local_only == False: 
