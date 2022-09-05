@@ -706,9 +706,17 @@ class GitRepository(VCRepository):
 
     def _get_default_remote(self, branch: str):
         try:
-            return self.repo.git.config("--get", f"branch.{branch}.remote")
-        except:
-            return None
+            remote = self.repo.git.config("--get", f"branch.{branch}.remote")
+            if remote and remote != "":
+                return remote
+            raise Exception()
+        except Exception as e:
+            # No Upstream
+            remotes = self.repo.git.remote().split("\n")
+            if (len(remotes) == 0):
+                raise e
+
+            return remotes[0]
 
     def _get_file_changes(self, diff: git.Diff, changes: Changes):
         for change in diff.iter_change_type("M"):
