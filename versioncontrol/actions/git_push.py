@@ -26,6 +26,25 @@ class PushProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+def show_push_failed(error: str, channel_id, project_path):
+    from textwrap import TextWrapper
+    error = "\n".join(TextWrapper(width=100).wrap(error))
+
+    d = ap.Dialog()
+    d.title = "Could not push"
+    d.icon = ":/icons/versioncontrol.svg"
+    d.add_text("Something went wrong, the Git push did not work correctly")
+    if error != "":
+        d.add_text(error)
+
+    def retry():
+        ctx = ap.Context.instance()
+        ctx.run_async(push_async, channel_id, project_path)
+        d.close()
+
+    d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close())
+    d.show()
+
 def push_async(channel_id: str, project_path):
     ui = ap.UI()
     try:
@@ -38,11 +57,11 @@ def push_async(channel_id: str, project_path):
         if state == UpdateState.CANCEL:
             ui.show_info("Push Canceled")
         elif state != UpdateState.OK:
-            ui.show_error("Failed to push Git Repository")    
+            show_push_failed("", channel_id, project_path)    
         else:
             ui.show_success("Push Successful")
     except Exception as e:
-        ui.show_error("Failed to push Git Repository", str(e))
+        show_push_failed(str(e), channel_id, project_path)
     finally:
         progress.finish()
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
