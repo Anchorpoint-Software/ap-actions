@@ -33,3 +33,4 @@ action:
     - ap::examples::trigger::timer
     - ap::examples::trigger::actionenabled
     - ap::examples::trigger::attributeschanged
+    - ap::examples::workspace
