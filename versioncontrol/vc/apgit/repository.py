@@ -671,6 +671,13 @@ class GitRepository(VCRepository):
 
         return history
 
+    def branch_contains(self, changelist_id: str):
+        branch_name = self.get_current_branch_name()
+        if not branch_name: return False
+
+        result = self.repo.git.branch(branch_name, "--contains", changelist_id)
+        return result != ""
+
     def ignore(self, pattern: str, local_only = False):
         if local_only == False: 
             raise NotImplementedError()

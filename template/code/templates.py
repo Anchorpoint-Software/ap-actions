@@ -93,8 +93,9 @@ def set_variable_availability(dialog, value):
     for key in user_inputs.keys():
         dialog.hide_row(str(key),True)
 
-    for key in template_available_tokens[value]:
-        dialog.hide_row(str(key),False)
+    if value in template_available_tokens:
+        for key in template_available_tokens[value]:
+            dialog.hide_row(str(key),False)
 
 # Search for tokens in a single file oder folder name / entry
 def get_tokens(entry, variables: dict):

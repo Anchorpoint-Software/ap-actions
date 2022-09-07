@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     dialog.add_text("<b>Folder Name</b>")
     dialog.add_input(var="name", width = 400, callback=update_dialog, placeholder="Game_Engine_Files")
-    dialog.add_info("Creating a Git repository will create a new project in Anchorpoint. <br> Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/\">Git.</a>")
+    dialog.add_info("Creating a Git repository will create a new project in Anchorpoint. <br> Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/5-Workflow-Git/\">Git.</a>")
     dialog.add_switch(remote_enabled, var="remote", callback=update_dialog).add_text("Remote Repository")
 
     dialog.add_text("<b>Repository URL</b>", var="repotext").hide_row(hide=hide_remote_settings)
