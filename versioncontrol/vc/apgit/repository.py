@@ -588,6 +588,9 @@ class GitRepository(VCRepository):
     def has_remote(self) -> bool:
         return len(self.repo.remotes) > 0
 
+    def add_remote(self, url: str, name: str = "origin"):
+        self.repo.git.remote("add", name, url)
+
     def _get_local_commits(self, has_upstream):
         if has_upstream:
             if self.is_unborn(): 
