@@ -67,7 +67,17 @@ if __name__ == "__main__":
             repo.ignore(".ap/project.json", local_only=True)
             ap.UI().show_success("Git Repository Cloned")
         except Exception as e:
-            ap.UI().show_error("Could not clone Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")
+            d = ap.Dialog()
+            d.title = "Could not clone Git Repository"
+            d.icon = ":/icons/versioncontrol.svg"
+            d.add_text("You might have entered a wrong username / password,<br>or you don't have access to the repository.")
+
+            def retry():
+                ctx.run_async(clone_repo_async, repo_path, url, join_project_files)
+                d.close()
+
+            d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close())
+            d.show()
 
     def clone_repo(dialog: ap.Dialog):
         location = dialog.get_value("location")
