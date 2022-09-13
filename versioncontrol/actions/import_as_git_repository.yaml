@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Open Git Terminal
+  name: Create Git Repository
 
   version: 1
-  id: git::openterminal
+  id: git::createnewrepo
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Opens the Terminal / Command line with a set up git environment
+  description: Creates a new Git repository in the selected folder
   icon:
-    path: :/icons/action.svg
+    path: :/icons/versioncontrol.svg
 
-  script: git_terminal.py
+  script: git_import_repository.py
 
   register:
     folder:
-      enable: git_terminal.py
+      enable: git_import_repository.py

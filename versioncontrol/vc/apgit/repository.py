@@ -114,7 +114,7 @@ class GitRepository(VCRepository):
 
     @classmethod
     def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
-        env = GitRepository.get_git_environment()
+        env = GitRepository.get_git_environment(remote_url)
         try:
             if progress is not None:
                 git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env)
@@ -134,7 +134,7 @@ class GitRepository(VCRepository):
         return repo
 
     @staticmethod
-    def get_git_environment():
+    def get_git_environment(remote_url: Optional[str] = None):
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
             config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
@@ -147,6 +147,9 @@ class GitRepository(VCRepository):
 
         add_config_env(env, "credential.helper", utility.get_gcm_path(), 0)
         add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", 1)
+        if remote_url and "azure" in remote_url:
+            add_config_env(env, "http.version", "HTTP/1.1", 2)
+
         return env
 
     def _setup_environment(self):
@@ -166,6 +169,7 @@ class GitRepository(VCRepository):
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: remote = "origin"
+        remote_url = self._get_remote_url(remote)
 
         kwargs = {}
         if not self._has_upstream():
@@ -173,7 +177,7 @@ class GitRepository(VCRepository):
 
         try:
             current_env = os.environ.copy()
-            current_env.update(GitRepository.get_git_environment())
+            current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_push(self.get_root_path(), remote, branch, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
@@ -206,11 +210,12 @@ class GitRepository(VCRepository):
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: return UpdateState.NO_REMOTE
+        remote_url = self._get_remote_url(remote)
 
         state = UpdateState.OK
         try:
             current_env = os.environ.copy()
-            current_env.update(GitRepository.get_git_environment())
+            current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
@@ -583,6 +588,9 @@ class GitRepository(VCRepository):
     def has_remote(self) -> bool:
         return len(self.repo.remotes) > 0
 
+    def add_remote(self, url: str, name: str = "origin"):
+        self.repo.git.remote("add", name, url)
+
     def _get_local_commits(self, has_upstream):
         if has_upstream:
             if self.is_unborn(): 
@@ -706,9 +714,20 @@ class GitRepository(VCRepository):
 
     def _get_default_remote(self, branch: str):
         try:
-            return self.repo.git.config("--get", f"branch.{branch}.remote")
-        except:
-            return None
+            remote = self.repo.git.config("--get", f"branch.{branch}.remote")
+            if remote and remote != "":
+                return remote
+            raise Exception()
+        except Exception as e:
+            # No Upstream
+            remotes = self.repo.git.remote().split("\n")
+            if (len(remotes) == 0):
+                raise e
+
+            return remotes[0]
+
+    def _get_remote_url(self, remote: str):
+        return self.repo.git.config("--get", f"remote.{remote}.url")
 
     def _get_file_changes(self, diff: git.Diff, changes: Changes):
         for change in diff.iter_change_type("M"):

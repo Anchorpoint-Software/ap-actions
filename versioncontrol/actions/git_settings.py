@@ -11,6 +11,24 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
         print(str(e))
     return False
 
+def open_terminal_pressed(dialog):
+    sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
+    from vc.apgit.repository import GitRepository
+    from vc.apgit.utility import get_git_cmd_path
+    import platform
+
+    env = GitRepository.get_git_environment()
+    for key,value in env.items():
+        os.putenv(key, value)
+
+    ctx = ap.Context.instance()
+    if platform.system() == "Darwin":
+        os.system(f"open -a Terminal \"{ctx.path}\"")
+    elif platform.system() == "Windows":
+        path = os.environ["PATH"]
+        os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
+        os.system(f"start cmd /k cd \"{ctx.path}\"")
+
 if __name__ == "__main__":
     script_dir = os.path.join(os.path.dirname(__file__), "..")
     sys.path.insert(0, script_dir)
@@ -44,6 +62,10 @@ if __name__ == "__main__":
     dialog = ap.Dialog()
     dialog.icon = ctx.icon
     dialog.title = "Git Settings"
+
+    dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed)
+    dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
+    dialog.add_empty()
 
     dialog.add_button("Clear Cache", callback=prune_pressed)
     dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
