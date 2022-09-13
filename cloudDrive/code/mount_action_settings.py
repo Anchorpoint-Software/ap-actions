@@ -45,7 +45,10 @@ def get_default_cache_path():
         app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
         return os.path.join(app_data,"Local/rclone").replace("/","\\")
     else: 
-        return os.path.normpath(os.path.expanduser("~/library/caches/anchorpoint software/anchorpoint/rclone"))
+        cache_path = os.path.normpath(os.path.expanduser("~/library/caches/anchorpoint software/anchorpoint/rclone"))
+        if not os.path.exists(cache_path): 
+            os.mkdir(cache_path)
+        return cache_path
 
 def open_dialog():    
     cache_path = settings.get("cachepath")
@@ -53,7 +56,10 @@ def open_dialog():
     if cache_path == "":
         cache_path = get_default_cache_path()
 
-    is_not_emtpy = len(os.listdir(cache_path)) != 0
+    try:
+        is_not_empty = len(os.listdir(cache_path)) != 0
+    except:
+        is_not_empty = False
 
     dialog = ap.Dialog()
     dialog.title = "Cloud Drive Settings"
@@ -62,7 +68,7 @@ def open_dialog():
     if ctx.icon:
         dialog.icon = ctx.icon    
 
-    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_emtpy)
+    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_empty)
     dialog.show()
 
 
