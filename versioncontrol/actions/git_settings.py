@@ -29,6 +29,8 @@ def open_terminal_pressed(dialog):
         os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
         os.system(f"start cmd /k cd \"{ctx.path}\"")
 
+    dialog.close()
+
 if __name__ == "__main__":
     script_dir = os.path.join(os.path.dirname(__file__), "..")
     sys.path.insert(0, script_dir)
