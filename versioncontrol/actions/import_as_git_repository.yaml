@@ -5,10 +5,10 @@
 
 version: 1.0
 action:
-  name: Import as Git Repository
+  name: Create Git Repository
 
   version: 1
-  id: git::importrepo
+  id: git::createnewrepo
   category: git
   type: python
   author: Anchorpoint Software GmbH

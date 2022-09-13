@@ -81,12 +81,14 @@ if __name__ == "__main__":
     dropdown_values = get_ignore_file_types(ctx.yaml_dir)
     dropdown_values.insert(0, "None")
 
+    project_name = os.path.basename(ctx.path)
+
     dialog = ap.Dialog()
     dialog.title = "Import as Git repository"
     dialog.icon = ctx.icon
 
-    dialog.add_text("Project Name:").add_input(var="name")
-    dialog.add_text("Ignore File:").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
+    dialog.add_text("Project Name:     ").add_input(var="name", default=project_name)
+    dialog.add_text("GitIgnore Config:").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
     dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).")
 
     dialog.add_switch(True, var="remote", callback=update_dialog).add_text("Remote Repository")
