@@ -36,6 +36,11 @@ def test():
     print(actor.get_path_name())
     print(actor.get_folder_path())
     print("folder path: ", actor.get_folder_path())
+    
+    static_comp = actor.get_component_by_class(unreal.StaticMeshComponent)
+    path_string = static_comp.get_editor_property('static_mesh').get_path_name()
+    
+    print('path', path_string)
      
     
 test()
