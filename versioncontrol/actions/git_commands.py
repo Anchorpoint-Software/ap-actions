@@ -63,7 +63,7 @@ if __name__ == "__main__":
 
     dialog = ap.Dialog()
     dialog.icon = ctx.icon
-    dialog.title = "Git Settings"
+    dialog.title = "Git Commands"
 
     dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed)
     dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")

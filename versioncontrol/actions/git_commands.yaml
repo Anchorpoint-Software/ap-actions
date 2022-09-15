@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Git Settings
+  name: Git Commands
 
   version: 1
-  id: git::settings
+  id: git::commands
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Shows settings for Git
+  description: Shows useful Git commands
   icon:
     path: :/icons/versioncontrol.svg
 
-  script: git_settings.py
+  script: git_commands.py
 
   register:
     sidebar:
-      enable: git_settings.py
+      enable: git_commands.py

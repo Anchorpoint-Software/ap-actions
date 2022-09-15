@@ -52,9 +52,9 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return info
 
-        is_rebasing = repo.is_rebasing()
+        is_merging = repo.is_rebasing() or repo.is_merging()
 
-        if repo.has_remote() and not is_rebasing:
+        if repo.has_remote() and not is_merging:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
                 pull.name = "Pull"
@@ -77,7 +77,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 fetch.tooltip = "Fetches new commits from the server"
                 info.actions.append(fetch)
         
-        if is_rebasing:
+        if is_merging:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
