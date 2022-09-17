@@ -18,21 +18,30 @@ def get_ignore_dir(yaml_dir: str):
 def get_ignore_file(yaml_dir: str, name: str):
     return os.path.join(get_ignore_dir(yaml_dir), f"{name}.gitignore")
 
-def add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
-    dropdown = dialog.get_value("dropdown")
-    ignore_src = get_ignore_file(yaml_dir, dropdown)
+def add_git_ignore(template_name: str, path: str, yaml_dir: str):
+    ignore_src = get_ignore_file(yaml_dir, template_name)
     ignore_target = os.path.join(path, ".gitignore")
     if os.path.exists(ignore_target):
         os.remove(ignore_target)
     
     copyfile(ignore_src, ignore_target)
+
+def _add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
+    dropdown = dialog.get_value("dropdown")
+    add_git_ignore(dropdown, path, yaml_dir)
     dialog.close()
     ap.UI().show_success("Ignore File Created")
+
+def get_ignore_file_types(yaml_dir):
+    ignore_files_dir = get_ignore_dir(yaml_dir)
+    dropdown_values = []
+    dropdown_values = [os.path.splitext(f)[0] for f in os.listdir(ignore_files_dir) if os.path.isfile(os.path.join(ignore_files_dir, f))]
+    return dropdown_values
 
 if __name__ == "__main__":
     ctx = ap.Context.instance()
     ui = ap.UI()
-    ignore_files_dir = get_ignore_dir(ctx.yaml_dir)
+    
 
     settings = aps.Settings("gitignore")
 
@@ -40,8 +49,7 @@ if __name__ == "__main__":
     dialog.title = "Add Git Ignore File"
     dialog.icon = ctx.icon
 
-    dropdown_values = []
-    dropdown_values = [os.path.splitext(f)[0] for f in os.listdir(ignore_files_dir) if os.path.isfile(os.path.join(ignore_files_dir, f))]
+    dropdown_values = get_ignore_file_types(ctx.yaml_dir)
     if len(dropdown_values) == 0:
         ui.show_info("No gitignore templates found")
         sys.exit(0)

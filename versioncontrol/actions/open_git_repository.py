@@ -87,7 +87,7 @@ def on_folder_opened(ctx: ap.Context):
 
     dialog.add_text("<b>Project Name</b>")
     dialog.add_input(default=project_name, enabled=project is None, var="name", callback=update_dialog, width = 360)  
-    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/4-Workflow-Git/\">Git.</a>")
+    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/5-Workflow-Git/\">Git.</a>")
     dialog.add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
     dialog.add_button("Open Repository", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("Cancel", callback=lambda d: d.close())
     

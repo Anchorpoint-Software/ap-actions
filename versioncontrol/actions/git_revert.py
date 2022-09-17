@@ -9,15 +9,13 @@ from vc.apgit.repository import *
 from vc.apgit.utility import get_repo_path
 sys.path.remove(script_dir)
 
-def revert(channel_id, project_path, dialog):
+def revert(channel_id, project_path, new_files):
     ui = ap.UI()
     progress = ap.Progress("Reverting Files", show_loading_screen=True)
     
     path = get_repo_path(channel_id, project_path)
     repo = GitRepository.load(path)
     if not repo: return
-
-    new_files = dialog.get_value("newfiles")
     try:
         repo.unstage_all_files()
         repo.restore_all_files()
@@ -29,11 +27,10 @@ def revert(channel_id, project_path, dialog):
     ap.refresh_timeline_channel(channel_id)
     ui.show_success("Revert Successful")
 
-    dialog.close()
-
 def revert_button_pressed(channel_id, project_path, dialog):
     ctx = ap.Context.instance()
-    ctx.run_async(revert, channel_id, project_path, dialog)
+    ctx.run_async(revert, channel_id, project_path, dialog.get_value("newfiles"))
+    dialog.close()
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
     if action_id != "gitrevertall": return False
@@ -80,7 +77,6 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog.add_button("Continue", callback=lambda d: undo_button_pressed(path, entry_id, d)).add_button("Cancel", callback=lambda d: d.close())
             dialog.show()
         else:
-            print("no uncp0m.")
             undo(path, entry_id)
             ap.refresh_timeline_channel(channel_id)
     except Exception as e:
