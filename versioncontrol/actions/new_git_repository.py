@@ -29,7 +29,7 @@ def update_dialog(dialog: ap.Dialog, value):
 def create_repo_async(repo_path, project_name):
     project = ctx.create_project(repo_path, project_name, ctx.workspace_id)
 
-    repo = GitRepository.create(repo_path)
+    repo = GitRepository.create(repo_path, ctx.username, ctx.email)
     helper.update_project(repo_path, None, False, None, project, False)
     repo.ignore(".ap/project.json", local_only=True)
     ap.UI().show_success("Git Repository Initialized")
@@ -53,7 +53,7 @@ def clone_repo_async(repo_path, url, project_name):
         
     try:
         progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-        repo = GitRepository.clone(url, repo_path, progress=helper.CloneProgress(progress))
+        repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress))
         project = ctx.create_project(repo_path, project_name, ctx.workspace_id)
         helper.update_project(repo_path, url, False, None, project, False)
         repo.ignore(".ap/project.json", local_only=True)

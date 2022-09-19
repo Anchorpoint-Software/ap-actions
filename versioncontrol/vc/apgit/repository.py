@@ -114,13 +114,19 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
 
-    @classmethod
-    def create(cls, path: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
-        return GitRepository.load(path)
+    def set_username(self, username: str, email: str):
+        self.repo.git.config("user.name", username)
+        self.repo.git.config("user.email", email)
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
+    def create(cls, path: str, username: str, email: str):
+        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
+        repo = GitRepository.load(path)
+        repo.set_username(username, email)
+        return repo
+
+    @classmethod
+    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None):
         env = GitRepository.get_git_environment(remote_url)
         try:
             if progress is not None:
@@ -134,7 +140,9 @@ class GitRepository(VCRepository):
             print(str(e))
             raise e
 
-        return GitRepository.load(local_path)
+        repo = GitRepository.load(local_path)
+        repo.set_username(username, email)
+        return repo
 
     @classmethod
     def load(cls, path: str):

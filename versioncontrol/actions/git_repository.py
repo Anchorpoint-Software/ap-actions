@@ -61,7 +61,7 @@ if __name__ == "__main__":
             
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-            repo = GitRepository.clone(url, repo_path, progress=helper.CloneProgress(progress))
+            repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress))
             progress.finish()
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)

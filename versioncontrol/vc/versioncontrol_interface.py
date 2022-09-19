@@ -19,11 +19,11 @@ class VCRepository:
         pass
 
     @classmethod
-    def create(cls, path: str):
+    def create(cls, path: str, username: str, email: str):
         pass
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
+    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None):
         pass
 
     @classmethod
