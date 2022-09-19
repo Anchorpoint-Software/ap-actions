@@ -493,12 +493,22 @@ class GitRepository(VCRepository):
         for dir in rebase_dirs:
             if os.path.exists(os.path.join(repodir, dir)): return True
         return False
-
+        
     def continue_rebasing(self):
         self.repo.git(c = "core.editor=true").rebase("--continue")
 
     def abort_rebasing(self):
         self.repo.git.rebase("--abort")
+
+    def is_merging(self):
+        repodir = self._get_repo_internal_dir()
+        return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
+
+    def continue_merge(self):
+        self.repo.git(c = "core.editor=true").merge("--continue")
+
+    def abort_merge(self):
+        self.repo.git.merge("--abort")
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
         path_args = ["."] if paths is None else paths
@@ -577,6 +587,12 @@ class GitRepository(VCRepository):
 
     def get_remote_change_id(self) -> str:
         return self.repo.git.rev_parse("@{u}")
+
+    def get_rebase_head(self):
+        try:
+            return self.repo.git.rev_parse("REBASE_HEAD")
+        except:
+            return self.repo.git.rev_parse("HEAD")
 
     def is_pull_required(self) -> bool:
         try:

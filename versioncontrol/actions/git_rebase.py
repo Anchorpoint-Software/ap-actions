@@ -16,7 +16,11 @@ def cancel_rebase(channel_id, project_path):
     repo = GitRepository.load(path)
     if not repo:
         return
-    repo.abort_rebasing()
+    if repo.is_rebasing():
+        repo.abort_rebasing()
+    elif repo.is_merging():
+        repo.abort_merge()
+
     ap.refresh_timeline_channel(channel_id)
 
 def resolve_conflicts(channel_id):
@@ -30,6 +34,8 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
     repo = GitRepository.load(path)
     if not repo:
         return
+
+    rebase_head = repo.get_rebase_head()
 
     if conflict_handling == ap.VCConflictHandling.Cancel:
         progress = ap.Progress("Canceling", show_loading_screen=True)
@@ -55,8 +61,14 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                 repo.remove_files(unstaged_files)
             repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
     
-    if repo.has_conflicts() == False and repo.is_rebasing():
-        repo.continue_rebasing()
+    if repo.has_conflicts() == False: 
+        if repo.is_rebasing():
+            repo.continue_rebasing()
+        elif repo.is_merging():
+            repo.continue_merge()
+        
+        ids_to_delete = [rebase_head]
+        ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id == "gitcancelrebase":
