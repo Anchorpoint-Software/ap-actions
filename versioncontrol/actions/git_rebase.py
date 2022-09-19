@@ -51,7 +51,11 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             # git checkout --theirs (theirs and ours is inverse when rebasing)
             if len(staged_files) > 0:
                 repo.remove_files(staged_files)
-            repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
+            
+            if repo.is_merging():
+                repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
+            else:
+                repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
 
         elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
             progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
