@@ -275,7 +275,7 @@ class GitRepository(VCRepository):
                 pass
         
         self.repo.git.switch(branch_name)
-
+        
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
 
@@ -692,7 +692,7 @@ class GitRepository(VCRepository):
             pass
             
         for commit in base_commits:
-            if self._is_head_detached():
+            if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
@@ -737,7 +737,7 @@ class GitRepository(VCRepository):
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
 
-    def _is_head_detached(self):
+    def is_head_detached(self):
         return self._get_current_branch() == "HEAD"
 
     def _get_current_branch(self):

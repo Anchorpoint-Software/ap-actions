@@ -1,5 +1,7 @@
+from logging import exception
 import anchorpoint as ap
 import apsync as aps
+import git_errors
 
 import sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -17,14 +19,22 @@ def revert(channel_id, project_path, new_files):
     repo = GitRepository.load(path)
     if not repo: return
     try:
-        repo.unstage_all_files()
-        repo.restore_all_files()
+        try:
+            repo.unstage_all_files()
+            repo.restore_all_files()
+        except:
+            pass
+
         if new_files:
             repo.clean()
-    except:
-        pass
+    except Exception as e:
+        git_errors.handle_error(e)
+        ui.show_error("Could not revert")
+        print(str(e))
+        return
+    finally:
+        ap.refresh_timeline_channel(channel_id)
     
-    ap.refresh_timeline_channel(channel_id)
     ui.show_success("Revert Successful")
 
 def revert_button_pressed(channel_id, project_path, dialog):
