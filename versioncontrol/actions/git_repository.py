@@ -46,7 +46,7 @@ if __name__ == "__main__":
             ap.UI().show_info("Already a Git repo")
             return False
         else:
-            repo = GitRepository.create(repo_path)
+            repo = GitRepository.create(repo_path, ctx.username, ctx.email)
             helper.update_project(repo_path, None, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
             ap.UI().show_success("Git Repository Initialized")

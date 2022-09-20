@@ -5,7 +5,7 @@ import apsync as aps
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
-def connect_repo_async(dialog, path, project):
+def connect_repo_async(ctx, dialog, path, project):
     progress = ap.Progress("Opening Git Repository", show_loading_screen = True)
     dialog.close()
 
@@ -48,7 +48,7 @@ def on_folder_opened(ctx: ap.Context):
         dialog.set_enabled("yes", len(name) > 0)
         
     def connect_repo(dialog: ap.Dialog, project):
-        ctx.run_async(connect_repo_async, dialog, path, project)
+        ctx.run_async(connect_repo_async, ctx, dialog, path, project)
 
     git_dir = os.path.join(ctx.path, ".git")
     if not os.path.exists(git_dir):
@@ -58,7 +58,6 @@ def on_folder_opened(ctx: ap.Context):
     if access not in [aps.AccessLevel.Owner, aps.AccessLevel.Admin]:
         return
 
-    has_project = False
     project = None
     project_name = ""
 
@@ -90,7 +89,7 @@ def on_folder_opened(ctx: ap.Context):
     dialog.add_input(default=project_name, enabled=project is None, var="name", callback=update_dialog, width = 360)  
     dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/5-Workflow-Git/\">Git.</a>")
     dialog.add_checkbox(callback=update_settings, var="neveraskagain").add_text("Never ask again")
-    dialog.add_button("Open Repository", enabled=has_project, var="yes", callback=lambda d: connect_repo(d,project)).add_button("Cancel", callback=lambda d: d.close())
+    dialog.add_button("Open Repository", var="yes", callback=lambda d: connect_repo(d,project)).add_button("Cancel", callback=lambda d: d.close())
     
     dialog.show()
     

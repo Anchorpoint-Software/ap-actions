@@ -47,7 +47,7 @@ if __name__ == "__main__":
             return False
         else:
             project = ctx.create_project(location, name, workspace_id)
-            repo = GitRepository.create(repo_path)
+            repo = GitRepository.create(repo_path, ctx.username, ctx.email)
             helper.update_project(repo_path, None, False, None, project, add_path=False)
             repo.ignore(".ap/project.json", local_only=True)
             if remote and len(url) > 0:
