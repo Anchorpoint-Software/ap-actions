@@ -321,7 +321,6 @@ def refresh_async(channel_id: str, project_path):
 
         lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):
-            print("fetch is already running")
             return
 
         try:
