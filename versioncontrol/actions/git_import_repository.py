@@ -46,11 +46,15 @@ if __name__ == "__main__":
             ap.UI().show_info("Already a Git repo")
             return False
         else:
+            remote_exists = remote and len(url) > 0
             project = ctx.create_project(location, name, workspace_id)
             repo = GitRepository.create(repo_path, ctx.username, ctx.email)
-            helper.update_project(repo_path, None, False, None, project, add_path=False)
+            if remote_exists:
+                helper.update_project(repo_path, url, False, None, project, add_path=False)
+            else:
+                helper.update_project(repo_path, None, False, None, project, add_path=False)
             repo.ignore(".ap/project.json", local_only=True)
-            if remote and len(url) > 0:
+            if remote_exists > 0:
                 repo.add_remote(url)
 
             if ignore != "None":
