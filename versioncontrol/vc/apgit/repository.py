@@ -52,6 +52,13 @@ def _parse_lfs_status(progress, line: str):
         if "Downloading LFS objects:" in line:
             report_lfs_progress("Downloading LFS objects: ", 32)
 
+        if "Smudge error" in line:
+            index = line.find("batch response: ")
+            if index >= 0:
+                import anchorpoint
+                error_message = line[index:]
+                anchorpoint.UI().show_error("Git LFS Error", error_message, duration=8000)
+
     except Exception as e:
         print(e)
     
@@ -107,13 +114,19 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
 
-    @classmethod
-    def create(cls, path: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
-        return GitRepository.load(path)
+    def set_username(self, username: str, email: str):
+        self.repo.git.config("user.name", username)
+        self.repo.git.config("user.email", email)
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, progress: Optional[Progress] = None):
+    def create(cls, path: str, username: str, email: str):
+        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
+        repo = GitRepository.load(path)
+        repo.set_username(username, email)
+        return repo
+
+    @classmethod
+    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None):
         env = GitRepository.get_git_environment(remote_url)
         try:
             if progress is not None:
@@ -123,8 +136,13 @@ class GitRepository(VCRepository):
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
+        except Exception as e:
+            print(str(e))
+            raise e
 
-        return GitRepository.load(local_path)
+        repo = GitRepository.load(local_path)
+        repo.set_username(username, email)
+        return repo
 
     @classmethod
     def load(cls, path: str):
@@ -257,7 +275,7 @@ class GitRepository(VCRepository):
                 pass
         
         self.repo.git.switch(branch_name)
-
+        
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
 
@@ -483,12 +501,22 @@ class GitRepository(VCRepository):
         for dir in rebase_dirs:
             if os.path.exists(os.path.join(repodir, dir)): return True
         return False
-
+        
     def continue_rebasing(self):
         self.repo.git(c = "core.editor=true").rebase("--continue")
 
     def abort_rebasing(self):
         self.repo.git.rebase("--abort")
+
+    def is_merging(self):
+        repodir = self._get_repo_internal_dir()
+        return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
+
+    def continue_merge(self):
+        self.repo.git(c = "core.editor=true").merge("--continue")
+
+    def abort_merge(self):
+        self.repo.git.merge("--abort")
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
         path_args = ["."] if paths is None else paths
@@ -567,6 +595,12 @@ class GitRepository(VCRepository):
 
     def get_remote_change_id(self) -> str:
         return self.repo.git.rev_parse("@{u}")
+
+    def get_rebase_head(self):
+        try:
+            return self.repo.git.rev_parse("REBASE_HEAD")
+        except:
+            return self.repo.git.rev_parse("HEAD")
 
     def is_pull_required(self) -> bool:
         try:
@@ -658,7 +692,7 @@ class GitRepository(VCRepository):
             pass
             
         for commit in base_commits:
-            if self._is_head_detached():
+            if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
@@ -703,7 +737,7 @@ class GitRepository(VCRepository):
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
 
-    def _is_head_detached(self):
+    def is_head_detached(self):
         return self._get_current_branch() == "HEAD"
 
     def _get_current_branch(self):

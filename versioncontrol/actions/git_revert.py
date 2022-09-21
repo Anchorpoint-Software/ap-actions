@@ -1,5 +1,7 @@
+from logging import exception
 import anchorpoint as ap
 import apsync as aps
+import git_errors
 
 import sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -15,16 +17,27 @@ def revert(channel_id, project_path, new_files):
     
     path = get_repo_path(channel_id, project_path)
     repo = GitRepository.load(path)
+    git_error_shown = False
     if not repo: return
     try:
-        repo.unstage_all_files()
-        repo.restore_all_files()
+        try:
+            repo.unstage_all_files()
+            repo.restore_all_files()
+        except Exception as e:
+            if git_errors.handle_error(e):
+                git_error_shown = True
+
         if new_files:
             repo.clean()
-    except:
-        pass
+    except Exception as e:
+        if not git_error_shown:
+            git_errors.handle_error(e)
+        ui.show_error("Could not revert")
+        print(str(e))
+        return
+    finally:
+        ap.refresh_timeline_channel(channel_id)
     
-    ap.refresh_timeline_channel(channel_id)
     ui.show_success("Revert Successful")
 
 def revert_button_pressed(channel_id, project_path, dialog):
@@ -38,7 +51,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     dialog = ap.Dialog()
     dialog.title = "Revert Files"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
-    dialog.add_checkbox(default=False, var="newfiles").add_text("Revert New Files")
+    dialog.add_checkbox(default=True, var="newfiles").add_text("Revert New Files")
     dialog.add_button("Yes", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, d))
     dialog.show()
 

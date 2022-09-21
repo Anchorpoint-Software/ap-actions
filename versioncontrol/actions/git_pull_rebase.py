@@ -2,6 +2,7 @@ from threading import local
 from git import GitCommandError
 import anchorpoint as ap
 import apsync as aps
+import git_errors
 
 import sys, os, importlib
 current_dir = os.path.dirname(__file__)
@@ -69,11 +70,13 @@ def pull_async(channel_id: str, project_path):
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
-        if repo.has_pending_changes(True):
-            ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
-        else:
-            ui.show_error("Failed to update Git Repository")    
-            raise e
+        if not git_errors.handle_error(e):
+            if repo.has_pending_changes(True):
+                ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
+            else:
+                ui.show_error("Failed to update Git Repository")    
+                raise e
+            
         
     ap.refresh_timeline_channel(channel_id)
 

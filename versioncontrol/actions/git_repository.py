@@ -46,7 +46,7 @@ if __name__ == "__main__":
             ap.UI().show_info("Already a Git repo")
             return False
         else:
-            repo = GitRepository.create(repo_path)
+            repo = GitRepository.create(repo_path, ctx.username, ctx.email)
             helper.update_project(repo_path, None, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
             ap.UI().show_success("Git Repository Initialized")
@@ -61,11 +61,10 @@ if __name__ == "__main__":
             
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-            repo = GitRepository.clone(url, repo_path, progress=helper.CloneProgress(progress))
+            repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress))
             progress.finish()
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)
-            ap.UI().show_success("Git Repository Cloned")
         except Exception as e:
             d = ap.Dialog()
             d.title = "Could not clone Git Repository"

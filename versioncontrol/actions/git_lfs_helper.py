@@ -4,6 +4,7 @@ import mimetypes
 from binaryornot.check import is_binary
 
 def _file_bytes_binary(path: str):
+    if not os.path.exists(path): return False
     return is_binary(path)
 
 def _file_is_binary(path: str):

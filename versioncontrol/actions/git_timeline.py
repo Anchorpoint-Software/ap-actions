@@ -2,6 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os
+import git_errors
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
@@ -52,9 +53,9 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return info
 
-        is_rebasing = repo.is_rebasing()
+        is_merging = repo.is_rebasing() or repo.is_merging()
 
-        if repo.has_remote() and not is_rebasing:
+        if repo.has_remote() and not is_merging:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
                 pull.name = "Pull"
@@ -77,7 +78,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 fetch.tooltip = "Fetches new commits from the server"
                 info.actions.append(fetch)
         
-        if is_rebasing:
+        if is_merging:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
@@ -183,7 +184,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         has_changes = len(info.changes)
 
-        is_rebasing = repo.is_rebasing()
+        is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
         commit.name = "Commit"
         commit.identifier = "gitcommit"
@@ -201,12 +202,9 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.name = "Revert All"
         revert.identifier = "gitrevertall"
         revert.icon = aps.Icon(":/icons/revert.svg")
-        if is_rebasing:
-            revert.enabled = False
-            revert.tooltip = "Cannot revert files when resolving conflicts"
-        else:
-            revert.enabled = has_changes
-            revert.tooltip = "Reverts all your modifications (cannot be undone)"
+        revert.enabled = has_changes
+        revert.tooltip = "Reverts all your modifications (cannot be undone)"
+
         info.actions.append(revert)
 
         return info
@@ -268,7 +266,10 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         try:
             repo.switch_branch(branch)
         except Exception as e:
-            ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
+            if not git_errors.handle_error(e):
+                ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
+            else:
+                ap.UI().show_info("Cannot switch branch")
             return
 
         if len(commits) > 0:
@@ -320,7 +321,6 @@ def refresh_async(channel_id: str, project_path):
 
         lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):
-            print("fetch is already running")
             return
 
         try:
