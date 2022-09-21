@@ -58,7 +58,6 @@ def clone_repo_async(repo_path, url, project_name):
         helper.update_project(repo_path, url, False, None, project, False)
         repo.ignore(".ap/project.json", local_only=True)
         progress.finish()
-        ap.UI().show_success("Git Repository Cloned")
         ap.UI().navigate_to_folder(repo_path)
     except Exception as e:
         ap.UI().show_error("Could not clone Git Repository", "You might have entered a wrong username / password, or you don't have access to the repository.")

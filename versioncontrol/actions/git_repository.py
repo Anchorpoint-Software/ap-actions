@@ -65,7 +65,6 @@ if __name__ == "__main__":
             progress.finish()
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)
-            ap.UI().show_success("Git Repository Cloned")
         except Exception as e:
             d = ap.Dialog()
             d.title = "Could not clone Git Repository"
