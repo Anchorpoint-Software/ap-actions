@@ -17,18 +17,21 @@ def revert(channel_id, project_path, new_files):
     
     path = get_repo_path(channel_id, project_path)
     repo = GitRepository.load(path)
+    git_error_shown = False
     if not repo: return
     try:
         try:
             repo.unstage_all_files()
             repo.restore_all_files()
-        except:
-            pass
+        except Exception as e:
+            if git_errors.handle_error(e):
+                git_error_shown = True
 
         if new_files:
             repo.clean()
     except Exception as e:
-        git_errors.handle_error(e)
+        if not git_error_shown:
+            git_errors.handle_error(e)
         ui.show_error("Could not revert")
         print(str(e))
         return
