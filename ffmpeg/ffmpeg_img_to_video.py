@@ -26,9 +26,9 @@ else:
 ffmpeg_folder_path = "~/Documents/Anchorpoint/actions/ffmpeg"
 
 try:
-    filename = ctx.filename.split("_")
-    filename.pop()
-    filename = "_".join(filename) if len(filename) > 1 else ctx.filename
+    filename = ctx.filename.rstrip(string.digits).rstrip("-,.")
+    if filename == "":
+        filename = ctx.filename
 except:
     filename = ctx.filename
 
