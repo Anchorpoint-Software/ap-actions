@@ -49,8 +49,6 @@ def concat_demuxer(selected_files, fps):
     for selected_file in selected_files:
         file.write("file '" + selected_file + f"'\nduration {duration}\n")
 
-    # From the ffmpeg documentation: due to a quirk, the last image has to be specified twice
-    file.write("file '" + selected_files[-1] + "'\n")
     file.close()
     return output
 
