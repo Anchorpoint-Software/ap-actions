@@ -26,9 +26,5 @@ action:
     path: "icons/packageIcon.svg"
 
   actions:
-    - ap::video::videotogif
     - ap::video::seqtovideo
-    - ap::video::videotomp4
-
-  platforms:
-    - win
+    - ap::video::videotomp4 

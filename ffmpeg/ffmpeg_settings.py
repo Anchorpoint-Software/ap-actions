@@ -1,6 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, platform
 
 ctx = ap.Context.instance()
 settings = aps.Settings("ffmpeg_settings")
@@ -43,7 +43,10 @@ def open_dialog():
             
     
     if path == "":
-        path = os.path.join(os.environ["HOMEPATH"], "Desktop")
+        if platform.system() == "Darwin":
+            path = os.path.expanduser("~/Desktop")
+        else:    
+            path = os.path.join(os.environ["HOMEPATH"], "Desktop")
     
     dialog = ap.Dialog()
     input_callback(dialog, dropdown_var)

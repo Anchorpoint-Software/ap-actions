@@ -11,10 +11,18 @@ import requests
 import shutil
 import io
 import mimetypes
+import stat
+import platform
 
 ui = ap.UI()
 ctx = ap.Context.instance()
-FFMPEG_INSTALL_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+if platform.system() == "Darwin":
+    FFMPEG_INSTALL_URL = "https://s3.eu-central-1.amazonaws.com/releases.anchorpoint.app/ffmpeg/ffmpeg.zip"
+    FFMPEG_ZIP_PATH = "ffmpeg/ffmpeg"
+else:
+    FFMPEG_INSTALL_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+    FFMPEG_ZIP_PATH = "ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe"
+
 ffmpeg_folder_path = "~/Documents/Anchorpoint/actions/ffmpeg"
 
 try:
@@ -31,7 +39,7 @@ def create_random_text():
     return str(ran)
 
 def concat_demuxer(selected_files, fps):
-    # Create a file for ffmpeg within Anchorpoints temp directory. 
+    # Create a temporary file for ffmpeg within the directory. 
     # Use a random name so that we do not conflict with any other file
     output = os.path.join(ctx.folder, f"{create_random_text()}.txt")
 
@@ -77,18 +85,22 @@ def ffmpeg_seq_to_video(ffmpeg_path, selected_files, target_folder, fps):
         arguments.insert(1,"-apply_trc")
         arguments.insert(2,"iec61966_2_1")
 
-    startupinfo = subprocess.STARTUPINFO()
-    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW 
-    
-    ffmpeg = subprocess.Popen(
-        args=arguments, 
-        startupinfo=startupinfo, 
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.PIPE,
-        bufsize=1,
-        universal_newlines=True
-    )
+    args = {
+            "args":arguments, 
+            "stdout":subprocess.PIPE,
+            "stderr":subprocess.STDOUT,
+            "stdin":subprocess.PIPE,
+            "bufsize":1,
+            "universal_newlines":True
+        }
+
+    if platform.system() == "Windows":
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW 
+
+        args["startupinfo"] = startupinfo 
+
+    ffmpeg = subprocess.Popen(**args)
     
     # progress bar calculation
     percentage = 0
@@ -130,15 +142,18 @@ def _install_ffmpeg_async():
         os.mkdir(_get_ffmpeg_dir())
     
     # download zip
-    progress = ap.Progress("Installing FFMPEG", infinite = True)
+    progress = ap.Progress("Installing FFmpeg", infinite = True)
     r = requests.get(FFMPEG_INSTALL_URL)
             
     # open zip file and extract ffmpeg.exe to the right folder
     z = zipfile.ZipFile(io.BytesIO(r.content))
     
-    with z.open('ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe') as source:
+    with z.open(FFMPEG_ZIP_PATH) as source:
         with open(_get_ffmpeg_fullpath(), "wb") as target:
             shutil.copyfileobj(source, target)
+
+    if platform.system() == "Darwin":
+        os.chmod(ffmpeg_path, stat.S_IRWXU)
 
     progress.finish()
     ctx.run_async(ffmpeg_seq_to_video, ffmpeg_path, sorted(ctx.selected_files), path, fps)
@@ -161,15 +176,14 @@ def _get_ffmpeg_dir():
     
 def _get_ffmpeg_fullpath():
     dir = os.path.expanduser(ffmpeg_folder_path)
-    dir = os.path.join(dir, "ffmpeg.exe")
+    if platform.system() == "Darwin":
+        dir = os.path.join(dir, "ffmpeg")
+    else: 
+        dir = os.path.join(dir, "ffmpeg.exe")
     return os.path.normpath(dir)
     
 # First, check if the tool can be found on the machine
-ffmpeg_path = None
-if platform == "darwin":
-    ffmpeg_path = ctx.inputs["ffmpeg_mac"]
-elif platform == "win32":
-    ffmpeg_path = _get_ffmpeg_fullpath()
+ffmpeg_path = _get_ffmpeg_fullpath()
 
 if len(ctx.selected_files) > 0:
     settings = aps.Settings("ffmpeg_settings")
@@ -184,7 +198,7 @@ if len(ctx.selected_files) > 0:
         path = ctx.folder
         
     # check for ffmpeg.exe and download if missing
-    if not os.path.isfile(_get_ffmpeg_fullpath()):
+    if not os.path.isfile(ffmpeg_path):
         ctx.run_async(ffmpeg_install_dialog)
     else:
         # Convert the image sequence to a video
