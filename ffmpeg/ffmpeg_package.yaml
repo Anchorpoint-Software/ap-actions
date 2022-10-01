@@ -28,3 +28,4 @@ action:
   actions:
     - ap::video::seqtovideo
     - ap::video::videotomp4 
+    - ap::video::audiovideo 

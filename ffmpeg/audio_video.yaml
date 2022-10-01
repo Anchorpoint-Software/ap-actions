@@ -1,0 +1,25 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: TestAction
+
+  version: 1
+  id: "ap::video::audiovideo"
+  category: "video"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+  description: "Replaces the audio from a video file, or removes it."
+  icon:
+    path: :/icons/action.svg
+
+  script: audio_video.py
+
+  register:
+    file:
+      enable: true
+      filter: "*.mov;*.mp4;*.avi" #Wildcard matching
