@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: TestAction
+  name: Change Audio of Video
 
   version: 1
   id: "ap::video::audiovideo"

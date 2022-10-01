@@ -1,7 +1,6 @@
 import re
 import anchorpoint as ap
 import apsync as aps
-from sys import platform
 import subprocess
 import os
 import random
