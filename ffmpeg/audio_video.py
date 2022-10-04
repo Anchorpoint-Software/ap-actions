@@ -31,8 +31,8 @@ def update_dialog(dialog: ap.Dialog, value = None):
     remove = dialog.get_value("remove")
     dialog.hide_row("newaudiotext", remove)
     dialog.hide_row("newaudioinfo", remove)
-    dialog.hide_row("normalize", remove)
-    dialog.hide_row("normalizeinfo", remove)
+    dialog.hide_row("longest", remove)
+    dialog.hide_row("longestinfo", remove)
     dialog.set_value("filename", get_filename_text())
 
 def run_ffmpeg(arguments, remove_audio):
@@ -58,7 +58,7 @@ def run_ffmpeg(arguments, remove_audio):
 
 def convert(dialog: ap.Dialog):
     remove_audio = dialog.get_value("remove")
-    normalize = dialog.get_value("normalize")
+    longest = dialog.get_value("longest")
     audio = dialog.get_value("newaudioinput")
     ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
     new_path = get_newpath()
@@ -89,7 +89,7 @@ def convert(dialog: ap.Dialog):
             arguments.append("-c")
             arguments.append("copy")
 
-        if normalize:
+        if not longest:
             arguments.append("-shortest")
 
         arguments.append(new_path)
@@ -110,8 +110,8 @@ def create_dialog():
     dialog.add_info("Remove the audio channels from the video, or replace the existing audio with new tunes")
     dialog.add_text("New Audio", var="newaudiotext").add_input(browse=ap.BrowseType.File, var="newaudioinput", browse_path=input_folder).hide_row(hide=remove_audio)
     dialog.add_info("Select an audio file (e.g. wav) that will become the new audio of the video file", var="newaudioinfo").hide_row(hide=remove_audio)
-    dialog.add_checkbox(var="normalize", default=True, callback=update_dialog).add_text("Normalize Length").hide_row(hide=remove_audio)
-    dialog.add_info("When turned off, the length of the video can exceed the length of the audio and vice versa.", var="normalizeinfo").hide_row(hide=remove_audio)
+    dialog.add_checkbox(var="longest", default=True, callback=update_dialog).add_text("Take longest length").hide_row(hide=remove_audio)
+    dialog.add_info("Fits the final result to the longer file (video or audio). Otherwise it cuts off the rest", var="longestinfo").hide_row(hide=remove_audio)
 
     dialog.add_button("Convert", callback=convert)
 
