@@ -14,9 +14,35 @@ input_filename = ctx.filename
 input_suffix = ctx.suffix
 
 def get_newpath():
+    input_filename_no_version = input_filename
+    version_string = ""
+    
+    for c in reversed(input_filename_no_version):
+        if c.isnumeric():
+            version_string = c + version_string
+        else:
+            break
+
     version = 1
+    number_of_version_digits = len(version_string)
+    if number_of_version_digits > 0:
+        input_filename_no_version = input_filename_no_version[0:-number_of_version_digits]
+        if input_filename_no_version.endswith("v"):
+            input_filename_no_version = input_filename_no_version[0:-1]
+
+        if input_filename_no_version.endswith("_"):
+            input_filename_no_version = input_filename_no_version[0:-1]
+
+        try:
+            version = int(version_string)
+            version = version + 1
+        except:
+            pass
+    else:
+        number_of_version_digits = 3
+
     while True:
-        new_path = os.path.join(input_folder, f"{input_filename}_v{str(version).zfill(3)}.{input_suffix}")
+        new_path = os.path.join(input_folder, f"{input_filename_no_version}_v{str(version).zfill(number_of_version_digits)}.{input_suffix}")
         if not os.path.exists(new_path): 
             return new_path
         else:
