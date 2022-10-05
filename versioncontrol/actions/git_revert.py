@@ -58,12 +58,12 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     return True
 
 def undo(path: str, entry_id: str):
+    ui = ap.UI()
     try:
         progress = ap.Progress("Reverting Commit", show_loading_screen=True)
         repo = GitRepository.load(path)
         repo.revert_changelist(entry_id)
 
-        ui = ap.UI()
         ui.show_success("Revert succeeded")
     except Exception as e:
         ui.show_error("Revert Failed", str(e))
