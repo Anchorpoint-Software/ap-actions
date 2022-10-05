@@ -93,7 +93,12 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files):
     drop_frame = 0
     
     # progress bar
+    output = ""
     for line in ffmpeg.stdout:   
+        output = output + line
+        if not output.endswith("\n"):
+            output = output + "\n"
+            
         if 'drop_frames=' in line: 
             drop_frame = re.search('(\d+)', line).group()
              
@@ -115,7 +120,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files):
     ffmpeg.communicate()
     
     if ffmpeg.returncode != 0:
-        print(ffmpeg.stderr)
+        print(output)
         ui.show_error("Failed to export video", description="Check Anchorpoint Console")
     else:
         ui.show_success("Export Successful", description=f"Created {filename}.mp4")
