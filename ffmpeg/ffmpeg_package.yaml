@@ -14,7 +14,7 @@ action:
   id: "ap::package::video"
   category: "video"
   type: package
-  enable: false
+  enable: true
   author: "Anchorpoint Software GmbH"
   description: Creates video files from image sequences or other videos with a single click
   details: '
