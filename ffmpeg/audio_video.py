@@ -104,7 +104,7 @@ def create_dialog():
 
     dialog = ap.Dialog()
     dialog.title = "Change Audio"
-
+    dialog.icon = os.path.join(ctx.yaml_dir, "icons/audio.svg")
     dialog.add_text(get_filename_text(), var="filename")
     dialog.add_switch(var="remove", default=remove_audio, callback=update_dialog).add_text("Remove Audio")
     dialog.add_info("Remove the audio channels from the video, or replace the existing audio with new tunes")
