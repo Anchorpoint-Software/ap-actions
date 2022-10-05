@@ -15,7 +15,7 @@ action:
   author: "Anchorpoint Software GmbH"
   description: "Replaces the audio from a video file, or removes it."
   icon:
-    path: :/icons/action.svg
+    path: icons/audio.svg
 
   script: audio_video.py
 
