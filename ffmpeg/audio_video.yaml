@@ -13,7 +13,7 @@ action:
   type: python
   enable: false
   author: "Anchorpoint Software GmbH"
-  description: "Replaces the audio from a video file, or removes it."
+  description: "Replaces the audio in a video file, or removes it."
   icon:
     path: icons/audio.svg
 
