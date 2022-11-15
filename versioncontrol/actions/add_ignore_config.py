@@ -3,6 +3,8 @@ import anchorpoint as ap
 import apsync as aps
 import sys, os
 
+
+
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
     try:
         sys.path.insert(0, os.path.split(__file__)[0])
@@ -55,7 +57,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     dialog.add_text("Template: ").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
-    dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).")
-    dialog.add_button("Create", callback=lambda d: add_git_ignore(ctx.path, ctx.yaml_dir, d))
+    dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).") 
+    dialog.add_button("Create", callback=lambda d: _add_git_ignore(ctx.path, ctx.yaml_dir, d))
 
     dialog.show(settings)
