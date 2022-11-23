@@ -29,3 +29,4 @@ action:
     - ap::examples::widgets::greetings
     - ap::examples::settings
     - ap::examples::environment
+    - ap::unreal::test

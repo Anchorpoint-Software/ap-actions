@@ -1,0 +1,25 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Unreal test
+
+  version: 1
+  id: ap::unreal::test
+  #category: utility/code/examples/attributes
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Unreal Test
+  icon:
+    path: :/icons/action.svg
+
+  script: unreal.py
+
+  register:
+    file:
+    enable: true
+      #filter: "*.uasset"
