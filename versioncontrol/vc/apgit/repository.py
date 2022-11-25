@@ -165,8 +165,9 @@ class GitRepository(VCRepository):
 
         add_config_env(env, "credential.helper", utility.get_gcm_path(), 0)
         add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", 1)
+        add_config_env(env, "http.postBuffer", "1048576000", 2)
         if remote_url and "azure" in remote_url:
-            add_config_env(env, "http.version", "HTTP/1.1", 2)
+            add_config_env(env, "http.version", "HTTP/1.1", 3)
 
         return env
 

@@ -9,7 +9,7 @@ try:
         try: 
             import git
         except:
-            raise Warning("Git not installed")
+            raise Warning("GitPython is not installed")
     else: raise Warning("Git not installed")
 
 except Exception as e:
