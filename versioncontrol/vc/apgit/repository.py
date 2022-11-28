@@ -324,7 +324,7 @@ class GitRepository(VCRepository):
         defenc = sys.getfilesystemencoding()
 
         # make sure we get all files, not only untracked directories
-        proc = self.repo.git.status(*args,
+        proc = self.repo.git.status(*args, "-z",
                                porcelain=True,
                                untracked_files=True,
                                as_process=True,
@@ -332,18 +332,14 @@ class GitRepository(VCRepository):
         # Untracked files prefix in porcelain mode
         prefix = "?? "
         untracked_files = []
-        for line in proc.stdout:
-            line_decoded = line.decode(defenc)
-            if not line_decoded.startswith(prefix):
-                continue
-            filename = line_decoded[len(prefix):].rstrip('\n')
-            
-            # Special characters are escaped
-            if filename[0] == filename[-1] == '"':
-                filename = line_decoded[len(prefix):].rstrip('\n')
-                filename = filename[1:-1].replace("\\","")
-                
-            untracked_files.append(filename)
+        for output in proc.stdout:
+            line_decoded = output.decode(defenc)
+            lines_decoded = line_decoded.split('\x00')
+            for line in lines_decoded:
+                if not line.startswith(prefix):
+                    continue
+                filename = line[len(prefix):].rstrip('\x00')
+                untracked_files.append(filename)
         finalize_process(proc)
         return untracked_files
 
