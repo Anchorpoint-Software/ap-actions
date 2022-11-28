@@ -39,6 +39,7 @@ def commit_async(message: str, changes, channel_id, project_path, lfs):
         ap.refresh_timeline_channel(channel_id)
     except Exception as e:
         ui.show_error("Commit Failed", str(e))
+        raise e
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
     import git_lfs_helper as lfs
