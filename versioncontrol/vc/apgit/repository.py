@@ -153,6 +153,7 @@ class GitRepository(VCRepository):
 
     @staticmethod
     def get_git_environment(remote_url: Optional[str] = None):
+        import platform
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
             config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
@@ -163,11 +164,19 @@ class GitRepository(VCRepository):
             "GIT_LFS_FORCE_PROGRESS": "1" 
         }
 
-        add_config_env(env, "credential.helper", utility.get_gcm_path(), 0)
-        add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", 1)
-        add_config_env(env, "http.postBuffer", "1048576000", 2)
+        config_counter = 0
+        add_config_env(env, "credential.helper", utility.get_gcm_path(), config_counter)
+        config_counter = config_counter + 1
+        add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
+        config_counter = config_counter + 1
+        add_config_env(env, "http.postBuffer", "1048576000", config_counter)
+        config_counter = config_counter + 1
         if remote_url and "azure" in remote_url:
-            add_config_env(env, "http.version", "HTTP/1.1", 3)
+            add_config_env(env, "http.version", "HTTP/1.1", config_counter)
+            config_counter = config_counter + 1
+        if platform.system() == "Windows":
+            add_config_env(env, "core.longPaths", "1", config_counter)
+            config_counter = config_counter + 1
 
         return env
 
@@ -324,7 +333,7 @@ class GitRepository(VCRepository):
         defenc = sys.getfilesystemencoding()
 
         # make sure we get all files, not only untracked directories
-        proc = self.repo.git.status(*args,
+        proc = self.repo.git.status(*args, "-z",
                                porcelain=True,
                                untracked_files=True,
                                as_process=True,
@@ -332,18 +341,14 @@ class GitRepository(VCRepository):
         # Untracked files prefix in porcelain mode
         prefix = "?? "
         untracked_files = []
-        for line in proc.stdout:
-            line_decoded = line.decode(defenc)
-            if not line_decoded.startswith(prefix):
-                continue
-            filename = line_decoded[len(prefix):].rstrip('\n')
-            
-            # Special characters are escaped
-            if filename[0] == filename[-1] == '"':
-                filename = line_decoded[len(prefix):].rstrip('\n')
-                filename = filename[1:-1].replace("\\","")
-                
-            untracked_files.append(filename)
+        for output in proc.stdout:
+            line_decoded = output.decode(defenc)
+            lines_decoded = line_decoded.split('\x00')
+            for line in lines_decoded:
+                if not line.startswith(prefix):
+                    continue
+                filename = line[len(prefix):].rstrip('\x00')
+                untracked_files.append(filename)
         finalize_process(proc)
         return untracked_files
 
@@ -388,7 +393,7 @@ class GitRepository(VCRepository):
         return changes
 
     def _write_pathspec_file(self, paths, file):
-        with open(file, "w") as f:
+        with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(x) for x in paths)
 
     def stage_all_files(self):
