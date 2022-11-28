@@ -153,6 +153,7 @@ class GitRepository(VCRepository):
 
     @staticmethod
     def get_git_environment(remote_url: Optional[str] = None):
+        import platform
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
             config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
@@ -163,11 +164,19 @@ class GitRepository(VCRepository):
             "GIT_LFS_FORCE_PROGRESS": "1" 
         }
 
-        add_config_env(env, "credential.helper", utility.get_gcm_path(), 0)
-        add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", 1)
-        add_config_env(env, "http.postBuffer", "1048576000", 2)
+        config_counter = 0
+        add_config_env(env, "credential.helper", utility.get_gcm_path(), config_counter)
+        config_counter = config_counter + 1
+        add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
+        config_counter = config_counter + 1
+        add_config_env(env, "http.postBuffer", "1048576000", config_counter)
+        config_counter = config_counter + 1
         if remote_url and "azure" in remote_url:
-            add_config_env(env, "http.version", "HTTP/1.1", 3)
+            add_config_env(env, "http.version", "HTTP/1.1", config_counter)
+            config_counter = config_counter + 1
+        if platform.system() == "Windows":
+            add_config_env(env, "core.longPaths", "1", config_counter)
+            config_counter = config_counter + 1
 
         return env
 
