@@ -393,7 +393,7 @@ class GitRepository(VCRepository):
         return changes
 
     def _write_pathspec_file(self, paths, file):
-        with open(file, "w") as f:
+        with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(x) for x in paths)
 
     def stage_all_files(self):
