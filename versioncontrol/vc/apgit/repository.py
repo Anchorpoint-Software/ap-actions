@@ -392,10 +392,17 @@ class GitRepository(VCRepository):
 
         return changes
 
-    def _write_pathspec_file(self, paths, file):
+    def _normalize_string(self, path):
         import unicodedata
+        if not unicodedata.is_normalized("NFC", path):
+            return unicodedata.normalize("NFC", path)
+        else:
+            return path
+
+
+    def _write_pathspec_file(self, paths, file):
         with open(file, "w", encoding="utf-8") as f:
-            f.writelines(unicodedata.normalize("NFC","{}\n".format(x)) for x in paths)
+            f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
     def stage_all_files(self):
         self.repo.git.add(".")
