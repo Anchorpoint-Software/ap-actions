@@ -392,9 +392,17 @@ class GitRepository(VCRepository):
 
         return changes
 
+    def _normalize_string(self, path):
+        import unicodedata
+        if not unicodedata.is_normalized("NFC", path):
+            return unicodedata.normalize("NFC", path)
+        else:
+            return path
+
+
     def _write_pathspec_file(self, paths, file):
         with open(file, "w", encoding="utf-8") as f:
-            f.writelines("{}\n".format(x) for x in paths)
+            f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
     def stage_all_files(self):
         self.repo.git.add(".")
@@ -405,7 +413,7 @@ class GitRepository(VCRepository):
     def stage_files(self, paths: list[str]):
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
-                pathspec = os.path.join(dirpath, "spec")
+                pathspec = os.path.join(dirpath, "stage_spec")
                 self._write_pathspec_file(paths, pathspec)
                 self.repo.git.add(pathspec_from_file=pathspec)        
         else:
@@ -414,7 +422,7 @@ class GitRepository(VCRepository):
     def unstage_files(self, paths: list[str]):
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
-                pathspec = os.path.join(dirpath, "spec")
+                pathspec = os.path.join(dirpath, "unstage_spec")
                 self._write_pathspec_file(paths, pathspec)
                 self.repo.git.restore("--staged", pathspec_from_file=pathspec)        
         else:
@@ -422,15 +430,16 @@ class GitRepository(VCRepository):
 
     def sync_staged_files(self, paths: list[str]):
         if not self.is_unborn():
-            staged_files = self.repo.git.diff("--name-only", "--staged").splitlines()
+            staged_files = self.repo.git.diff("--name-only", "--staged", "-z").split('\x00')
+            staged_files[:] = (file for file in staged_files if file != "")
             if len(staged_files) > 0:
-                self.repo.git.restore("--staged", *staged_files)
+                self.unstage_files(staged_files)
         self.stage_files(paths)
 
     def remove_files(self, paths: list[str]):
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
-                pathspec = os.path.join(dirpath, "spec")
+                pathspec = os.path.join(dirpath, "rm_spec")
                 self._write_pathspec_file(paths, pathspec)
                 self.repo.git.rm(pathspec_from_file=pathspec)        
         else:

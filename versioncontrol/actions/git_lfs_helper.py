@@ -1,11 +1,15 @@
-import os
+import os, pathlib
 import mimetypes
 
 from binaryornot.check import is_binary
 
+def _is_file_filtered(path: str):
+    file = pathlib.Path(path).stem
+    return file in [".DS_Store"]
+
 def _file_bytes_binary(path: str):
     if not os.path.exists(path): return False
-    return is_binary(path)
+    return is_binary(path) and not _is_file_filtered(path)
 
 def _file_is_binary(path: str):
     mime_type = mimetypes.guess_type(path)
