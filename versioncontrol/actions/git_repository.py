@@ -77,6 +77,7 @@ if __name__ == "__main__":
 
             d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close())
             d.show()
+            raise e
 
     def clone_repo(dialog: ap.Dialog):
         location = dialog.get_value("location")
