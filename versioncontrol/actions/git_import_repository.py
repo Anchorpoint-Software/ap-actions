@@ -54,6 +54,7 @@ if __name__ == "__main__":
             else:
                 helper.update_project(repo_path, None, False, None, project, add_path=False)
             repo.ignore(".ap/project.json", local_only=True)
+            repo.ignore("*.approj", local_only=True)
             if remote_exists > 0:
                 repo.add_remote(url)
 
