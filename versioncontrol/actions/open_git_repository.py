@@ -28,6 +28,7 @@ def connect_repo_async(ctx, dialog, path, project):
 
     helper.update_project(path, url, False, None, project, add_path=False)
     repo.ignore(".ap/project.json", local_only=True)
+    repo.ignore("*.approj", local_only=True)
     time.sleep(0.5)
     ap.UI().reload()
 
@@ -138,6 +139,7 @@ if __name__ == "__main__":
                 ui.show_error("Could not connect Git Repository", "Folder does already contain an Anchorpoint project")
                 return
             repo.ignore(".ap/project.json", local_only=True)
+            repo.ignore("*.approj", local_only=True)
             ui.show_success("Git Repository Connected")
             dialog.close()
 

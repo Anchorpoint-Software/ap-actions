@@ -49,6 +49,7 @@ if __name__ == "__main__":
             repo = GitRepository.create(repo_path, ctx.username, ctx.email)
             helper.update_project(repo_path, None, is_join, timeline_channel, project)
             repo.ignore(".ap/project.json", local_only=True)
+            repo.ignore("*.approj", local_only=True)
             ap.UI().show_success("Git Repository Initialized")
             dialog.close()
             return True
@@ -65,6 +66,7 @@ if __name__ == "__main__":
             progress.finish()
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)
+            repo.ignore("*.approj", local_only=True)
         except Exception as e:
             d = ap.Dialog()
             d.title = "Could not clone Git Repository"
