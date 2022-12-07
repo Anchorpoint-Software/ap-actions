@@ -361,27 +361,27 @@ def get_settings(workspace_id: str):
     else:
         password = local_settings.get("encryption_password")
         if password == None:
-            create_pw_dialog()
+            create_pw_dialog(workspace_id)
         else:
             try:
                 resolve_configuration(shared_settings, configuration, password)
                 show_options(shared_settings.get("mount_path"), workspace_id, configuration)
             except:
-                create_pw_dialog()
+                create_pw_dialog(workspace_id)
 
-def create_pw_dialog():
+def create_pw_dialog(workspace_id: str):
     dialog = ap.Dialog()
     dialog.title = "Enter Configuration Key"
     dialog.icon = ctx.icon
     dialog.add_text("Configuration Key").add_input(placeholder="Your configuration key", var="pw_var")
-    dialog.add_button("Ok", callback = set_password)
+    dialog.add_button("Ok", callback = lambda d: set_password(d, workspace_id))
     dialog.show()
 
-def set_password(dialog : ap.Dialog):
+def set_password(dialog : ap.Dialog, workspace_id: str):
     local_settings = aps.Settings("rclone")
     local_settings.set("encryption_password", dialog.get_value("pw_var"))
     local_settings.store()
-    get_settings()
+    get_settings(workspace_id)
 
 def show_options(mount_path: str, workspace_id: str, configuration):    
     ui = ap.UI()
@@ -445,5 +445,4 @@ def on_application_started(ctx: ap.Context):
 
 if __name__ == "__main__":
     ctx = ap.Context.instance()
-    
     ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
