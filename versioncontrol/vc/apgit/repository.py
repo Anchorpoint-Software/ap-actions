@@ -114,15 +114,25 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
 
-    def set_username(self, username: str, email: str):
-        self.repo.git.config("user.name", username)
-        self.repo.git.config("user.email", email)
+    def set_username(self, username: str, email: str, path: str):
+        def _set_username():
+            self.repo.git.config("user.name", username)
+            self.repo.git.config("user.email", email)
+        try:
+            _set_username()
+        except Exception as e:
+            self._set_safe_directory(path)
+            _set_username()
+
+    def _set_safe_directory(self, path):
+        # set safe.directory to allow git on 'unsafe' paths such as FAT32 drives
+        self.repo.git.config("--global", "--add", "safe.directory", path.replace(os.sep, '/'))
 
     @classmethod
     def create(cls, path: str, username: str, email: str):
         utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
         repo = GitRepository.load(path)
-        repo.set_username(username, email)
+        repo.set_username(username, email, path)
         return repo
 
     @classmethod
@@ -141,7 +151,7 @@ class GitRepository(VCRepository):
             raise e
 
         repo = GitRepository.load(local_path)
-        repo.set_username(username, email)
+        repo.set_username(username, email, local_path)
         return repo
 
     @classmethod
