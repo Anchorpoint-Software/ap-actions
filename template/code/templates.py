@@ -40,7 +40,11 @@ template = ctx.inputs["template_dir"]
 template_subdir = ctx.inputs["template_subdir"]
 template_dir = os.path.join(ctx.yaml_dir, template)
 yaml_dir = ctx.yaml_dir
-workspace_id = ctx.workspace_id
+
+if aps.get_api_version() >= aps.ApiVersion("1.2.0"):
+    workspace_id_kwarg = {"workspace_id": ctx.workspace_id}
+else:
+    workspace_id_kwarg = {}
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
@@ -252,7 +256,7 @@ def create_project_from_template(template_path, target_folder, ctx):
     # Create the actual project and write it in the database
     project = ctx.create_project(target, strip_spaces(project_display_name))
     # Copy the whole folder structure and resolve all tokens using the variables dict
-    aps.copy_from_template(source, target, variables, workspace_id=workspace_id)
+    aps.copy_from_template(source, target, variables, **workspace_id_kwarg)
 
     # Add the resolved tokens as metadata to the project
     # This metadata can be used for any file and subfolder templates
@@ -272,11 +276,11 @@ def create_documents_from_template(template_path, target_folder, ctx):
     # Copy the whole folder structure and resolve all tokens using the variables dict
     try:
         if file_mode:
-            aps.copy_file_from_template(template_path, target_folder, variables, workspace_id=workspace_id)
+            aps.copy_file_from_template(template_path, target_folder, variables, **workspace_id_kwarg)
             if callbacks and "file_from_template_created" in dir(callbacks):
                 callbacks.file_from_template_created(target_folder, template_path, variables)
         else:
-            aps.copy_from_template(template_path, target_folder, variables, workspace_id=workspace_id)
+            aps.copy_from_template(template_path, target_folder, variables, **workspace_id_kwarg)
             if callbacks and "folder_from_template_created" in dir(callbacks):
                 callbacks.folder_from_template_created(target_folder, template_path, variables)
 

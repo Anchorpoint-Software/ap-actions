@@ -15,7 +15,11 @@ source = ctx.path
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = settings.get("template_dir", template_dir)
 callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
-workspace_id = ctx.workspace_id
+
+if aps.get_api_version() >= aps.ApiVersion("1.2.0"):
+    workspace_id_kwarg = {"workspace_id": ctx.workspace_id}
+else:
+    workspace_id_kwarg = {}
 
 project = aps.get_project(source)
 if project:
@@ -48,12 +52,12 @@ def create_template_async(name, source, target):
                 return
                 
             os.makedirs(target)
-            aps.copy_folder(source, target, workspace_id=workspace_id)
+            aps.copy_folder(source, target, **workspace_id_kwarg)
             if callbacks and "folder_template_saved" in dir(callbacks):
                 callbacks.folder_template_saved(name, target)
         else:
             os.makedirs(os.path.dirname(target))
-            aps.copy_file(source, target, workspace_id=workspace_id)
+            aps.copy_file(source, target, **workspace_id_kwarg)
             if callbacks and "file_template_saved" in dir(callbacks):
                 callbacks.file_template_saved(name, target)
 
