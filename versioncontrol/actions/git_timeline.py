@@ -216,6 +216,14 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     finally:
         sys.path.remove(script_dir)
 
+
+def run_func_wrapper(func, callback, *args):
+    res = func(*args)
+    callback(res)
+
+def on_load_timeline_channel_pending_changes_async(channel_id: str, callback, ctx):
+    ctx.run_async(run_func_wrapper, on_load_timeline_channel_pending_changes, callback, channel_id, ctx)
+
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
@@ -246,6 +254,9 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         return details
     finally:
         sys.path.remove(script_dir)
+
+def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str, callback, ctx):
+    ctx.run_async(run_func_wrapper, on_load_timeline_channel_entry_details, callback, channel_id, entry_id, ctx)
 
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
