@@ -336,7 +336,10 @@ def refresh_async(channel_id: str, project_path):
         sys.path.remove(script_dir)
 
 def on_project_directory_changed(ctx):
-    ap.refresh_timeline_channel("Git")
+    if "vc_load_pending_changes" in dir(ap):
+        ap.vc_load_pending_changes("Git")
+    else:
+        ap.refresh_timeline_channel("Git")
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
