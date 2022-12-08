@@ -13,7 +13,7 @@ if os.path.exists(project_folder):
     ui.show_error("Project Example Error", "The directory already exists.")
 else:
     # OK, let's create a new project at the current location. This will create a new folder and will convert it to an Anchorpoint project called "Python Example"
-    project = ctx.create_project(os.path.join(ctx.path, "python_example_project"), "Python Example")
+    project = ctx.create_project(os.path.join(ctx.path, "python_example_project"), "Python Example", ctx.workspace_id)
 
     # Let's print the name of the project
     print("The project name is: " + project.name)

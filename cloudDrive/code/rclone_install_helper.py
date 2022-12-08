@@ -10,7 +10,11 @@ import requests
 
 ctx = ap.Context.instance()
 ui = ap.UI()
+
 show_menu = None
+show_menu_args = []
+show_menu_kwargs = {}
+
 rclone_folder_path = "~/Documents/Anchorpoint/actions/rclone"
 rclone_folder_path_mac = "~/library/application support/anchorpoint software/anchorpoint/actions/rclone"
 macFUSE_folder_path = "/Library/Frameworks/macFUSE.framework"
@@ -41,7 +45,12 @@ def _get_rclone_path():
 
 def check_winfsp_and_rclone(menu, *args, **kwargs):
     global show_menu
+    global show_menu_args
+    global show_menu_kwargs
+
     show_menu = menu
+    show_menu_args = args
+    show_menu_kwargs = kwargs
     macFuse = False
     
     if isWin():
@@ -55,7 +64,7 @@ def check_winfsp_and_rclone(menu, *args, **kwargs):
         show_install_dialog()
     else:
         ctx.run_async(check_and_install_modules)
-        show_menu(*args, **kwargs)
+        show_menu(*show_menu_args, **show_menu_kwargs)
 
 def show_install_dialog():
     dialog = ap.Dialog()
@@ -97,7 +106,7 @@ def check_rclone():
     if not os.path.isfile(_get_rclone_path()):
         ctx.run_async(_install_rclone_async)
     else:
-        show_menu()
+        show_menu(*show_menu_args, **show_menu_kwargs)
 
 def make_dirs():
     if not os.path.isdir(os.path.expanduser("~/Documents/Anchorpoint")):
@@ -187,7 +196,7 @@ def check_and_install_modules():
         ctx.install("pyperclip")
         progress.finish()
         
-        show_menu()
+        show_menu(*show_menu_args, **show_menu_kwargs)
 
 def isWin():
     if platform.system() == "Windows":

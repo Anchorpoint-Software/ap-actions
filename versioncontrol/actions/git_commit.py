@@ -36,7 +36,10 @@ def commit_async(message: str, changes, channel_id, project_path, lfs):
 
         repo.commit(message)
         ui.show_success("Commit succeeded")
-        ap.refresh_timeline_channel(channel_id)
+        if "vc_load_pending_changes" in dir(ap):
+            ap.vc_load_pending_changes("Git")    
+        ap.refresh_timeline_channel("Git")
+        
     except Exception as e:
         ui.show_error("Commit Failed", str(e))
         raise e
