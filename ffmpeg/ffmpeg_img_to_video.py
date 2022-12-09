@@ -65,7 +65,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
             "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
             "-fps_mode", "vfr",
             "-pix_fmt", "yuv420p",
-            "-vf",scale,
+            "-vf",scale+" ,pad=ceil(iw/2)*2:ceil(ih/2)*2",
             os.path.join(target_folder,f"{filename}.mp4"),
         ]
     if is_exr:
