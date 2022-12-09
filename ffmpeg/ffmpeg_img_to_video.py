@@ -40,7 +40,7 @@ def concat_demuxer(selected_files, fps):
     file.close()
     return output
 
-def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files): 
+def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale): 
     if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[0].startswith('video'):
         progress_infinite = True
         global filename
@@ -65,6 +65,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files):
             "-vf", "pad=ceil(iw/2)*2:ceil(ih/2)*2",
             "-fps_mode", "vfr",
             "-pix_fmt", "yuv420p",
+            "-vf",scale,
             os.path.join(target_folder,f"{filename}.mp4"),
         ]
     if is_exr:
@@ -139,6 +140,18 @@ if len(ctx.selected_files) > 0:
     path = settings.get("path")
     if path == "":
         path = ctx.folder
-        
+
+    resolution = str(settings.get("resolution"))
+    if resolution == "HD (1280x720)":
+        scale="scale=w=1280:h=720:force_original_aspect_ratio=decrease"
+    elif resolution == "Full HD (1920x1080)":
+        scale = "scale=w=1920:h=1080:force_original_aspect_ratio=decrease"
+    elif resolution == "2K (2048x1556)":
+        scale = "scale=w=2048:h=1556:force_original_aspect_ratio=decrease"
+    elif resolution == "4K (4096x3112)":
+        scale = "scale=w=4096:h=3112:force_original_aspect_ratio=decrease"
+    else:
+        scale = "scale=-1:-1"
+
     ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
-    ffmpeg_helper.guarantee_ffmpeg(ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files))
+    ffmpeg_helper.guarantee_ffmpeg(ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files),scale)
