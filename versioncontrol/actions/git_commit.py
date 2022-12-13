@@ -10,14 +10,19 @@ from vc.apgit.repository import *
 from vc.apgit.utility import get_repo_path
 sys.path.remove(parent_dir)
 
-def stage_files(changes, repo, lfs):
+def stage_files(changes, repo, lfs, progress):
     to_stage = []
     for change in changes:
         if change.selected:
             to_stage.append(change.path)
-    
+
     lfs.lfs_track_binary_files(to_stage, repo)
-    repo.sync_staged_files(to_stage)
+
+    progress.set_text("Adding files to your commit")
+    def progress_callback(current, max):
+        progress.report_progress(current / max)
+
+    repo.sync_staged_files(to_stage, progress_callback)
 
 def commit_async(message: str, changes, channel_id, project_path, lfs):
     ui = ap.UI()
@@ -26,7 +31,8 @@ def commit_async(message: str, changes, channel_id, project_path, lfs):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        stage_files(changes, repo, lfs)
+        stage_files(changes, repo, lfs, progress)
+        progress.set_text("Finalizing...")
 
         staged = repo.get_pending_changes(staged=True)
         changecount = staged.size()

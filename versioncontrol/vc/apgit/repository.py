@@ -420,14 +420,22 @@ class GitRepository(VCRepository):
     def unstage_all_files(self):
         self.repo.git.restore("--staged", ".")
 
-    def stage_files(self, paths: list[str]):
+    def stage_files(self, paths: list[str], progress_callback = None):
+        def _add_files(count, *args, **kwargs):
+            from git.util import finalize_process
+            proc = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+            if progress_callback:
+                for i, _ in enumerate(proc.stdout):
+                    progress_callback(i+1,count-1)
+            finalize_process(proc)
+
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "stage_spec")
                 self._write_pathspec_file(paths, pathspec)
-                self.repo.git.add(pathspec_from_file=pathspec)        
+                _add_files(len(paths), pathspec_from_file=pathspec)
         else:
-            self.repo.git.add(*paths)
+            _add_files(len(paths), *paths)
 
     def unstage_files(self, paths: list[str]):
         if len(paths) > 20:
@@ -438,13 +446,13 @@ class GitRepository(VCRepository):
         else:
             self.repo.git.restore("--staged", *paths)
 
-    def sync_staged_files(self, paths: list[str]):
+    def sync_staged_files(self, paths: list[str], progress_callback = None):
         if not self.is_unborn():
             staged_files = self.repo.git.diff("--name-only", "--staged", "-z").split('\x00')
             staged_files[:] = (file for file in staged_files if file != "")
             if len(staged_files) > 0:
                 self.unstage_files(staged_files)
-        self.stage_files(paths)
+        self.stage_files(paths, progress_callback)
 
     def remove_files(self, paths: list[str]):
         if len(paths) > 20:
