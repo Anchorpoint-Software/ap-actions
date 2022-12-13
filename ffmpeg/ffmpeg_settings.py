@@ -6,21 +6,25 @@ ctx = ap.Context.instance()
 settings = aps.Settings("ffmpeg_settings")
 
 framerate_var = "25"
-dropdown_var = "Same Folder"
+location_var = "Same Folder"
 path_var = "path"
+resolution_var = "Original"
 
 def button_clicked(dialog):
     fps = dialog.get_value(framerate_var)
-    dropdown = dialog.get_value(dropdown_var)
+    location = dialog.get_value(location_var)
     path = dialog.get_value(path_var)
+    resolution = dialog.get_value(resolution_var)
     
-    if dropdown == "Same Folder":
+    if location == "Same Folder":
         settings.remove("path")
     else:
         settings.set("path", path)
     
     settings.set("fps", fps)
-    settings.set("dropdown", dropdown)
+    settings.set("location", location)
+    settings.set("resolution", resolution)
+
     settings.store()
     dialog.close()
     
@@ -29,17 +33,21 @@ def input_callback(dialog, value):
     
 def open_dialog():
     fps = settings.get("fps")
-    dropdown = settings.get("dropdown")
+    location = settings.get("location")
+    resolution = settings.get("resolution")
     path = settings.get("path")
-    dropdown_bool = True
+    location_bool = True
     
     if fps == "":
         fps = ctx.inputs["fps"]
         
-    if dropdown == "":
-        dropdown = dropdown_var
-    elif dropdown == "Custom Folder":
-        dropdown_bool = False
+    if location == "":
+        location = location_var
+    elif location == "Custom Folder":
+        location_bool = False
+
+    if resolution == "":
+        resolution = "Original"
             
     
     if path == "":
@@ -49,13 +57,15 @@ def open_dialog():
             path = os.path.join(os.environ["HOMEPATH"], "Desktop")
     
     dialog = ap.Dialog()
-    input_callback(dialog, dropdown_var)
+    input_callback(dialog, location_var)
     dialog.title = "Conversion Settings"
     dialog.add_text("Framerate \t").add_input(fps, var = framerate_var)
-    dialog.add_text("Location \t").add_dropdown(dropdown, ["Same Folder", "Custom Folder"], var = dropdown_var, callback=input_callback)
+    dialog.add_text("Location \t").add_dropdown(location, ["Same Folder", "Custom Folder"], var = location_var, callback=input_callback)
     dialog.add_text("Folder \t").add_input(path, browse=ap.BrowseType.Folder, var = path_var)
+    dialog.add_text("Resolution \t").add_dropdown(resolution, ["Original","HD (1280x720)", "Full HD (1920x1080)","2K (2048x1556)","4K (4096x3112)"], var = resolution_var)
+    dialog.add_info("Adjusts the video to the smaller height or width")
     dialog.add_button("Apply", callback=button_clicked)
-    dialog.hide_row(path_var, dropdown_bool)
+    dialog.hide_row(path_var, location_bool)
 
     if ctx.icon:
         dialog.icon = ctx.icon   
