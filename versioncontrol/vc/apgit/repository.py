@@ -417,6 +417,7 @@ class GitRepository(VCRepository):
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
         proc = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+        proc.stderr.close()
         if progress_callback:
             for i, _ in enumerate(proc.stdout):
                 progress_callback(i+1,count-1)
