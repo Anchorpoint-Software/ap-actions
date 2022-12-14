@@ -12,7 +12,8 @@ sys.path.remove(parent_dir)
 
 def stage_files(changes, all_files_selected, repo, lfs, progress):
     def lfs_progress_callback(current, max):
-        progress.report_progress(current / max)
+        if max > 0:
+            progress.report_progress(current / max)
 
     to_stage = []
     for change in changes:
@@ -27,7 +28,8 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
 
     def progress_callback(current, max):
         progress.set_text("Staging files")
-        progress.report_progress(current / max)
+        if max > 0:
+            progress.report_progress(current / max)
 
     repo.sync_staged_files(to_stage, all_files_selected, progress_callback)
 
