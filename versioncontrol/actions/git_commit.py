@@ -11,15 +11,23 @@ from vc.apgit.utility import get_repo_path
 sys.path.remove(parent_dir)
 
 def stage_files(changes, repo, lfs, progress):
+    def lfs_progress_callback(current, max):
+        progress.report_progress(current / max)
+
     to_stage = []
     for change in changes:
         if change.selected:
             to_stage.append(change.path)
 
-    lfs.lfs_track_binary_files(to_stage, repo)
+    progress.set_text("Finding binary files")
+    lfs.lfs_track_binary_files(to_stage, repo, lfs_progress_callback)
 
-    progress.set_text("Adding files to your commit")
+    progress.stop_progress()
+    progress.set_text("Preparing your files to be committed. This may take some time")
+
     def progress_callback(current, max):
+        progress.set_title("Committing Files")
+        progress.set_text("Staging files")
         progress.report_progress(current / max)
 
     repo.sync_staged_files(to_stage, progress_callback)
