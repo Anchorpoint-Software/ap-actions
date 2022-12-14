@@ -39,6 +39,8 @@ def commit_async(message: str, changes, all_files_selected, channel_id, project_
         repo = GitRepository.load(path)
         if not repo: return
         stage_files(changes, all_files_selected, repo, lfs, progress)
+        
+        progress.stop_progress()
         progress.set_text("Creating the commit. This may take some time")
 
         staged = repo.get_pending_changes(staged=True)

@@ -13,8 +13,30 @@ def run_git_command(args, cwd = None, **kwargs):
     if platform.system() == "Windows":
         from subprocess import CREATE_NO_WINDOW
         kwargs["creationflags"] = CREATE_NO_WINDOW
-    
+
     return subprocess.check_output(args, env=current_env, cwd=cwd, **kwargs).decode("utf-8").strip() 
+
+def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
+    from vc.apgit.repository import GitRepository
+    import subprocess, platform
+    current_env = os.environ.copy()
+    current_env.update(GitRepository.get_git_environment())
+    args.append("--verbose")
+
+    if platform.system() == "Windows":
+        from subprocess import CREATE_NO_WINDOW
+        kwargs["creationflags"] = CREATE_NO_WINDOW
+
+    p = subprocess.Popen(args, env=current_env, cwd=cwd, stdout=subprocess.PIPE, **kwargs)
+    line_counter = 0
+    while True:
+        line = p.stdout.readline()
+        if not line:
+            break
+        line_counter = line_counter + 1
+        callback(line_counter, line.decode("utf-8").strip())
+
+    return 0 if p.returncode == None else p.returncode
 
 def _download_git():
     import requests
