@@ -26,7 +26,6 @@ def stage_files(changes, repo, lfs, progress):
     progress.set_text("Preparing your files to be committed. This may take some time")
 
     def progress_callback(current, max):
-        progress.set_title("Committing Files")
         progress.set_text("Staging files")
         progress.report_progress(current / max)
 
