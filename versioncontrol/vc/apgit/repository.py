@@ -412,7 +412,6 @@ class GitRepository(VCRepository):
         else:
             return path
 
-
     def _write_pathspec_file(self, paths, file):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
@@ -558,6 +557,23 @@ class GitRepository(VCRepository):
     def abort_merge(self):
         self.repo.git.merge("--abort")
 
+    def _merge_gitattributes(self, file: str):
+        attribute_set = set()
+        with open(file, "r", encoding="utf-8") as f:
+            while True:
+                line = f.readline()
+                if not line: break
+
+                if line.startswith("<<<<<<<"): continue
+                if line.startswith(">>>>>>>"): continue
+                if line.startswith("======="): continue
+
+                attribute_set.add(line)
+
+        with open(file, "w", encoding="utf-8") as f:
+            for attr in attribute_set:
+                f.write(attr)
+
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
         if not paths:
             conflicts = self.repo.git.diff("--name-only", "--diff-filter=U", "-z").split('\x00')
@@ -565,15 +581,22 @@ class GitRepository(VCRepository):
             if len(conflicts) > 20:
                 path_args = ["."] # This is not cool, can be improved by using a pathspec file instead
             else:
-                path_args[:] = (file for file in conflicts if file != "")
+                path_args[:] = (file for file in conflicts if file != "" and ".gitattributes" not in file)
+            
+            for conflict in conflicts:
+                if ".gitattributes" in conflict:
+                    attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
+                    self._merge_gitattributes(attributes_file)
+                    self.repo.git.add(attributes_file)
         else:
             path_args = paths
 
-        if state is ConflictResolveState.TAKE_OURS:
-            self.repo.git.checkout("--ours", *path_args)
-        elif state is ConflictResolveState.TAKE_THEIRS:
-            self.repo.git.checkout("--theirs", *path_args)
-        self.repo.git.add(*path_args)
+        if len(path_args) > 0:
+            if state is ConflictResolveState.TAKE_OURS:
+                self.repo.git.checkout("--ours", *path_args)
+            elif state is ConflictResolveState.TAKE_THEIRS:
+                self.repo.git.checkout("--theirs", *path_args)
+            self.repo.git.add(*path_args)
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
