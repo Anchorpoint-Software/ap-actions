@@ -20,6 +20,9 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
         if change.selected:
             to_stage.append(change.path)
 
+    if len(to_stage) == 0:
+        return
+
     progress.set_text("Finding binary files")
     lfs.lfs_track_binary_files(to_stage, repo, lfs_progress_callback)
 
