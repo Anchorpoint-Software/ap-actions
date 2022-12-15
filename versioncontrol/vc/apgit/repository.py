@@ -679,7 +679,7 @@ class GitRepository(VCRepository):
         local_commits = self._get_local_commits(self._has_upstream())
         
         for commit in local_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.LOCAL))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL))
         return history
 
     def get_new_commits(self, base, target):
@@ -735,10 +735,10 @@ class GitRepository(VCRepository):
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=type))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type))
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.REMOTE))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE))
 
         return history
 
