@@ -272,6 +272,7 @@ class GitRepository(VCRepository):
 
     def revert_changelist(self, changelist_id: str):
         self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+        self.repo.git.revert("--quit")
 
     def restore_changelist(self, changelist_id: str):
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
