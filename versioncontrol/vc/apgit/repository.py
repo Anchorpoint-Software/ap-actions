@@ -559,7 +559,16 @@ class GitRepository(VCRepository):
         self.repo.git.merge("--abort")
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
-        path_args = ["."] if paths is None else paths
+        if not paths:
+            conflicts = self.repo.git.diff("--name-only", "--diff-filter=U", "-z").split('\x00')
+            path_args = []
+            if len(conflicts) > 20:
+                path_args = ["."] # This is not cool, can be improved by using a pathspec file instead
+            else:
+                path_args[:] = (file for file in conflicts if file != "")
+        else:
+            path_args = paths
+
         if state is ConflictResolveState.TAKE_OURS:
             self.repo.git.checkout("--ours", *path_args)
         elif state is ConflictResolveState.TAKE_THEIRS:
