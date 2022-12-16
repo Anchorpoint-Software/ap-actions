@@ -62,6 +62,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 pull.icon = aps.Icon(":/icons/cloud.svg")
                 pull.identifier = "gitpullrebase"
                 pull.type = ap.ActionButtonType.Primary
+                pull.tooltip = "Get all changes from the remote Git repository"
                 info.actions.append(pull)
             elif repo.is_push_required():
                 push = ap.TimelineChannelAction()
@@ -69,15 +70,16 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 push.icon = aps.Icon(":/icons/upload.svg")
                 push.identifier = "gitpush"
                 push.type = ap.ActionButtonType.Primary
+                push.tooltip = "Push all commits to the remote Git repository"
                 info.actions.append(push)
-            else:
-                fetch = ap.TimelineChannelAction()
-                fetch.name = "Fetch"
-                fetch.icon = aps.Icon(":/icons/update.svg")
-                fetch.identifier = "gitfetch"
-                fetch.tooltip = "Fetches new commits from the server"
-                info.actions.append(fetch)
-        
+            
+        refresh = ap.TimelineChannelAction()
+        refresh.name = "Refresh"
+        refresh.icon = aps.Icon(":/icons/update.svg")
+        refresh.identifier = "gitrefresh"
+        refresh.tooltip = "Refresh the Git timeline"
+        info.actions.append(refresh)
+    
         if is_merging:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
@@ -214,6 +216,14 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     finally:
         sys.path.remove(script_dir)
 
+
+def run_func_wrapper(func, callback, *args):
+    res = func(*args)
+    callback(res)
+
+def on_load_timeline_channel_pending_changes_async(channel_id: str, callback, ctx):
+    ctx.run_async(run_func_wrapper, on_load_timeline_channel_pending_changes, callback, channel_id, ctx)
+
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
@@ -244,6 +254,9 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         return details
     finally:
         sys.path.remove(script_dir)
+
+def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str, callback, ctx):
+    ctx.run_async(run_func_wrapper, on_load_timeline_channel_entry_details, callback, channel_id, entry_id, ctx)
 
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os

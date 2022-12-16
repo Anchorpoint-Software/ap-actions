@@ -53,6 +53,13 @@ def push_async(channel_id: str, project_path):
         if not repo: return
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
+        repo.fetch()
+        if repo.is_pull_required():
+            ui.show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
+            ap.stop_timeline_channel_action_processing(channel_id, "gitpush")    
+            ap.refresh_timeline_channel(channel_id)
+            return
+
         state = repo.push(progress=PushProgress(progress))
         if state == UpdateState.CANCEL:
             ui.show_info("Push Canceled")

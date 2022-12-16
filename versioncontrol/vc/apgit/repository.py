@@ -184,6 +184,8 @@ class GitRepository(VCRepository):
         if remote_url and "azure" in remote_url:
             add_config_env(env, "http.version", "HTTP/1.1", config_counter)
             config_counter = config_counter + 1
+            add_config_env(env, "lfs.activitytimeout", "60", config_counter)
+            config_counter = config_counter + 1
         if platform.system() == "Windows":
             add_config_env(env, "core.longPaths", "1", config_counter)
             config_counter = config_counter + 1
@@ -269,7 +271,20 @@ class GitRepository(VCRepository):
         return state
 
     def revert_changelist(self, changelist_id: str):
-        self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+        try:
+            self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+            
+            try:
+                # don't revert top-level gitattributes
+                self.repo.git.restore("--staged", ".gitattributes")
+                self.repo.git.restore(".gitattributes")
+            except:
+                pass
+        except Exception as e:
+            self.repo.git.revert("--abort")
+            raise e
+        
+        self.repo.git.revert("--quit")
 
     def restore_changelist(self, changelist_id: str):
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
@@ -409,10 +424,18 @@ class GitRepository(VCRepository):
         else:
             return path
 
-
     def _write_pathspec_file(self, paths, file):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
+
+    def _add_files(self, count, progress_callback, *args, **kwargs):
+        from git.util import finalize_process
+        proc = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+        proc.stderr.close()
+        if progress_callback:
+            for i, _ in enumerate(proc.stdout):
+                progress_callback(i+1,count-1)
+        finalize_process(proc)
 
     def stage_all_files(self):
         self.repo.git.add(".")
@@ -420,14 +443,14 @@ class GitRepository(VCRepository):
     def unstage_all_files(self):
         self.repo.git.restore("--staged", ".")
 
-    def stage_files(self, paths: list[str]):
+    def stage_files(self, paths: list[str], progress_callback = None):
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "stage_spec")
                 self._write_pathspec_file(paths, pathspec)
-                self.repo.git.add(pathspec_from_file=pathspec)        
+                self._add_files(len(paths), progress_callback, pathspec_from_file=pathspec)
         else:
-            self.repo.git.add(*paths)
+            self._add_files(len(paths), progress_callback, *paths)
 
     def unstage_files(self, paths: list[str]):
         if len(paths) > 20:
@@ -438,13 +461,16 @@ class GitRepository(VCRepository):
         else:
             self.repo.git.restore("--staged", *paths)
 
-    def sync_staged_files(self, paths: list[str]):
+    def sync_staged_files(self, paths: list[str], add_all, progress_callback = None):
         if not self.is_unborn():
             staged_files = self.repo.git.diff("--name-only", "--staged", "-z").split('\x00')
             staged_files[:] = (file for file in staged_files if file != "")
             if len(staged_files) > 0:
                 self.unstage_files(staged_files)
-        self.stage_files(paths)
+        if not add_all:
+            self.stage_files(paths, progress_callback)
+        else:
+            self._add_files(len(paths), progress_callback, ".")
 
     def remove_files(self, paths: list[str]):
         if len(paths) > 20:
@@ -543,13 +569,46 @@ class GitRepository(VCRepository):
     def abort_merge(self):
         self.repo.git.merge("--abort")
 
+    def _merge_gitattributes(self, file: str):
+        attribute_set = set()
+        with open(file, "r", encoding="utf-8") as f:
+            while True:
+                line = f.readline()
+                if not line: break
+
+                if line.startswith("<<<<<<<"): continue
+                if line.startswith(">>>>>>>"): continue
+                if line.startswith("======="): continue
+
+                attribute_set.add(line)
+
+        with open(file, "w", encoding="utf-8") as f:
+            for attr in attribute_set:
+                f.write(attr)
+
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
-        path_args = ["."] if paths is None else paths
-        if state is ConflictResolveState.TAKE_OURS:
-            self.repo.git.checkout("--ours", *path_args)
-        elif state is ConflictResolveState.TAKE_THEIRS:
-            self.repo.git.checkout("--theirs", *path_args)
-        self.repo.git.add(*path_args)
+        if not paths:
+            conflicts = self.repo.git.diff("--name-only", "--diff-filter=U", "-z").split('\x00')
+            path_args = []
+            if len(conflicts) > 20:
+                path_args = ["."] # This is not cool, can be improved by using a pathspec file instead
+            else:
+                path_args[:] = (file for file in conflicts if file != "" and ".gitattributes" not in file)
+            
+            for conflict in conflicts:
+                if ".gitattributes" in conflict:
+                    attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
+                    self._merge_gitattributes(attributes_file)
+                    self.repo.git.add(attributes_file)
+        else:
+            path_args = paths
+
+        if len(path_args) > 0:
+            if state is ConflictResolveState.TAKE_OURS:
+                self.repo.git.checkout("--ours", *path_args)
+            elif state is ConflictResolveState.TAKE_THEIRS:
+                self.repo.git.checkout("--theirs", *path_args)
+            self.repo.git.add(*path_args)
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
@@ -665,7 +724,7 @@ class GitRepository(VCRepository):
         local_commits = self._get_local_commits(self._has_upstream())
         
         for commit in local_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.LOCAL))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL))
         return history
 
     def get_new_commits(self, base, target):
@@ -721,10 +780,10 @@ class GitRepository(VCRepository):
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=type))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type))
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.committed_date, type=HistoryType.REMOTE))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE))
 
         return history
 

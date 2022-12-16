@@ -24,7 +24,7 @@ def connect_repo_async(ctx, dialog, path, project):
     if project is None:
         project_name = dialog.get_value("name")
         project = ap.Context.instance().create_project(path, project_name)
-        repo.set_username(ctx.username, ctx.email)
+        repo.set_username(ctx.username, ctx.email, path)
 
     helper.update_project(path, url, False, None, project, add_path=False)
     repo.ignore(".ap/project.json", local_only=True)

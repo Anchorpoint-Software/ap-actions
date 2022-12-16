@@ -42,9 +42,13 @@ def fetch_async(channel_id: str, project_path):
     except Exception as e:
         ui.show_error("Failed to fetch Git Repository", str(e))
         raise e
+    
+    if "vc_load_pending_changes" in dir(ap):
+        ap.vc_load_pending_changes("Git")
     ap.refresh_timeline_channel(channel_id)
 
+
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
-    if action_id != "gitfetch": return False
+    if action_id != "gitrefresh": return False
     ctx.run_async(fetch_async, channel_id, ctx.project_path)
     return True

@@ -32,6 +32,7 @@ def create_repo_async(repo_path, project_name):
     repo = GitRepository.create(repo_path, ctx.username, ctx.email)
     helper.update_project(repo_path, None, False, None, project, False)
     repo.ignore(".ap/project.json", local_only=True)
+    repo.ignore("*.approj", local_only=True)
     ap.UI().show_success("Git Repository Initialized")
     
     time.sleep(0.5)
@@ -57,6 +58,7 @@ def clone_repo_async(repo_path, url, project_name):
         project = ctx.create_project(repo_path, project_name, ctx.workspace_id)
         helper.update_project(repo_path, url, False, None, project, False)
         repo.ignore(".ap/project.json", local_only=True)
+        repo.ignore("*.approj", local_only=True)
         progress.finish()
         ap.UI().navigate_to_folder(repo_path)
     except Exception as e:

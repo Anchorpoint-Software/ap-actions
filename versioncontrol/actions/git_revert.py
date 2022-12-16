@@ -45,7 +45,7 @@ def revert_button_pressed(channel_id, project_path, dialog):
     ctx.run_async(revert, channel_id, project_path, dialog.get_value("newfiles"))
     dialog.close()
 
-def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, ctx):
+def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     if action_id != "gitrevertall": return False
 
     dialog = ap.Dialog()
