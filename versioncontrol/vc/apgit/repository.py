@@ -271,7 +271,12 @@ class GitRepository(VCRepository):
         return state
 
     def revert_changelist(self, changelist_id: str):
-        self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+        try:
+            self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+        except Exception as e:
+            self.repo.git.revert("--abort")
+            raise e
+        
         self.repo.git.revert("--quit")
 
     def restore_changelist(self, changelist_id: str):
