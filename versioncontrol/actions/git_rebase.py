@@ -77,13 +77,20 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             raise e
     
     if repo.has_conflicts() == False: 
-        if repo.is_rebasing():
-            repo.continue_rebasing()
-        elif repo.is_merging():
-            repo.continue_merge()
-        
-        ids_to_delete = [rebase_head]
-        ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
+        try:
+            if repo.is_rebasing():
+                repo.continue_rebasing()
+            elif repo.is_merging():
+                repo.continue_merge()
+        except Exception as e:
+            if repo.has_conflicts():
+                # When rebasing, the next commit to rebase can conflict again. This is not an error but OK
+                on_vc_resolve_conflicts(channel_id, conflict_handling, None, ctx)
+            else:
+                raise e
+        finally:
+            ids_to_delete = [rebase_head]
+            ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id == "gitcancelrebase":
