@@ -273,6 +273,13 @@ class GitRepository(VCRepository):
     def revert_changelist(self, changelist_id: str):
         try:
             self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+            
+            try:
+                # don't revert top-level gitattributes
+                self.repo.git.restore("--staged", ".gitattributes")
+                self.repo.git.restore(".gitattributes")
+            except:
+                pass
         except Exception as e:
             self.repo.git.revert("--abort")
             raise e
