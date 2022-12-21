@@ -2,12 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
-    try:
-        from is_git_repo import is_git_repo
-        if is_git_repo(path): return False
-        return True
-    except Exception as e:
-        return False
+    return len(ctx.project_id) == 0
 
 if __name__ == "__main__":
     import sys, os
