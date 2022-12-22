@@ -35,6 +35,7 @@ def _collect_binaries(paths, repo, progress_callback = None) -> set[str]:
     for count, path in enumerate(paths):
         if progress_callback: 
             progress_callback(count+1, max_count)
+        if os.path.isdir(path): continue
         split = os.path.splitext(path)
         if len(split) < 2: continue
         extension = split[1]
