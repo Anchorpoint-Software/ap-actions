@@ -34,7 +34,28 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
         if max > 0:
             progress.report_progress(current / max)
 
-    repo.sync_staged_files(to_stage, all_files_selected, progress_callback)
+    try:
+        repo.sync_staged_files(to_stage, all_files_selected, progress_callback)
+    except Exception as e:
+        submodule_error = False
+        submodule_location = ""
+        for change in to_stage:
+            if os.path.isdir(change):
+                gitdir = os.path.join(change, ".git")
+                if os.path.exists(gitdir):
+                    submodule_error = True
+                    submodule_location = gitdir
+                    break
+        
+        if submodule_error:
+            rel_path = os.path.relpath(submodule_location,repo.get_root_path())
+            d = ap.Dialog()
+            d.title = "Your project contains more than one Git repository"
+            d.icon = ":/icons/versioncontrol.svg"
+            d.add_text(f"A folder in your project contains another Git repository and Git submodules<br>are currently not supported by Anchorpoint.<br><br>To resolve the issue, do the following:<ol><li>Backup the folder <b>{os.path.dirname(rel_path)}</b></li><li>Delete the hidden .git folder: <b>{rel_path}</b></li><li>Commit again</li></ol><br>Do not touch the .git folder in your project root!")
+            d.show()
+        else:
+            raise e
 
 def commit_async(message: str, changes, all_files_selected, channel_id, project_path, lfs):
     ui = ap.UI()
