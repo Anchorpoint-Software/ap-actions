@@ -156,7 +156,11 @@ def _install_rclone_async():
     #     os.mkdir(rclone_dir)
     progress.finish()
 
-    ui.show_success("Installation Successful","You can now mount your Cloud Drive")
+    dialog = ap.Dialog()
+    dialog.title = "Installation Successful"
+    dialog.add_text("To finish the installation, please <b>restart Anchorpoint</b>.<br>Once that's done, you'll be able to mount your Cloud Drive.")
+    dialog.icon = ctx.icon
+    dialog.show()
         
 def check_macfuse():
     if not os.path.isdir(macFUSE_folder_path):
