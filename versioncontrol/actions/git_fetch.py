@@ -32,20 +32,23 @@ def fetch_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        progress = ap.Progress("Fetching Git Changes", show_loading_screen=True)
-        state = repo.fetch(progress=FetchProgress(progress))
-        if state != UpdateState.OK:
-            ui.show_error("Failed to fetch Git Repository")    
-        else:
-            ui.show_success("Fetch Successful")
-        progress.finish()
+        
+        if repo.has_remote():
+            progress = ap.Progress("Fetching Git Changes", show_loading_screen=True)
+            state = repo.fetch(progress=FetchProgress(progress))
+            if state != UpdateState.OK:
+                ui.show_error("Failed to fetch Git Repository")    
+            else:
+                ui.show_success("Fetch Successful")
+            progress.finish()
+            
     except Exception as e:
         ui.show_error("Failed to fetch Git Repository", str(e))
         raise e
-    
-    if "vc_load_pending_changes" in dir(ap):
-        ap.vc_load_pending_changes("Git")
-    ap.refresh_timeline_channel(channel_id)
+    finally:    
+        if "vc_load_pending_changes" in dir(ap):
+            ap.vc_load_pending_changes("Git")
+        ap.refresh_timeline_channel(channel_id)
 
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
