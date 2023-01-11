@@ -296,6 +296,21 @@ class AzureClient:
                             return repo
                     return None
                 
+    def add_user_to_organization(self, organization: str, user_email: str):
+        body = {
+            "accessLevel": {
+                "accountLicenseType": "express" #basic
+            },
+            "user": {
+                "principalName": user_email,
+                "subjectKind": "user"
+            },
+        }
+        
+        response = self._request_with_refresh(self.oauth.post, f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0", json=body)
+        if not response:
+            raise Exception("Could not add user to organization: ", response.text)
+
     def add_user_to_project(self, organization: str, user_email: str, project_id: str):
         body = {
             "accessLevel": {
@@ -307,12 +322,12 @@ class AzureClient:
             },
             "projectEntitlements": [
                 {
-                "group": {
-                    "groupType": "projectContributor"
-                },
-                "projectRef": {
-                    "id": project_id
-                }
+                    "group": {
+                        "groupType": "projectContributor"
+                    },
+                    "projectRef": {
+                        "id": project_id
+                    }
                 }
             ]
         }
