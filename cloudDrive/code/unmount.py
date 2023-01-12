@@ -16,5 +16,10 @@ def remove_auto_mount():
     local_settings.remove("rclone-drive")
     local_settings.store()
 
-kill_rclone()
-remove_auto_mount()
+def on_removed_from_workspace(ctx: ap.Context):
+    kill_rclone()
+    remove_auto_mount()    
+
+if __name__ == "__main__":
+    kill_rclone()
+    remove_auto_mount()
