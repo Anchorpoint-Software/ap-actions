@@ -5,7 +5,7 @@ import anchorpoint as ap
 
 def kill_rclone():
     if platform.system() == "Windows":
-        os.system("taskkill /im rclone.exe")
+        os.system("taskkill /IM rclone.exe /F")
     else:
         os.system("umount /Volumes/Anchorpoint")
 
