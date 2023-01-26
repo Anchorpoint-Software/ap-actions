@@ -103,6 +103,20 @@ def setup_mount(drive, workspace_id, configuration):
                     f"{configuration['azureblob_sas_url']}"
                     ]
 
+
+        #Other
+        if(configuration["type"]=="s3other"):
+            config += [
+                    "--s3-provider",
+                    "Other",
+                    "--s3-access-key-id",
+                    f"{configuration['s3other_access_key_id']}",
+                    "--s3-secret-access-key",
+                    f"{configuration['s3other_secret_access_key']}",
+                    "--s3-endpoint",
+                    f"{configuration['s3other_endpoint']}"
+                    ]
+
         return config
     
     def create_location_arguments():
@@ -121,6 +135,10 @@ def setup_mount(drive, workspace_id, configuration):
         #Azure
         if(configuration["type"]=="azureblob"):
             return f":azureblob:{configuration['azureblob_container_path']}"
+
+        #Other
+        if(configuration["type"]=="s3other"):
+            return f":s3:{configuration['s3other_root_folder']}"
 
     local_settings = aps.Settings("rclone")    
     cache_path = local_settings.get("cachepath",default=get_default_cache_path())
@@ -161,12 +179,14 @@ def setup_mount(drive, workspace_id, configuration):
         "10",
         "--network-mode",
         "--use-server-modtime",
+        "--fast-list",
         "--cache-dir",
         cache_path,
         "--dir-cache-time",
         "5s",
         "--volname=Anchorpoint",
         "--file-perms=0777",
+        "--dir-perms=0777",
         "--use-json-log",
         "--stats",
         "1s",
