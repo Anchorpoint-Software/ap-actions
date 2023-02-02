@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Example / Create Tasks
+
+  version: 1
+  id: ap::examples::tasks
+  category: utility/code/examples/tasks
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Example action to demonstrate how to create tasks
+  icon:
+    path: :/icons/action.svg
+
+  script: create_tasks.py
+
+  register:
+    folder:
+      enable: true
