@@ -14,7 +14,7 @@ def create_attribute_example():
         attribute = api.attributes.create_attribute("Python Example", aps.AttributeType.single_choice_tag)
 
     new_tag_name = f"Example Tag {len(attribute.tags) + 1}"
-    attribute.tags.append(aps.AttributeTag(new_tag_name, aps.TagColor.red))
+    attribute.tags.append(aps.AttributeTag(new_tag_name, "blue"))
     api.attributes.update_attribute(attribute)
 
     return attribute
