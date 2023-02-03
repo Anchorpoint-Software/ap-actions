@@ -15,7 +15,11 @@ all_tasks = api.tasks.get_tasks(tasklist)
 for task in all_tasks:
     print(f"Task: {task.name}")
 
+# Set an icon for the task. To get the path of an icon right click the icon in the icon picker
+api.tasks.set_task_icon(task, aps.Icon("qrc:/icons/multimedia/setting.svg", "blue"))
+
 # Set a status on the task
 api.attributes.set_attribute_value(task, "Status", aps.AttributeTag("Done", "green"))
+
 
 ui.show_success("Tasks created")
