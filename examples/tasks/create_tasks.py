@@ -1,8 +1,8 @@
 import anchorpoint as ap
 import apsync as aps
 
-ctx, api = ap.get_context()
-ui = ap.UI()
+ctx = ap.get_context()
+api = ap.get_api()
 
 # To quickly create a task (and a task list) call 
 task = api.tasks.create_task(ctx.path, "Todo List", "Create Rig")
@@ -22,4 +22,5 @@ api.tasks.set_task_icon(task, aps.Icon("qrc:/icons/multimedia/setting.svg", "blu
 api.attributes.set_attribute_value(task, "Status", aps.AttributeTag("Done", "green"))
 
 
+ui = ap.UI()
 ui.show_success("Tasks created")

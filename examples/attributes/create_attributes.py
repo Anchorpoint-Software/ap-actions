@@ -1,7 +1,8 @@
 import anchorpoint as ap
 import apsync as aps
 
-ctx, api = ap.get_context()
+ctx = ap.get_context()
+api = ap.get_api()
 ui = ap.UI()
 
 selected_files = ctx.selected_files
@@ -14,8 +15,9 @@ def create_attribute_example():
         attribute = api.attributes.create_attribute("Python Example", aps.AttributeType.single_choice_tag)
 
     new_tag_name = f"Example Tag {len(attribute.tags) + 1}"
-    attribute.tags.append(aps.AttributeTag(new_tag_name, "blue"))
-    api.attributes.update_attribute(attribute)
+    tags = attribute.tags
+    tags.append(aps.AttributeTag(new_tag_name, "blue"))
+    api.attributes.set_attribute_tags(attribute, tags)
 
     return attribute
 
