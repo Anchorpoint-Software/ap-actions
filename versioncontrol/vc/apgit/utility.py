@@ -152,8 +152,12 @@ def _get_git_version():
 def _check_update_available():
     try:
         version = _get_git_version()
-    except:
-        return   
+    except Exception as e:
+        # Fix an invalid certificate causing issues on macOS git installation
+        if platform.system() == "Darwin":
+            version =  "git version 2.35.3"
+        else:
+            return   
 
     if platform.system() == "Windows": update_available = version != constants.GIT_VERSION_WIN
     else: update_available = version != constants.GIT_VERSION_MAC
