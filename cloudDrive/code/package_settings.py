@@ -48,7 +48,6 @@ def create_dialog():
     dialog.add_text("Location Constraint\t").add_input(configuration["s3aws_location_constraint"],placeholder="EU (Optional)",var="s3aws_location_constraint_var")
     dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3aws_root_folder"],placeholder="myBucket/myFolder...",var="s3aws_root_folder_var")
 
-
     #s3 Wasabi
     dialog.add_text("Access Key\t\t").add_input(configuration["s3wasabi_access_key_id"],placeholder="XXXBTBISU...",var="s3wasabi_access_key_id_var")
     dialog.add_text("Secret Access Key\t").add_input(configuration["s3wasabi_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3wasabi_secret_access_key_var")
@@ -58,6 +57,12 @@ def create_dialog():
     #Azure
     dialog.add_text("Shared access signature").add_input(configuration["azureblob_sas_url"],placeholder="https://myazureaccount...",var="azureblob_sas_url_var")
     dialog.add_text("Container/ Folder\t").add_input(configuration["azureblob_container_path"],placeholder="myContainer/myFolder...",var="azureblob_container_path_var")
+
+    #s3 Other
+    dialog.add_text("Access Key\t\t").add_input(configuration["s3other_access_key_id"],placeholder="XXXBTBISU...",var="s3other_access_key_id_var")
+    dialog.add_text("Secret Access Key\t").add_input(configuration["s3other_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3other_secret_access_key_var")
+    dialog.add_text("Endpoint\t\t").add_input(configuration["s3other_endpoint"],placeholder="s3.something.com",var="s3other_endpoint_var")
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3other_root_folder"],placeholder="myBucket/myFolder...",var="s3other_root_folder_var")
 
     dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "").add_button("Clear Configuration", callback = clear_config)
     dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
