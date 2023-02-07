@@ -5,22 +5,20 @@
 
 version: 1.0
 action:
-  name: Example / Create Attributes
+  name: Example / Create Tasks
 
   version: 1
-  id: ap::examples::attributes
-  category: utility/code/examples/attributes
+  id: ap::examples::tasks
+  category: utility/code/examples/tasks
   type: python
   enable: false
   author: Anchorpoint Software GmbH
-  description: Example action to demonstrate how to create all kinds of attributes
+  description: Example action to demonstrate how to create tasks
   icon:
     path: :/icons/action.svg
 
-  script: create_attributes.py
+  script: create_tasks.py
 
   register:
-    file: 
-      enable: true
     folder:
       enable: true
