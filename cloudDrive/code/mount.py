@@ -228,7 +228,6 @@ def store_auto_mount(success: bool, drive: str, workspace_id: str):
 
 def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     ui = ap.UI()
-    prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "SignatureDoesNotMatch"
     rlcone_wrong_access_key = "InvalidAccessKeyId"
@@ -264,13 +263,12 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             store_auto_mount(False, drive, workspace_id)
             return
         elif rclone_success in line:            
-            prepare_mount_progress.finish()
-            prepare_mount_progress = None
             if not isWin() and "reload_drives" in dir(ui):
                 ui.reload_drives()
             store_auto_mount(True, drive, workspace_id)
             ui.show_success("Mount Successful")
             global_progress.finish()
+            global_progress = None
             ui.reload()
 
         elif rlcone_wrong_credentials in line:
@@ -282,17 +280,15 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             store_auto_mount(False, drive, workspace_id)
             return
 
-        if myjson and "Transferred" in myjson["msg"]:
+        if not global_progress and myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress, count, count_uploaded)
             
         if progress == None:
             count = set_count_to(count, 0)
             count_uploaded = set_count_to(count_uploaded, 0)
 
-    if not isWin() and prepare_mount_progress is not None:
+    if not isWin():
         # Mac runs in daemon mode, so we assume everything has worked when we reach this point
-        prepare_mount_progress.finish()
-        prepare_mount_progress = None
         if not isWin() and "reload_drives" in dir(ui):
             ui.reload_drives()
         ui.show_success("Mount Successful")
