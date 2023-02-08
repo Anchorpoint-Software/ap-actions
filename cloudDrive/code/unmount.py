@@ -9,17 +9,20 @@ def kill_rclone():
     else:
         os.system("umount /Volumes/Anchorpoint")
 
-def remove_auto_mount():
-    ctx = ap.Context.instance()
+def remove_auto_mount(ctx: ap.Context):
     local_settings = aps.Settings(ctx.workspace_id)
     local_settings.remove("rclone-automount")
     local_settings.remove("rclone-drive")
     local_settings.store()
 
 def on_removed_from_workspace(ctx: ap.Context):
+    print("removed from workspace: " + ctx.workspace_id)
     kill_rclone()
-    remove_auto_mount()    
+    remove_auto_mount(ctx)    
+    local_settings = aps.Settings("rclone")
+    local_settings.clear()
+    local_settings.store()
 
 if __name__ == "__main__":
     kill_rclone()
-    remove_auto_mount()
+    remove_auto_mount(ap.Context.instance())
