@@ -8,6 +8,7 @@ def kill_rclone():
         os.system("taskkill /IM rclone.exe /F")
     else:
         os.system("umount /Volumes/Anchorpoint")
+    ap.UI().reload_drives()
 
 def remove_auto_mount(ctx: ap.Context):
     local_settings = aps.Settings(ctx.workspace_id)
@@ -16,7 +17,6 @@ def remove_auto_mount(ctx: ap.Context):
     local_settings.store()
 
 def on_removed_from_workspace(ctx: ap.Context):
-    print("removed from workspace: " + ctx.workspace_id)
     kill_rclone()
     remove_auto_mount(ctx)    
     local_settings = aps.Settings("rclone")

@@ -263,8 +263,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             store_auto_mount(False, drive, workspace_id)
             return
         elif rclone_success in line:            
-            if not isWin() and "reload_drives" in dir(ui):
-                ui.reload_drives()
+            ui.reload_drives()
             store_auto_mount(True, drive, workspace_id)
             ui.show_success("Mount Successful")
             global_progress.finish()
