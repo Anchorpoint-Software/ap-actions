@@ -119,7 +119,7 @@ def get_configuration(dialog : ap.Dialog):
         if i !="type" and configuration["type"] in str(i):
             configuration_val = str(dialog.get_value(f"{i}_var")).strip()
             #print (i,configuration_val,f"{i}_var")
-            if configuration_val is not "":
+            if configuration_val != "":
                 configuration[i] = configuration_val
             elif is_optional(f"{i}_var"): 
                 configuration[i] = configuration_val
