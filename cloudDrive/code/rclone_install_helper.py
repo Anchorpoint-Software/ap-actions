@@ -19,10 +19,10 @@ rclone_folder_path = "~/Documents/Anchorpoint/actions/rclone"
 rclone_folder_path_mac = "~/library/application support/anchorpoint software/anchorpoint/actions/rclone"
 macFUSE_folder_path = "/Library/Frameworks/macFUSE.framework"
 
-RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-windows-amd64.zip"
-RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-arm64.zip"
-RCLONE_INSTALL_URL_MAC_X86 = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-amd64.zip"
-MACFUSE_INSTALL_URL = "https://github.com/osxfuse/osxfuse/releases/download/macfuse-4.4.0/macfuse-4.4.0.dmg"
+RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.61.1/rclone-v1.61.1-windows-amd64.zip"
+RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.61.1/rclone-v1.61.1-osx-arm64.zip"
+RCLONE_INSTALL_URL_MAC_X86 = "https://github.com/rclone/rclone/releases/download/v1.61.1/rclone-v1.61.1-osx-amd64.zip"
+MACFUSE_INSTALL_URL = "https://github.com/osxfuse/osxfuse/releases/download/macfuse-4.4.1/macfuse-4.4.1.dmg"
 
 def _get_zip_executable(url: str):
     base = os.path.splitext(os.path.basename(url))[0]
