@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     dialog.add_text("Project Name:     ").add_input(var="name", default=project_name)
     dialog.add_text("GitIgnore Config:").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
-    dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).")
+    dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being committed<b>to Git (e.g. <b>Unreal Engine</b>'s build result).")
 
     dialog.add_switch(True, var="remote", callback=update_dialog).add_text("Remote Repository")
     dialog.add_info("Create a local Git repository or connect it to a remote like GitHub")

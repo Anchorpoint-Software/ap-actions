@@ -112,6 +112,7 @@ If you want to make these files available for your team now, you have to enter a
     - git::addrepo
     - git::settings
     - git::createnewrepo
+    - git::project
 
 
     

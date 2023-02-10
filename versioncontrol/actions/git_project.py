@@ -1,0 +1,189 @@
+import anchorpoint as ap
+import apsync as aps
+import os, sys
+
+script_dir = os.path.join(os.path.dirname(__file__), "..")
+sys.path.insert(0, script_dir)
+
+try:
+    from vc.apgit.repository import * 
+except Warning as e:
+    sys.exit(0)
+
+import git_repository_helper as helper
+sys.path.remove(script_dir)
+
+def validate_path(dialog: ap.Dialog, value):
+    if not value or len(value) == 0:
+        return (False, "Path cannot be empty.")
+    else:
+        return (True, "")
+
+def validate_url(dialog: ap.Dialog, value):
+    if not dialog.get_value("remote"): 
+        return True
+
+    if not value or len(value) == 0:
+        return (False, "Url cannot be empty.")
+    else:
+        return (True, "")
+
+def change_remote_switch(dialog: ap.Dialog, remote_enabled):
+    dialog.hide_row("repotext", not remote_enabled)
+    dialog.hide_row("url", not remote_enabled)
+
+class GitProjectType(ap.ProjectType):
+    def __init__(self, path: str, ctx: ap.Context):
+        super().__init__()
+        self.context = ctx
+        self.path = path
+
+        try:
+            repo = GitRepository.load(path)
+            repo_url = repo.get_remote_url()
+            url_enabled = False
+        except:
+            repo_url = None
+            url_enabled = True
+
+        if not repo_url: repo_url = ""
+
+        self.dialog = ap.Dialog()
+        self.dialog.add_input(var="project_path", default= path, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path)
+        self.dialog.add_info("Browse to the folder where the Git repository is located on your computer or create a new one")
+
+        from add_ignore_config import get_ignore_file_types
+        dropdown_values = get_ignore_file_types(ctx.yaml_dir)
+        dropdown_values.insert(0, "None")
+        self.dialog.add_text("GitIgnore Config:").add_dropdown(dropdown_values[0], dropdown_values, var="ignore_dropdown")
+        self.dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being committed to Git<br>(e.g. <b>Unreal Engine</b>'s build result).")
+
+        self.dialog.add_switch(True, var="remote", callback=change_remote_switch).add_text("Remote Repository")
+
+        self.dialog.add_text("<b>Repository URL</b>", var="repotext")
+        self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", enabled=url_enabled, var="url", width = 400, validate_callback=validate_url)
+        
+        self.dialog.add_info("Create a local Git repository or download data from GitHub, for example.")
+
+    def get_project_name_candidate(self):
+        return os.path.basename(self.path)
+
+    def get_dialog(self):         
+        return self.dialog
+
+    def create_project(self, project_id: str) -> bool:
+        print(f"hello? {project_id}")
+        try:
+            project = aps.get_project_by_id(project_id, self.context.workspace_id)
+        except Exception as e:
+            print(e)
+            raise e
+        
+        project_path = self.dialog.get_value("project_path")
+        git_ignore = self.dialog.get_value("ignore_dropdown")
+        remote_enabled = self.dialog.get_value("remote")
+        repo_url = self.dialog.get_value("url")
+
+        folder_is_empty = self._folder_empty(project_path)
+        git_parent_dir = self._get_git_parent_dir(project_path)
+
+        print(f"project_path {project_path}")
+        print(f"git_ignore {git_ignore}")
+        print(f"remote_enabled {remote_enabled}")
+        print(f"repo_url {repo_url}")
+        print(f"folder_is_empty {folder_is_empty}")
+        print(f"git_parent_dir {git_parent_dir}")
+
+        if folder_is_empty and remote_enabled:
+            # Case 1: Empty Folder & Remote URL -> Clone
+            self._clone(repo_url, project_path, project, git_ignore)
+            return True
+
+        if folder_is_empty and not remote_enabled:
+            # Case 2: Empty Folder & No Remote URL -> Create empty Repo
+            self._init_repo(project_path, project, git_ignore)
+            return True
+
+        if self._is_path_equal(git_parent_dir, project_path) and not remote_enabled:
+            # Case 3: Folder Contains Git in root & No Remote -> Open Repo
+            self._open_repo(None, project_path, project, git_ignore)
+            return True
+
+        if self._is_path_equal(git_parent_dir, project_path) and remote_enabled:
+            # Case 4: Folder Contains Git in root & Remote -> Open Repo and Connect Upstream
+            self._open_repo(repo_url, project_path, project, git_ignore)
+            return True
+
+        if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
+            # Case 5: Folder Contains Git in Subdir -> Error
+            return False
+
+        return False
+
+    def _init_repo(self, project_path, project, git_ignore):
+        repo = GitRepository.create(project_path, self.context.username, self.context.email)
+        helper.update_project(project_path, None, False, None, project)
+        self._add_git_ignore(repo, git_ignore, project_path)
+    
+    def _open_repo(self, url, project_path, project, git_ignore):
+        if url == "": url = None
+
+        repo = GitRepository.load(project_path)
+        repo.set_username(self.context.username, self.context.email, project_path)
+        helper.update_project(project_path, url, False, None, project)
+        self._add_git_ignore(repo, git_ignore, project_path)
+
+        if url and repo.get_remote_url != url:
+            repo.add_remote(url)
+            repo.set_upstream("main")
+
+    def _clone(self, url, project_path, project, git_ignore):
+        try:
+            progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
+            repo = GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=helper.CloneProgress(progress))
+            progress.finish()
+        
+            helper.update_project(project_path, url, False, None, project, True)
+            self._add_git_ignore(repo, git_ignore, project_path)
+        except Exception as e:
+            print(e)
+            raise Exception("You might have entered a wrong username / password,<br>or you don't have access to the repository.")
+
+    def _add_git_ignore(self, repo, ignore_value, project_path):
+        repo.ignore(".ap/project.json", local_only=True)
+        repo.ignore("*.approj", local_only=True)
+        if ignore_value != "None":
+            from add_ignore_config import add_git_ignore
+            add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
+        
+    def _folder_empty(self, folder_path):
+        with os.scandir(folder_path) as it:
+            if any(it):
+                return False
+        return True
+
+    def _get_git_parent_dir(self, folder_path):
+        for root, dirs, _ in os.walk(folder_path):
+            for dir in dirs:
+                if dir == ".git":
+                    return os.path.join(root, dir)
+        return None
+
+    def _is_path_equal(self, path1: str, path2: str):
+        norm1 = os.path.normpath(os.path.normcase(path1))
+        norm2 = os.path.normpath(os.path.normcase(path2))
+        return norm1 == norm2
+
+def on_show_create_project(project_types, path: str, ctx: ap.Context):
+    import os
+    iconPath = os.path.join(ctx.yaml_dir, "icons/project_type_git.svg")
+    gitProjectType = GitProjectType(path, ctx)
+    gitProjectType.name = 'Git Repository'
+    gitProjectType.description = 'Open or create a Git repository for your <font color=#FFFFFF>Unreal</font> or <font color=#FFFFFF>Unity</font> project. Connect it to Git providers such as GitHub, Azure Devops or self-hosted Git servers.'
+    gitProjectType.priority = 100
+    if path:
+        gitProjectType.pre_selected = True
+    else:
+        gitProjectType.pre_selected = False
+    gitProjectType.icon = iconPath
+    project_types.add(gitProjectType)

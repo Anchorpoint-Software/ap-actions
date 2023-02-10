@@ -202,8 +202,8 @@ class GitRepository(VCRepository):
         except:
             return False
 
-    def _set_upstream(self, remote, branch):
-        self.repo.git.branch("-u", remote, branch)
+    def set_upstream(self, branch, remote = "origin"):
+        self.repo.git.branch("-u", f"{remote}/{branch}")
 
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
