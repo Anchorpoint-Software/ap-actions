@@ -1,6 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys
+import os, sys, platform
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
@@ -49,7 +49,7 @@ class GitProjectType(ap.ProjectType):
         if not repo_url: repo_url = ""
 
         self.dialog = ap.Dialog()
-        self.dialog.add_input(var="project_path", default= path, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path)
+        self.dialog.add_input(var="project_path", default=path, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path)
         self.dialog.add_info("Browse to the folder where the Git repository is located on your computer or create a new one")
 
         from add_ignore_config import get_ignore_file_types
@@ -65,14 +65,20 @@ class GitProjectType(ap.ProjectType):
         
         self.dialog.add_info("Create a local Git repository or download data from GitHub, for example.")
 
+        settings = aps.Settings("git_project")
+        self.dialog.load_settings(settings)
+
+        self.dialog.set_value("project_path", path)
+        if repo_url != "":
+            self.dialog.set_value("url", repo_url)
+
     def get_project_name_candidate(self):
         return os.path.basename(self.path)
 
     def get_dialog(self):         
         return self.dialog
 
-    def create_project(self, project_id: str) -> bool:
-        print(f"hello? {project_id}")
+    def create_project(self, project_id: str, progress) -> bool:
         try:
             project = aps.get_project_by_id(project_id, self.context.workspace_id)
         except Exception as e:
@@ -93,30 +99,38 @@ class GitProjectType(ap.ProjectType):
         print(f"repo_url {repo_url}")
         print(f"folder_is_empty {folder_is_empty}")
         print(f"git_parent_dir {git_parent_dir}")
+        print("0")
 
         if folder_is_empty and remote_enabled:
             # Case 1: Empty Folder & Remote URL -> Clone
-            self._clone(repo_url, project_path, project, git_ignore)
+            print("1")
+            self._clone(repo_url, project_path, project, git_ignore, progress)
             return True
 
         if folder_is_empty and not remote_enabled:
             # Case 2: Empty Folder & No Remote URL -> Create empty Repo
+            print("2")
             self._init_repo(project_path, project, git_ignore)
             return True
 
         if self._is_path_equal(git_parent_dir, project_path) and not remote_enabled:
             # Case 3: Folder Contains Git in root & No Remote -> Open Repo
+            print("3")
             self._open_repo(None, project_path, project, git_ignore)
             return True
 
         if self._is_path_equal(git_parent_dir, project_path) and remote_enabled:
             # Case 4: Folder Contains Git in root & Remote -> Open Repo and Connect Upstream
+            print("4")
             self._open_repo(repo_url, project_path, project, git_ignore)
             return True
 
         if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
+            print("5")
             # Case 5: Folder Contains Git in Subdir -> Error
             return False
+
+        print("unknown")
 
         return False
 
@@ -137,9 +151,8 @@ class GitProjectType(ap.ProjectType):
             repo.add_remote(url)
             repo.set_upstream("main")
 
-    def _clone(self, url, project_path, project, git_ignore):
+    def _clone(self, url, project_path, project, git_ignore, progress):
         try:
-            progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
             repo = GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=helper.CloneProgress(progress))
             progress.finish()
         
@@ -159,7 +172,14 @@ class GitProjectType(ap.ProjectType):
     def _folder_empty(self, folder_path):
         with os.scandir(folder_path) as it:
             if any(it):
-                return False
+                for e in it:
+                    return False
+
+                # macOS .DS_Store causes git clone to fail even if the rest of the folder is empty
+                ds_store = os.path.join(folder_path, ".DS_Store")
+                if platform.system() == "Darwin" and os.path.exists(ds_store):
+                    os.remove(ds_store)
+                    return True
         return True
 
     def _get_git_parent_dir(self, folder_path):
@@ -170,6 +190,8 @@ class GitProjectType(ap.ProjectType):
         return None
 
     def _is_path_equal(self, path1: str, path2: str):
+        if path1 == None or path2 == None: return False
+        
         norm1 = os.path.normpath(os.path.normcase(path1))
         norm2 = os.path.normpath(os.path.normcase(path2))
         return norm1 == norm2
