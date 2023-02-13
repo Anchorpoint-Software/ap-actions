@@ -107,10 +107,11 @@ class GitProjectType(ap.ProjectType):
             self._clone(repo_url, project_path, project, git_ignore, progress)
             return True
 
-        if folder_is_empty and not remote_enabled:
-            # Case 2: Empty Folder & No Remote URL -> Create empty Repo
+        if not git_parent_dir and not folder_is_empty:
+            # Case 2: Folder with no Repo -> Create new Repo
             print("2")
-            self._init_repo(project_path, project, git_ignore)
+            url = repo_url if remote_enabled else None
+            self._init_repo(url, project_path, project, git_ignore)
             return True
 
         if self._is_path_equal(git_parent_dir, project_path) and not remote_enabled:
@@ -134,10 +135,14 @@ class GitProjectType(ap.ProjectType):
 
         return False
 
-    def _init_repo(self, project_path, project, git_ignore):
+    def _init_repo(self, url, project_path, project, git_ignore):
         repo = GitRepository.create(project_path, self.context.username, self.context.email)
         helper.update_project(project_path, None, False, None, project)
         self._add_git_ignore(repo, git_ignore, project_path)
+        if url:
+            repo.add_remote(url)
+
+        return repo
     
     def _open_repo(self, url, project_path, project, git_ignore):
         if url == "": url = None
@@ -149,7 +154,10 @@ class GitProjectType(ap.ProjectType):
 
         if url and repo.get_remote_url != url:
             repo.add_remote(url)
-            repo.set_upstream("main")
+            try:
+                repo.set_upstream("main")
+            except:
+                pass
 
     def _clone(self, url, project_path, project, git_ignore, progress):
         try:
@@ -170,17 +178,16 @@ class GitProjectType(ap.ProjectType):
             add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
         
     def _folder_empty(self, folder_path):
-        with os.scandir(folder_path) as it:
-            if any(it):
-                for e in it:
-                    return False
+        content = os.listdir(folder_path)
+        if len(content) == 0: return True
+        if platform.system() == "Darwin" and len(content) == 1:
+            # macOS .DS_Store causes git clone to fail even if the rest of the folder is empty
+            ds_store = os.path.join(folder_path, ".DS_Store")
+            if platform.system() == "Darwin" and os.path.exists(ds_store):
+                os.remove(ds_store)
+                return True
 
-                # macOS .DS_Store causes git clone to fail even if the rest of the folder is empty
-                ds_store = os.path.join(folder_path, ".DS_Store")
-                if platform.system() == "Darwin" and os.path.exists(ds_store):
-                    os.remove(ds_store)
-                    return True
-        return True
+        return False
 
     def _get_git_parent_dir(self, folder_path):
         for root, dirs, _ in os.walk(folder_path):
