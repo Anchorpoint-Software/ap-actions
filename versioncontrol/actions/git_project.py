@@ -217,9 +217,10 @@ def on_show_create_project(project_types, path: str, ctx: ap.Context):
     gitProjectType.name = 'Git Repository'
     gitProjectType.description = 'Open or create a Git repository for your <font color=#FFFFFF>Unreal</font> or <font color=#FFFFFF>Unity</font> project. Connect it to Git providers such as GitHub, Azure Devops or self-hosted Git servers.'
     gitProjectType.priority = 100
+    gitProjectType.pre_selected = False
     if path:
-        gitProjectType.pre_selected = True
-    else:
-        gitProjectType.pre_selected = False
+        git_path = os.path.join(path, ".git")
+        gitProjectType.pre_selected = os.path.exists(git_path)
+    
     gitProjectType.icon = iconPath
     project_types.add(gitProjectType)
