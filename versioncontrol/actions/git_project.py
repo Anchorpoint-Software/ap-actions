@@ -38,14 +38,16 @@ class GitProjectType(ap.ProjectType):
         self.context = ctx
         self.path = path
 
+        repo_url = None
+        url_enabled = True
         try:
-            repo = GitRepository.load(path)
-            repo_url = repo.get_remote_url()
-            url_enabled = False
+            if os.path.exists(path) and path != "":
+                repo = GitRepository.load(path)
+                repo_url = repo.get_remote_url()
+                url_enabled = False
         except:
-            repo_url = None
-            url_enabled = True
-
+            pass
+        
         if not repo_url: repo_url = ""
 
         self.dialog = ap.Dialog()
@@ -58,7 +60,7 @@ class GitProjectType(ap.ProjectType):
         self.dialog.add_text("GitIgnore Config:").add_dropdown(dropdown_values[0], dropdown_values, var="ignore_dropdown")
         self.dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being committed to Git<br>(e.g. <b>Unreal Engine</b>'s build result).")
 
-        self.dialog.add_switch(True, var="remote", callback=change_remote_switch).add_text("Remote Repository")
+        self.dialog.add_switch(True, var="remote", callback=change_remote_switch, enabled=url_enabled).add_text("Remote Repository")
 
         self.dialog.add_text("<b>Repository URL</b>", var="repotext")
         self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", enabled=url_enabled, var="url", width = 400, validate_callback=validate_url)
@@ -107,7 +109,7 @@ class GitProjectType(ap.ProjectType):
             self._clone(repo_url, project_path, project, git_ignore, progress)
             return True
 
-        if not git_parent_dir and not folder_is_empty:
+        if folder_is_empty and not git_parent_dir:
             # Case 2: Folder with no Repo -> Create new Repo
             print("2")
             url = repo_url if remote_enabled else None
