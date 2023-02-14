@@ -21,7 +21,7 @@ def validate_path(dialog: ap.Dialog, value):
 
 def validate_url(dialog: ap.Dialog, value):
     if not dialog.get_value("remote"): 
-        return True
+        return (True, "")
 
     if not value or len(value) == 0:
         return (False, "Url cannot be empty.")
