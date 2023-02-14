@@ -78,7 +78,7 @@ class GitProjectType(ap.ProjectType):
     def get_dialog(self):         
         return self.dialog
 
-    def create_project(self, project_id: str, progress) -> bool:
+    def setup_project(self, project_id: str, progress) -> bool:
         try:
             project = aps.get_project_by_id(project_id, self.context.workspace_id)
         except Exception as e:
