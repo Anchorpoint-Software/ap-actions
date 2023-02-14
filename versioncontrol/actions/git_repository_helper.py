@@ -19,9 +19,6 @@ def update_project(
         add_path: bool = True):
 
     if not is_join:
-        if add_path:
-            ap.add_path_to_project(repo_path, project.id, project.workspace_id)
-
         channel = aps.TimelineChannel()
         channel.id = CHANNEL_ID
         channel.name = "Git Repository"

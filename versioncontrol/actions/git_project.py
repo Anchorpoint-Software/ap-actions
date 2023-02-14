@@ -15,18 +15,18 @@ sys.path.remove(script_dir)
 
 def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
-        return (False, "Path cannot be empty.")
+        return "Path cannot be empty."
     else:
-        return (True, "")
+        return
 
 def validate_url(dialog: ap.Dialog, value):
     if not dialog.get_value("remote"): 
-        return (True, "")
+        return
 
     if not value or len(value) == 0:
-        return (False, "Url cannot be empty.")
+        return "Url cannot be empty."
     else:
-        return (True, "")
+        return
 
 def change_remote_switch(dialog: ap.Dialog, remote_enabled):
     dialog.hide_row("repotext", not remote_enabled)
@@ -74,9 +74,14 @@ class GitProjectType(ap.ProjectType):
         if repo_url != "":
             self.dialog.set_value("url", repo_url)
 
-    def get_project_name_candidate(self):
-        return os.path.basename(self.path)
+        change_remote_switch(self.dialog, self.dialog.get_value("remote"))
 
+    def get_project_name_candidate(self):
+        return os.path.basename(self.get_project_path())
+
+    def get_project_path(self):
+        return self.dialog.get_value("project_path")
+    
     def get_dialog(self):         
         return self.dialog
 
