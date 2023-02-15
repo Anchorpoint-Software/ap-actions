@@ -113,7 +113,7 @@ class GitProjectType(ap.ProjectType):
             self._clone(repo_url, project_path, project, git_ignore, progress)
             return True
 
-        if folder_is_empty and not git_parent_dir:
+        if not git_parent_dir:
             # Case 2: Folder with no Repo -> Create new Repo
             print("2")
             url = repo_url if remote_enabled else None
