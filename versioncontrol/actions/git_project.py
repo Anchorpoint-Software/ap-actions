@@ -15,7 +15,7 @@ sys.path.remove(script_dir)
 
 def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
-        return "Path cannot be empty."
+        return "Please add a folder for your project files."
     else:
         return
 
