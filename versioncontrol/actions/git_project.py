@@ -83,7 +83,6 @@ class GitProjectType(ap.ProjectType):
         return os.path.basename(self.get_project_path())
 
     def get_project_path(self):
-        print("get project path")
         return self.dialog.get_value("project_path")
     
     def get_dialog(self):         
