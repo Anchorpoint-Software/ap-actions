@@ -3,7 +3,7 @@ import anchorpoint as ap
 import apsync as aps
 import sys, os
 
-
+NO_IGNORE = "Choose a gitignore Template"
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
     try:
@@ -22,11 +22,12 @@ def get_ignore_file(yaml_dir: str, name: str):
 
 def add_git_ignore(template_name: str, path: str, yaml_dir: str):
     ignore_src = get_ignore_file(yaml_dir, template_name)
-    ignore_target = os.path.join(path, ".gitignore")
-    if os.path.exists(ignore_target):
-        os.remove(ignore_target)
-    
-    copyfile(ignore_src, ignore_target)
+    if os.path.exists(ignore_src):
+        ignore_target = os.path.join(path, ".gitignore")
+        if os.path.exists(ignore_target):
+            os.remove(ignore_target)
+        
+        copyfile(ignore_src, ignore_target)
 
 def _add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
     dropdown = dialog.get_value("dropdown")

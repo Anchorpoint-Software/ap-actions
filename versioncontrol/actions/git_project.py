@@ -57,12 +57,12 @@ class GitProjectType(ap.ProjectType):
         self.dialog = ap.Dialog()
         self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path)
 
-        from add_ignore_config import get_ignore_file_types
+        from add_ignore_config import get_ignore_file_types, NO_IGNORE
         dropdown_values = get_ignore_file_types(ctx.yaml_dir)
 
         self.dialog.add_text("<b>Exclude Files from Version Control</b>", var="gitignoretext")
-        dropdown_values.insert(0, "None")
-        self.dialog.add_dropdown("Choose a gitignore Template", dropdown_values, var="ignore_dropdown")
+        dropdown_values.insert(0, NO_IGNORE)
+        self.dialog.add_dropdown(NO_IGNORE, dropdown_values, var="ignore_dropdown")
         self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
         self.dialog.add_empty()
         self.dialog.add_switch(True, var="remote", text="Remote Repository", callback=change_remote_switch, enabled=url_enabled)
@@ -177,10 +177,10 @@ class GitProjectType(ap.ProjectType):
             raise Exception("You might have entered a wrong username / password,<br>or you don't have access to the repository.")
 
     def _add_git_ignore(self, repo, ignore_value, project_path):
+        from add_ignore_config import add_git_ignore, NO_IGNORE
         repo.ignore(".ap/project.json", local_only=True)
         repo.ignore("*.approj", local_only=True)
-        if ignore_value != "None" or ignore_value != "Choose a gitignore Template":
-            from add_ignore_config import add_git_ignore
+        if ignore_value != NO_IGNORE:
             add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
         
     def _folder_empty(self, folder_path):
