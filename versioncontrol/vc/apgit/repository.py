@@ -205,6 +205,9 @@ class GitRepository(VCRepository):
     def set_upstream(self, branch, remote = "origin"):
         self.repo.git.branch("-u", f"{remote}/{branch}")
 
+    def track_branch(self, branch, remote = "origin"):
+        self.repo.git.branch("-u", f"{remote}/{branch}")
+
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)

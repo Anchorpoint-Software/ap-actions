@@ -119,7 +119,7 @@ class GitProjectType(ap.ProjectType):
             # Case 2: Folder with no Repo -> Create new Repo
             print("2")
             url = repo_url if remote_enabled else None
-            self._init_repo(url, project_path, project, git_ignore)
+            self._init_repo(url, project_path, project, git_ignore, progress)
             return True
 
         if self._is_path_equal(git_parent_dir, project_path) and not remote_enabled:
@@ -143,12 +143,30 @@ class GitProjectType(ap.ProjectType):
 
         return False
 
-    def _init_repo(self, url, project_path, project, git_ignore):
+    def _get_branch_names(self, repo):
+        branches = repo.get_branches()
+        names = []
+        for branch in branches:
+            names.append(branch.name)
+
+        return names
+    
+
+
+    def _init_repo(self, url, project_path, project, git_ignore, progress):
         repo = GitRepository.create(project_path, self.context.username, self.context.email)
         helper.update_project(project_path, None, False, None, project)
         self._add_git_ignore(repo, git_ignore, project_path)
         if url:
             repo.add_remote(url)
+            repo.fetch(progress=helper.FetchProgress(progress))
+            branches = self._get_branch_names(repo)
+
+            print(branches)
+            if "origin/main" in branches:
+                repo.switch_branch("origin/main")
+            elif "origin/master" in branches:
+                repo.switch_branch("origin/master")
 
         return repo
     
