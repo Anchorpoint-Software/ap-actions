@@ -50,9 +50,12 @@ class GitProjectType(ap.ProjectType):
         
         if not repo_url: repo_url = ""
 
+        path_placeholder = "Z:\\Projects\\ACME_Commercial"
+        if platform.system() == "Darwin":
+            path_placeholder = "/Projects/ACME_Commercial"            
+
         self.dialog = ap.Dialog()
-        self.dialog.add_input(var="project_path", default=path, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path)
-        self.dialog.add_info("Browse to the folder where the Git repository is located on your computer or create a new one")
+        self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path)
 
         from add_ignore_config import get_ignore_file_types
         dropdown_values = get_ignore_file_types(ctx.yaml_dir)
@@ -60,7 +63,7 @@ class GitProjectType(ap.ProjectType):
         self.dialog.add_text("GitIgnore Config:").add_dropdown(dropdown_values[0], dropdown_values, var="ignore_dropdown")
         self.dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being committed to Git<br>(e.g. <b>Unreal Engine</b>'s build result).")
 
-        self.dialog.add_switch(True, var="remote", callback=change_remote_switch, enabled=url_enabled).add_text("Remote Repository")
+        self.dialog.add_switch(True, var="remote", text="Remote Repository", callback=change_remote_switch, enabled=url_enabled)
 
         self.dialog.add_text("<b>Repository URL</b>", var="repotext")
         self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", enabled=url_enabled, var="url", width = 400, validate_callback=validate_url)
@@ -80,6 +83,7 @@ class GitProjectType(ap.ProjectType):
         return os.path.basename(self.get_project_path())
 
     def get_project_path(self):
+        print("get project path")
         return self.dialog.get_value("project_path")
     
     def get_dialog(self):         
