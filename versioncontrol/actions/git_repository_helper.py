@@ -35,7 +35,7 @@ def update_project(
         if not timeline_channel:
             aps.add_timeline_channel(project, channel)
             
-        aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
+        # aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
     else:
         update_project_join(repo_path, project.id, project.workspace_id)
     pass
