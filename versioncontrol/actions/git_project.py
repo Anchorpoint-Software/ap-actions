@@ -15,7 +15,7 @@ sys.path.remove(script_dir)
 
 def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
-        return "Please add a folder for your project files."
+        return "Please add a folder for your project files"
     else:
         return
 
@@ -24,7 +24,7 @@ def validate_url(dialog: ap.Dialog, value):
         return
 
     if not value or len(value) == 0:
-        return "Url cannot be empty."
+        return "Please add a link to a remote Git repository"
     else:
         return
 
@@ -59,21 +59,17 @@ class GitProjectType(ap.ProjectType):
 
         from add_ignore_config import get_ignore_file_types
         dropdown_values = get_ignore_file_types(ctx.yaml_dir)
-        dropdown_values.insert(0, "None")
-        self.dialog.add_text("GitIgnore Config:").add_dropdown(dropdown_values[0], dropdown_values, var="ignore_dropdown")
-        self.dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being committed to Git<br>(e.g. <b>Unreal Engine</b>'s build result).")
 
+        self.dialog.add_text("<b>Exclude Files from Version Control</b>", var="gitignoretext")
+        dropdown_values.insert(0, "None")
+        self.dialog.add_dropdown("Choose a gitignore Template", dropdown_values, var="ignore_dropdown")
+        self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
+        self.dialog.add_empty()
         self.dialog.add_switch(True, var="remote", text="Remote Repository", callback=change_remote_switch, enabled=url_enabled)
 
         self.dialog.add_text("<b>Repository URL</b>", var="repotext")
-        self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", enabled=url_enabled, var="url", width = 400, validate_callback=validate_url)
+        self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", enabled=url_enabled, var="url", width = 420, validate_callback=validate_url)
         
-        self.dialog.add_info("Create a local Git repository or download data from GitHub, for example.")
-
-        settings = aps.Settings("git_project")
-        self.dialog.load_settings(settings)
-
-        self.dialog.set_value("project_path", path)
         if repo_url != "":
             self.dialog.set_value("url", repo_url)
 
@@ -183,7 +179,7 @@ class GitProjectType(ap.ProjectType):
     def _add_git_ignore(self, repo, ignore_value, project_path):
         repo.ignore(".ap/project.json", local_only=True)
         repo.ignore("*.approj", local_only=True)
-        if ignore_value != "None":
+        if ignore_value != "None" or ignore_value != "Choose a gitignore Template":
             from add_ignore_config import add_git_ignore
             add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
         
