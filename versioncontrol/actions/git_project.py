@@ -19,6 +19,7 @@ def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
         return "Please add a folder for your project files"
     else:
+
         return
 
 def validate_url(dialog: ap.Dialog, value):
@@ -41,12 +42,10 @@ class GitProjectType(ap.ProjectType):
         self.path = path
 
         repo_url = None
-        url_enabled = True
         try:
             if os.path.exists(path) and path != "":
                 repo = GitRepository.load(path)
                 repo_url = repo.get_remote_url()
-                url_enabled = False
         except:
             pass
         
@@ -67,10 +66,10 @@ class GitProjectType(ap.ProjectType):
         self.dialog.add_dropdown(NO_IGNORE, dropdown_values, var="ignore_dropdown")
         self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
         self.dialog.add_empty()
-        self.dialog.add_switch(True, var="remote", text="Remote Repository", callback=change_remote_switch, enabled=url_enabled)
+        self.dialog.add_switch(True, var="remote", text="Remote Repository", callback=change_remote_switch)
 
         self.dialog.add_text("<b>Repository URL</b>", var="repotext")
-        self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", enabled=url_enabled, var="url", width = 420, validate_callback=validate_url)
+        self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 420, validate_callback=validate_url)
         
         if repo_url != "":
             self.dialog.set_value("url", repo_url)
@@ -86,7 +85,7 @@ class GitProjectType(ap.ProjectType):
     def get_dialog(self):         
         return self.dialog
 
-    def setup_project(self, project_id: str, progress) -> bool:
+    def setup_project(self, project_id: str, progress):
         try:
             project = aps.get_project_by_id(project_id, self.context.workspace_id)
         except Exception as e:
@@ -101,47 +100,39 @@ class GitProjectType(ap.ProjectType):
         folder_is_empty = self._folder_empty(project_path)
         git_parent_dir = self._get_git_parent_dir(project_path)
 
-        print(f"project_path {project_path}")
-        print(f"git_ignore {git_ignore}")
-        print(f"remote_enabled {remote_enabled}")
-        print(f"repo_url {repo_url}")
-        print(f"folder_is_empty {folder_is_empty}")
-        print(f"git_parent_dir {git_parent_dir}")
-        print("0")
-
         if folder_is_empty and remote_enabled:
             # Case 1: Empty Folder & Remote URL -> Clone
             print("1")
             self._clone(repo_url, project_path, project, git_ignore, progress)
-            return True
+            return
 
         if not git_parent_dir:
             # Case 2: Folder with no Repo -> Create new Repo
             print("2")
             url = repo_url if remote_enabled else None
             self._init_repo(url, project_path, project, git_ignore, progress)
-            return True
+            return
 
-        if self._is_path_equal(git_parent_dir, project_path) and not remote_enabled:
-            # Case 3: Folder Contains Git in root & No Remote -> Open Repo
+        if self._is_path_equal(git_parent_dir, project_path):
+            # Case 3: Folder Contains Git in root -> Open Repo
             print("3")
             self._open_repo(None, project_path, project, git_ignore)
-            return True
-
-        if self._is_path_equal(git_parent_dir, project_path) and remote_enabled:
-            # Case 4: Folder Contains Git in root & Remote -> Open Repo and Connect Upstream
-            print("4")
-            self._open_repo(repo_url, project_path, project, git_ignore)
-            return True
+            return
 
         if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
-            print("5")
             # Case 5: Folder Contains Git in Subdir -> Error
-            return False
+            print("4")
+            raise Exception(f"Cannot create the project, found a Git repository in a subdirectory: {git_parent_dir}")
 
-        print("unknown")
+        print(f"project_path {project_path}")
+        print(f"git_ignore {git_ignore}")   
+        print(f"remote_enabled {remote_enabled}")
+        print(f"repo_url {repo_url}")
+        print(f"folder_is_empty {folder_is_empty}")
+        print(f"git_parent_dir {git_parent_dir}")
 
-        return False
+        raise Exception(f"Cannot create the Git project, unknown set of parameters")
+
 
     def _get_branch_names(self, repo):
         branches = repo.get_branches()
@@ -219,7 +210,7 @@ class GitProjectType(ap.ProjectType):
         for root, dirs, _ in os.walk(folder_path):
             for dir in dirs:
                 if dir == ".git":
-                    return os.path.join(root, dir)
+                    return root
         return None
 
     def _is_path_equal(self, path1: str, path2: str):
