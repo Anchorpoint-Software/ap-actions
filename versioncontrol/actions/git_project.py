@@ -102,26 +102,22 @@ class GitProjectType(ap.ProjectType):
 
         if folder_is_empty and remote_enabled:
             # Case 1: Empty Folder & Remote URL -> Clone
-            print("1")
             self._clone(repo_url, project_path, project, git_ignore, progress)
             return
 
         if not git_parent_dir:
             # Case 2: Folder with no Repo -> Create new Repo
-            print("2")
             url = repo_url if remote_enabled else None
             self._init_repo(url, project_path, project, git_ignore, progress)
             return
 
         if self._is_path_equal(git_parent_dir, project_path):
             # Case 3: Folder Contains Git in root -> Open Repo
-            print("3")
             self._open_repo(None, project_path, project, git_ignore)
             return
 
         if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
-            # Case 5: Folder Contains Git in Subdir -> Error
-            print("4")
+            # Case 4: Folder Contains Git in Subdir -> Error
             raise Exception(f"Cannot create the project, found a Git repository in a subdirectory: {git_parent_dir}")
 
         print(f"project_path {project_path}")
@@ -142,8 +138,6 @@ class GitProjectType(ap.ProjectType):
 
         return names
     
-
-
     def _init_repo(self, url, project_path, project, git_ignore, progress):
         repo = GitRepository.create(project_path, self.context.username, self.context.email)
         helper.update_project(project_path, None, False, None, project)
