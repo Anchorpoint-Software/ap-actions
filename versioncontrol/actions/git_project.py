@@ -42,10 +42,12 @@ class GitProjectType(ap.ProjectType):
         self.path = path
 
         repo_url = None
+        remote_enabled = True
         try:
             if os.path.exists(path) and path != "":
                 repo = GitRepository.load(path)
                 repo_url = repo.get_remote_url()
+                remote_enabled = False
         except:
             pass
         
@@ -66,7 +68,7 @@ class GitProjectType(ap.ProjectType):
         self.dialog.add_dropdown(NO_IGNORE, dropdown_values, var="ignore_dropdown")
         self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
         self.dialog.add_empty()
-        self.dialog.add_switch(True, var="remote", text="Remote Repository", callback=change_remote_switch)
+        self.dialog.add_switch(remote_enabled, var="remote", text="Remote Repository", callback=change_remote_switch)
 
         self.dialog.add_text("<b>Repository URL</b>", var="repotext")
         self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 420, validate_callback=validate_url)
@@ -228,3 +230,37 @@ def on_show_create_project(project_types, path: str, ctx: ap.Context):
     
     gitProjectType.icon = iconPath
     project_types.add(gitProjectType)
+
+
+def update_open_settings(dialog: ap.Dialog, value, path):
+    settings = aps.Settings("connect_git_repo")
+    settings.set(path, value)
+    settings.store()
+
+def connect_repo(dialog: ap.Dialog, path):
+    dialog.close()
+    ap.show_create_project_dialog(path)
+
+def on_folder_opened(ctx: ap.Context):
+    path = ctx.path
+    git_dir = os.path.join(path, ".git")
+    if not os.path.exists(git_dir):
+        return
+
+    if len(ctx.project_id) > 0:
+        return
+
+    settings = aps.Settings("connect_git_repo")
+    never_ask_again = settings.get(path, False)
+    if never_ask_again: 
+        return
+
+    dialog = ap.Dialog()
+    dialog.title = "Open Git Repository"
+    dialog.icon = ctx.icon
+ 
+    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/5-Workflow-Git/\">Git.</a>")
+    dialog.add_checkbox(callback=lambda d,v: update_open_settings(d,v,path), var="neveraskagain").add_text("Never ask again")
+    dialog.add_button("Continue", var="yes", callback=lambda d: connect_repo(d,path)).add_button("Cancel", callback=lambda d: d.close())
+    
+    dialog.show()
