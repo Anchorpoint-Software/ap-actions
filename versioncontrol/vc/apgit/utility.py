@@ -188,8 +188,10 @@ def guarantee_git():
 
 def get_repo_path(channel_id: str, project_path: str):
     project = aps.get_project(project_path)
-    if not project: return None
+    if not project: return project_path
     channel = aps.get_timeline_channel(project, channel_id)
-    if not channel: return None
-    if not "gitPathId" in channel.metadata: return None
-    return aps.get_folder_by_id(channel.metadata["gitPathId"], project)
+    if not channel: return project_path
+    if not "gitPathId" in channel.metadata: return project_path
+    folder = aps.get_folder_by_id(channel.metadata["gitPathId"], project)
+    if not folder: return project_path
+    return folder

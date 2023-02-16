@@ -24,9 +24,7 @@ def update_project(
         channel.name = "Git Repository"
         channel.icon = aps.Icon(":/icons/versioncontrol.svg", "#D4AA37")
 
-        folder_id = aps.get_folder_id(repo_path)
-
-        metadata = {"gitPathId": folder_id}
+        metadata = {}
         if remote_url:
             metadata["gitRemoteUrl"] = remote_url
 
@@ -34,8 +32,6 @@ def update_project(
 
         if not timeline_channel:
             aps.add_timeline_channel(project, channel)
-            
-        # aps.set_folder_icon(repo_path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
     else:
         update_project_join(repo_path, project.id, project.workspace_id)
     pass
@@ -46,6 +42,19 @@ def update_project_join(
         workspace_id: str):
 
     ap.join_project_path(repo_path, project_id, workspace_id)
+
+def folder_empty(folder_path):
+    import platform
+    content = os.listdir(folder_path)
+    if len(content) == 0: return True
+    if platform.system() == "Darwin" and len(content) == 1:
+        # macOS .DS_Store causes git clone to fail even if the rest of the folder is empty
+        ds_store = os.path.join(folder_path, ".DS_Store")
+        if platform.system() == "Darwin" and os.path.exists(ds_store):
+            os.remove(ds_store)
+            return True
+
+    return False
 
 class CloneProgress(vc.Progress):
     def __init__(self, progress: ap.Progress) -> None:

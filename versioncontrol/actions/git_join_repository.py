@@ -12,7 +12,7 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
         return False
 
 if __name__ == "__main__":
-    import sys, os, importlib
+    import sys, os
     script_dir = os.path.join(os.path.dirname(__file__), "..")
     sys.path.insert(0, script_dir)
 
@@ -28,6 +28,9 @@ if __name__ == "__main__":
     ctx = ap.Context.instance()
     ui = ap.UI()
 
+    if ctx.type != ap.Type.JoinProjectFiles:
+        sys.exit(0)
+
     project_id = ctx.project_id
     workspace_id = ctx.workspace_id
     project = aps.get_project_by_id(project_id, workspace_id)
@@ -36,23 +39,7 @@ if __name__ == "__main__":
         sys.exit(0) 
 
     timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
-    is_join = ctx.type == ap.Type.JoinProjectFiles
     settings = aps.Settings("git_repository")               
-
-    def create_repo(dialog: ap.Dialog):
-        repo_path = dialog.get_value("location")
-        
-        if GitRepository.is_repo(repo_path):
-            ap.UI().show_info("Already a Git repo")
-            return False
-        else:
-            repo = GitRepository.create(repo_path, ctx.username, ctx.email)
-            helper.update_project(repo_path, None, is_join, timeline_channel, project)
-            repo.ignore(".ap/project.json", local_only=True)
-            repo.ignore("*.approj", local_only=True)
-            ap.UI().show_success("Git Repository Initialized")
-            dialog.close()
-            return True
 
     def clone_repo_async(repo_path: str, url: str, join_project_files):
         with os.scandir(repo_path) as it:
@@ -85,60 +72,41 @@ if __name__ == "__main__":
         location = dialog.get_value("location")
         url = dialog.get_value("url")
         dialog.close()
-        ctx.run_async(clone_repo_async, location, url, is_join)
+        ctx.run_async(clone_repo_async, location, url, True)
+
+    def validate_path(dialog: ap.Dialog, value: str):
+        if not os.path.exists(value): 
+            return "The folder for your project files must exist"
+        if not helper.folder_empty(value):
+            return "The folder for your project files must be empty"
+        return
 
     def update_dialog(dialog: ap.Dialog, value):
-        url = dialog.get_value("url")
-        location = dialog.get_value("location")
-        remote_enabled = dialog.get_value("remote")
-        hide_remote_settings = not remote_enabled
+        dialog.set_enabled("join", dialog.is_valid())
 
-        dialog.hide_row("repotext", hide_remote_settings)
-        dialog.hide_row("url", hide_remote_settings)
-        
-        dialog.hide_row("join", hide_remote_settings)
-        dialog.hide_row("create", remote_enabled)
-
-        enable = len(location) > 0
-        if not hide_remote_settings:
-            enable = enable and len(url) > 0
-
-        dialog.set_enabled("join", enable)
-        dialog.set_enabled("create", enable)
-
-        settings.set("browse_path", location)
-        settings.store()
-
-    remote_enabled = True
-    remote_toggleable = not timeline_channel or "gitRemoteUrl" not in timeline_channel.metadata
-    if not remote_toggleable:
+    try:
         remote_url = timeline_channel.metadata["gitRemoteUrl"]
-    else:
+    except:
         remote_url = ""
 
-    hide_remote_settings = not remote_enabled
-
     dialog = ap.Dialog()
-    dialog.title = "Git repository"
+    dialog.title = "Join Git Project"
     dialog.icon = ctx.icon
 
-    dialog.add_text("<b>Project Folder</b>")
-    if platform.system() == "Windows":
-        dialog.add_input(placeholder="D:/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
-    else:
-        dialog.add_input(placeholder="/users/johndoe/Projects/projectname", var="location", width = 400, browse=ap.BrowseType.Folder, callback=update_dialog)
+    path_placeholder = "Z:\\Projects\\ACME_Commercial"
+    if platform.system() == "Darwin":
+        path_placeholder = "/Projects/ACME_Commercial"    
 
+    dialog.add_text("<b>Project Folder</b>")
+    dialog.add_input(placeholder=path_placeholder, var="location", width = 400, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=update_dialog)
+    
     browse_path = settings.get("browse_path")
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
 
-    dialog.add_switch(remote_enabled, var="remote", callback=update_dialog).add_text("Remote Repository").hide_row(hide=not remote_toggleable)
-    dialog.add_info("Create a local Git repository or connect it to a remote like GitHub").hide_row(hide=not remote_toggleable)
-
-    dialog.add_text("<b>Repository URL</b>", var="repotext").hide_row(hide=hide_remote_settings)
-    dialog.add_input(default=remote_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", enabled=remote_toggleable, width = 400, callback=update_dialog).hide_row(hide=hide_remote_settings)
+    dialog.add_text("<b>Repository URL</b>", var="repotext")
+    dialog.add_input(default=remote_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", enabled=len(remote_url)==0, width = 400)
 
     dialog.add_empty()
-    dialog.add_button("Create", var="create", callback=create_repo, enabled=False).hide_row(hide=remote_enabled)
-    dialog.add_button("Join", var="join", callback=clone_repo, enabled=False).hide_row(hide=hide_remote_settings)
+    dialog.add_button("Join", var="join", callback=clone_repo, enabled=False)
     dialog.show()

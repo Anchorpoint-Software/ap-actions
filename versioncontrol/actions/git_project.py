@@ -19,7 +19,6 @@ def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
         return "Please add a folder for your project files"
     else:
-
         return
 
 def validate_url(dialog: ap.Dialog, value):
@@ -89,7 +88,7 @@ class GitProjectType(ap.ProjectType):
 
     def setup_project(self, project_id: str, progress):
         try:
-            project = aps.get_project_by_id(project_id, self.context.workspace_id)
+            self.project = aps.get_project_by_id(project_id, self.context.workspace_id)
         except Exception as e:
             print(e)
             raise e
@@ -99,23 +98,23 @@ class GitProjectType(ap.ProjectType):
         remote_enabled = self.dialog.get_value("remote")
         repo_url = self.dialog.get_value("url")
 
-        folder_is_empty = self._folder_empty(project_path)
+        folder_is_empty = helper.folder_empty(project_path)
         git_parent_dir = self._get_git_parent_dir(project_path)
 
         if folder_is_empty and remote_enabled:
             # Case 1: Empty Folder & Remote URL -> Clone
-            self._clone(repo_url, project_path, project, git_ignore, progress)
+            self._clone(repo_url, project_path, self.project, git_ignore, progress)
             return
 
         if not git_parent_dir:
             # Case 2: Folder with no Repo -> Create new Repo
             url = repo_url if remote_enabled else None
-            self._init_repo(url, project_path, project, git_ignore, progress)
+            self._init_repo(url, project_path, self.project, git_ignore, progress)
             return
 
         if self._is_path_equal(git_parent_dir, project_path):
             # Case 3: Folder Contains Git in root -> Open Repo
-            self._open_repo(None, project_path, project, git_ignore)
+            self._open_repo(None, project_path, self.project, git_ignore)
             return
 
         if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
@@ -131,6 +130,16 @@ class GitProjectType(ap.ProjectType):
 
         raise Exception(f"Cannot create the Git project, unknown set of parameters")
 
+    def project_created(self):
+        folder_id = aps.get_folder_id(self.path)
+        channel = aps.get_timeline_channel(self.project, "Git")
+        if channel:
+            metadata = channel.metadata
+            metadata["gitPathId"] = folder_id
+            channel.metadata = metadata
+            aps.update_timeline_channel(self.project, channel)
+                    
+        aps.set_folder_icon(self.path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
 
     def _get_branch_names(self, repo):
         branches = repo.get_branches()
@@ -189,18 +198,6 @@ class GitProjectType(ap.ProjectType):
         repo.ignore("*.approj", local_only=True)
         if ignore_value != NO_IGNORE:
             add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
-        
-    def _folder_empty(self, folder_path):
-        content = os.listdir(folder_path)
-        if len(content) == 0: return True
-        if platform.system() == "Darwin" and len(content) == 1:
-            # macOS .DS_Store causes git clone to fail even if the rest of the folder is empty
-            ds_store = os.path.join(folder_path, ".DS_Store")
-            if platform.system() == "Darwin" and os.path.exists(ds_store):
-                os.remove(ds_store)
-                return True
-
-        return False
 
     def _get_git_parent_dir(self, folder_path):
         for root, dirs, _ in os.walk(folder_path):
