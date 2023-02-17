@@ -90,7 +90,7 @@ if __name__ == "__main__":
         remote_url = ""
 
     dialog = ap.Dialog()
-    dialog.title = "Join Git Project"
+    dialog.title = "Join Git Repository"
     dialog.icon = ctx.icon
 
     path_placeholder = "Z:\\Projects\\ACME_Commercial"
