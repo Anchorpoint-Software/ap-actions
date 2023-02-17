@@ -87,12 +87,8 @@ class GitProjectType(ap.ProjectType):
         return self.dialog
 
     def setup_project(self, project_id: str, progress):
-        try:
-            self.project = aps.get_project_by_id(project_id, self.context.workspace_id)
-        except Exception as e:
-            print(e)
-            raise e
-        
+        self.project = aps.get_project_by_id(project_id, self.context.workspace_id)
+
         project_path = self.dialog.get_value("project_path")
         git_ignore = self.dialog.get_value("ignore_dropdown")
         remote_enabled = self.dialog.get_value("remote")
@@ -119,7 +115,8 @@ class GitProjectType(ap.ProjectType):
 
         if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
             # Case 4: Folder Contains Git in Subdir -> Error
-            raise Exception(f"Cannot create the project, found a Git repository in a subdirectory: {git_parent_dir}")
+            ap.UI().show_error("Could not setup project", "Found a Git repository in a subdirectory, this is currently not supported: {git_parent_dir}", duration=10000)
+            sys.exit(0)
 
         print(f"project_path {project_path}")
         print(f"git_ignore {git_ignore}")   
@@ -152,18 +149,15 @@ class GitProjectType(ap.ProjectType):
     def _init_repo(self, url, project_path, project, git_ignore, progress):
         repo = GitRepository.create(project_path, self.context.username, self.context.email)
         helper.update_project(project_path, None, False, None, project)
-        self._add_git_ignore(repo, git_ignore, project_path)
         if url:
             repo.add_remote(url)
             repo.fetch(progress=helper.FetchProgress(progress))
             branches = self._get_branch_names(repo)
+            if len(branches) > 0:
+                ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains data.", duration=10000)
+                sys.exit(0)
 
-            print(branches)
-            if "origin/main" in branches:
-                repo.switch_branch("origin/main")
-            elif "origin/master" in branches:
-                repo.switch_branch("origin/master")
-
+        self._add_git_ignore(repo, git_ignore, project_path)
         return repo
     
     def _open_repo(self, url, project_path, project, git_ignore):
@@ -180,6 +174,7 @@ class GitProjectType(ap.ProjectType):
                 repo.set_upstream("main")
             except:
                 pass
+            
 
     def _clone(self, url, project_path, project, git_ignore, progress):
         try:
@@ -188,9 +183,10 @@ class GitProjectType(ap.ProjectType):
         
             helper.update_project(project_path, url, False, None, project, True)
             self._add_git_ignore(repo, git_ignore, project_path)
-        except Exception as e:
+        except Exception as e:            
             print(e)
-            raise Exception("You might have entered a wrong username / password,<br>or you don't have access to the repository.")
+            ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password,<br>or you don't have access to the repository.", duration=10000)
+            sys.exit(0)
 
     def _add_git_ignore(self, repo, ignore_value, project_path):
         from add_ignore_config import add_git_ignore, NO_IGNORE
