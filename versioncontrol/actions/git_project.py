@@ -196,6 +196,8 @@ class GitProjectType(ap.ProjectType):
         from add_ignore_config import add_git_ignore, NO_IGNORE
         repo.ignore(".ap/project.json", local_only=True)
         repo.ignore("*.approj", local_only=True)
+        if platform.system() == "Darwin":
+            repo.ignore(".DS_Store", local_only=True)
         if ignore_value != NO_IGNORE:
             add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
 
