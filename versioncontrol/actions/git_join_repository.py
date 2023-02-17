@@ -68,9 +68,8 @@ if __name__ == "__main__":
             d.show()
             raise e
 
-    def clone_repo(dialog: ap.Dialog):
+    def clone_repo(dialog: ap.Dialog, url):
         location = dialog.get_value("location")
-        url = dialog.get_value("url")
         dialog.close()
         ctx.run_async(clone_repo_async, location, url, True)
 
@@ -98,15 +97,12 @@ if __name__ == "__main__":
         path_placeholder = "/Projects/ACME_Commercial"    
 
     dialog.add_text("<b>Project Folder</b>")
+    dialog.add_info("Pick an empty folder for Anchorpoint to download the project files to")
     dialog.add_input(placeholder=path_placeholder, var="location", width = 400, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=update_dialog)
     
     browse_path = settings.get("browse_path")
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
-
-    dialog.add_text("<b>Repository URL</b>", var="repotext")
-    dialog.add_input(default=remote_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", enabled=len(remote_url)==0, width = 400)
-
-    dialog.add_empty()
-    dialog.add_button("Join", var="join", callback=clone_repo, enabled=False)
+    
+    dialog.add_button("Join", var="join", callback=lambda d: clone_repo(d, remote_url), enabled=False)
     dialog.show()
