@@ -103,6 +103,7 @@ try:
             git_ignore = self.dialog.get_value("ignore_dropdown")
             remote_enabled = self.dialog.get_value("remote")
             repo_url = self.dialog.get_value("url")
+            self.path = project_path
 
             folder_is_empty = helper.folder_empty(project_path)
             git_parent_dir = self._get_git_parent_dir(project_path)
