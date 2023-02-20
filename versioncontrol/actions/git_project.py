@@ -17,7 +17,7 @@ def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
         return "Please add a folder for your project files"
     if not os.path.exists(value):
-        return "The folder for your project files must exist"
+        return "Please add a real folder"
     else:
         return
 
@@ -116,7 +116,7 @@ try:
 
             if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
                 # Case 4: Folder Contains Git in Subdir -> Error
-                ap.UI().show_error("Could not setup project", "Found a Git repository in a subdirectory, this is currently not supported: {git_parent_dir}", duration=10000)
+                ap.UI().show_error("Could not setup project", "Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
                 sys.exit(0)
 
             print(f"project_path {project_path}")
@@ -155,7 +155,7 @@ try:
                 repo.fetch(progress=helper.FetchProgress(progress))
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
-                    ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains data.", duration=10000)
+                    ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains files.", duration=10000)
                     sys.exit(0)
 
             self._add_git_ignore(repo, git_ignore, project_path)
