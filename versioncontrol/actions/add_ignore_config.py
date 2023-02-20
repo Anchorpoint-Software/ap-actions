@@ -67,8 +67,12 @@ if __name__ == "__main__":
         ui.show_info("No gitignore templates found")
         sys.exit(0)
 
+    dropdown_default = get_ignore_file_default(dropdown_values, ctx.path)
+
     dialog.add_text("Template: ").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
     dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).") 
     dialog.add_button("Create", callback=lambda d: _add_git_ignore(ctx.path, ctx.yaml_dir, d))
-
     dialog.show(settings)
+
+    if dropdown_default:
+        dialog.set_value("dropdown", dropdown_default)
