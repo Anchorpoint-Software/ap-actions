@@ -165,6 +165,8 @@ try:
                 repo.fetch(progress=helper.FetchProgress(progress))
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
+                    import shutil
+                    shutil.rmtree(os.path.join(project_path, ".git"))
                     ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains files.", duration=10000)
                     sys.exit(0)
 
