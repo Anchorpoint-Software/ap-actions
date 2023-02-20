@@ -41,11 +41,21 @@ def get_ignore_file_types(yaml_dir):
     dropdown_values = [os.path.splitext(f)[0] for f in os.listdir(ignore_files_dir) if os.path.isfile(os.path.join(ignore_files_dir, f))]
     return dropdown_values
 
+def get_ignore_file_default(ignore_template_names, path: str):
+    def type_exists(type: str):
+        try:
+            return any(file.endswith(type) for file in os.listdir(path))
+        except:
+            return False
+
+    for ignore_template in ignore_template_names:
+        if "Unreal" in ignore_template and type_exists(".uproject"): return ignore_template
+    return None    
+
 if __name__ == "__main__":
     ctx = ap.Context.instance()
     ui = ap.UI()
     
-
     settings = aps.Settings("gitignore")
 
     dialog = ap.Dialog() 
