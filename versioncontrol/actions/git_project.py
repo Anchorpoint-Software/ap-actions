@@ -14,10 +14,10 @@ import git_repository_helper as helper
 sys.path.remove(script_dir)
 
 def validate_path(dialog: ap.Dialog, value):
-    if not os.path.exists(value):
-        return "The folder for your project files must exist"
     if not value or len(value) == 0:
         return "Please add a folder for your project files"
+    if not os.path.exists(value):
+        return "The folder for your project files must exist"
     else:
         return
 
