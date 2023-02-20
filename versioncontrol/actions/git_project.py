@@ -71,7 +71,7 @@ try:
             self.dialog.add_switch(remote_enabled, var="remote", text="Remote Repository", callback=change_remote_switch)
 
             self.dialog.add_text("<b>Repository URL</b>", var="repotext")
-            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 420, validate_callback=validate_url)
+            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 525, validate_callback=validate_url)
             
             if repo_url != "":
                 self.dialog.set_value("url", repo_url)
