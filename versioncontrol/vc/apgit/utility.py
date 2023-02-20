@@ -192,6 +192,9 @@ def get_repo_path(channel_id: str, project_path: str):
     channel = aps.get_timeline_channel(project, channel_id)
     if not channel: return project_path
     if not "gitPathId" in channel.metadata: return project_path
-    folder = aps.get_folder_by_id(channel.metadata["gitPathId"], project)
+    try:
+        folder = aps.get_folder_by_id(channel.metadata["gitPathId"], project)
+    except:
+        return project_path
     if not folder: return project_path
     return folder
