@@ -9,6 +9,8 @@ try:
         try: 
             import git
         except:
+            import sys
+            print(sys.path)
             raise Warning("GitPython is not installed")
     else: raise Warning("Git not installed")
 
