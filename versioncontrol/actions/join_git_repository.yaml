@@ -16,8 +16,8 @@ action:
   icon:
     path: :/icons/versioncontrol.svg
 
-  script: git_repository.py
+  script: git_join_repository.py
 
   register:
     join_project_files:
-      enable: git_repository.py
+      enable: git_join_repository.py

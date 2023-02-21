@@ -43,5 +43,6 @@ for f in selected_files:
 
 for f in selected_folders:
     create_attribute(f, attribute)
+    aps.set_folder_icon(aps.Icon("qrc:/icons/multimedia/microphone (3).svg", "green"))
 
 ui.show_success("Attributes created")

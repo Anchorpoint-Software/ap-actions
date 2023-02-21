@@ -5,19 +5,15 @@
 
 version: 1.0
 action:
-  name: Create or Clone Git Repository
+  name: Git Project
 
   version: 1
-  id: git::addrepo
+  id: git::project
   category: git
   type: python
   author: Anchorpoint Software GmbH
-  description: Creates or clones a Git Repository for your project
+  description: ""
   icon:
-    path: :/icons/versioncontrol.svg
+    path: :/icons/version.svg
 
-  script: git_repository.py
-
-  register:
-    add_project_files:
-      enable: true
+  script: git_project.py

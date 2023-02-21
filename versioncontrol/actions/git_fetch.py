@@ -9,22 +9,8 @@ sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+import git_repository_helper as helper
 sys.path.remove(parent_dir)
-class FetchProgress(Progress):
-    def __init__(self, progress: ap.Progress) -> None:
-        super().__init__()
-        self.ap_progress = progress
-
-    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
-        if operation_code == "downloading":
-            if info_text:
-                self.ap_progress.set_text(f"Downloading Files: {info_text}")
-            else:
-                self.ap_progress.set_text("Downloading Files")
-            self.ap_progress.report_progress(current_count / max_count)
-        else:
-            self.ap_progress.set_text("Talking to Server")
-            self.ap_progress.stop_progress()
 
 def fetch_async(channel_id: str, project_path):
     ui = ap.UI()
@@ -35,7 +21,7 @@ def fetch_async(channel_id: str, project_path):
         
         if repo.has_remote():
             progress = ap.Progress("Fetching Git Changes", show_loading_screen=True)
-            state = repo.fetch(progress=FetchProgress(progress))
+            state = repo.fetch(progress=helper.FetchProgress(progress))
             if state != UpdateState.OK:
                 ui.show_error("Failed to fetch Git Repository")    
             else:

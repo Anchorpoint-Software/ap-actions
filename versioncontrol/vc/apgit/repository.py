@@ -181,6 +181,8 @@ class GitRepository(VCRepository):
         config_counter = config_counter + 1
         add_config_env(env, "http.postBuffer", "1048576000", config_counter)
         config_counter = config_counter + 1
+        add_config_env(env, "core.pager", "0", config_counter)
+        config_counter = config_counter + 1
         if remote_url and "azure" in remote_url:
             add_config_env(env, "http.version", "HTTP/1.1", config_counter)
             config_counter = config_counter + 1
@@ -202,8 +204,11 @@ class GitRepository(VCRepository):
         except:
             return False
 
-    def _set_upstream(self, remote, branch):
-        self.repo.git.branch("-u", remote, branch)
+    def set_upstream(self, branch, remote = "origin"):
+        self.repo.git.branch("-u", f"{remote}/{branch}")
+
+    def track_branch(self, branch, remote = "origin"):
+        self.repo.git.branch("-u", f"{remote}/{branch}")
 
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
