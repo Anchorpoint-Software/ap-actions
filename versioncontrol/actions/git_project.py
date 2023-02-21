@@ -2,17 +2,6 @@ import anchorpoint as ap
 import apsync as aps
 import os, sys, platform
 
-script_dir = os.path.join(os.path.dirname(__file__), "..")
-sys.path.insert(0, script_dir)
-
-try:
-    from vc.apgit.repository import * 
-except Warning as e:
-    sys.exit(0)
-
-import git_repository_helper as helper
-sys.path.remove(script_dir)
-
 def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
         return "Please add a folder for your project files"
@@ -49,11 +38,26 @@ try:
             self.context = ctx
             self.path = path
 
+            script_dir = os.path.join(os.path.dirname(__file__), "..")
+            sys.path.insert(0, script_dir)
+
+            try:
+                import vc.apgit.repository as git
+            except Warning as e:
+                sys.exit(0)
+
+            import git_repository_helper as githelper
+            sys.path.remove(script_dir)
+
+            self.git = git
+            self.githelper = githelper
+
+
             repo_url = None
             remote_enabled = True
             try:
                 if os.path.exists(path) and path != "":
-                    repo = GitRepository.load(path)
+                    repo = self.git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
                     remote_enabled = False
             except:
@@ -105,7 +109,7 @@ try:
             repo_url = self.dialog.get_value("url")
             self.path = project_path
 
-            folder_is_empty = helper.folder_empty(project_path)
+            folder_is_empty = self.githelper.folder_empty(project_path)
             git_parent_dir = self._get_git_parent_dir(project_path)
 
             if folder_is_empty and remote_enabled:
@@ -158,11 +162,11 @@ try:
             return names
         
         def _init_repo(self, url, project_path, project, git_ignore, progress):
-            repo = GitRepository.create(project_path, self.context.username, self.context.email)
-            helper.update_project(project_path, None, False, None, project)
+            repo = self.git.GitRepository.create(project_path, self.context.username, self.context.email)
+            self.githelper.update_project(project_path, None, False, None, project)
             if url:
                 repo.add_remote(url)
-                repo.fetch(progress=helper.FetchProgress(progress))
+                repo.fetch(progress=self.githelper.FetchProgress(progress))
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
                     ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains files.", duration=10000)
@@ -174,9 +178,9 @@ try:
         def _open_repo(self, url, project_path, project, git_ignore):
             if url == "": url = None
 
-            repo = GitRepository.load(project_path)
+            repo = self.git.GitRepository.load(project_path)
             repo.set_username(self.context.username, self.context.email, project_path)
-            helper.update_project(project_path, url, False, None, project)
+            self.githelper.update_project(project_path, url, False, None, project)
             self._add_git_ignore(repo, git_ignore, project_path)
 
             if url and repo.get_remote_url != url:
@@ -189,10 +193,10 @@ try:
 
         def _clone(self, url, project_path, project, git_ignore, progress):
             try:
-                repo = GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=helper.CloneProgress(progress))
+                repo = self.git.GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=self.githelper.CloneProgress(progress))
                 progress.finish()
             
-                helper.update_project(project_path, url, False, None, project, True)
+                self.githelper.update_project(project_path, url, False, None, project, True)
                 self._add_git_ignore(repo, git_ignore, project_path)
             except Exception as e:            
                 print(e)
