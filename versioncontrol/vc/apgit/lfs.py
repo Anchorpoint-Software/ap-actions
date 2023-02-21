@@ -1,5 +1,5 @@
 from git import RemoteProgress
-from vc.apgit.utility import get_git_cmd_path
+from vc.apgit_utility.install_git import get_git_cmd_path
 import subprocess, platform
 
 def _run_lfs_command(path: str, args, progress: RemoteProgress, env):

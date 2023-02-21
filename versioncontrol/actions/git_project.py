@@ -31,6 +31,17 @@ def change_remote_switch(dialog: ap.Dialog, remote_enabled):
     dialog.hide_row("repotext", not remote_enabled)
     dialog.hide_row("url", not remote_enabled)
 
+def _install_git_async(dialog, git_helper):
+    try:
+        git_helper.install_git()
+        ap.reload_create_project_dialog()
+    finally:
+        dialog.set_processing("install", False)
+
+def install_git_async(dialog, ctx, path, git_helper):
+    dialog.set_processing("install", True, "Installing Git")
+    ctx.run_async(_install_git_async, dialog, git_helper)
+
 try:
     class GitProjectType(ap.ProjectType):
         def __init__(self, path: str, ctx: ap.Context):
@@ -41,22 +52,33 @@ try:
             script_dir = os.path.join(os.path.dirname(__file__), "..")
             sys.path.insert(0, script_dir)
 
-            try:
-                import vc.apgit.repository as git
-            except Warning as e:
-                sys.exit(0)
-
             import git_repository_helper as githelper
+            import vc.apgit_utility.install_git as install_git
             sys.path.remove(script_dir)
 
-            self.git = git
+            self.git_installed = install_git.is_git_installed()
+            self.dialog = ap.Dialog()
+            self.git = None
             self.githelper = githelper
 
+            if not self.git_installed:
+                self.dialog.add_text("To use Anchorpoint with Git repositories you have to install it.")
+                self.dialog.add_info("When installing Git you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
+                self.dialog.add_button("Install", var="install", callback = lambda d: install_git_async(d, self.context, self.path, install_git))
+                if "set_valid" in dir(ap.Dialog):
+                    self.dialog.set_valid(False)
+                return
+
+            try:
+                import vc.apgit.repository as git
+                self.git = git
+            except Warning as e:
+                sys.exit(0)
 
             repo_url = None
             remote_enabled = True
             try:
-                if os.path.exists(path) and path != "":
+                if self.git and os.path.exists(path) and path != "":
                     repo = self.git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
                     remote_enabled = False
@@ -69,7 +91,7 @@ try:
             if platform.system() == "Darwin":
                 path_placeholder = "/Projects/ACME_Commercial"            
 
-            self.dialog = ap.Dialog()
+
             self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: path_changed(d,v,ctx))
 
             from add_ignore_config import get_ignore_file_types, NO_IGNORE

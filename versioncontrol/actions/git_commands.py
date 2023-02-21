@@ -14,7 +14,7 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
 def open_terminal_pressed(dialog):
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
     from vc.apgit.repository import GitRepository
-    from vc.apgit.utility import get_git_cmd_path
+    from vc.apgit_utility.install_git import get_git_cmd_path
     import platform
 
     env = GitRepository.get_git_environment()
