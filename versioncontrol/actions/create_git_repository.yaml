@@ -1,0 +1,19 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Create or Clone Git Repository
+
+  version: 1
+  id: git::addrepo
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Creates or clones a Git Repository for your project
+  enable: false
+  script: "none"
+  icon:
+    path: :/icons/versioncontrol.svg
