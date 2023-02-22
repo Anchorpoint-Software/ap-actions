@@ -62,7 +62,7 @@ try:
             self.githelper = githelper
 
             if not self.git_installed:
-                self.dialog.add_text("To use Anchorpoint with Git repositories you have to install it.")
+                self.dialog.add_text("To use Anchorpoint with Git repositories you have to install it")
                 self.dialog.add_info("When installing Git you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
                 self.dialog.add_button("Install", var="install", callback = lambda d: install_git_async(d, self.context, self.path, install_git))
                 if "set_valid" in dir(ap.Dialog):
