@@ -62,6 +62,7 @@ class CloneProgress(vc.Progress):
         self.ap_progress = progress
 
     def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
+        print(f"{current_count}/{max_count}  {info_text}")
         if operation_code == "downloading":
             if info_text:
                 self.ap_progress.set_text(f"Downloading Files: {info_text}")
