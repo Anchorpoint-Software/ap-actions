@@ -87,7 +87,7 @@ def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
 
 def install_git():
     r = _download_git()
-    progress = ap.Progress("Installing Git", infinite=True)
+    progress = ap.Progress("Installing Git", infinite=True, show_loading_screen=True)
 
     dir = get_git_cmddir()
     if os.path.exists(dir):
@@ -113,7 +113,7 @@ def install_git():
 
 def _download_git():
     import requests
-    progress = ap.Progress("Downloading Git", infinite=True)
+    progress = ap.Progress("Downloading Git", infinite=True, show_loading_screen=True)
     if platform.system() == "Windows":
         r = requests.get(constants.INSTALL_URL_WIN, allow_redirects=True)
     elif platform.system() == "Darwin":
