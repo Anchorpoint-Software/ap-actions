@@ -58,7 +58,20 @@ if __name__ == "__main__":
             d = ap.Dialog()
             d.title = "Could not clone Git Repository"
             d.icon = ":/icons/versioncontrol.svg"
-            d.add_text("You might have entered a wrong username / password,<br>or you don't have access to the repository.")
+
+            remote_name = ""
+            if "azure" in url:
+                remote_name = "Azure DevOps"
+            elif "github" in url:
+                remote_name = "GitHub"
+            elif "gitlab" in url:
+                remote_name = "GitLab"
+            elif "bitbucket" in url:
+                remote_name = "Bitbucket"
+            else:
+                remote_name = "remote"
+
+            d.add_info(f"You might have entered a wrong username / password, or you don't <br>have access to the <span style='color:white'>{remote_name} </span> repository. <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting'>Read more</a>")
 
             def retry():
                 ctx.run_async(clone_repo_async, repo_path, url, join_project_files)
