@@ -8,10 +8,7 @@ try:
     if utility.guarantee_git():
         try: 
             import git
-        except Exception as e:
-            import sys
-            print(sys.path)
-            print(e)
+        except:
             raise Warning("GitPython is not installed")
     else: raise Warning("Git not installed")
 
