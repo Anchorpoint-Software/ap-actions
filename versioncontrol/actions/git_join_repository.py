@@ -78,8 +78,9 @@ if __name__ == "__main__":
             return "Please add a folder for your project files"
         if not os.path.exists(value):
             return "Please add a real folder"
-        else:
-            return
+        if not helper.folder_empty(value):
+            return "Please pick an empty folder"
+        return
 
     def update_dialog(dialog: ap.Dialog, value):
         dialog.set_enabled("join", dialog.is_valid())
