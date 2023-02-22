@@ -74,11 +74,12 @@ if __name__ == "__main__":
         ctx.run_async(clone_repo_async, location, url, True)
 
     def validate_path(dialog: ap.Dialog, value: str):
-        if not os.path.exists(value): 
-            return "The folder for your project files must exist"
-        if not helper.folder_empty(value):
-            return "The folder for your project files must be empty"
-        return
+        if not value or len(value) == 0:
+            return "Please add a folder for your project files"
+        if not os.path.exists(value):
+            return "Please add a real folder"
+        else:
+            return
 
     def update_dialog(dialog: ap.Dialog, value):
         dialog.set_enabled("join", dialog.is_valid())
