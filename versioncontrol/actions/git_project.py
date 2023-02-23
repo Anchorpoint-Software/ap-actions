@@ -207,9 +207,9 @@ try:
             self.githelper.update_project(project_path, url, False, None, project)
             self._add_git_ignore(repo, git_ignore, project_path)
 
-            if url and repo.get_remote_url != url:
-                repo.add_remote(url)
+            if url and repo.get_remote_url() != url:
                 try:
+                    repo.add_remote(url)
                     repo.set_upstream("main")
                 except:
                     pass
