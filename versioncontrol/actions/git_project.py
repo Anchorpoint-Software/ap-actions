@@ -147,7 +147,7 @@ try:
 
             if self._is_path_equal(git_parent_dir, project_path):
                 # Case 3: Folder Contains Git in root -> Open Repo
-                self._open_repo(None, project_path, self.project, git_ignore)
+                self._open_repo(project_path, self.project, git_ignore)
                 return
 
             if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
@@ -185,7 +185,7 @@ try:
         
         def _init_repo(self, url, project_path, project, git_ignore, progress):
             repo = self.git.GitRepository.create(project_path, self.context.username, self.context.email)
-            self.githelper.update_project(project_path, None, False, None, project)
+            self.githelper.update_project(project_path, url, False, None, project)
             if url:
                 repo.add_remote(url)
                 repo.fetch(progress=self.githelper.FetchProgress(progress))
@@ -197,10 +197,12 @@ try:
             self._add_git_ignore(repo, git_ignore, project_path)
             return repo
         
-        def _open_repo(self, url, project_path, project, git_ignore):
+        def _open_repo(self, project_path, project, git_ignore):
+            repo = self.git.GitRepository.load(project_path)
+
+            url = repo.get_remote_url()
             if url == "": url = None
 
-            repo = self.git.GitRepository.load(project_path)
             repo.set_username(self.context.username, self.context.email, project_path)
             self.githelper.update_project(project_path, url, False, None, project)
             self._add_git_ignore(repo, git_ignore, project_path)
