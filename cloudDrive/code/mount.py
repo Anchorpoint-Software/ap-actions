@@ -432,30 +432,33 @@ def isWin():
     return False
 
 def on_application_started(ctx: ap.Context):
-    shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
-    mount_settings = aps.Settings(ctx.workspace_id)
-    if not mount_settings.contains("rclone-automount") or not mount_settings.contains("rclone-drive"):
-        return
-
-    drive = mount_settings.get("rclone-drive")
-    auto_mount = mount_settings.get("rclone-automount")
-    if not auto_mount: 
-        return
-
-    if (os.path.exists(drive)):
-        return
-
-    local_settings = aps.Settings("rclone")
-    configuration = rclone_config.get_config()
-    password = local_settings.get("encryption_password")
-    if password == None: 
-        return
     try:
-        resolve_configuration(shared_settings, configuration, password)
-    except:
-        return
+        shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
+        mount_settings = aps.Settings(ctx.workspace_id)
+        if not mount_settings.contains("rclone-automount") or not mount_settings.contains("rclone-drive"):
+            return
 
-    ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
+        drive = mount_settings.get("rclone-drive")
+        auto_mount = mount_settings.get("rclone-automount")
+        if not auto_mount: 
+            return
+
+        if (os.path.exists(drive)):
+            return
+
+        local_settings = aps.Settings("rclone")
+        configuration = rclone_config.get_config()
+        password = local_settings.get("encryption_password")
+        if password == None: 
+            return
+        try:
+            resolve_configuration(shared_settings, configuration, password)
+        except:
+            return
+
+        ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
+    except:
+        pass
     
 
 if __name__ == "__main__":

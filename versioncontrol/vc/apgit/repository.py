@@ -9,6 +9,7 @@ import git.cmd
 from gitdb.util import to_bin_sha
 from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
+import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
 
 import gc
@@ -96,7 +97,7 @@ class GitRepository(VCRepository):
     def is_authenticated(url: str) -> bool: 
         try:
             import subprocess
-            utility.run_git_command([utility.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            install_git.run_git_command([install_git.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         except Exception as e:
             return False
         return True
@@ -109,7 +110,7 @@ class GitRepository(VCRepository):
         host = parsedurl.hostname
         protocol = parsedurl.scheme
         
-        cmd = [utility.get_gcm_path(), "store"]
+        cmd = [install_git.get_gcm_path(), "store"]
         p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
@@ -130,7 +131,7 @@ class GitRepository(VCRepository):
 
     @classmethod
     def create(cls, path: str, username: str, email: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
+        install_git.run_git_command([install_git.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
         repo = GitRepository.load(path)
         repo.set_username(username, email, path)
         return repo
@@ -170,12 +171,12 @@ class GitRepository(VCRepository):
             config["GIT_CONFIG_COUNT"] = str(config_count + 1)
 
         env = {
-            "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/"),
+            "GIT_EXEC_PATH": install_git.get_git_exec_path().replace("\\","/"),
             "GIT_LFS_FORCE_PROGRESS": "1" 
         }
 
         config_counter = 0
-        add_config_env(env, "credential.helper", utility.get_gcm_path(), config_counter)
+        add_config_env(env, "credential.helper", install_git.get_gcm_path(), config_counter)
         config_counter = config_counter + 1
         add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
         config_counter = config_counter + 1
@@ -264,7 +265,7 @@ class GitRepository(VCRepository):
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
-            for info in self.repo.remote(remote).pull(progress = progress_wrapper, rebase = rebase, refspec=branch):
+            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, rebase=rebase):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 
@@ -487,13 +488,13 @@ class GitRepository(VCRepository):
             self.repo.git.rm(*paths)
 
     def commit(self, message: str):
-        args = [utility.get_git_cmd_path(), "commit", "-m", message]
+        args = [install_git.get_git_cmd_path(), "commit", "-m", message]
         gpg = shutil.which("gpg")
         if not gpg:
             args.insert(1, "commit.gpgsign=false")
             args.insert(1, "-c") 
             
-        utility.run_git_command(args, cwd=self.get_root_path())
+        install_git.run_git_command(args, cwd=self.get_root_path())
 
     def get_git_dir(self):
         return self.repo.git_dir

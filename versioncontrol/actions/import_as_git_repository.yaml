@@ -1,0 +1,19 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Create Git Repository
+
+  version: 1
+  id: git::createnewrepo
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Creates a new Git repository in the selected folder
+  enable: false
+  script: "none"
+  icon:
+    path: :/icons/versioncontrol.svg
