@@ -180,8 +180,7 @@ class GitRepository(VCRepository):
         config_counter = config_counter + 1
         add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
         config_counter = config_counter + 1
-        add_config_env(env, "core.pager", "0", config_counter)
-        config_counter = config_counter + 1
+        
         if remote_url and ("azure" in remote_url or "visualstudio" in remote_url):
             add_config_env(env, "http.version", "HTTP/1.1", config_counter)
             config_counter = config_counter + 1
@@ -467,7 +466,7 @@ class GitRepository(VCRepository):
 
     def sync_staged_files(self, paths: list[str], add_all, progress_callback = None):
         if not self.is_unborn():
-            staged_files = self.repo.git.diff("--name-only", "--staged", "-z").split('\x00')
+            staged_files = self.repo.git(no_pager=True).diff("--name-only", "--staged", "-z").split('\x00')
             staged_files[:] = (file for file in staged_files if file != "")
             if len(staged_files) > 0:
                 self.unstage_files(staged_files)
@@ -592,7 +591,7 @@ class GitRepository(VCRepository):
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
         if not paths:
-            conflicts = self.repo.git.diff("--name-only", "--diff-filter=U", "-z").split('\x00')
+            conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U", "-z").split('\x00')
             path_args = []
             if len(conflicts) > 20:
                 path_args = ["."] # This is not cool, can be improved by using a pathspec file instead
