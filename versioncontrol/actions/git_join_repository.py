@@ -60,7 +60,7 @@ if __name__ == "__main__":
             d.icon = ":/icons/versioncontrol.svg"
 
             remote_name = ""
-            if "azure" in url:
+            if "azure" in url or "visualstudio" in url:
                 remote_name = "Azure DevOps"
             elif "github" in url:
                 remote_name = "GitHub"
