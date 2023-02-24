@@ -361,7 +361,7 @@ class GitRepository(VCRepository):
         defenc = sys.getfilesystemencoding()
 
         # make sure we get all files, not only untracked directories
-        proc = self.repo.git.status(*args, "-z",
+        proc = self.repo.git(no_pager=True).status(*args, "-z",
                                porcelain=True,
                                untracked_files=True,
                                as_process=True,
@@ -511,7 +511,7 @@ class GitRepository(VCRepository):
     def get_deleted_files(self):
         unstaged_files = []
         staged_files = []
-        status_lines = self.repo.git.status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
@@ -536,7 +536,7 @@ class GitRepository(VCRepository):
             return status_ids in ["DD", "AA"]
 
         conflicts = []
-        status_lines = self.repo.git.status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
