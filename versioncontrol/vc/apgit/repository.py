@@ -180,8 +180,6 @@ class GitRepository(VCRepository):
         config_counter = config_counter + 1
         add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
         config_counter = config_counter + 1
-        add_config_env(env, "http.postBuffer", "1048576000", config_counter)
-        config_counter = config_counter + 1
         add_config_env(env, "core.pager", "0", config_counter)
         config_counter = config_counter + 1
         if remote_url and ("azure" in remote_url or "visualstudio" in remote_url):
