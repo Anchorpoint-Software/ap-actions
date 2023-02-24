@@ -60,7 +60,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 pull = ap.TimelineChannelAction()
                 pull.name = "Pull"
                 pull.icon = aps.Icon(":/icons/cloud.svg")
-                pull.identifier = "gitpullrebase"
+                pull.identifier = "gitpull"
                 pull.type = ap.ActionButtonType.Primary
                 pull.tooltip = "Get all changes from the remote Git repository"
                 info.actions.append(pull)
@@ -91,7 +91,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
             cancel = ap.TimelineChannelAction()
             cancel.name = "Cancel"
-            cancel.identifier = "gitcancelrebase"
+            cancel.identifier = "gitcancelmerge"
             cancel.tooltip = "Cancel"
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)

@@ -255,6 +255,13 @@ class GitRepository(VCRepository):
         if remote is None: return UpdateState.NO_REMOTE
         remote_url = self._get_remote_url(remote)
 
+        kwargs = {}
+        if rebase:
+            kwargs["rebase"] = True
+        else:
+            kwargs["ff"] = True
+            kwargs["no-commit"] = True
+
         state = UpdateState.OK
         try:
             current_env = os.environ.copy()
@@ -262,7 +269,7 @@ class GitRepository(VCRepository):
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
-            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, rebase=rebase):
+            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 

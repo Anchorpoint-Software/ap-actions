@@ -105,6 +105,8 @@ If you want to make these files available for your team now, you have to enter a
     - git::commit
     - git::fetch
     - git::pullrebase
+    - git::pull
+    - git::conflicts
     - git::push
     - git::rebase
     - git::revert
