@@ -6,12 +6,9 @@ try:
     import os
     os.environ["GIT_PYTHON_GIT_EXECUTABLE"] = install_git.get_git_cmd_path().replace("\\","/")
     
-    # User can enable tracing by setting environment variable (set GIT_PYTHON_TRACE=full)
-    # os.environ["GIT_PYTHON_TRACE"] = "full"
-    if "GIT_PYTHON_TRACE" in os.environ:
-        import logging
-        logging.basicConfig()
-        logging.root.setLevel(logging.INFO)
+    import logging
+    if logging.getLogger().info == logging.INFO:
+        os.environ["GIT_PYTHON_TRACE"] = "full"
         
     if utility.guarantee_git():
         try: 
