@@ -803,16 +803,23 @@ class GitRepository(VCRepository):
 
         except Exception as e:
             pass
+
+        def get_parents(commit):
+            parents = []
+            if commit.parents:
+                for commit in commit.parents:
+                    parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents = []))        
+            return parents
             
         for commit in base_commits:
             if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=get_parents(commit)))
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=get_parents(commit)))
 
         return history
 

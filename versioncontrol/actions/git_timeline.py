@@ -129,10 +129,10 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         history_list = list()
         try:
             history = repo.get_history(count, rev_spec=last_id)
-        except:
+        except Exception as e:
             return history_list
         
-        for commit in history:
+        def map_commit(commit):
             entry = ap.TimelineChannelEntry()
             entry.id = commit.id
             entry.user_email = commit.author
@@ -152,11 +152,21 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                 entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
                 entry.tooltip = "This commit is in sync with your team"
             
+            return entry
+
+        for commit in history:
+            entry = map_commit(commit)
+            
+            if "parents" in dir(entry):
+                parents_list = list()
+                for parent in commit.parents:
+                    parents_list.append(map_commit(parent))
+                entry.parents = parents_list
+
             history_list.append(entry)
 
         return history_list
     except Exception as e:
-        print (e)
         return []
     finally:
         sys.path.remove(script_dir)

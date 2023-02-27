@@ -80,6 +80,7 @@ class HistoryEntry:
     message: str
     date: int
     type: HistoryType
+    parents: list
 
 @dataclass
 class Branch:
