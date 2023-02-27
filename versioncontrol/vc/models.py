@@ -89,3 +89,9 @@ class Branch:
     id: Optional[str] = None
     last_changed: Optional[datetime] = None
     is_local: bool = True
+
+@dataclass
+class Stash:
+    id: str
+    message: str
+    branch: Optional[str]

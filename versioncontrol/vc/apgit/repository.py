@@ -332,9 +332,31 @@ class GitRepository(VCRepository):
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
 
-    def stash(self, include_untracked: bool):
+    def _get_stash_message(self):
         branch = self.get_current_branch_name()
-        message = f"!!Anchorpoint<{branch}>"
+        return f"!!Anchorpoint<{branch}>"
+    
+    def _get_stashes(self):
+        import re
+        stashes_raw = self.repo.git.stash("list", "-z").split('\x00')
+        stashes = []
+        for raw_stash in stashes_raw:
+            try:
+                id = re.search("\{\d+\}", raw_stash).group().replace("}","").replace("{","")
+                msg = re.search(": .*", raw_stash).group().replace(": ", "")
+                branch_result = re.search("!!Anchorpoint<.*>", raw_stash)
+                if branch_result:
+                    branch = branch_result.group().replace("!!Anchorpoint<", "").replace(">", "")
+                else:
+                    branch = None
+
+                stashes.append(Stash(id, msg, branch))
+            except:
+                pass
+        return stashes
+
+    def stash(self, include_untracked: bool):
+        message = self._get_stash_message()
         kwargs = {
             "message": message
             }
@@ -344,10 +366,22 @@ class GitRepository(VCRepository):
         self.repo.git.stash(**kwargs)
 
     def pop_stash(self):
-        # TODO: find stash of current branch with git stash list
+        stash = self.get_branch_stash()
+        if stash:
+            self.repo.git.stash("pop", stash.id)
+        else:
+            raise Exception("No stash to pop")
+
+    def get_branch_stash(self) -> Optional[Stash]:
         branch = self.get_current_branch_name()
-        message = f"!!Anchorpoint<{branch}>"
-        self.repo.git.stash("pop")
+        stashes = self._get_stashes()
+        for stash in stashes:
+            if stash.branch == branch: 
+                return stash
+        return None
+
+    def branch_has_stash(self):
+        return self.get_branch_stash() != None
 
     def get_remote_url(self):
         if self.has_remote():
