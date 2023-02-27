@@ -5,6 +5,8 @@ import apsync as aps
 import git_errors
 
 import sys, os, importlib
+from git_conflicts import create_merge_commit
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
@@ -39,14 +41,10 @@ def pull_async(channel_id: str, project_path):
         if not repo: return
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=True)
         
-        if repo.has_pending_changes(False):
-            ui.show_info("Cannot pull", "You have to commit all your files before you can continue")
-            return
-
-        local_commits = repo.get_local_commits()
-        ids_to_delete = []
-        for commit in local_commits:
-            ids_to_delete.append(commit.id)
+        stashed_changes = False
+        if repo.has_pending_changes(True):
+            repo.stash(True)
+            stashed_changes = True
 
         state = repo.update(progress=PullProgress(progress), rebase=False)
         if state == UpdateState.NO_REMOTE:
@@ -59,25 +57,21 @@ def pull_async(channel_id: str, project_path):
         elif state == UpdateState.CANCEL:
             ui.show_info("Pull Canceled")
         elif state != UpdateState.OK:
-            if repo.has_pending_changes(True):
-                ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
-            else:
-                ui.show_error("Failed to update Git Repository")    
+            ui.show_error("Failed to update Git Repository")    
         else:
-            if len(ids_to_delete) > 0:
-                ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
+            staged_changes = repo.get_pending_changes(True)
+            if staged_changes.size() > 0:
+                repo.continue_merge()
             
-            from git_conflicts import create_merge_commit
-            create_merge_commit(repo, False)
+            if (stashed_changes):
+                repo.pop_stash()        
+
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
+        print(e)
         if not git_errors.handle_error(e):
-            if repo.has_pending_changes(True):
-                ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
-            else:
-                ui.show_error("Failed to update Git Repository", "Please try again")    
-                raise e
+            ui.show_error("Failed to update Git Repository", "Please try again")    
                    
     ap.refresh_timeline_channel(channel_id)
 

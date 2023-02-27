@@ -324,10 +324,21 @@ class GitRepository(VCRepository):
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
 
-    def stash(self):
-        self.repo.git.stash()
+    def stash(self, include_untracked: bool):
+        branch = self.get_current_branch_name()
+        message = f"!!Anchorpoint<{branch}>"
+        kwargs = {
+            "message": message
+            }
+        if include_untracked:
+            kwargs["include_untracked"] = True
+
+        self.repo.git.stash(**kwargs)
 
     def pop_stash(self):
+        # TODO: find stash of current branch with git stash list
+        branch = self.get_current_branch_name()
+        message = f"!!Anchorpoint<{branch}>"
         self.repo.git.stash("pop")
 
     def get_remote_url(self):
