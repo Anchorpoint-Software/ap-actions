@@ -573,7 +573,8 @@ class GitRepository(VCRepository):
         return conflicts
 
     def has_conflicts(self):
-        return len(self.get_conflicts()) > 0
+        conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U")
+        return conflicts != None and len(conflicts) > 0
 
     def is_rebasing(self):
         repodir = self._get_repo_internal_dir()

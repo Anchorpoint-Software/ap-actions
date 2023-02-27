@@ -53,7 +53,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return info
 
-        is_merging = repo.is_rebasing() or repo.is_merging()
+        is_merging = repo.has_conflicts()
 
         if repo.has_remote() and not is_merging:
             if repo.is_pull_required():
@@ -85,7 +85,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
-            conflicts.tooltip = "Resolve conflicts from other commits or branches"
+            conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your stash"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
@@ -159,9 +159,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                     entry.tooltip = entry.message
             else:
                 entry.caption = f"Commited in {os.path.basename(path)}"
-
-
-            
+          
             return entry
 
         for commit in history:
