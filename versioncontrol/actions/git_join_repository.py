@@ -41,7 +41,7 @@ if __name__ == "__main__":
     timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
     settings = aps.Settings("git_repository")               
 
-    def clone_repo_async(repo_path: str, url: str, join_project_files):
+    def clone_repo_async(repo_path: str, url: str, join_project_files, project, timeline_channel, workspace_id, patch_channel):
         with os.scandir(repo_path) as it:
             if any(it):
                 ap.UI().show_info("Cannot Clone Git repository", "Folder must be empty")
@@ -54,6 +54,9 @@ if __name__ == "__main__":
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             repo.ignore(".ap/project.json", local_only=True)
             repo.ignore("*.approj", local_only=True)
+
+            patch_timeline_channel(project, timeline_channel, workspace_id, url)
+
         except Exception as e:
             d = ap.Dialog()
             d.title = "Could not clone Git Repository"
@@ -74,7 +77,7 @@ if __name__ == "__main__":
             d.add_info(f"You might have entered a wrong username / password, or you don't <br>have access to the <span style='color:white'>{remote_name} </span> repository. <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting'>Read more</a>")
 
             def retry():
-                ctx.run_async(clone_repo_async, repo_path, url, join_project_files)
+                ctx.run_async(clone_repo_async, repo_path, url, join_project_files, project, timeline_channel, workspace_id, patch_channel)
                 d.close()
 
             d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close())
@@ -96,10 +99,12 @@ if __name__ == "__main__":
         location = dialog.get_value("location")
         if not url:
             url = dialog.get_value("url")
-            patch_timeline_channel(project, timeline_channel, workspace_id, url)
+            patch_channel = True
+        else:
+            patch_channel = False
 
         dialog.close()
-        ctx.run_async(clone_repo_async, location, url, True)
+        ctx.run_async(clone_repo_async, location, url, True, project, timeline_channel, workspace_id, patch_channel)
 
     def validate_path(dialog: ap.Dialog, value: str):
         if not value or len(value) == 0:
