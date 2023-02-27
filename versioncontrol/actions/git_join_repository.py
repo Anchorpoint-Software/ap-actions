@@ -81,8 +81,23 @@ if __name__ == "__main__":
             d.show()
             raise e
 
-    def clone_repo(dialog: ap.Dialog, url):
+    def patch_timeline_channel(project, timeline_channel, workspace_id, url):
+        access = aps.get_workspace_access(workspace_id)
+        if access == aps.AccessLevel.Owner or access == aps.AccessLevel.Admin:
+            try:
+                metadata = timeline_channel.metadata
+                metadata["gitRemoteUrl"] = url
+                timeline_channel.metadata = metadata
+                aps.update_timeline_channel(project, timeline_channel)
+            except:
+                "Could not patch timeline channel"
+
+    def clone_repo(dialog: ap.Dialog, url, project, timeline_channel, workspace_id):
         location = dialog.get_value("location")
+        if not url:
+            url = dialog.get_value("url")
+            patch_timeline_channel(project, timeline_channel, workspace_id, url)
+
         dialog.close()
         ctx.run_async(clone_repo_async, location, url, True)
 
@@ -95,18 +110,18 @@ if __name__ == "__main__":
             return "Please pick an empty folder"
         return
 
+    def validate_url(dialog: ap.Dialog, value: str):
+        if not value or len(value) == 0:
+            return "Please add a Git repository URL"
+        return
+
     def update_dialog(dialog: ap.Dialog, value):
         dialog.set_enabled("join", dialog.is_valid())
-
-    try:
-        remote_url = timeline_channel.metadata["gitRemoteUrl"]
-    except:
-        remote_url = ""
 
     dialog = ap.Dialog()
     dialog.title = "Join Git Repository"
     dialog.icon = ctx.icon
-
+    
     path_placeholder = "Z:\\Projects\\ACME_Commercial"
     if platform.system() == "Darwin":
         path_placeholder = "/Projects/ACME_Commercial"    
@@ -115,9 +130,17 @@ if __name__ == "__main__":
     dialog.add_info("Pick an empty folder for Anchorpoint to download the project files to")
     dialog.add_input(placeholder=path_placeholder, var="location", width = 400, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=update_dialog)
     
+    try:
+        remote_url = timeline_channel.metadata["gitRemoteUrl"]
+    except:
+        remote_url = None
+        dialog.add_text("<b>Reposistory URL</b>")
+        dialog.add_input(placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width = 400, validate_callback=validate_url, callback=update_dialog)
+        dialog.set_valid(False)
+
     browse_path = settings.get("browse_path")
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
     
-    dialog.add_button("Join", var="join", callback=lambda d: clone_repo(d, remote_url), enabled=False)
+    dialog.add_button("Join", var="join", callback=lambda d: clone_repo(d, remote_url, project, timeline_channel, ctx.workspace_id), enabled=False)
     dialog.show()
