@@ -5,8 +5,6 @@ import apsync as aps
 import git_errors
 
 import sys, os, importlib
-from git_conflicts import create_merge_commit
-
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
