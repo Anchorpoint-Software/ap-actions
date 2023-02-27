@@ -139,8 +139,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             entry.time = commit.date
             entry.message = commit.message
             entry.has_details = True
-            entry.caption = f"Made a Git Commit in {os.path.basename(path)}"
-
+            
             icon_color = "#90CAF9"
             if commit.type is HistoryType.LOCAL:
                 entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
@@ -151,6 +150,17 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             elif commit.type is HistoryType.SYNCED:
                 entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
                 entry.tooltip = "This commit is in sync with your team"
+
+            is_merge = len(commit.parents) > 1
+            if is_merge:
+                entry.caption = f"Pulled and merged changes"
+                if commit.type is HistoryType.SYNCED:
+                    entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
+                    entry.tooltip = entry.message
+            else:
+                entry.caption = f"Commited in {os.path.basename(path)}"
+
+
             
             return entry
 
