@@ -319,7 +319,15 @@ class GitRepository(VCRepository):
                 print(str(e))
                 pass
         
+        stashed_changes = False
+        if self.has_pending_changes(True):
+            self.stash(True)
+            stashed_changes = True
+
         self.repo.git.switch(branch_name)
+
+        if stashed_changes:
+            self.pop_stash()
         
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)

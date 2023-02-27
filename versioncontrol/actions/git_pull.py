@@ -63,7 +63,7 @@ def pull_async(channel_id: str, project_path):
             if staged_changes.size() > 0:
                 repo.continue_merge()
             
-            if (stashed_changes):
+            if stashed_changes:
                 repo.pop_stash()        
 
             ui.show_success("Update Successful")
