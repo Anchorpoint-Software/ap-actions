@@ -610,7 +610,7 @@ class GitRepository(VCRepository):
     def get_deleted_files(self):
         unstaged_files = []
         staged_files = []
-        status_lines = self.repo.git(no_pager=True).status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
@@ -635,7 +635,7 @@ class GitRepository(VCRepository):
             return status_ids in ["DD", "AA"]
 
         conflicts = []
-        status_lines = self.repo.git(no_pager=True).status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
