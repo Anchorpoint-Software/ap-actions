@@ -338,7 +338,7 @@ class GitRepository(VCRepository):
     
     def _get_stashes(self):
         import re
-        stashes_raw = self.repo.git.stash("list", "-z").split('\x00')
+        stashes_raw = self.repo.git(no_pager=True).stash("list", "-z").split('\x00')
         stashes = []
         for raw_stash in stashes_raw:
             try:
@@ -382,6 +382,29 @@ class GitRepository(VCRepository):
 
     def branch_has_stash(self):
         return self.get_branch_stash() != None
+    
+    def list_stash_changes(self, stash: Stash):
+        status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
+
+        changes = Changes()
+        is_change_key = True
+        change_key = "M"
+        for entry in status_and_changes:
+            if is_change_key:
+                change_key = entry
+            else:
+                if change_key == "A":
+                    changes.new_files.append(entry)
+                elif change_key == "D":
+                    changes.deleted_files.append(entry)
+                elif change_key == "R":
+                    changes.renamed_files.append(entry)
+                else:
+                    changes.modified_files.append(entry)
+
+            is_change_key = not is_change_key
+
+        return changes
 
     def get_remote_url(self):
         if self.has_remote():
