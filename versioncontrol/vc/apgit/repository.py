@@ -11,7 +11,7 @@ from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-
+import logging
 import gc
 
 def _map_op_code(op_code: int) -> str:
@@ -385,25 +385,41 @@ class GitRepository(VCRepository):
     
     def list_stash_changes(self, stash: Stash):
         status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
+        logging.info(f"stashed status_and_changes: {status_and_changes}")
 
         changes = Changes()
-        is_change_key = True
-        change_key = "M"
-        for entry in status_and_changes:
-            if is_change_key:
-                change_key = entry
-            else:
-                if change_key == "A":
-                    changes.new_files.append(entry)
-                elif change_key == "D":
-                    changes.deleted_files.append(entry)
-                elif change_key == "R":
-                    changes.renamed_files.append(entry)
+        i = 0
+        while i < len(status_and_changes):
+            try:
+                kind = status_and_changes[i]
+                if kind == "":
+                    break
+                filename = status_and_changes[i+1]
+                
+                if len(kind) > 1: #<X><score>
+                    renamed_filename = status_and_changes[i+2]
+                    i = i+3
                 else:
-                    changes.modified_files.append(entry)
+                    i = i+2
+                    renamed_filename = None
 
-            is_change_key = not is_change_key
-
+                if renamed_filename:
+                    change = Change(os.path.join(self.get_root_path(), filename), os.path.join(self.get_root_path(), renamed_filename))
+                else:
+                    change = Change(os.path.join(self.get_root_path(), filename))
+                if kind.startswith("A"):
+                    changes.new_files.append(change)
+                elif kind.startswith("D"):
+                    changes.deleted_files.append(change)
+                elif kind.startswith("R"):
+                    changes.renamed_files.append(change)
+                else:
+                    changes.modified_files.append(change)
+                
+            except Exception as e:
+                print(f"error in list_stash_changes: {str(e)}")
+                break
+            
         return changes
 
     def get_remote_url(self):
