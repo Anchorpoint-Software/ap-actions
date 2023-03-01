@@ -20,10 +20,34 @@ def open_terminal_pressed(dialog):
     env = GitRepository.get_git_environment()
     for key,value in env.items():
         os.putenv(key, value)
-    
+
     ctx = ap.Context.instance()
     if platform.system() == "Darwin":
-        os.system(f"osascript -e 'tell application \"Terminal\" to do script \"cd \\\"/Users/jochenhunz/Downloads/git pull test\\\" && export PATH=\\\"{os.path.dirname(get_git_cmd_path())}\\\":$PATH\"'")
+        def get_osascript():
+            gitdir = os.path.dirname(get_git_cmd_path())
+            return (
+                f"if application \"Terminal\" is running then\n"
+                f"\ttell application \"Terminal\"\n"
+                f"\t\tdo script \"cd \\\"{ctx.project_path}\\\" && export PATH=\\\"{gitdir}\\\":$PATH\"\n"
+                f"\t\tactivate\n"
+                f"\tend tell\n"
+                f"else\n"
+                f"\ttell application \"Terminal\"\n"
+                f"\t\tdo script \"cd \\\"{ctx.project_path}\\\" && export PATH=\\\"{gitdir}\\\":$PATH\" in window 1\n"
+                f"\t\tactivate\n"
+                f"\tend tell\n"
+                f"end if\n"
+            )
+        
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            with open(tmp.name, "w") as f:
+                f.write(get_osascript())
+        finally:
+            os.system(f"osascript \"{tmp.name}\"")
+            os.remove(tmp.name)
+
     elif platform.system() == "Windows":
         path = os.environ["PATH"]
         os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
