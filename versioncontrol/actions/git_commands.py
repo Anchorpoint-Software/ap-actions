@@ -23,7 +23,7 @@ def open_terminal_pressed(dialog):
     
     ctx = ap.Context.instance()
     if platform.system() == "Darwin":
-        os.system(f"open -a Terminal \"{ctx.project_path}\"")
+        os.system(f"osascript -e 'tell application \"Terminal\" to do script \"cd \\\"/Users/jochenhunz/Downloads/git pull test\\\" && export PATH=\\\"{os.path.dirname(get_git_cmd_path())}\\\":$PATH\"'")
     elif platform.system() == "Windows":
         path = os.environ["PATH"]
         os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
