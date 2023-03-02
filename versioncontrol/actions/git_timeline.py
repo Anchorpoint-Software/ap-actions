@@ -108,7 +108,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        print (e)
+        print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
