@@ -536,8 +536,10 @@ class GitRepository(VCRepository):
         proc.stderr.close()
         if progress_callback:
             for i, _ in enumerate(proc.stdout):
-                progress_callback(i+1,count-1)
-        finalize_process(proc)
+                cont = progress_callback(i+1,count-1)
+                if not cont:
+                    proc.terminate()
+                    return
 
     def stage_all_files(self):
         self.repo.git.add(".")
