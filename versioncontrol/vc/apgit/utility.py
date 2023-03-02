@@ -33,6 +33,15 @@ def _check_update_available():
         dialog.show()
         pass
 
+def is_git_running():
+    try:
+        import psutil
+        for p in psutil.process_iter(attrs=['name']):
+            print(p.name())
+        return "git" in (p.name().lower() for p in psutil.process_iter(attrs=['name']))
+    except:
+        return True # Expect it to be running
+
 def guarantee_git():
     git_installed = install_git.is_git_installed()
     if git_installed: 

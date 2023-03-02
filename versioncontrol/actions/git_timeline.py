@@ -1,7 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 from typing import Optional
-import os
+import os, logging
 import git_errors
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -108,7 +108,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        print (f"on_load_timeline_channel_info exception: {str(e)}")
+        logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -229,7 +229,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        print (e)
+        logging.info(str(e))
         return None
     finally:
         sys.path.remove(script_dir)
