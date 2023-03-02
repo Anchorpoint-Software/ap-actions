@@ -108,7 +108,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
+        logging.error (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -229,7 +229,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        logging.info(str(e))
+        logging.error (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
