@@ -106,6 +106,12 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             if b.name == current_branch_name:
                 info.current_branch = branch
 
+        if "has_stash" in dir(info):
+            stash = repo.get_branch_stash()
+            info.has_stash = stash is not None
+            if info.has_stash:
+                info.stashed_file_count = repo.get_stash_change_count(stash)
+
         return info
     except Exception as e:
         logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
@@ -224,8 +230,16 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.icon = aps.Icon(":/icons/revert.svg")
         revert.enabled = has_changes
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
-
         info.actions.append(revert)
+
+        if not repo.branch_has_stash():
+            stash = ap.TimelineChannelAction()
+            stash.name = "Stash Files"
+            stash.identifier = "gitstashfiles"
+            stash.icon = aps.Icon(":/icons/nature/litter.svg") # Change icon
+            stash.enabled = has_changes
+            stash.tooltip = "Puts all your changes in the stash."
+            info.actions.append(stash)
 
         return info
     except Exception as e:
@@ -268,6 +282,49 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
             details.actions.append(revert)
             
+        details.changes = ap.VCChangeList(changes.values())
+        return details
+    finally:
+        sys.path.remove(script_dir)
+
+def on_load_timeline_channel_stash_details(channel_id: str, ctx):
+    import sys, os
+    sys.path.insert(0, script_dir)
+    try:
+        from vc.apgit.utility import get_repo_path
+        from vc.apgit.repository import GitRepository
+
+        if channel_id != "Git": return None
+        details = ap.TimelineChannelEntryVCDetails()
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return details
+
+        stash = repo.get_branch_stash()
+        if not stash:
+            ap.UI().show_error("Could not find a stash")
+            return None
+        
+        changes = dict[str,ap.VCPendingChange]()
+        parse_changes(repo.get_root_path(), repo.get_stash_changes(stash), changes)
+
+        apply = ap.TimelineChannelAction()
+        apply.name = "Apply"
+        apply.icon = aps.Icon(":/icons/restore.svg")
+        apply.identifier = "gitstashapply"
+        apply.type = ap.ActionButtonType.Primary
+        apply.tooltip = "Applies all changes from the stash. Removes the stash if successful"
+        details.actions.append(apply)
+            
+        drop = ap.TimelineChannelAction()
+        drop.name = "Delete"
+        drop.icon = aps.Icon(":/icons/revert.svg")
+        drop.identifier = "gitstashdrop"
+        drop.type = ap.ActionButtonType.SecondaryText
+        drop.tooltip = "Removes the stash and all the files. This cannot be undone."
+        details.actions.append(drop)       
+
         details.changes = ap.VCChangeList(changes.values())
         return details
     finally:

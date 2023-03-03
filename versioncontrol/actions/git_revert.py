@@ -86,6 +86,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
         if repo.has_pending_changes(True):
             dialog = ap.Dialog()
             dialog.title = "Undo Commit"
+            dialog.icon = ":/icons/undo.svg"
             dialog.add_text("You have uncommitted changes. Undoing all changes from this commit<br> might overwrite local changes. This cannot be undone.")
             dialog.add_empty()
             dialog.add_button("Continue", callback=lambda d: undo_button_pressed(path, entry_id, d)).add_button("Cancel", callback=lambda d: d.close())
@@ -95,3 +96,5 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             ap.refresh_timeline_channel(channel_id)
     except Exception as e:
         ui.show_error("Revert Failed", str(e))
+    finally:
+        return True
