@@ -325,15 +325,15 @@ class GitRepository(VCRepository):
                 print(str(e))
                 pass
         
-        stashed_changes = False
+        stash = None
         if self.has_pending_changes(True):
             self.stash(True)
-            stashed_changes = True
+            stash = self.get_branch_stash()
 
         self.repo.git.switch(branch_name)
 
-        if stashed_changes:
-            self.pop_stash()
+        if stash:
+            self.pop_stash(stash)
         
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
@@ -376,9 +376,10 @@ class GitRepository(VCRepository):
 
         self.repo.git.stash(**kwargs)
 
-    def pop_stash(self):
+    def pop_stash(self, stash: Optional[Stash]):
         self._check_index_lock()
-        stash = self.get_branch_stash()
+        if not stash:
+            stash = self.get_branch_stash()
         if stash:
             self.repo.git.stash("pop", stash.id)
         else:
@@ -391,13 +392,19 @@ class GitRepository(VCRepository):
             if stash.branch == branch: 
                 return stash
         return None
+    
+    def drop_stash(self, stash: Stash):
+        self.repo.git.stash("drop", stash.id)
 
     def branch_has_stash(self):
         return self.get_branch_stash() != None
     
-    def list_stash_changes(self, stash: Stash):
+    def get_stash_change_count(self, stash: Stash):
+        changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "--name-status").split('\n')
+        return len(changes)
+
+    def get_stash_changes(self, stash: Stash):
         status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
-        logging.info(f"stashed status_and_changes: {status_and_changes}")
 
         changes = Changes()
         i = 0
@@ -416,9 +423,9 @@ class GitRepository(VCRepository):
                     renamed_filename = None
 
                 if renamed_filename:
-                    change = Change(os.path.join(self.get_root_path(), filename), os.path.join(self.get_root_path(), renamed_filename))
+                    change = Change(filename, renamed_filename)
                 else:
-                    change = Change(os.path.join(self.get_root_path(), filename))
+                    change = Change(filename)
                 if kind.startswith("A"):
                     changes.new_files.append(change)
                 elif kind.startswith("D"):
