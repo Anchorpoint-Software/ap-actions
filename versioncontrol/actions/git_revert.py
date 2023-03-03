@@ -50,9 +50,10 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
     dialog = ap.Dialog()
     dialog.title = "Revert Files"
+    dialog.icon = ":/icons/revert.svg"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
     dialog.add_checkbox(default=True, var="newfiles").add_text("Revert New Files")
-    dialog.add_button("Yes", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, d))
+    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, d)).add_button("Cancel",callback=lambda d: d.close())
     dialog.show()
 
     return True

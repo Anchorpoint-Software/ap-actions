@@ -160,7 +160,7 @@ if __name__ == "__main__":
         remote_url = None
 
     dialog.add_text("<b>Project Folder</b>")
-    dialog.add_info("Pick an empty folder to download the project files or tell Anchorpoint where your repository is located")
+    dialog.add_info("Pick an empty folder to download the project files or tell Anchorpoint where your<br> repository is located")
     dialog.add_input(placeholder=path_placeholder, var="location", width=400, browse=ap.BrowseType.Folder, validate_callback=lambda d,v: validate_path(d,v,remote_url), callback=update_dialog)
     
     if not remote_url:
