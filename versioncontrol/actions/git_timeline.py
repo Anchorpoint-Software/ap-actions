@@ -108,7 +108,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        logging.error (f"on_load_timeline_channel_info exception: {str(e)}")
+        logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -229,7 +229,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        logging.error (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
+        logging.info (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -288,6 +288,9 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return
 
+        if repo.get_current_branch_name() == branch:
+            return
+
         progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
         try:
             commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
@@ -299,8 +302,6 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         except Exception as e:
             if not git_errors.handle_error(e):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
-            else:
-                ap.UI().show_info("Cannot switch branch")
             return
 
         if len(commits) > 0:

@@ -50,6 +50,10 @@ def handle_error(e: Exception):
 
         return True
 
+    if "Stash on branch" in message:
+        ap.UI().show_info(message, "Commit your uncommitted changes or apply or drop your stash first", duration=6000)
+        return True
+
     if "The following untracked working tree files would be overwritten by" in message:
         ap.UI().show_info("Files would be deleted", "This operation would delete files and we are not sure if this is intended. To clean your repository use the \"revert\" command instead.")
         return True

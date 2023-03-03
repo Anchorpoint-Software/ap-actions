@@ -67,7 +67,6 @@ def pull_async(channel_id: str, project_path):
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
-        print(e)
         if not git_errors.handle_error(e):
             ui.show_error("Failed to update Git Repository", "Please try again")    
                    

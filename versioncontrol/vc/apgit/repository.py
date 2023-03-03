@@ -362,6 +362,10 @@ class GitRepository(VCRepository):
         return stashes
 
     def stash(self, include_untracked: bool):
+        stash = self.get_branch_stash()
+        if stash:
+            raise FileExistsError(f"Stash on branch {stash.branch} already exists")
+
         self._check_index_lock()
         message = self._get_stash_message()
         kwargs = {
