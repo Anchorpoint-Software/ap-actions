@@ -41,9 +41,9 @@ def handle_error(e: Exception):
 
         d.add_text(user_error)
         if platform.system() == "Darwin":
-            d.add_info("See more details in the Python console <b>(CMD+P)</b>")
+            d.add_info("See more details in the Python console <b>(CMD+SHIFT+P)</b>")
         else:
-            d.add_info("See more details in the Python console <b>(CTRL+P)</b>")
+            d.add_info("See more details in the Python console <b>(CTRL+SHIFT+P)</b>")
 
         d.add_button("OK", callback=lambda d: d.close())
         d.show()
