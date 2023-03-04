@@ -11,7 +11,7 @@ import UI.Values 1.0
 
 Dialogs.BasicDialog {
     id: rootId
-    dialogHeight: Dimensions.sizes.ultraLarge*3
+    dialogHeight: Dimensions.sizes.huge*2
     dialogWidth: Dimensions.sizes.huge*3
 
     // Our controller property that we set from python by calling createWithInitialProperties
@@ -58,7 +58,7 @@ Dialogs.BasicDialog {
                 // Third, show a blue button to the user to trigger the greetings method
                 HighlightButtons.SquareTextHighlightButton {
                     text: "Show Greetings"
-                    enable: true
+                    hasBackground: true
 
                     Layout.topMargin: Dimensions.sizes.small
                     Layout.bottomMargin: Dimensions.margins.small
