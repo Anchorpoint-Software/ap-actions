@@ -164,7 +164,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                     entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
                     entry.tooltip = entry.message
             else:
-                entry.caption = f"Commited in {os.path.basename(path)}"
+                entry.caption = f"Committed in {os.path.basename(path)}"
           
             return entry
 
