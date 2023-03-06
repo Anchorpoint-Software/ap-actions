@@ -81,7 +81,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             repo = GitRepository.load(path)
             if not repo: return
             
-            progress = ap.Progress("Applying Shelved Files", show_loading_screen=True)
+            progress = ap.Progress("Restoring Shelved Files", show_loading_screen=True)
             repo.pop_stash(None)
 
             ap.close_timeline_sidebar()
@@ -89,9 +89,13 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
 
         except Exception as e:
             error = str(e)
+            print(error)
             if "already exists" in error:
-                logging.info(f"Could not apply shelved files: ", str(e))
-                ui.show_info("Could not apply shelved files", "You have uncommitted files that would be overwritten.", duration=6000)
+                logging.info(f"Could not restore shelved files: ", str(e))
+                ui.show_info("Could not restore all shelved files", "You have uncommitted files that would be overwritten.", duration=6000)
+            elif "CONFLICT" in error:
+                logging.info(f"Could not restore shelved files due to conflict: ", str(e))
+                ui.show_info("Shelved Files are Kept", "At least one file from the shelve is conflicting. We kept the shelved files in case you need it again", duration=15000)
             else:
                 raise e
         finally:

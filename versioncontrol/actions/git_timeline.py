@@ -232,14 +232,18 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
         info.actions.append(revert)
 
-        if not repo.branch_has_stash():
-            stash = ap.TimelineChannelAction()
-            stash.name = "Shelve Files"
-            stash.identifier = "gitstashfiles"
-            stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
-            stash.enabled = has_changes
-            stash.tooltip = "Puts all your changed and added files in the shelf. The files will disappear from the uncommitted changes, but can be restored at any time"
-            info.actions.append(stash)
+        has_stash = repo.branch_has_stash()
+        
+        stash = ap.TimelineChannelAction()
+        stash.name = "Shelve Files"
+        stash.identifier = "gitstashfiles"
+        stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
+        stash.enabled = has_changes and not has_stash
+        if has_stash:
+            stash.tooltip = "You already have shelved files. Restore or delete them first"
+        else:
+            stash.tooltip = "Puts all your changed and added files in the shelf.<br>The files will disappear from the uncommitted changes, but can be restored at any time"
+        info.actions.append(stash)
 
         return info
     except Exception as e:
@@ -309,12 +313,21 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_stash_changes(stash), changes)
 
+        has_changes = repo.has_pending_changes(True)
+
         apply = ap.TimelineChannelAction()
         apply.name = "Restore"
         apply.icon = aps.Icon(":/icons/restore.svg")
         apply.identifier = "gitstashapply"
         apply.type = ap.ActionButtonType.Primary
-        apply.tooltip = "Restores all files from the shelf. The files will show up in the uncommitted changes"
+        if not has_changes:
+            apply.enabled = True
+            apply.tooltip = "Restores all files from the shelf. The files will show up in the uncommitted changes"
+        else:
+            apply.name = "Restore"
+            apply.enabled = False
+            apply.tooltip = "Unable to restore shelved files when you have uncommitted changes"
+
         details.actions.append(apply)
             
         drop = ap.TimelineChannelAction()
