@@ -85,7 +85,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
-            conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your stash"
+            conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your shelved files"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
@@ -234,11 +234,11 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         if not repo.branch_has_stash():
             stash = ap.TimelineChannelAction()
-            stash.name = "Stash Files"
+            stash.name = "Shelve Files"
             stash.identifier = "gitstashfiles"
-            stash.icon = aps.Icon(":/icons/nature/litter.svg") # Change icon
+            stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
             stash.enabled = has_changes
-            stash.tooltip = "Puts all your changes in the stash."
+            stash.tooltip = "Puts all your changed and added files in the shelf. The files will disappear from the uncommitted changes, but can be restored at any time"
             info.actions.append(stash)
 
         return info
@@ -303,26 +303,26 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
 
         stash = repo.get_branch_stash()
         if not stash:
-            ap.UI().show_error("Could not find a stash")
+            ap.UI().show_error("Could not find shelved files")
             return None
         
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_stash_changes(stash), changes)
 
         apply = ap.TimelineChannelAction()
-        apply.name = "Apply"
+        apply.name = "Restore"
         apply.icon = aps.Icon(":/icons/restore.svg")
         apply.identifier = "gitstashapply"
         apply.type = ap.ActionButtonType.Primary
-        apply.tooltip = "Applies all changes from the stash. Removes the stash if successful"
+        apply.tooltip = "Restores all files from the shelf. The files will show up in the uncommitted changes"
         details.actions.append(apply)
             
         drop = ap.TimelineChannelAction()
         drop.name = "Delete"
-        drop.icon = aps.Icon(":/icons/revert.svg")
+        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
         drop.identifier = "gitstashdrop"
         drop.type = ap.ActionButtonType.SecondaryText
-        drop.tooltip = "Removes the stash and all the files. This cannot be undone."
+        drop.tooltip = "Permanently deletes all files in the shelf. This cannot be undone."
         details.actions.append(drop)       
 
         details.changes = ap.VCChangeList(changes.values())
