@@ -159,7 +159,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
             is_merge = len(commit.parents) > 1
             if is_merge:
-                entry.caption = f"Pulled and merged changes"
+                entry.caption = f"Pulled and merged files"
                 entry.tooltip = entry.message
                 entry.message = ""
                 if commit.type is HistoryType.SYNCED:
