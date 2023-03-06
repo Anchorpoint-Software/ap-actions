@@ -64,7 +64,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
 
             dialog = ap.Dialog()
             dialog.title = "Delete Shelved Files"
-            dialog.icon = ":/icons/revert.svg"
+            dialog.icon = ":/icons/trash.svg"
             dialog.add_text("This will <b>delete all files</b> in your shelf.<br>This cannot be undone.")
             dialog.add_empty()
             dialog.add_button("Delete Files", callback=lambda d: delete_button_pressed(path, channel_id, d)).add_button("Cancel", callback=lambda d: d.close())
@@ -76,5 +76,24 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             return True
         
     if action_id == "gitstashapply":
-        return True
+        try:
+            path = get_repo_path(channel_id, ctx.project_path)
+            repo = GitRepository.load(path)
+            if not repo: return
+            
+            progress = ap.Progress("Applying Shelved Files", show_loading_screen=True)
+            repo.pop_stash(None)
+
+            ap.close_timeline_sidebar()
+            ap.vc_load_pending_changes(channel_id)
+
+        except Exception as e:
+            error = str(e)
+            if "already exists" in error:
+                logging.info(f"Could not apply shelved files: ", str(e))
+                ui.show_info("Could not apply shelved files", "You have uncommitted files that would be overwritten.", duration=6000)
+            else:
+                raise e
+        finally:
+            return True
     return False
