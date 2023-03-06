@@ -508,7 +508,7 @@ class GitRepository(VCRepository):
                 if not self.is_unborn():
                     diff = self.repo.head.commit.diff()
                 else:
-                    diff = self.repo.index.diff(self._get_empty_tree_id())
+                    diff = self.repo.index.diff(self._get_empty_tree_id(), R=True)
             else:
                 diff = self.repo.index.diff(None) 
             
