@@ -36,8 +36,6 @@ def _check_update_available():
 def is_git_running():
     try:
         import psutil
-        for p in psutil.process_iter(attrs=['name']):
-            print(p.name())
         return "git" in (p.name().lower() for p in psutil.process_iter(attrs=['name']))
     except:
         return True # Expect it to be running
