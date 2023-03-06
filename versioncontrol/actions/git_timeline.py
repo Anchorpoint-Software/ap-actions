@@ -62,7 +62,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 pull.icon = aps.Icon(":/icons/cloud.svg")
                 pull.identifier = "gitpull"
                 pull.type = ap.ActionButtonType.Primary
-                pull.tooltip = "Get all changes from the remote Git repository"
+                pull.tooltip = "Get all changed files from the remote Git repository"
                 info.actions.append(pull)
             elif repo.is_push_required():
                 push = ap.TimelineChannelAction()
@@ -160,9 +160,10 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             is_merge = len(commit.parents) > 1
             if is_merge:
                 entry.caption = f"Pulled and merged changes"
+                entry.tooltip = entry.message
+                entry.message = ""
                 if commit.type is HistoryType.SYNCED:
                     entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
-                    entry.tooltip = entry.message
             else:
                 entry.caption = f"Committed in {os.path.basename(path)}"
           
@@ -242,7 +243,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         if has_stash:
             stash.tooltip = "You already have shelved files. Restore or delete them first"
         else:
-            stash.tooltip = "Puts all your changed and added files in the shelf.<br>The files will disappear from the uncommitted changes, but can be restored at any time"
+            stash.tooltip = "Puts all your changed and added files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
         info.actions.append(stash)
 
         return info
@@ -283,7 +284,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.icon = aps.Icon(":/icons/undo.svg")
             revert.identifier = "gitrevertcommit"
             revert.type = ap.ActionButtonType.SecondaryText
-            revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
+            revert.tooltip = "Undos all file changes from a commit. The files will show up as changed files."
             details.actions.append(revert)
             
         details.changes = ap.VCChangeList(changes.values())
@@ -322,11 +323,11 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
         apply.type = ap.ActionButtonType.Primary
         if not has_changes:
             apply.enabled = True
-            apply.tooltip = "Restores all files from the shelf. The files will show up in the uncommitted changes"
+            apply.tooltip = "Restores all files from the shelf. The files will show up as changed files."
         else:
             apply.name = "Restore"
             apply.enabled = False
-            apply.tooltip = "Unable to restore shelved files when you have uncommitted changes"
+            apply.tooltip = "Unable to restore shelved files when you have changed files"
 
         details.actions.append(apply)
             
@@ -335,7 +336,7 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
         drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
         drop.identifier = "gitstashdrop"
         drop.type = ap.ActionButtonType.SecondaryText
-        drop.tooltip = "Permanently deletes all files in the shelf. This cannot be undone."
+        drop.tooltip = "Permanently deletes all files in the shelf (cannot be undone)"
         details.actions.append(drop)       
 
         details.changes = ap.VCChangeList(changes.values())
