@@ -298,6 +298,9 @@ class GitRepository(VCRepository):
         
         self.repo.git.revert("--quit")
 
+    def undo_last_commit(self):
+        self.repo.git.reset("HEAD~")
+
     def restore_changelist(self, changelist_id: str):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
@@ -376,7 +379,7 @@ class GitRepository(VCRepository):
 
         self.repo.git.stash(**kwargs)
 
-    def pop_stash(self, stash: Optional[Stash]):
+    def pop_stash(self, stash: Optional[Stash] = None):
         self._check_index_lock()
         if not stash:
             stash = self.get_branch_stash()
@@ -865,7 +868,7 @@ class GitRepository(VCRepository):
         local_commits = self._get_local_commits(self._has_upstream())
         
         for commit in local_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL, parents=self._get_commit_parents(commit,HistoryType.LOCAL)))
         return history
 
     def get_new_commits(self, base, target):
@@ -882,6 +885,13 @@ class GitRepository(VCRepository):
                 ids.add(commit.hexsha)
         
         return ids
+    
+    def _get_commit_parents(self, commit, type):
+        parents = []
+        if commit.parents:
+            for commit in commit.parents:
+                parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
+        return parents
 
     def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
         history = []
@@ -915,25 +925,30 @@ class GitRepository(VCRepository):
 
         except Exception as e:
             pass
-
-        def get_parents(commit):
-            parents = []
-            if commit.parents:
-                for commit in commit.parents:
-                    parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents = []))        
-            return parents
-            
+     
         for commit in base_commits:
             if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=get_parents(commit)))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type)))
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=get_parents(commit)))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=self._get_commit_parents(commit,HistoryType.REMOTE)))
 
         return history
+    
+    def get_history_entry(self, entry_id: str):
+        commit = self.repo.commit(entry_id)
+        if commit:
+            remote_branches = self.repo.git.branch("-r", "--contains", entry_id)
+            if len(remote_branches) == 0:
+                type = HistoryType.LOCAL
+            else:
+                type = HistoryType.SYNCED if self.branch_contains(entry_id) else HistoryType.REMOTE
+            return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
+        return None
+
 
     def branch_contains(self, changelist_id: str):
         branch_name = self.get_current_branch_name()

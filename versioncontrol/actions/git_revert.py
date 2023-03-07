@@ -62,21 +62,43 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
     return True
 
-def undo(path: str, entry_id: str):
+def undo(path: str, entry_id: str, channel_id: str, shelve: bool):
     ui = ap.UI()
     try:
-        progress = ap.Progress("Reverting Commit", show_loading_screen=True)
+        progress = ap.Progress("Undoing Commit", show_loading_screen=True)
         repo = GitRepository.load(path)
-        repo.revert_changelist(entry_id)
 
-        ui.show_success("Revert succeeded")
+        if shelve:
+            repo.stash(True)
+
+        if repo.get_current_change_id() == entry_id:
+            entry = repo.get_history_entry(entry_id)
+            if entry and entry.type == HistoryType.LOCAL:
+                repo.undo_last_commit()
+                ap.delete_timeline_channel_entries(channel_id, [entry_id])
+                ap.close_timeline_sidebar()
+            else:
+                repo.revert_changelist(entry_id)
+        else:
+            repo.revert_changelist(entry_id)
+
+        ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
+
+        if shelve:
+            ui.show_success("Undo succeeded", "We have shelved all your changed files")
+        else:
+            ui.show_success("Undo succeeded")
+
     except Exception as e:
-        ui.show_error("Revert Failed", str(e))
+        if not git_errors.handle_error(e):
+            logging.info(str(e))
+            ui.show_error("Revert Failed", str(e))
 
-def undo_button_pressed(path: str, entry_id: str, dialog):
+def undo_button_pressed(path: str, entry_id: str, channel_id: str, dialog):
     ctx = ap.Context.instance()
     dialog.close()
-    ctx.run_async(undo, path, entry_id)
+    ctx.run_async(undo, path, entry_id, channel_id, True)
 
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
     if action_id != "gitrevertcommit": return False
@@ -91,14 +113,17 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog = ap.Dialog()
             dialog.title = "Undo Commit"
             dialog.icon = ":/icons/undo.svg"
-            dialog.add_text("You have changed files. Undoing all changes from this commit<br> might overwrite local changes. This cannot be undone.")
+            dialog.add_text("You have <b>changed files</b>.<br>Should we shelve your changed files and continue?")
             dialog.add_empty()
-            dialog.add_button("Continue", callback=lambda d: undo_button_pressed(path, entry_id, d)).add_button("Cancel", callback=lambda d: d.close())
+            dialog.add_button("Shelve and Continue", callback=lambda d: undo_button_pressed(path, entry_id, channel_id, d)).add_button("Cancel", callback=lambda d: d.close())
             dialog.show()
         else:
-            undo(path, entry_id)
+            undo(path, entry_id, channel_id, False)
             ap.refresh_timeline_channel(channel_id)
+
     except Exception as e:
-        ui.show_error("Revert Failed", str(e))
+        if not git_errors.handle_error(e):
+            logging.info(str(e))
+            ui.show_error("Revert Failed", str(e))
     finally:
         return True
