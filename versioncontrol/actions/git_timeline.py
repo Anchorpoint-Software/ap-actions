@@ -281,7 +281,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
 
-        if (repo.branch_contains(entry_id)):
+        if repo.branch_contains(entry_id):
             revert = ap.TimelineChannelAction()
             revert.name = "Undo Commit"
             revert.icon = aps.Icon(":/icons/undo.svg")
