@@ -49,7 +49,7 @@ You can also work locally first without a remote repository if you are not worki
 
     <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/gitBasicTimeline.png" width="600"></p>
 
-    <p>Go to the “Timeline”. Each entry with a blue symbol marks a Git commit. There you can also see who made the commit and when. The comment says what was changed. The Uncommitted Changes list all your changes that you still need to publish.<br>
+    <p>Go to the “Timeline”. Each entry with a blue symbol marks a Git commit. There you can also see who made the commit and when. The comment says what was changed. The Changed Files list all your changes that you still need to publish.<br>
 The "Fetch" button asks the remote repository if there are any changes.</p>
 
     <h2>Add or edit files</h2>

@@ -51,7 +51,7 @@ def handle_error(e: Exception):
         return True
 
     if "Stash on branch" in message:
-        ap.UI().show_info(message, "Commit your uncommitted changes or apply or drop your stash first", duration=6000)
+        ap.UI().show_info(message, "Commit your changed files or apply or drop your stash first", duration=6000)
         return True
 
     if "The following untracked working tree files would be overwritten by" in message:
