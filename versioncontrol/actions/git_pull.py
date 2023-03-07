@@ -69,6 +69,7 @@ def pull_async(channel_id: str, project_path):
         progress.finish()
     except Exception as e:
         if not git_errors.handle_error(e):
+            logging.info(str(e))
             ui.show_error("Failed to update Git Repository", "Please try again")    
                    
     ap.refresh_timeline_channel(channel_id)
