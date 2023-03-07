@@ -87,6 +87,9 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             ap.close_timeline_sidebar()
             ap.vc_load_pending_changes(channel_id)
 
+            if repo.has_conflicts():
+                ap.vc_resolve_conflicts(channel_id)
+
         except Exception as e:
             error = str(e)
             print(error)
