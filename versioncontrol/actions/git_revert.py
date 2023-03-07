@@ -71,16 +71,7 @@ def undo(path: str, entry_id: str, channel_id: str, shelve: bool):
         if shelve:
             repo.stash(True)
 
-        if repo.get_current_change_id() == entry_id:
-            entry = repo.get_history_entry(entry_id)
-            if entry and entry.type == HistoryType.LOCAL:
-                repo.undo_last_commit()
-                ap.delete_timeline_channel_entries(channel_id, [entry_id])
-                ap.close_timeline_sidebar()
-            else:
-                repo.revert_changelist(entry_id)
-        else:
-            repo.revert_changelist(entry_id)
+        repo.revert_changelist(entry_id)
 
         ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
