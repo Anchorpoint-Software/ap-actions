@@ -146,11 +146,13 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             entry.message = commit.message
             entry.has_details = True
             
-            icon_color = "#90CAF9"
+            icon_color = "#f3d582"
             if commit.type is HistoryType.LOCAL:
+                icon_color = "#fbbc9f"
                 entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
                 entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
             elif commit.type is HistoryType.REMOTE:
+                icon_color = "#90CAF9"
                 entry.icon = aps.Icon(":/icons/cloud.svg", icon_color)
                 entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
             elif commit.type is HistoryType.SYNCED:
@@ -159,6 +161,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
             is_merge = len(commit.parents) > 1
             if is_merge:
+                icon_color = "#9E9E9E"
                 entry.caption = f"Pulled and merged files"
                 entry.tooltip = entry.message
                 entry.message = ""
