@@ -284,7 +284,7 @@ class GitRepository(VCRepository):
     def revert_changelist(self, changelist_id: str):
         self._check_index_lock()
         try:
-            self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+            self.repo.git.revert(changelist_id, "-n")
             
             try:
                 # don't revert top-level gitattributes
@@ -293,8 +293,10 @@ class GitRepository(VCRepository):
             except:
                 pass
         except Exception as e:
-            self.repo.git.revert("--abort")
-            raise e
+            error = str(e)
+            if not "CONFLICT" in error:
+                self.repo.git.revert("--abort")
+                raise e
         
         self.repo.git.revert("--quit")
 
