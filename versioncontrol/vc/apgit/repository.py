@@ -1027,5 +1027,5 @@ class GitRepository(VCRepository):
                 os.remove(index_lock)
                 logging.info(f"removed index.lock: {index_lock}")
             except Exception as e:
-                logging.error(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
+                logging.info(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
                 raise e

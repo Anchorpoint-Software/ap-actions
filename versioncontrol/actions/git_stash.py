@@ -92,7 +92,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
 
         except Exception as e:
             error = str(e)
-            print(error)
+            logging.info(error)
             if "already exists" in error:
                 logging.info(f"Could not restore shelved files: ", str(e))
                 ui.show_info("Could not restore all shelved files", "You have changed files that would be overwritten.", duration=6000)
