@@ -48,6 +48,11 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         progress = ap.Progress("Shelving Files", show_loading_screen=True)
         repo.stash(True)
 
+        try:
+            ap.vc_load_pending_changes(channel_id, True)
+        except:
+            ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
         ui.show_success("Files shelved")
     except Exception as e:
             ui.show_error("Could not shelve files", str(e))

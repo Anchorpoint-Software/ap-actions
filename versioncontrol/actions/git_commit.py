@@ -95,5 +95,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         ui.show_error("Commit Failed", str(e))
         raise e
     finally:
-        ap.vc_load_pending_changes("Git")    
+        try:
+            ap.vc_load_pending_changes(channel_id, True)
+        except:
+            ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
         return True
