@@ -26,6 +26,7 @@ def delete_stash(path: str, channel_id):
         ui.show_success("Shelved files deleted")
         ap.close_timeline_sidebar()
         ap.refresh_timeline_channel(channel_id)
+        ap.vc_load_pending_changes(channel_id)
     except Exception as e:
         ui.show_error("Could not delete shelved files", str(e))
 
