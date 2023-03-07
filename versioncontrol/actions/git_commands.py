@@ -89,11 +89,11 @@ if __name__ == "__main__":
     dialog.icon = ctx.icon
     dialog.title = "Git Commands"
 
-    dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed)
+    dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
     dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
     dialog.add_empty()
 
-    dialog.add_button("Clear Cache", callback=prune_pressed)
+    dialog.add_button("Clear Cache", callback=prune_pressed, primary=False)
     dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
     dialog.show(settings)

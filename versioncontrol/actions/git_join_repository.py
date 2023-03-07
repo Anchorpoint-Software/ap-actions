@@ -82,7 +82,7 @@ if __name__ == "__main__":
                 ctx.run_async(clone_repo_async, repo_path, url, join_project_files, project, timeline_channel, workspace_id, patch_channel)
                 d.close()
 
-            d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close())
+            d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
             d.show()
             raise e
 

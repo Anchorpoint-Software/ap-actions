@@ -42,7 +42,7 @@ def show_push_failed(error: str, channel_id, project_path):
         ctx.run_async(push_async, channel_id, project_path)
         d.close()
 
-    d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close())
+    d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
     d.show()
 
 def push_async(channel_id: str, project_path):

@@ -57,7 +57,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     dialog.icon = ":/icons/revert.svg"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
     dialog.add_checkbox(default=True, var="newfiles").add_text("Revert New Files")
-    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, d)).add_button("Cancel",callback=lambda d: d.close())
+    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
     dialog.show()
 
     return True
@@ -106,7 +106,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog.icon = ":/icons/undo.svg"
             dialog.add_text("You have <b>changed files</b>.<br>Should we shelve your changed files and continue?")
             dialog.add_empty()
-            dialog.add_button("Shelve and Continue", callback=lambda d: undo_button_pressed(path, entry_id, channel_id, d)).add_button("Cancel", callback=lambda d: d.close())
+            dialog.add_button("Shelve and Continue", callback=lambda d: undo_button_pressed(path, entry_id, channel_id, d)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
         else:
             undo(path, entry_id, channel_id, False)

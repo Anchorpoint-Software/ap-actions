@@ -68,7 +68,7 @@ def open_dialog():
     if ctx.icon:
         dialog.icon = ctx.icon    
 
-    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_empty)
+    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_empty, primary=False)
     dialog.show()
 
 
