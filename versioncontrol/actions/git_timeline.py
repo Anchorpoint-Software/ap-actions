@@ -172,6 +172,8 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
           
             return entry
 
+        commits_to_pull = 0
+        latest_commit_to_pull = None
         for commit in history:
             entry = map_commit(commit)
             
@@ -181,10 +183,21 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                     parents_list.append(map_commit(parent))
                 entry.parents = parents_list
 
+            if commit.type is HistoryType.REMOTE:
+                commits_to_pull = commits_to_pull + 1
+                if not latest_commit_to_pull:
+                    latest_commit_to_pull = commit
+
             history_list.append(entry)
+
+        if latest_commit_to_pull:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, latest_commit_to_pull.date)
+        else:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
 
         return history_list
     except Exception as e:
+        print(e)
         return []
     finally:
         sys.path.remove(script_dir)
