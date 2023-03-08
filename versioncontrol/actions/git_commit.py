@@ -57,7 +57,7 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
         else:
             raise e
 
-def commit_async(message: str, changes, all_files_selected, channel_id, project_path, lfs):
+def commit_async(message: str, changes, all_files_selected, channel_id, project_path, lfs, ctx):
     ui = ap.UI()
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True)
     try:
@@ -75,6 +75,9 @@ def commit_async(message: str, changes, all_files_selected, channel_id, project_
             ui.show_info("Nothing to commit")
             return
 
+        if len(ctx.username) > 0 and len(ctx.email) > 0:
+            repo.set_username(ctx.username, ctx.email, project_path)
+
         repo.commit(message)
         ui.show_success("Commit succeeded")
         if "vc_load_pending_changes" in dir(ap):
@@ -88,5 +91,5 @@ def commit_async(message: str, changes, all_files_selected, channel_id, project_
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     import git_lfs_helper as lfs
     if action_id != "gitcommit": return False
-    ctx.run_async(commit_async, message, changes, all_files_selected, channel_id, ctx.project_path, lfs)
+    ctx.run_async(commit_async, message, changes, all_files_selected, channel_id, ctx.project_path, lfs, ctx)
     return True
