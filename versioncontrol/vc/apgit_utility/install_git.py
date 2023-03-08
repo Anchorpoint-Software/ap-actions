@@ -61,7 +61,17 @@ def run_git_command(args, cwd = None, **kwargs):
         from subprocess import CREATE_NO_WINDOW
         kwargs["creationflags"] = CREATE_NO_WINDOW
 
-    return subprocess.check_output(args, env=current_env, cwd=cwd, **kwargs).decode("utf-8").strip() 
+    try:
+        p = subprocess.run(args, env=current_env, cwd=cwd, capture_output=True, **kwargs)
+        out = p.stdout.decode("utf-8").strip()
+        err = p.stderr.decode("utf-8").strip()
+        if p.returncode != 0:
+            raise Exception(f"Failed to run git command ({args}): \nerr: {err}")
+        
+        return out
+    except Exception as e:
+        print(e)
+        raise e
 
 def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
     from vc.apgit.repository import GitRepository

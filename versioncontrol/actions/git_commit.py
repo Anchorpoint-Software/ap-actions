@@ -88,6 +88,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             ui.show_info("Nothing to commit")
             return
 
+        if len(ctx.username) > 0 and len(ctx.email) > 0:
+            repo.set_username(ctx.username, ctx.email, project_path)
+
         repo.commit(message)
         ui.show_success("Commit succeeded")
         
