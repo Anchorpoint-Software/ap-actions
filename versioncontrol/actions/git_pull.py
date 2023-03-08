@@ -48,7 +48,7 @@ def pull_async(channel_id: str, project_path):
         if state == UpdateState.NO_REMOTE:
             ui.show_info("Branch does not track a remote branch", "Push your branch first")    
         elif state == UpdateState.CONFLICT:
-            ui.show_info("Conflicts detected", "Please resolve your conflicts or abort the pull")    
+            ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
             ap.refresh_timeline_channel(channel_id)
             ap.vc_resolve_conflicts(channel_id)
             progress.finish()
