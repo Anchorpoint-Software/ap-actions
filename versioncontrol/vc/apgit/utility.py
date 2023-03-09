@@ -8,7 +8,7 @@ def _get_git_version():
     return install_git.run_git_command([install_git.get_git_cmd_path(), "--version"])
 
 def _install_git(dialog: ap.Dialog):
-    ap.Context.instance().run_async(install_git.install_git)
+    ap.get_context().run_async(install_git.install_git)
     dialog.close()
 
 def _check_update_available():

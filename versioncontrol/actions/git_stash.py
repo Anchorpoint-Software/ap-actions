@@ -31,7 +31,7 @@ def delete_stash(path: str, channel_id):
         ui.show_error("Could not delete shelved files", str(e))
 
 def delete_button_pressed(path: str, channel_id, dialog):
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     dialog.close()
     ctx.run_async(delete_stash, path, channel_id)
 

@@ -38,7 +38,7 @@ def show_push_failed(error: str, channel_id, project_path):
         d.add_text(error)
 
     def retry():
-        ctx = ap.Context.instance()
+        ctx = ap.get_context()
         ctx.run_async(push_async, channel_id, project_path)
         d.close()
 

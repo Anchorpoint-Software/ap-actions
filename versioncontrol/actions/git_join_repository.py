@@ -27,7 +27,7 @@ if __name__ == "__main__":
     import git_repository_helper as helper
     sys.path.remove(script_dir)
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     ui = ap.UI()
 
     if ctx.type != ap.Type.JoinProjectFiles:

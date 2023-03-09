@@ -1,7 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 # Access the YAML inputs through the context inputs dict

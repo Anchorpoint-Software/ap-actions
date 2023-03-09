@@ -4,7 +4,7 @@ import string
 import random
 import os
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 current_folder = ctx.path

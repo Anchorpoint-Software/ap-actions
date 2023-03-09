@@ -4,7 +4,7 @@ import os
 
 import template_utility
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 template_dir = ctx.inputs["template_dir"]

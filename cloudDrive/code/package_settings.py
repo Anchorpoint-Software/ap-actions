@@ -6,7 +6,7 @@ import random
 
 import rclone_config_helper as rclone_config
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings("rclone")

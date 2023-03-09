@@ -13,7 +13,7 @@ from PySide2.QtQml import QQmlComponent
 ui = ap.UI()
 
 # The Anchorpoint context object provides the predefined variables and the inputs from the YAML file.
-ap_context = ap.Context.instance()
+ap_context = ap.get_context()
 yaml_dir = ap_context.yaml_dir
 
 # We create a controller class that inhertis from QObject.

@@ -146,7 +146,7 @@ def _setup_git():
     except:
         name = None
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     if not email or email == "":
         run_git_command([get_git_cmd_path(), "config", "--global", "user.email", ctx.email])
     if not name or name == "":

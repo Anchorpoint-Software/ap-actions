@@ -21,7 +21,7 @@ def open_terminal_pressed(dialog):
     for key,value in env.items():
         os.putenv(key, value)
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     if platform.system() == "Darwin":
         def get_osascript():
             gitdir = os.path.dirname(get_git_cmd_path())
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     from vc.apgit.utility import get_repo_path
     sys.path.remove(script_dir)
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     project_path = ctx.project_path
 
     settings = aps.Settings("gitsettings")

@@ -1,7 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 def set_settings(settings, setting_name, increment):

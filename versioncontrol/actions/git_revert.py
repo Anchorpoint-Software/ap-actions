@@ -45,7 +45,7 @@ def revert(channel_id, project_path, new_files):
     ui.show_success("Revert Successful")
 
 def revert_button_pressed(channel_id, project_path, dialog):
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     ctx.run_async(revert, channel_id, project_path, dialog.get_value("newfiles"))
     dialog.close()
 
@@ -87,7 +87,7 @@ def undo(path: str, entry_id: str, channel_id: str, shelve: bool):
             ui.show_error("Revert Failed", str(e))
 
 def undo_button_pressed(path: str, entry_id: str, channel_id: str, dialog):
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     dialog.close()
     ctx.run_async(undo, path, entry_id, channel_id, True)
 

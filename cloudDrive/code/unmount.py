@@ -25,4 +25,4 @@ def on_removed_from_workspace(ctx: ap.Context):
 
 if __name__ == "__main__":
     kill_rclone()
-    remove_auto_mount(ap.Context.instance())
+    remove_auto_mount(ap.get_context())

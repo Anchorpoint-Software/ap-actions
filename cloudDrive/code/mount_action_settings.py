@@ -6,7 +6,7 @@ import shutil, platform
 
 import rclone_install_helper as rclone_install
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 settings = aps.Settings("rclone")
 
