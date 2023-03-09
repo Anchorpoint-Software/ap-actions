@@ -173,10 +173,9 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             return entry
 
         commits_to_pull = 0
-        latest_commit_to_pull = None
+        newest_committime_to_pull = 0
         for commit in history:
             entry = map_commit(commit)
-            
             if "parents" in dir(entry):
                 parents_list = list()
                 for parent in commit.parents:
@@ -185,13 +184,13 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
             if commit.type is HistoryType.REMOTE:
                 commits_to_pull = commits_to_pull + 1
-                if not latest_commit_to_pull:
-                    latest_commit_to_pull = commit
+                if newest_committime_to_pull < commit.date:
+                    newest_committime_to_pull = commit.date
 
             history_list.append(entry)
 
-        if latest_commit_to_pull:
-            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, latest_commit_to_pull.date)
+        if newest_committime_to_pull > 0:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
         else:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
 
