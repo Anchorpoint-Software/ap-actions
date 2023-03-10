@@ -12,7 +12,7 @@ import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
 import logging
-import gc
+import gc, subprocess
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -555,14 +555,26 @@ class GitRepository(VCRepository):
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
         self._check_index_lock()
-        proc = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
-        proc.stderr.close()
-        if progress_callback:
-            for i, _ in enumerate(proc.stdout):
-                cont = progress_callback(i+1,count-1)
-                if not cont:
-                    proc.terminate()
-                    return
+        try:
+            proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+            if progress_callback:
+                i = 0
+                while True:
+                    i = i + 1
+                    output = proc.stdout.readline()
+                    if not output and proc.poll() is not None:
+                        break
+                    if output:
+                        cont = progress_callback(i,count-1)
+                        if not cont:
+                            proc.terminate()
+                            break    
+                
+                if proc.returncode != 0:
+                    output = proc.stderr.read().decode("utf-8")
+                    raise Exception(f"Failed to call git add: {output}")
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
 
     def stage_all_files(self):
         self._check_index_lock()
