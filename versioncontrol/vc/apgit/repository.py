@@ -568,7 +568,7 @@ class GitRepository(VCRepository):
                         cont = progress_callback(i,count-1)
                         if not cont:
                             proc.terminate()
-                            break    
+                            return
                 
                 if proc.returncode != 0:
                     output = proc.stderr.read().decode("utf-8")
