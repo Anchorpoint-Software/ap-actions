@@ -37,14 +37,21 @@ def pull_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=True)
+
+        progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
+        has_changes = repo.has_pending_changes(True)
         
         stashed_changes = False
-        if repo.has_pending_changes(True):
+        if has_changes:
+            progress.set_text("Shelving Changed Files")
             repo.stash(True)
             stashed_changes = True
 
+        progress.set_cancelable(True)
+        progress.set_text("Talking to Server")
+
         state = repo.update(progress=PullProgress(progress), rebase=False)
+        progress.set_cancelable(False)
         if state == UpdateState.NO_REMOTE:
             ui.show_info("Branch does not track a remote branch", "Push your branch first")    
         elif state == UpdateState.CONFLICT:
@@ -55,14 +62,17 @@ def pull_async(channel_id: str, project_path):
             return
         elif state == UpdateState.CANCEL:
             ui.show_info("Pull Canceled")
+            if stashed_changes:
+                progress.set_text("Restoring Shelved Files")
+                repo.pop_stash()
         elif state != UpdateState.OK:
             ui.show_error("Failed to update Git Repository")    
         else:
-            staged_changes = repo.get_pending_changes(True)
-            if staged_changes.size() > 0:
+            if repo.has_pending_changes(True):
                 repo.continue_merge()
             
             if stashed_changes:
+                progress.set_text("Restoring Shelved Files")
                 repo.pop_stash()        
 
             ui.show_success("Update Successful")
@@ -72,6 +82,10 @@ def pull_async(channel_id: str, project_path):
             logging.info(str(e))
             ui.show_error("Failed to update Git Repository", "Please try again")    
                    
+    try:
+        ap.vc_load_pending_changes(channel_id, True)
+    except:
+        ap.vc_load_pending_changes(channel_id)
     ap.refresh_timeline_channel(channel_id)
 
 def resolve_conflicts(channel_id):
