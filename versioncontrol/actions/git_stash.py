@@ -73,7 +73,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog.icon = ":/icons/trash.svg"
             dialog.add_text("This will <b>delete all files</b> in your shelf.<br>This cannot be undone.")
             dialog.add_empty()
-            dialog.add_button("Delete Files", callback=lambda d: delete_button_pressed(path, channel_id, d), primary=False).add_button("Cancel", callback=lambda d: d.close())
+            dialog.add_button("Delete Files", callback=lambda d: delete_button_pressed(path, channel_id, d)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
             
         except Exception as e:
