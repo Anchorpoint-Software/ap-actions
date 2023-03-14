@@ -241,20 +241,22 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         info.actions.append(commit)
 
         revert = ap.TimelineChannelAction()
-        revert.name = "Revert All"
+        revert.name = "Revert"
         revert.identifier = "gitrevertall"
         revert.icon = aps.Icon(":/icons/revert.svg")
         revert.enabled = has_changes
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
+        revert.type = ap.ActionButtonType.SecondaryText
         info.actions.append(revert)
 
         has_stash = repo.branch_has_stash()
         
         stash = ap.TimelineChannelAction()
-        stash.name = "Shelve Files"
+        stash.name = "Shelve"
         stash.identifier = "gitstashfiles"
         stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
         stash.enabled = has_changes and not has_stash
+        stash.type = ap.ActionButtonType.SecondaryText
         if has_stash:
             stash.tooltip = "You already have shelved files. Restore or delete them first"
         else:
