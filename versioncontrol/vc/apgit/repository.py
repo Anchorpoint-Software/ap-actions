@@ -361,7 +361,7 @@ class GitRepository(VCRepository):
                 pass
         return stashes
 
-    def stash(self, include_untracked: bool):
+    def stash(self, include_untracked: bool, paths: list[str] = None):
         stash = self.get_branch_stash()
         if stash:
             raise FileExistsError(f"Stash on branch {stash.branch} already exists")
@@ -373,6 +373,13 @@ class GitRepository(VCRepository):
             }
         if include_untracked:
             kwargs["include_untracked"] = True
+
+        if paths is not None:
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "stash_spec")
+                self._write_pathspec_file(paths, pathspec)
+                self.repo.git.stash(pathspec_from_file=pathspec, **kwargs)
+                return
 
         self.repo.git.stash(**kwargs)
 

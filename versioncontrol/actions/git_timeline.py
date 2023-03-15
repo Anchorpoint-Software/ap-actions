@@ -260,7 +260,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         if has_stash:
             stash.tooltip = "You already have shelved files. Restore or delete them first"
         else:
-            stash.tooltip = "Puts all your changed and added files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
+            stash.tooltip = "Puts all your selected files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
         info.actions.append(stash)
 
         return info

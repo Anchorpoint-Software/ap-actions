@@ -46,7 +46,18 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Shelving Files", show_loading_screen=True)
-        repo.stash(True)
+        
+        if all_files_selected:
+            repo.stash(True)
+        else:
+            to_stash = []
+            for change in changes:
+                if change.selected:
+                    to_stash.append(change.path)
+            if len(to_stash) == 0:
+                ui.show_success("No Files Selected")
+                return True
+            repo.stash(True, to_stash)
 
         try:
             ap.vc_load_pending_changes(channel_id, True)
@@ -87,6 +98,9 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             repo = GitRepository.load(path)
             if not repo: return
             
+            if repo.has_pending_changes(True):
+                ap.UI().show_info("Could not restore shelved files", "You have changed files that could be overwritten. Commit them and try again", duration=6000)
+
             progress = ap.Progress("Restoring Shelved Files", show_loading_screen=True)
             repo.pop_stash(None)
 
