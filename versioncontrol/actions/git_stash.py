@@ -48,6 +48,16 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         if not repo: return
         progress = ap.Progress("Shelving Files", show_loading_screen=True)
         
+        # Check if any file to stash is locked by an application
+        for change in changes:
+            path = change.path
+            if not utility.is_file_writable(path):
+                relpath = os.path.relpath(path, repo.get_root_path())
+                error = f"error: unable to unlink '{relpath}':"
+                if not git_errors.handle_error(error):
+                    ui.show_info("Could not shelve files", f"A file is not writable: {relpath}", duration=6000)
+                return True
+
         repo.stash(True)
 
         # if all_files_selected:
@@ -115,9 +125,9 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
                 path = os.path.join(repo.get_root_path(), change.path)
                 if not utility.is_file_writable(path):
-                    error = f"error: unable to unlink {change.path}"
+                    error = f"error: unable to unlink '{change.path}':"
                     if not git_errors.handle_error(error):
-                        ui.show_info("Could not restore shelved files", f"A file is not writable because it is opened by another application: {change.path}", duration=6000)
+                        ui.show_info("Could not restore shelved files", f"A file is not writable: {change.path}", duration=6000)
                     return True
 
             repo.pop_stash(stash)

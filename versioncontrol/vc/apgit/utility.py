@@ -45,6 +45,17 @@ def is_git_running():
     except:
         return True # Expect it to be running
     
+def get_locking_application(path: str):
+    import psutil
+    for process in psutil.process_iter():
+        try:
+            for file in process.open_files():
+                if file.path == path:
+                    return process.name()
+        except:
+            continue
+    return None
+
 def is_file_writable(path: str):
     try:
         if not os.path.exists(path):

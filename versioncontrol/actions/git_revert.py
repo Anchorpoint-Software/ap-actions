@@ -11,27 +11,38 @@ from vc.apgit.repository import *
 from vc.apgit.utility import get_repo_path
 sys.path.remove(script_dir)
 
-def revert(channel_id, project_path, new_files):
+def revert(channel_id, project_path, new_files, changes):
     ui = ap.UI()
     progress = ap.Progress("Reverting Files", show_loading_screen=True)
     
     path = get_repo_path(channel_id, project_path)
     repo = GitRepository.load(path)
-    git_error_shown = False
     if not repo: return
+
+    # Check if any file to revert is locked by an application
+    for change in changes:
+        path = change.path
+        if not utility.is_file_writable(path):
+            relpath = os.path.relpath(path, repo.get_root_path())
+            error = f"error: unable to unlink '{relpath}':"
+            if not git_errors.handle_error(error):
+                ui.show_info("Could not shelve files", f"A file is not writable: {relpath}", duration=6000)
+            return True
+        
     try:
         try:
             repo.unstage_all_files()
             repo.restore_all_files()
         except Exception as e:
             if git_errors.handle_error(e):
-                git_error_shown = True
+                ui.show_error("Could not revert")
+                return
+            raise e
 
         if new_files:
             repo.clean()
     except Exception as e:
-        if not git_error_shown:
-            git_errors.handle_error(e)
+        git_errors.handle_error(e)
         ui.show_error("Could not revert")
         print(str(e))
         return
@@ -44,9 +55,9 @@ def revert(channel_id, project_path, new_files):
     
     ui.show_success("Revert Successful")
 
-def revert_button_pressed(channel_id, project_path, dialog):
+def revert_button_pressed(channel_id, project_path, changes, dialog):
     ctx = ap.get_context()
-    ctx.run_async(revert, channel_id, project_path, dialog.get_value("newfiles"))
+    ctx.run_async(revert, channel_id, project_path, dialog.get_value("newfiles"), changes)
     dialog.close()
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
@@ -57,7 +68,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     dialog.icon = ":/icons/revert.svg"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
     dialog.add_checkbox(default=True, var="newfiles").add_text("Revert New Files")
-    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
+    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, changes, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
     dialog.show()
 
     return True
@@ -86,11 +97,6 @@ def undo(path: str, entry_id: str, channel_id: str, shelve: bool):
             logging.info(str(e))
             ui.show_error("Revert Failed", str(e))
 
-def undo_button_pressed(path: str, entry_id: str, channel_id: str, dialog):
-    ctx = ap.get_context()
-    dialog.close()
-    ctx.run_async(undo, path, entry_id, channel_id, True)
-
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
     if action_id != "gitrevertcommit": return False
     ui = ap.UI()
@@ -101,13 +107,8 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
         if not repo: return
 
         if repo.has_pending_changes(True):
-            dialog = ap.Dialog()
-            dialog.title = "Undo Commit"
-            dialog.icon = ":/icons/undo.svg"
-            dialog.add_text("You have <b>changed files</b>.<br>Should we shelve your changed files and continue?")
-            dialog.add_empty()
-            dialog.add_button("Shelve and Continue", callback=lambda d: undo_button_pressed(path, entry_id, channel_id, d)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
-            dialog.show()
+            ui.show_info("Cannot undo commit", "You have changed files. Commit them and try again")
+            return True
         else:
             undo(path, entry_id, channel_id, False)
             ap.refresh_timeline_channel(channel_id)
@@ -115,6 +116,6 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
     except Exception as e:
         if not git_errors.handle_error(e):
             logging.info(str(e))
-            ui.show_error("Revert Failed", str(e))
+            ui.show_error("Undo Failed", str(e))
     finally:
         return True
