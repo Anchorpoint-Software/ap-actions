@@ -327,7 +327,7 @@ class GitRepository(VCRepository):
                 if remote:
                     branch_name = "/".join(split[1:])
             except Exception as e:
-                print(str(e))
+                # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
                 pass
         
         if self.has_pending_changes(True):
