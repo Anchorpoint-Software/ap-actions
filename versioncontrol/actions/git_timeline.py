@@ -380,7 +380,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
             return
         
         if platform.system() == "Windows" or True:
-            if is_executable_running("unrealeditor"):
+            if is_executable_running(["unrealeditor.exe"]):
                 ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
                 return
 
