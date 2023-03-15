@@ -50,10 +50,10 @@ def get_locking_application(path: str):
     for process in psutil.process_iter():
         try:
             for file in process.open_files():
-                if file.path == path:
+                if path in file.path:
                     return process.name()
         except:
-            continue
+            pass
     return None
 
 def is_file_writable(path: str):
