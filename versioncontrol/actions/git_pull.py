@@ -32,6 +32,16 @@ class PullProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+def check_changes_writable(repo, changes):
+    for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
+        path = os.path.join(repo.get_root_path(), change.path)
+        if not utility.is_file_writable(path):
+            error = f"error: unable to unlink '{change.path}':"
+            if not git_errors.handle_error(error):
+                ap.UI().show_info("Could not shelve files", f"A file is not writable: {change.path}", duration=6000)
+            return False
+    return True
+
 def pull_async(channel_id: str, project_path):
     ui = ap.UI()
     try:
@@ -41,17 +51,15 @@ def pull_async(channel_id: str, project_path):
 
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
         changes = repo.get_pending_changes(False)
+        staged_changes = repo.get_pending_changes(True)
         
         stashed_changes = False
-        if changes.size() > 0:
+        if changes.size() > 0 or staged_changes.size() > 0:
             progress.set_text("Shelving Changed Files")
-            for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
-                path = os.path.join(repo.get_root_path(), change.path)
-                if not utility.is_file_writable(path):
-                    error = f"error: unable to unlink '{change.path}':"
-                    if not git_errors.handle_error(error):
-                        ui.show_info("Could not shelve files", f"A file is not writable: {change.path}", duration=6000)
-                    return True
+            if not check_changes_writable(repo, changes):
+                return True
+            if not check_changes_writable(repo, staged_changes):
+                return True
                 
             repo.stash(True)
             stashed_changes = True
