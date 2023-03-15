@@ -12,7 +12,7 @@ import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
 import logging
-import gc, subprocess
+import gc, subprocess, platform
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -574,7 +574,10 @@ class GitRepository(VCRepository):
                     if output:
                         cont = progress_callback(i,count-1)
                         if not cont:
-                            proc.terminate()
+                            if platform.system() == "Windows":
+                                os.system(f"taskkill /F /T /PID {proc.pid}")
+                            else:
+                                proc.terminate()
                             return
                 
                 if proc.returncode != 0:
