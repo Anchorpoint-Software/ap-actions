@@ -47,17 +47,19 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         if not repo: return
         progress = ap.Progress("Shelving Files", show_loading_screen=True)
         
-        if all_files_selected:
-            repo.stash(True)
-        else:
-            to_stash = []
-            for change in changes:
-                if change.selected:
-                    to_stash.append(change.path)
-            if len(to_stash) == 0:
-                ui.show_success("No Files Selected")
-                return True
-            repo.stash(True, to_stash)
+        repo.stash(True)
+
+        # if all_files_selected:
+        #     repo.stash(True)
+        # else:
+        #     to_stash = []
+        #     for change in changes:
+        #         if change.selected:
+        #             to_stash.append(change.path)
+        #     if len(to_stash) == 0:
+        #         ui.show_success("No Files Selected")
+        #         return True
+        #     repo.stash(True, to_stash)
 
         try:
             ap.vc_load_pending_changes(channel_id, True)

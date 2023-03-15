@@ -53,7 +53,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     if action_id != "gitrevertall": return False
 
     dialog = ap.Dialog()
-    dialog.title = "Revert Files"
+    dialog.title = "Revert All Files"
     dialog.icon = ":/icons/revert.svg"
     dialog.add_text("Do you really want to revert <b>all</b> modified files?<br>This cannot be undone.")
     dialog.add_checkbox(default=True, var="newfiles").add_text("Revert New Files")
