@@ -2,6 +2,7 @@ from logging import exception
 import anchorpoint as ap
 import apsync as aps
 import git_errors
+import itertools
 
 import sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -91,7 +92,8 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog.show()
             
         except Exception as e:
-            ui.show_error("Could not delete shelved files", str(e))
+            if not git_errors.handle_error(e):
+                ui.show_error("Could not delete shelved files", str(e))
         finally:
             return True
         
@@ -105,7 +107,20 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 ap.UI().show_info("Could not restore shelved files", "You have changed files that could be overwritten. Commit them and try again", duration=6000)
 
             progress = ap.Progress("Restoring Shelved Files", show_loading_screen=True)
-            repo.pop_stash(None)
+
+            stash = repo.get_branch_stash()
+
+            # Check if any file in the stash is locked by an application
+            changes = repo.get_stash_changes(stash)
+            for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
+                path = os.path.join(repo.get_root_path(), change.path)
+                if not utility.is_file_writable(path):
+                    error = f"error: unable to unlink {change.path}"
+                    if not git_errors.handle_error(error):
+                        ui.show_info("Could not restore shelved files", f"A file is not writable because it is opened by another application: {change.path}", duration=6000)
+                    return True
+
+            repo.pop_stash(stash)
 
             ap.close_timeline_sidebar()
             ap.vc_load_pending_changes(channel_id)
@@ -115,15 +130,16 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
 
         except Exception as e:
             error = str(e)
-            logging.info(error)
-            if "already exists" in error:
-                logging.info(f"Could not restore shelved files: ", str(e))
-                ui.show_info("Could not restore all shelved files", "You have changed files that would be overwritten.", duration=6000)
-            elif "CONFLICT" in error:
-                logging.info(f"Could not restore shelved files due to conflict: ", str(e))
-                ui.show_info("Shelved Files are Kept", "At least one file from the shelve is conflicting. We kept the shelved files in case you need it again", duration=15000)
-            else:
-                raise e
+            print(error)
+            if not git_errors.handle_error(e):
+                if "already exists" in error:
+                    logging.info(f"Could not restore shelved files: ", str(e))
+                    ui.show_info("Could not restore all shelved files", "You have changed files that would be overwritten.  We kept the shelved files in case you need it again", duration=15000)
+                elif "CONFLICT" in error:
+                    logging.info(f"Could not restore shelved files due to conflict: ", str(e))
+                    ui.show_info("Shelved Files are Kept", "At least one file from the shelve is conflicting. We kept the shelved files in case you need it again", duration=15000)
+                else:
+                    raise e
         finally:
             return True
     return False
