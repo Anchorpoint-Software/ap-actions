@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import git_errors
+import git_errors, platform
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
@@ -368,7 +368,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
     try:
-        from vc.apgit.utility import get_repo_path
+        from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
         if channel_id != "Git": return None
 
@@ -378,6 +378,11 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
 
         if repo.get_current_branch_name() == branch:
             return
+        
+        if platform.system() == "Windows" or True:
+            if is_executable_running("unrealeditor"):
+                ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
+                return
 
         progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
         try:

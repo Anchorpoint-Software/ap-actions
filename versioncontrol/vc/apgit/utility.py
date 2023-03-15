@@ -33,12 +33,27 @@ def _check_update_available():
         dialog.show()
         pass
 
+# Returns True if any executable is running
+def is_executable_running(names: list[str]):
+    import psutil
+    running = [p for p in psutil.process_iter(attrs=['name']) if p.name().lower() in names]
+    return len(running) > 0
+
 def is_git_running():
     try:
-        import psutil
-        return "git" in (p.name().lower() for p in psutil.process_iter(attrs=['name']))
+        is_executable_running(["git"])
     except:
         return True # Expect it to be running
+    
+def is_file_writable(path: str):
+    try:
+        if not os.path.exists(path):
+            return True
+        f=open(path, "a")
+        f.close()
+        return True
+    except Exception as e:
+        return False
 
 def guarantee_git():
     git_installed = install_git.is_git_installed()
