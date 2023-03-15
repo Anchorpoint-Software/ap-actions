@@ -49,6 +49,8 @@ def get_locking_application(path: str):
     import psutil
     for process in psutil.process_iter():
         try:
+            if process.name() in ["svchost.exe", "conhost.exe", "explorer.exe", "wsl.exe", "wslhost.exe", "runtimebroker.exe", "crashpad_handler.exe", "chrome.exe"]:
+                continue
             for file in process.open_files():
                 if path in file.path:
                     return process.name()
