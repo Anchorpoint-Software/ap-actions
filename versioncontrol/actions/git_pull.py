@@ -3,6 +3,7 @@ from git import GitCommandError
 import anchorpoint as ap
 import apsync as aps
 import git_errors
+import itertools
 
 import sys, os, importlib
 current_dir = os.path.dirname(__file__)
@@ -39,11 +40,19 @@ def pull_async(channel_id: str, project_path):
         if not repo: return
 
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
-        has_changes = repo.has_pending_changes(True)
+        changes = repo.get_pending_changes(False)
         
         stashed_changes = False
-        if has_changes:
+        if changes.size() > 0:
             progress.set_text("Shelving Changed Files")
+            for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
+                path = os.path.join(repo.get_root_path(), change.path)
+                if not utility.is_file_writable(path):
+                    error = f"error: unable to unlink '{change.path}':"
+                    if not git_errors.handle_error(error):
+                        ui.show_info("Could not shelve files", f"A file is not writable: {change.path}", duration=6000)
+                    return True
+                
             repo.stash(True)
             stashed_changes = True
 
@@ -79,7 +88,7 @@ def pull_async(channel_id: str, project_path):
         progress.finish()
     except Exception as e:
         if not git_errors.handle_error(e):
-            logging.info(str(e))
+            print(e)
             ui.show_error("Failed to update Git Repository", "Please try again")    
                    
     try:
