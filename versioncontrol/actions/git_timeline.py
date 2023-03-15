@@ -189,10 +189,11 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
             history_list.append(entry)
 
-        if newest_committime_to_pull > 0:
-            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
-        else:
-            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
+        if "set_timeline_update_count" in dir(ap):
+            if newest_committime_to_pull > 0:
+                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
+            else:
+                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
 
         return history_list
     except Exception as e:
