@@ -334,17 +334,16 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
         has_changes = repo.has_pending_changes(True)
 
         apply = ap.TimelineChannelAction()
-        apply.name = "Restore"
-        apply.icon = aps.Icon(":/icons/restore.svg")
+        apply.name = "Move to Changed Files"
+        apply.icon = aps.Icon(":/icons/restoreMultipleFiles.svg")
         apply.identifier = "gitstashapply"
         apply.type = ap.ActionButtonType.Primary
         if not has_changes:
             apply.enabled = True
-            apply.tooltip = "Restores all files from the shelf. The files will show up as changed files."
+            apply.tooltip = "Moves all files from the shelf to the changed files."
         else:
-            apply.name = "Restore"
             apply.enabled = False
-            apply.tooltip = "Unable to restore shelved files when you have changed files"
+            apply.tooltip = "Unable to move shelved files when you already have changed files"
 
         details.actions.append(apply)
             
