@@ -29,6 +29,7 @@ def handle_error(e: Exception):
         message = str(e)
 
     if "warning: failed to remove" in message or "error: unable to unlink" in message:
+        print(message)
         application = _guess_application(message)
         d = ap.Dialog()
         d.title = "Git: Could not Change Files"

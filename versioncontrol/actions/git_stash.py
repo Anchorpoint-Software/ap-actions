@@ -68,9 +68,10 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         ap.refresh_timeline_channel(channel_id)
         ui.show_success("Files shelved")
     except Exception as e:
+        if not git_errors.handle_error(e):
             ui.show_error("Could not shelve files", str(e))
     finally:
-            return True
+        return True
 
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
     ui = ap.UI()
