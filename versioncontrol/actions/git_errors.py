@@ -39,7 +39,7 @@ def _get_file_from_error(error_message: str):
         return None
     
 def _shorten_filepath(file: str):
-    max_length = 100
+    max_length = 50
     file = file.replace("\\", "/")
     if file and len(file) > max_length:
         splits = file.split("/")
