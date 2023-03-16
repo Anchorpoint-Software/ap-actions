@@ -47,10 +47,7 @@ def revert(channel_id, project_path, new_files, changes):
         print(str(e))
         return
     finally:
-        try:
-            ap.vc_load_pending_changes(channel_id, True)
-        except:
-            ap.vc_load_pending_changes(channel_id)
+        ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
     
     ui.show_success("Revert Successful")

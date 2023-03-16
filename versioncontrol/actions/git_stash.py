@@ -72,10 +72,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         #         return True
         #     repo.stash(True, to_stash)
 
-        try:
-            ap.vc_load_pending_changes(channel_id, True)
-        except:
-            ap.vc_load_pending_changes(channel_id)
+        ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
         ui.show_success("Files shelved")
     except Exception as e:

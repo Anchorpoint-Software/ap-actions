@@ -4,6 +4,8 @@ import vc.apgit_utility.constants as constants
 import vc.apgit_utility.install_git as install_git
 import os, platform
 
+GIT_COMMIT_AUTO_PUSH = True
+
 def _get_git_version():
     return install_git.run_git_command([install_git.get_git_cmd_path(), "--version"])
 
