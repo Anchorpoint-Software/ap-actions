@@ -37,6 +37,23 @@ def _get_file_from_error(error_message: str):
             return match
     except:
         return None
+    
+def _shorten_filepath(file: str):
+    max_length = 100
+    file = file.replace("\\", "/")
+    if file and len(file) > max_length:
+        splits = file.split("/")
+        if len(splits) > 1:
+            filename = splits[-1]
+            if len(filename) > max_length:
+                return "../" + filename
+            else:
+                if len(splits) > 2:
+                    return "../" + splits[-2] + "/"+ filename
+                else:
+                    return splits[-2] + "/"+ filename
+
+    return file
 
 def handle_error(e: Exception):
     try:
@@ -53,6 +70,8 @@ def handle_error(e: Exception):
         # if file:
         #     application = utility.get_locking_application(file)
 
+        file = _shorten_filepath(file)
+                
         d = ap.Dialog()
         d.title = "Git: Could not Change Files"
         d.icon = ":/icons/versioncontrol.svg"
