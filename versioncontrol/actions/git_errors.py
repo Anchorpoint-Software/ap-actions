@@ -77,11 +77,11 @@ def handle_error(e: Exception):
         d.icon = ":/icons/versioncontrol.svg"
 
         if not file:
-            user_error = f"Some file could not be changed because it is opened by an application, or<br>you don't have permissions to write the file."
+            user_error = f"Some file could not be changed because it is opened by an application,<br>or you don't have permissions to write the file."
         elif application:
             user_error = f"The file <b>{file}</b><br> could not be changed because it is opened by the application <b>{application}</b>.<br>Please close {application} and try again."
         else:
-            user_error = f"The file <b>{file}</b><br> could not be changed because it is opened by an application, or<br>you don't have permissions to write the file."
+            user_error = f"The file <b>{file}</b><br> could not be changed because it is opened by an application,<br>or you don't have permissions to write the file."
 
         d.add_text(user_error)
         if platform.system() == "Darwin":
