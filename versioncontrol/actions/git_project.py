@@ -31,6 +31,17 @@ def change_remote_switch(dialog: ap.Dialog, remote_enabled):
     dialog.hide_row("repotext", not remote_enabled)
     dialog.hide_row("url", not remote_enabled)
 
+def add_git_ignore(repo, context, project_path, ignore_value = None):
+    sys.path.insert(0, os.path.dirname(__file__))
+    import add_ignore_config
+    sys.path.pop(0)
+    repo.ignore(".ap/project.json", local_only=True)
+    repo.ignore("*.approj", local_only=True)
+    if platform.system() == "Darwin":
+        repo.ignore(".DS_Store", local_only=True)
+    if ignore_value and ignore_value != add_ignore_config.NO_IGNORE:
+        add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
+
 def _install_git_async(dialog, git_helper):
     try:
         git_helper.install_git()
@@ -228,13 +239,7 @@ try:
                 sys.exit(0)
 
         def _add_git_ignore(self, repo, ignore_value, project_path):
-            from add_ignore_config import add_git_ignore, NO_IGNORE
-            repo.ignore(".ap/project.json", local_only=True)
-            repo.ignore("*.approj", local_only=True)
-            if platform.system() == "Darwin":
-                repo.ignore(".DS_Store", local_only=True)
-            if ignore_value != NO_IGNORE:
-                add_git_ignore(ignore_value, project_path, self.context.yaml_dir)
+            add_git_ignore(repo, self.context, project_path, ignore_value)
 
         def _get_git_parent_dir(self, folder_path):
             for root, dirs, _ in os.walk(folder_path):
@@ -302,6 +307,6 @@ def on_folder_opened(ctx: ap.Context):
 
     dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/5-Workflow-Git/\">Git.</a>")
     dialog.add_checkbox(callback=lambda d,v: update_open_settings(d,v,path), var="neveraskagain").add_text("Never ask again")
-    dialog.add_button("Continue", var="yes", callback=lambda d: connect_repo(d,path)).add_button("Cancel", callback=lambda d: d.close())
+    dialog.add_button("Continue", var="yes", callback=lambda d: connect_repo(d,path)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
     
     dialog.show()

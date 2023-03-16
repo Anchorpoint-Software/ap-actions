@@ -6,7 +6,7 @@ import os, sys
 sys.path.insert(0, os.path.dirname(__file__))
 import template_utility
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 is_file_template = ctx.type == ap.Type.File or ctx.type == ap.Type.NewFile

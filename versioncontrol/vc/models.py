@@ -80,6 +80,7 @@ class HistoryEntry:
     message: str
     date: int
     type: HistoryType
+    parents: list
 
 @dataclass
 class Branch:
@@ -88,3 +89,9 @@ class Branch:
     id: Optional[str] = None
     last_changed: Optional[datetime] = None
     is_local: bool = True
+
+@dataclass
+class Stash:
+    id: str
+    message: str
+    branch: Optional[str]

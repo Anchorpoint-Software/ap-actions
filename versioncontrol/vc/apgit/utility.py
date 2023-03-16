@@ -8,7 +8,7 @@ def _get_git_version():
     return install_git.run_git_command([install_git.get_git_cmd_path(), "--version"])
 
 def _install_git(dialog: ap.Dialog):
-    ap.Context.instance().run_async(install_git.install_git)
+    ap.get_context().run_async(install_git.install_git)
     dialog.close()
 
 def _check_update_available():
@@ -32,6 +32,41 @@ def _check_update_available():
         dialog.add_button("Install", callback=_install_git)
         dialog.show()
         pass
+
+# Returns True if any executable is running
+def is_executable_running(names: list[str]):
+    import psutil
+    running = [p for p in psutil.process_iter(attrs=['name']) if len(p.name()) > 0 and p.name().lower() in names]
+    return len(running) > 0
+
+def is_git_running():
+    try:
+        return is_executable_running(["git", "git.exe"])
+    except Exception as e:
+        return True # Expect it to be running
+    
+def get_locking_application(path: str):
+    import psutil
+    for process in psutil.process_iter():
+        try:
+            if process.name() in ["svchost.exe", "conhost.exe", "explorer.exe", "wsl.exe", "wslhost.exe", "runtimebroker.exe", "crashpad_handler.exe", "chrome.exe"]:
+                continue
+            for file in process.open_files():
+                if path in file.path:
+                    return process.name()
+        except:
+            pass
+    return None
+
+def is_file_writable(path: str):
+    try:
+        if not os.path.exists(path):
+            return True
+        f=open(path, "a")
+        f.close()
+        return True
+    except Exception as e:
+        return False
 
 def guarantee_git():
     git_installed = install_git.is_git_installed()

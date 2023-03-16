@@ -5,7 +5,7 @@ import os
 import ffmpeg_helper
 import subprocess
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 input_path = ctx.path

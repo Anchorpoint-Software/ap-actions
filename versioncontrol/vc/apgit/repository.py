@@ -11,8 +11,8 @@ from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-
-import gc
+import logging
+import gc, subprocess, platform
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -250,10 +250,18 @@ class GitRepository(VCRepository):
         return state
 
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
+        self._check_index_lock()
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: return UpdateState.NO_REMOTE
         remote_url = self._get_remote_url(remote)
+
+        kwargs = {}
+        if rebase:
+            kwargs["rebase"] = True
+        else:
+            kwargs["ff"] = True
+            kwargs["no-commit"] = True
 
         state = UpdateState.OK
         try:
@@ -262,7 +270,7 @@ class GitRepository(VCRepository):
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
-            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, rebase=rebase):
+            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 
@@ -274,8 +282,9 @@ class GitRepository(VCRepository):
         return state
 
     def revert_changelist(self, changelist_id: str):
+        self._check_index_lock()
         try:
-            self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+            self.repo.git.revert(changelist_id, "-n")
             
             try:
                 # don't revert top-level gitattributes
@@ -284,24 +293,33 @@ class GitRepository(VCRepository):
             except:
                 pass
         except Exception as e:
-            self.repo.git.revert("--abort")
-            raise e
+            error = str(e)
+            if not "CONFLICT" in error:
+                self.repo.git.revert("--abort")
+                raise e
         
         self.repo.git.revert("--quit")
 
+    def undo_last_commit(self):
+        self.repo.git.reset("HEAD~")
+
     def restore_changelist(self, changelist_id: str):
+        self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
     def restore_files(self, files: list[str]):
+        self._check_index_lock()
         self.repo.git.checkout("--", *files)
 
     def clean(self):
         self.repo.git.clean("-fd")
 
     def restore_all_files(self):
+        self._check_index_lock()
         self.repo.git.checkout(".")
 
     def switch_branch(self, branch_name: str):
+        self._check_index_lock()
         split = branch_name.split("/")
         if len(split) > 1:
             try:
@@ -309,19 +327,126 @@ class GitRepository(VCRepository):
                 if remote:
                     branch_name = "/".join(split[1:])
             except Exception as e:
-                print(str(e))
+                # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
                 pass
+        
+        if self.has_pending_changes(True):
+            self.stash(True)
         
         self.repo.git.switch(branch_name)
         
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
 
-    def stash(self):
-        self.repo.git.stash()
+    def _get_stash_message(self):
+        branch = self.get_current_branch_name()
+        return f"!!Anchorpoint<{branch}>"
+    
+    def _get_stashes(self):
+        import re
+        stashes_raw = self.repo.git(no_pager=True).stash("list", "-z").split('\x00')
+        stashes = []
+        for raw_stash in stashes_raw:
+            try:
+                id = re.search("\{\d+\}", raw_stash).group().replace("}","").replace("{","")
+                msg = re.search(": .*", raw_stash).group().replace(": ", "")
+                branch_result = re.search("!!Anchorpoint<.*>", raw_stash)
+                if branch_result:
+                    branch = branch_result.group().replace("!!Anchorpoint<", "").replace(">", "")
+                else:
+                    branch = None
 
-    def pop_stash(self):
-        self.repo.git.stash("pop")
+                stashes.append(Stash(id, msg, branch))
+            except:
+                pass
+        return stashes
+
+    def stash(self, include_untracked: bool, paths: list[str] = None):
+        stash = self.get_branch_stash()
+        if stash:
+            raise FileExistsError(f"Stash on branch {stash.branch} already exists")
+
+        self._check_index_lock()
+        message = self._get_stash_message()
+        kwargs = {
+            "message": message
+            }
+        if include_untracked:
+            kwargs["include_untracked"] = True
+
+        if paths is not None:
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "stash_spec")
+                self._write_pathspec_file(paths, pathspec)
+                self.repo.git.stash(pathspec_from_file=pathspec, **kwargs)
+                return
+
+        self.repo.git.stash(**kwargs)
+
+    def pop_stash(self, stash: Optional[Stash] = None):
+        self._check_index_lock()
+        if not stash:
+            stash = self.get_branch_stash()
+        if stash:
+            self.repo.git.stash("pop", stash.id)
+        else:
+            raise Exception("No stash to pop")
+
+    def get_branch_stash(self) -> Optional[Stash]:
+        branch = self.get_current_branch_name()
+        stashes = self._get_stashes()
+        for stash in stashes:
+            if stash.branch == branch: 
+                return stash
+        return None
+    
+    def drop_stash(self, stash: Stash):
+        self.repo.git.stash("drop", stash.id)
+
+    def branch_has_stash(self):
+        return self.get_branch_stash() != None
+    
+    def get_stash_change_count(self, stash: Stash):
+        changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "--name-status").split('\n')
+        return len(changes)
+
+    def get_stash_changes(self, stash: Stash):
+        status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
+
+        changes = Changes()
+        i = 0
+        while i < len(status_and_changes):
+            try:
+                kind = status_and_changes[i]
+                if kind == "":
+                    break
+                filename = status_and_changes[i+1]
+                
+                if len(kind) > 1: #<X><score>
+                    renamed_filename = status_and_changes[i+2]
+                    i = i+3
+                else:
+                    i = i+2
+                    renamed_filename = None
+
+                if renamed_filename:
+                    change = Change(filename, renamed_filename)
+                else:
+                    change = Change(filename)
+                if kind.startswith("A"):
+                    changes.new_files.append(change)
+                elif kind.startswith("D"):
+                    changes.deleted_files.append(change)
+                elif kind.startswith("R"):
+                    changes.renamed_files.append(change)
+                else:
+                    changes.modified_files.append(change)
+                
+            except Exception as e:
+                print(f"error in list_stash_changes: {str(e)}")
+                break
+            
+        return changes
 
     def get_remote_url(self):
         if self.has_remote():
@@ -360,6 +485,8 @@ class GitRepository(VCRepository):
         import sys
         defenc = sys.getfilesystemencoding()
 
+        self._check_index_lock()
+
         # make sure we get all files, not only untracked directories
         proc = self.repo.git(no_pager=True).status(*args, "-z",
                                porcelain=True,
@@ -381,13 +508,14 @@ class GitRepository(VCRepository):
         return untracked_files
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
+        self._check_index_lock()
         changes = Changes()
         try:
             if staged:
                 if not self.is_unborn():
                     diff = self.repo.head.commit.diff()
                 else:
-                    diff = self.repo.index.diff(self._get_empty_tree_id())
+                    diff = self.repo.index.diff(self._get_empty_tree_id(), R=True)
             else:
                 diff = self.repo.index.diff(None) 
             
@@ -433,17 +561,37 @@ class GitRepository(VCRepository):
 
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
-        proc = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
-        proc.stderr.close()
-        if progress_callback:
-            for i, _ in enumerate(proc.stdout):
-                progress_callback(i+1,count-1)
-        finalize_process(proc)
+        self._check_index_lock()
+        try:
+            proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+            if progress_callback:
+                i = 0
+                while True:
+                    i = i + 1
+                    output = proc.stdout.readline()
+                    if not output and proc.poll() is not None:
+                        break
+                    if output:
+                        cont = progress_callback(i,count-1)
+                        if not cont:
+                            if platform.system() == "Windows":
+                                os.system(f"taskkill /F /T /PID {proc.pid}")
+                            else:
+                                proc.terminate()
+                            return
+                
+                if proc.returncode != 0:
+                    output = proc.stderr.read().decode("utf-8")
+                    raise Exception(f"Failed to call git add: {output}")
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
 
     def stage_all_files(self):
+        self._check_index_lock()
         self.repo.git.add(".")
 
     def unstage_all_files(self):
+        self._check_index_lock()
         self.repo.git.restore("--staged", ".")
 
     def stage_files(self, paths: list[str], progress_callback = None):
@@ -456,6 +604,7 @@ class GitRepository(VCRepository):
             self._add_files(len(paths), progress_callback, *paths)
 
     def unstage_files(self, paths: list[str]):
+        self._check_index_lock()
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "unstage_spec")
@@ -476,6 +625,7 @@ class GitRepository(VCRepository):
             self._add_files(len(paths), progress_callback, ".")
 
     def remove_files(self, paths: list[str]):
+        self._check_index_lock()
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "rm_spec")
@@ -485,6 +635,7 @@ class GitRepository(VCRepository):
             self.repo.git.rm(*paths)
 
     def commit(self, message: str):
+        self._check_index_lock()
         args = [install_git.get_git_cmd_path(), "commit", "-m", message]
         gpg = shutil.which("gpg")
         if not gpg:
@@ -509,9 +660,10 @@ class GitRepository(VCRepository):
         self.repo.git.lfs("track", rel_paths)
 
     def get_deleted_files(self):
+        self._check_index_lock()
         unstaged_files = []
         staged_files = []
-        status_lines = self.repo.git(no_pager=True).status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
@@ -530,13 +682,14 @@ class GitRepository(VCRepository):
         return unstaged_files, staged_files
 
     def get_conflicts(self):
+        self._check_index_lock()
         def is_conflict(status_ids: str):
             if len(status_ids) <= 1: return False
             if "U" in status_ids: return True
             return status_ids in ["DD", "AA"]
 
         conflicts = []
-        status_lines = self.repo.git(no_pager=True).status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
@@ -547,7 +700,9 @@ class GitRepository(VCRepository):
         return conflicts
 
     def has_conflicts(self):
-        return len(self.get_conflicts()) > 0
+        self._check_index_lock()
+        conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U")
+        return conflicts != None and len(conflicts) > 0
 
     def is_rebasing(self):
         repodir = self._get_repo_internal_dir()
@@ -557,9 +712,11 @@ class GitRepository(VCRepository):
         return False
         
     def continue_rebasing(self):
+        self._check_index_lock()
         self.repo.git(c = "core.editor=true").rebase("--continue")
 
     def abort_rebasing(self):
+        self._check_index_lock()
         self.repo.git.rebase("--abort")
 
     def is_merging(self):
@@ -567,9 +724,11 @@ class GitRepository(VCRepository):
         return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
 
     def continue_merge(self):
+        self._check_index_lock()
         self.repo.git(c = "core.editor=true").merge("--continue")
 
     def abort_merge(self):
+        self._check_index_lock()
         self.repo.git.merge("--abort")
 
     def _merge_gitattributes(self, file: str):
@@ -590,6 +749,7 @@ class GitRepository(VCRepository):
                 f.write(attr)
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
+        self._check_index_lock()
         if not paths:
             conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U", "-z").split('\x00')
             path_args = []
@@ -727,7 +887,7 @@ class GitRepository(VCRepository):
         local_commits = self._get_local_commits(self._has_upstream())
         
         for commit in local_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL, parents=self._get_commit_parents(commit,HistoryType.LOCAL)))
         return history
 
     def get_new_commits(self, base, target):
@@ -744,6 +904,13 @@ class GitRepository(VCRepository):
                 ids.add(commit.hexsha)
         
         return ids
+    
+    def _get_commit_parents(self, commit, type):
+        parents = []
+        if commit.parents:
+            for commit in commit.parents:
+                parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
+        return parents
 
     def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
         history = []
@@ -777,18 +944,30 @@ class GitRepository(VCRepository):
 
         except Exception as e:
             pass
-            
+     
         for commit in base_commits:
             if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type)))
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=self._get_commit_parents(commit,HistoryType.REMOTE)))
 
         return history
+    
+    def get_history_entry(self, entry_id: str):
+        commit = self.repo.commit(entry_id)
+        if commit:
+            remote_branches = self.repo.git.branch("-r", "--contains", entry_id)
+            if len(remote_branches) == 0:
+                type = HistoryType.LOCAL
+            else:
+                type = HistoryType.SYNCED if self.branch_contains(entry_id) else HistoryType.REMOTE
+            return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
+        return None
+
 
     def branch_contains(self, changelist_id: str):
         branch_name = self.get_current_branch_name()
@@ -868,3 +1047,19 @@ class GitRepository(VCRepository):
 
     def _get_repo_internal_dir(self):
         return os.path.join(self.repo.working_dir, ".git")
+
+    def _check_index_lock(self):
+        # check if the index is already locked
+        index_lock = os.path.join(self.get_git_dir(), "index.lock")
+        if os.path.exists(index_lock):
+            # check if git is running. If not, the index.lock is a leftover of a crashed git command
+            if utility.is_git_running():
+                raise PermissionError("Git process already running and the index is locked")
+            
+            # remove the leftover lock
+            try:
+                os.remove(index_lock)
+                logging.info(f"removed index.lock: {index_lock}")
+            except Exception as e:
+                logging.info(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
+                raise e

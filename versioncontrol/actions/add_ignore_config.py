@@ -53,7 +53,7 @@ def get_ignore_file_default(ignore_template_names, path: str):
     return None    
 
 if __name__ == "__main__":
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     ui = ap.UI()
     
     settings = aps.Settings("gitignore")

@@ -1,8 +1,8 @@
 import anchorpoint as ap
 import apsync as aps
 from typing import Optional
-import os
-import git_errors
+import os, logging
+import git_errors, platform
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
@@ -53,16 +53,16 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return info
 
-        is_merging = repo.is_rebasing() or repo.is_merging()
+        is_merging = repo.has_conflicts()
 
         if repo.has_remote() and not is_merging:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
                 pull.name = "Pull"
                 pull.icon = aps.Icon(":/icons/cloud.svg")
-                pull.identifier = "gitpullrebase"
+                pull.identifier = "gitpull"
                 pull.type = ap.ActionButtonType.Primary
-                pull.tooltip = "Get all changes from the remote Git repository"
+                pull.tooltip = "Get all changed files from the remote Git repository"
                 info.actions.append(pull)
             elif repo.is_push_required():
                 push = ap.TimelineChannelAction()
@@ -85,13 +85,13 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
             conflicts.type = ap.ActionButtonType.Danger
-            conflicts.tooltip = "Resolve conflicts from other commits or branches"
+            conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your shelved files"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
             cancel = ap.TimelineChannelAction()
             cancel.name = "Cancel"
-            cancel.identifier = "gitcancelrebase"
+            cancel.identifier = "gitcancelmerge"
             cancel.tooltip = "Cancel"
             cancel.icon = aps.Icon(":/icons/revert.svg")
             info.actions.append(cancel)
@@ -106,9 +106,15 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             if b.name == current_branch_name:
                 info.current_branch = branch
 
+        if "has_stash" in dir(info):
+            stash = repo.get_branch_stash()
+            info.has_stash = stash is not None
+            if info.has_stash:
+                info.stashed_file_count = repo.get_stash_change_count(stash)
+
         return info
     except Exception as e:
-        print (e)
+        logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -129,34 +135,69 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         history_list = list()
         try:
             history = repo.get_history(count, rev_spec=last_id)
-        except:
+        except Exception as e:
             return history_list
         
-        for commit in history:
+        def map_commit(commit):
             entry = ap.TimelineChannelEntry()
             entry.id = commit.id
             entry.user_email = commit.author
             entry.time = commit.date
             entry.message = commit.message
             entry.has_details = True
-            entry.caption = f"Made a Git Commit in {os.path.basename(path)}"
-
-            icon_color = "#90CAF9"
+            
+            icon_color = "#f3d582"
             if commit.type is HistoryType.LOCAL:
+                icon_color = "#fbbc9f"
                 entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
                 entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
             elif commit.type is HistoryType.REMOTE:
+                icon_color = "#90CAF9"
                 entry.icon = aps.Icon(":/icons/cloud.svg", icon_color)
                 entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
             elif commit.type is HistoryType.SYNCED:
                 entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
                 entry.tooltip = "This commit is in sync with your team"
-            
+
+            is_merge = len(commit.parents) > 1
+            if is_merge:
+                icon_color = "#9E9E9E"
+                entry.caption = f"Pulled and merged files"
+                entry.tooltip = entry.message
+                entry.message = ""
+                if commit.type is HistoryType.SYNCED:
+                    entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
+            else:
+                entry.caption = f"Committed in {os.path.basename(path)}"
+          
+            return entry
+
+        commits_to_pull = 0
+        newest_committime_to_pull = 0
+        for commit in history:
+            entry = map_commit(commit)
+            if "parents" in dir(entry):
+                parents_list = list()
+                for parent in commit.parents:
+                    parents_list.append(map_commit(parent))
+                entry.parents = parents_list
+
+            if commit.type is HistoryType.REMOTE:
+                commits_to_pull = commits_to_pull + 1
+                if newest_committime_to_pull < commit.date:
+                    newest_committime_to_pull = commit.date
+
             history_list.append(entry)
+
+        if "set_timeline_update_count" in dir(ap):
+            if newest_committime_to_pull > 0:
+                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
+            else:
+                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
 
         return history_list
     except Exception as e:
-        print (e)
+        print(e)
         return []
     finally:
         sys.path.remove(script_dir)
@@ -201,17 +242,31 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         info.actions.append(commit)
 
         revert = ap.TimelineChannelAction()
-        revert.name = "Revert All"
+        revert.name = "Revert"
         revert.identifier = "gitrevertall"
         revert.icon = aps.Icon(":/icons/revert.svg")
         revert.enabled = has_changes
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
-
+        revert.type = ap.ActionButtonType.SecondaryText
         info.actions.append(revert)
+
+        has_stash = repo.branch_has_stash()
+        
+        stash = ap.TimelineChannelAction()
+        stash.name = "Shelve"
+        stash.identifier = "gitstashfiles"
+        stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
+        stash.enabled = has_changes and not has_stash
+        stash.type = ap.ActionButtonType.SecondaryText
+        if has_stash:
+            stash.tooltip = "You already have shelved files. Restore or delete them first"
+        else:
+            stash.tooltip = "Puts all your selected files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
+        info.actions.append(stash)
 
         return info
     except Exception as e:
-        print (e)
+        logging.info (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -241,15 +296,66 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
 
-        if (repo.branch_contains(entry_id)):
+        if repo.branch_contains(entry_id):
             revert = ap.TimelineChannelAction()
             revert.name = "Undo Commit"
             revert.icon = aps.Icon(":/icons/undo.svg")
             revert.identifier = "gitrevertcommit"
             revert.type = ap.ActionButtonType.SecondaryText
-            revert.tooltip = "Undos all file changes from a commit. The files will show up in the uncommitted changes."
+            revert.tooltip = "Undos all file changes from a commit. The files will show up as changed files."
             details.actions.append(revert)
             
+        details.changes = ap.VCChangeList(changes.values())
+        return details
+    finally:
+        sys.path.remove(script_dir)
+
+def on_load_timeline_channel_stash_details(channel_id: str, ctx):
+    import sys, os
+    sys.path.insert(0, script_dir)
+    try:
+        from vc.apgit.utility import get_repo_path
+        from vc.apgit.repository import GitRepository
+
+        if channel_id != "Git": return None
+        details = ap.TimelineChannelEntryVCDetails()
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return details
+
+        stash = repo.get_branch_stash()
+        if not stash:
+            ap.UI().show_error("Could not find shelved files")
+            return None
+        
+        changes = dict[str,ap.VCPendingChange]()
+        parse_changes(repo.get_root_path(), repo.get_stash_changes(stash), changes)
+
+        has_changes = repo.has_pending_changes(True)
+
+        apply = ap.TimelineChannelAction()
+        apply.name = "Move to Changed Files"
+        apply.icon = aps.Icon(":/icons/restoreMultipleFiles.svg")
+        apply.identifier = "gitstashapply"
+        apply.type = ap.ActionButtonType.Primary
+        if not has_changes:
+            apply.enabled = True
+            apply.tooltip = "Moves all files from the shelf to the changed files."
+        else:
+            apply.enabled = False
+            apply.tooltip = "Unable to move shelved files when you already have changed files"
+
+        details.actions.append(apply)
+            
+        drop = ap.TimelineChannelAction()
+        drop.name = "Delete"
+        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
+        drop.identifier = "gitstashdrop"
+        drop.type = ap.ActionButtonType.SecondaryText
+        drop.tooltip = "Permanently deletes all files in the shelf (cannot be undone)"
+        details.actions.append(drop)       
+
         details.changes = ap.VCChangeList(changes.values())
         return details
     finally:
@@ -262,13 +368,21 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
     try:
-        from vc.apgit.utility import get_repo_path
+        from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
         if channel_id != "Git": return None
 
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
+
+        if repo.get_current_branch_name() == branch:
+            return
+        
+        if platform.system() == "Windows" or True:
+            if is_executable_running(["unrealeditor.exe"]):
+                ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
+                return
 
         progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
         try:
@@ -281,8 +395,6 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         except Exception as e:
             if not git_errors.handle_error(e):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
-            else:
-                ap.UI().show_info("Cannot switch branch")
             return
 
         if len(commits) > 0:
@@ -349,10 +461,8 @@ def refresh_async(channel_id: str, project_path):
         sys.path.remove(script_dir)
 
 def on_project_directory_changed(ctx):
-    if "vc_load_pending_changes" in dir(ap):
-        ap.vc_load_pending_changes("Git")
-    else:
-        ap.refresh_timeline_channel("Git")
+    ap.vc_load_pending_changes("Git")
+
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)

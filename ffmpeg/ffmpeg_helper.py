@@ -23,7 +23,7 @@ def get_ffmpeg_fullpath():
     return os.path.normpath(dir)
 
 def _install_ffmpeg_async(callback, *args, **kwargs):
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     if not os.path.isdir(_get_ffmpeg_dir()):
         os.mkdir(_get_ffmpeg_dir())
     
@@ -45,7 +45,7 @@ def _install_ffmpeg_async(callback, *args, **kwargs):
     ctx.run_async(callback, *args, **kwargs)
 
 def _install_ffmpeg(dialog, callback, *args, **kwargs):
-    ap.Context.instance().run_async(_install_ffmpeg_async, callback, *args, **kwargs)
+    ap.get_context().run_async(_install_ffmpeg_async, callback, *args, **kwargs)
     dialog.close()
 
 def _ffmpeg_install_dialog(callback, *args, **kwargs):
@@ -57,7 +57,7 @@ def _ffmpeg_install_dialog(callback, *args, **kwargs):
     dialog.show()
 
 def guarantee_ffmpeg(callback, *args, **kwargs):
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
 
     # First, check if the tool can be found on the machine
     ffmpeg_path = get_ffmpeg_fullpath()

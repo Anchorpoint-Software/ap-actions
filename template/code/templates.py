@@ -5,7 +5,7 @@ from datetime import datetime
 
 import template_utility
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 target_folder = ctx.path

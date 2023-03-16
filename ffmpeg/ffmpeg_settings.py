@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 import os, platform
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 settings = aps.Settings("ffmpeg_settings")
 
 framerate_var = "25"

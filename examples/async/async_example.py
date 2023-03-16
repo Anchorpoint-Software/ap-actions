@@ -1,7 +1,7 @@
 import anchorpoint as ap
 import time
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 
 def long_running_function(run_for_seconds):
     # Update every 100ms just to see progress in the UI more frequent

@@ -8,7 +8,7 @@ import zipfile
 import anchorpoint as ap
 import requests
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 show_menu = None

@@ -54,6 +54,7 @@ def pull_async(channel_id: str, project_path):
         elif state == UpdateState.CONFLICT:
             ui.show_info("Conflicts detected", "Please resolve your conflicts or abort the rebase")    
             ap.refresh_timeline_channel(channel_id)
+            ap.vc_resolve_conflicts(channel_id)
             progress.finish()
             return
         elif state == UpdateState.CANCEL:

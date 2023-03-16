@@ -196,7 +196,7 @@ def setup_mount(drive, workspace_id, configuration):
 
     arguments = base_arguments + config_arguments + rclone_arguments
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     if isWin():
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
@@ -462,5 +462,5 @@ def on_application_started(ctx: ap.Context):
     
 
 if __name__ == "__main__":
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
