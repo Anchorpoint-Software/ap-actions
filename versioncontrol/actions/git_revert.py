@@ -91,6 +91,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     if action_id != "gitrevert": return False
 
     revert_all = len(changes) == len(ctx.selected_files)
+    if len(ctx.selected_files) == 0:
+        ap.UI().show_success("No Files Selected")
+        return True
 
     dialog = ap.Dialog()
     dialog.title = "Revert Files"
