@@ -307,9 +307,17 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str]):
+    def restore_files(self, files: list[str], changelist_id: Optional[str]):
         self._check_index_lock()
-        self.repo.git.checkout("--", *files)
+     
+        with tempfile.TemporaryDirectory() as dirpath:
+            pathspec = os.path.join(dirpath, "restore_spec")
+            self._write_pathspec_file(files, pathspec)
+            if changelist_id:
+                self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
+            else:
+                self.repo.git.checkout(pathspec_from_file=pathspec)
+            
 
     def clean(self):
         self.repo.git.clean("-fd")

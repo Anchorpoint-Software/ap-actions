@@ -242,7 +242,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         info.actions.append(commit)
 
         revert = ap.TimelineChannelAction()
-        revert.name = "Revert Files"
+        revert.name = "Revert"
         revert.identifier = "gitrevert"
         revert.icon = aps.Icon(":/icons/revert.svg")
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
@@ -251,7 +251,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         has_stash = repo.branch_has_stash()
         
         stash = ap.TimelineChannelAction()
-        stash.name = "Shelve Files"
+        stash.name = "Shelve"
         stash.identifier = "gitstashfiles"
         stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
         stash.enabled = not has_stash
@@ -299,8 +299,22 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.icon = aps.Icon(":/icons/undo.svg")
             revert.identifier = "gitrevertcommit"
             revert.type = ap.ActionButtonType.SecondaryText
-            revert.tooltip = "Undos all file changes from a commit. The files will show up as changed files."
+            revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
             details.actions.append(revert)
+
+            revert_entry = ap.TimelineChannelAction()
+            revert_entry.name = "Undo"
+            revert_entry.icon = aps.Icon(":/icons/undo.svg")
+            revert_entry.identifier = "gitrevertcommitfiles"
+            revert_entry.tooltip = "Undoes all changes to the selected files from this commit. The files will show up as changed files."
+            details.entry_actions.append(revert_entry)
+
+            restore_entry = ap.TimelineChannelAction()
+            restore_entry.name = "Restore"
+            restore_entry.icon = aps.Icon(":/icons/restore.svg")
+            restore_entry.identifier = "gitrestorecommitfiles"
+            restore_entry.tooltip = "Restores the selected files from this commit. The files will show up as changed files."
+            details.entry_actions.append(restore_entry)
             
         details.changes = ap.VCChangeList(changes.values())
         return details

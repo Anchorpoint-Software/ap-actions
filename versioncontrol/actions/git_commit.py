@@ -69,6 +69,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     import git_lfs_helper as lfs
     if action_id != "gitcommit": return False
     ui = ap.UI()
+    
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
     try:
         path = get_repo_path(channel_id, ctx.project_path)

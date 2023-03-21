@@ -28,7 +28,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
         if not utility.is_file_writable(path):
             error = f"error: unable to unlink '{relpath}':"
             if not git_errors.handle_error(error):
-                ui.show_info("Could not shelve files", f"A file is not writable: {relpath}", duration=6000)
+                ui.show_info("Could not revert files", f"A file is not writable: {relpath}", duration=6000)
             return True
         
     try:
@@ -104,49 +104,164 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
     return True
 
-def undo(path: str, entry_id: str, channel_id: str, shelve: bool):
+def undo(path: str, entry_id: str, channel_id: str):
     ui = ap.UI()
     try:
         progress = ap.Progress("Undoing Commit", show_loading_screen=True)
         repo = GitRepository.load(path)
-
-        if shelve:
-            repo.stash(True)
-
         repo.revert_changelist(entry_id)
 
         ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
 
-        if shelve:
-            ui.show_success("Undo succeeded", "We have shelved all your changed files")
-        else:
-            ui.show_success("Undo succeeded")
+        ui.show_success("Undo succeeded")
 
     except Exception as e:
         if not git_errors.handle_error(e):
             logging.info(str(e))
             ui.show_error("Undo Failed", str(e))
 
-def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
-    if action_id != "gitrevertcommit": return False
+def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
     ui = ap.UI()
+    try:
+        progress = ap.Progress("Undoing File Changes", show_loading_screen=True)
+        repo = GitRepository.load(path)
+        repo_root = repo.get_root_path()
+
+        # Check if any file to revert is locked by an application
+        relative_selected_paths = set()
+        for path in files:
+            relpath = os.path.relpath(path, repo_root)
+            relative_selected_paths.add(relpath)
+            if not utility.is_file_writable(path):
+                error = f"error: unable to unlink '{relpath}':"
+                if not git_errors.handle_error(error):
+                    ui.show_info("Could not undo files", f"A file is not writable: {relpath}", duration=6000)
+                return True
+            
+        changes = repo.get_changes_for_changelist(entry_id)
+        paths_to_delete = []
+        for added_file in changes.new_files:
+            if added_file.path in relative_selected_paths:
+                relative_selected_paths.remove(added_file.path)
+                paths_to_delete.append(os.path.join(repo_root, added_file.path))
+
+        if len(relative_selected_paths) > 0:
+            repo.restore_files(list(relative_selected_paths), entry_id + "~")
+        for path in paths_to_delete:
+            os.remove(path)
+
+        ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
+
+        ui.show_success("Undo succeeded")
+
+    except Exception as e:
+        if not git_errors.handle_error(e):
+            logging.info(str(e))
+            ui.show_error("Undo Failed", str(e))
+
+def restore_files(path: str, files: list[str], entry_id: str, channel_id: str):
+    ui = ap.UI()
+    if len(files) == 0:
+        ap.UI().show_success("No Files Selected")
 
     try:
-        path = get_repo_path(channel_id, ctx.project_path)
+        progress = ap.Progress("Restoring Files", show_loading_screen=True)
         repo = GitRepository.load(path)
-        if not repo: return
+        repo_root = repo.get_root_path()
+ 
+         # Check if any file to revert is locked by an application
+        relative_selected_paths = set()
+        for path in files:
+            relpath = os.path.relpath(path, repo_root)
+            relative_selected_paths.add(relpath)
+            if not utility.is_file_writable(path):
+                error = f"error: unable to unlink '{relpath}':"
+                if not git_errors.handle_error(error):
+                    ui.show_info("Could not restore files", f"A file is not writable: {relpath}", duration=6000)
+                return True
+            
+        changes = repo.get_changes_for_changelist(entry_id)
+        for deleted_file in changes.deleted_files:
+            if deleted_file.path in relative_selected_paths:
+                relative_selected_paths.remove(deleted_file.path)
 
-        if repo.has_pending_changes(True):
-            ui.show_info("Cannot undo commit", "You have changed files. Commit them and try again")
-            return True
-        else:
-            undo(path, entry_id, channel_id, False)
-            ap.refresh_timeline_channel(channel_id)
+        if len(relative_selected_paths) == 0:
+            ui.show_success("Files Restored", "Nothing to restore")
+            return
+
+        repo.restore_files(list(relative_selected_paths), entry_id)
+
+        ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
+
+        ui.show_success("Files Restored")
 
     except Exception as e:
         if not git_errors.handle_error(e):
             logging.info(str(e))
-            ui.show_error("Undo Failed", str(e))
-    finally:
-        return True
+            ui.show_error("Restore Failed", str(e))
+
+def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
+    ui = ap.UI()
+    if action_id == "gitrevertcommit":
+        try:
+            path = get_repo_path(channel_id, ctx.project_path)
+            repo = GitRepository.load(path)
+            if not repo: return
+
+            if repo.has_pending_changes(True):
+                ui.show_info("Cannot undo commit", "You have changed files. Commit them and try again")
+                return True
+            else:
+                undo(path, entry_id, channel_id)
+                ap.refresh_timeline_channel(channel_id)
+
+        except Exception as e:
+            if not git_errors.handle_error(e):
+                logging.info(str(e))
+                ui.show_error("Undo Failed", str(e))
+        finally:
+            return True
+    if action_id == "gitrestorecommitfiles":
+        try:
+            path = get_repo_path(channel_id, ctx.project_path)
+            repo = GitRepository.load(path)
+            if not repo: return
+
+            if repo.has_pending_changes(True):
+                ui.show_info("Cannot restore files", "You have changed files. Commit them and try again")
+                return True
+            else:
+                restore_files(path, ctx.selected_files, entry_id, channel_id)
+                ap.refresh_timeline_channel(channel_id)
+
+        except Exception as e:
+            if not git_errors.handle_error(e):
+                logging.info(str(e))
+                ui.show_error("Restore Failed", str(e))
+        finally:
+            return True
+        
+    if action_id == "gitrevertcommitfiles":
+        try:
+            path = get_repo_path(channel_id, ctx.project_path)
+            repo = GitRepository.load(path)
+            if not repo: return
+
+            if repo.has_pending_changes(True):
+                ui.show_info("Cannot undo files", "You have changed files. Commit them and try again")
+                return True
+            else:
+                undo_files(path, ctx.selected_files, entry_id, channel_id)
+                ap.refresh_timeline_channel(channel_id)
+
+        except Exception as e:
+            if not git_errors.handle_error(e):
+                logging.info(str(e))
+                ui.show_error("Undo Failed", str(e))
+        finally:
+            return True
+
+    return False
