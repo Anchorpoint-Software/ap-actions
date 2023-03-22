@@ -564,6 +564,7 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         try:
             proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+            proc.stderr.close()
             if progress_callback:
                 i = 0
                 while True:
@@ -581,8 +582,7 @@ class GitRepository(VCRepository):
                             return
                 
                 if proc.returncode != 0:
-                    output = proc.stderr.read().decode("utf-8")
-                    raise Exception(f"Failed to call git add: {output}")
+                    raise Exception(f"Failed to call git add")
         except subprocess.CalledProcessError as e:
             raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
 
