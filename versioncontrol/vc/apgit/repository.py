@@ -307,7 +307,7 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str], changelist_id: Optional[str]):
+    def restore_files(self, files: list[str], changelist_id: Optional[str] = None):
         self._check_index_lock()
      
         with tempfile.TemporaryDirectory() as dirpath:
