@@ -188,15 +188,23 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str):
                 relative_selected_paths.remove(deleted_file.path)
 
         if len(relative_selected_paths) == 0:
-            ui.show_success("Files Restored", "Nothing to restore")
+            ui.show_success("Nothing to restore")
             return
 
         repo.restore_files(list(relative_selected_paths), entry_id)
 
+        changes = repo.get_pending_changes(True)
+        restored_files = changes.size()
+        if restored_files == 1:
+            ui.show_success("Restore Successful", "One file has been restored")
+        elif restored_files > 1:
+            ui.show_success("Restore Successful", f"{restored_files} files have been restored")
+        else:
+            ui.show_info("Nothing to restore", "The files are already the selected version")
+
         ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
 
-        ui.show_success("Files Restored")
 
     except Exception as e:
         if not git_errors.handle_error(e):
