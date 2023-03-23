@@ -141,7 +141,9 @@ def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
             
         changes = repo.get_changes_for_changelist(entry_id)
         paths_to_delete = []
+        print(f"{relative_selected_paths}: relative_selected_paths")
         for added_file in changes.new_files:
+            print(f"{added_file.path}: added_file.path")
             if added_file.path in relative_selected_paths:
                 relative_selected_paths.remove(added_file.path)
                 paths_to_delete.append(os.path.join(repo_root, added_file.path))
