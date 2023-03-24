@@ -7,7 +7,7 @@ parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
-from vc.apgit.utility import get_repo_path
+from vc.apgit.utility import get_repo_path, GIT_COMMIT_AUTO_PUSH
 sys.path.remove(parent_dir)
 
 def stage_files(changes, all_files_selected, repo, lfs, progress):
@@ -65,6 +65,77 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
         else:
             raise e
 
+def push_changes(repo: GitRepository, channel_id: str):
+    import sys
+    script_dir = os.path.dirname(__file__)
+    sys.path.insert(0, script_dir)
+    from git_push import PushProgress, show_push_failed
+    if script_dir in sys.path:
+        sys.path.remove(script_dir)
+
+    try:
+        progress = ap.Progress("Pushing Git Changes", cancelable=True)
+        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
+        ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
+        state = repo.push(progress=PushProgress(progress))
+        if state == UpdateState.CANCEL:
+            ap.UI().show_info("Push Canceled")
+        elif state != UpdateState.OK:
+            show_push_failed("", channel_id, repo.get_root_path())    
+        else:
+            ap.UI().show_success("Push Successful")
+    except Exception as e:
+        show_push_failed(str(e), channel_id, repo.get_root_path())
+    finally:
+        ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
+        ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
+        ap.refresh_timeline_channel(channel_id)
+
+def pull_changes(repo: GitRepository, channel_id: str):
+    from git_pull import pull
+    
+    rebase = False
+    if rebase: raise NotImplementedError()
+
+    try:
+        if not pull(repo, channel_id):
+            raise Exception("Pull Failed")
+        
+        ap.vc_load_pending_changes(channel_id, True)
+        ap.refresh_timeline_channel(channel_id)
+
+    except Exception as e:
+        print(e)
+        raise e
+    
+def repo_needs_pull(repo: GitRepository):
+    progress = ap.Progress("Looking for Changes on Server", show_loading_screen=True, cancelable=True)
+    
+    try:
+        repo.fetch()
+        return repo.is_pull_required(), progress.canceled
+    except Exception as e:
+        ap.UI().show_info("Could not get remote changes", "Your changed files have been committed, you can push them manually to the server", duration = 8000)
+        raise e
+    
+
+def commit_auto_push(repo: GitRepository, channel_id: str):
+    ui = ap.UI()
+    pull_required, canceled = repo_needs_pull(repo)
+    if canceled:
+        ui.show_success("Push canceled")
+    if not pull_required:
+        push_changes(repo, channel_id)
+    else:
+        try:
+            pull_changes(repo, channel_id)
+        except:
+            return
+
+        # Queue async to give Anchorpoint a chance to update the timeline
+        ap.get_context().run_async(push_changes, repo, channel_id)
+
+
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     import git_lfs_helper as lfs
     if action_id != "gitcommit": return False
@@ -93,16 +164,19 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             repo.set_username(ctx.username, ctx.email, ctx.project_path)
 
         repo.commit(message)
-        ui.show_success("Commit succeeded")
+
+        if GIT_COMMIT_AUTO_PUSH:
+            print("auto push enabled")
+            progress.finish()
+            commit_auto_push(repo, channel_id)
+        else:
+            ui.show_success("Commit succeeded")
         
     except Exception as e:
         print(str(e))
         ui.show_error("Commit Failed", str(e).splitlines()[0])
         raise e
     finally:
-        try:
-            ap.vc_load_pending_changes(channel_id, True)
-        except:
-            ap.vc_load_pending_changes(channel_id)
+        ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
         return True
