@@ -141,6 +141,10 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     if action_id != "gitcommit": return False
     ui = ap.UI()
     
+    from git_settings import GitSettings
+    git_settings = GitSettings(ctx)
+    auto_push = git_settings.auto_push_enabled()
+
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
     try:
         path = get_repo_path(channel_id, ctx.project_path)
@@ -165,7 +169,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
         repo.commit(message)
 
-        if GIT_COMMIT_AUTO_PUSH:
+        if auto_push:
             print("auto push enabled")
             progress.finish()
             commit_auto_push(repo, channel_id)

@@ -4,6 +4,7 @@ from typing import Optional
 import os, logging
 import git_errors, platform
 
+current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
 def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool) -> ap.VCPendingChange:
@@ -114,10 +115,13 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
         return info
     except Exception as e:
-        logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
+        print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except Exception as e: 
+            pass
 
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
@@ -200,14 +204,22 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         print(e)
         return []
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except Exception as e: 
+            pass
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
         import sys, os
+        sys.path.insert(0, current_dir)
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
+
+        from git_settings import GitSettings
+        git_settings = GitSettings(ctx)
+        auto_push = git_settings.auto_push_enabled()
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
@@ -229,16 +241,16 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
-        commit.name = "Commit"
+        commit.name = "Commit" if not auto_push else "Push"
         commit.identifier = "gitcommit"
         commit.icon = aps.Icon(":/icons/submit.svg")
         commit.type = ap.ActionButtonType.Primary
         if is_rebasing:
             commit.enabled = False
-            commit.tooltip = "Cannot commit when resolving conflicts"
+            commit.tooltip = "Cannot commit when resolving conflicts" if not auto_push else "Cannot push when resolving conflicts"
         else:
             commit.enabled = has_changes
-            commit.tooltip = "Commit your changes to Git"
+            commit.tooltip = "Commit your changes to Git" if not auto_push else "Push your changes to Git"
         info.actions.append(commit)
 
         revert = ap.TimelineChannelAction()
@@ -266,7 +278,11 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+            sys.path.remove(current_dir)
+        except Exception as e: 
+            pass
 
 
 def run_func_wrapper(func, callback, *args):
@@ -318,8 +334,13 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             
         details.changes = ap.VCChangeList(changes.values())
         return details
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except Exception as e: 
+            pass
 
 def on_load_timeline_channel_stash_details(channel_id: str, ctx):
     import sys, os
@@ -369,8 +390,13 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
 
         details.changes = ap.VCChangeList(changes.values())
         return details
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except Exception as e: 
+            pass
 
 def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str, callback, ctx):
     ctx.run_async(run_func_wrapper, on_load_timeline_channel_entry_details, callback, channel_id, entry_id, ctx)
@@ -410,8 +436,13 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
 
         if len(commits) > 0:
             ap.delete_timeline_channel_entries(channel_id, list(commits))
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except Exception as e: 
+            pass
 
 def on_vc_create_branch(channel_id: str, branch: str, ctx):
     import sys
@@ -432,8 +463,13 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
         except Exception as e:
             ap.UI().show_info("Cannot create branch")
             return
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except: 
+            pass
 
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
@@ -469,7 +505,10 @@ def refresh_async(channel_id: str, project_path):
     except Exception as e:
         pass
     finally:
-        sys.path.remove(script_dir)
+        try:
+            sys.path.remove(script_dir)
+        except Exception as e: 
+            pass
 
 def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
