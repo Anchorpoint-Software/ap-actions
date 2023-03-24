@@ -57,8 +57,13 @@ def _parse_lfs_status(progress, line: str):
             index = line.find("batch response: ")
             if index >= 0:
                 import anchorpoint
-                error_message = line[index:]
-                anchorpoint.UI().show_error("Git LFS Error", error_message, duration=8000)
+                if "This repository is over its data quota" in line:
+                    title = "The GitHub LFS limit has been reached"
+                    error_message = "To solve the problem open your GitHub Billing and Plans page and buy more Git LFS Data."
+                else :
+                    title = "Git LFS Error"
+                    error_message = line[index:]
+                anchorpoint.UI().show_error(title, error_message, duration=10000)
 
     except Exception as e:
         print(e)
