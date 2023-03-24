@@ -42,35 +42,33 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     
     ui = ap.UI()
 
+    if len(ctx.selected_files) == 0:
+        ui.show_success("No Files Selected")
+        return True
+
     try:
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Shelving Files", show_loading_screen=True)
+
+        stash_all = len(changes) == len(ctx.selected_files)
         
         # Check if any file to stash is locked by an application
-        for change in changes:
-            path = change.path
+        relative_selected_files = []
+        for path in ctx.selected_files:
+            relpath = os.path.relpath(path, repo.get_root_path())
+            relative_selected_files.append(relpath)
             if not utility.is_file_writable(path):
-                relpath = os.path.relpath(path, repo.get_root_path())
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error):
                     ui.show_info("Could not shelve files", f"A file is not writable: {relpath}", duration=6000)
                 return True
 
-        repo.stash(True)
-
-        # if all_files_selected:
-        #     repo.stash(True)
-        # else:
-        #     to_stash = []
-        #     for change in changes:
-        #         if change.selected:
-        #             to_stash.append(change.path)
-        #     if len(to_stash) == 0:
-        #         ui.show_success("No Files Selected")
-        #         return True
-        #     repo.stash(True, to_stash)
+        if stash_all:
+            repo.stash(True)
+        else:
+            repo.stash(True, relative_selected_files)
 
         try:
             ap.vc_load_pending_changes(channel_id, True)

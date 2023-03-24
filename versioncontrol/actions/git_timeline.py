@@ -243,12 +243,10 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         revert = ap.TimelineChannelAction()
         revert.name = "Revert"
-        revert.identifier = "gitrevertall"
+        revert.identifier = "gitrevert"
         revert.icon = aps.Icon(":/icons/revert.svg")
-        revert.enabled = has_changes
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
-        revert.type = ap.ActionButtonType.SecondaryText
-        info.actions.append(revert)
+        info.entry_actions.append(revert)
 
         has_stash = repo.branch_has_stash()
         
@@ -256,17 +254,16 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         stash.name = "Shelve"
         stash.identifier = "gitstashfiles"
         stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
-        stash.enabled = has_changes and not has_stash
-        stash.type = ap.ActionButtonType.SecondaryText
+        stash.enabled = not has_stash
         if has_stash:
             stash.tooltip = "You already have shelved files. Restore or delete them first"
         else:
             stash.tooltip = "Puts all your selected files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
-        info.actions.append(stash)
+        info.entry_actions.append(stash)
 
         return info
     except Exception as e:
-        logging.info (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
+        print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
         sys.path.remove(script_dir)
@@ -302,8 +299,22 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.icon = aps.Icon(":/icons/undo.svg")
             revert.identifier = "gitrevertcommit"
             revert.type = ap.ActionButtonType.SecondaryText
-            revert.tooltip = "Undos all file changes from a commit. The files will show up as changed files."
+            revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
             details.actions.append(revert)
+
+            revert_entry = ap.TimelineChannelAction()
+            revert_entry.name = "Undo"
+            revert_entry.icon = aps.Icon(":/icons/undo.svg")
+            revert_entry.identifier = "gitrevertcommitfiles"
+            revert_entry.tooltip = "Undoes all changes to the selected files from this commit. The files will show up as changed files."
+            details.entry_actions.append(revert_entry)
+
+            restore_entry = ap.TimelineChannelAction()
+            restore_entry.name = "Restore"
+            restore_entry.icon = aps.Icon(":/icons/restore.svg")
+            restore_entry.identifier = "gitrestorecommitfiles"
+            restore_entry.tooltip = "Restores the selected files from this commit. The files will show up as changed files."
+            details.entry_actions.append(restore_entry)
             
         details.changes = ap.VCChangeList(changes.values())
         return details

@@ -36,7 +36,7 @@ class VCRepository:
     def update(self, progress: Optional[Progress] = None) -> UpdateState:
         pass
 
-    def restore_files(self, files: list[str]):
+    def restore_files(self, files: list[str], changelist_id: Optional[str]):
         pass
 
     def get_pending_changes(self, checked_out: bool = False) -> Changes:
