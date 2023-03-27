@@ -9,7 +9,7 @@ sys.path.insert(0, script_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-sys.path.remove(script_dir)
+if script_dir in sys.path : sys.path.remove(script_dir)
 
 def revert(channel_id, project_path, new_files, selected_files: list[str], changes, revert_all = False):
     ui = ap.UI()

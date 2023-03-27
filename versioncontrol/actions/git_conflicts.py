@@ -9,7 +9,7 @@ sys.path.insert(0, script_dir)
 
 from vc.apgit.repository import * 
 from vc.models import ConflictResolveState
-sys.path.remove(script_dir)
+if script_dir in sys.path: sys.path.remove(script_dir)
 
 def cancel_merge(channel_id, project_path):
     from vc.apgit.utility import get_repo_path

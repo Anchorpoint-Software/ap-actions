@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     import platform
     import git_repository_helper as helper
-    sys.path.remove(script_dir)
+    if script_dir in sys.path: sys.path.remove(script_dir)
 
     ctx = ap.get_context()
     ui = ap.UI()

@@ -8,7 +8,8 @@ sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-sys.path.remove(parent_dir)
+if parent_dir in sys.path:
+    sys.path.remove(parent_dir)
 
 def stage_files(changes, all_files_selected, repo, lfs, progress):
     def lfs_progress_callback(current, max):

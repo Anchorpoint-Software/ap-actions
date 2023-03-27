@@ -5,7 +5,7 @@ import platform, sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.apgit.utility as utility
-sys.path.remove(script_dir)
+if script_dir in sys.path: sys.path.remove(script_dir)
 
 def _guess_application(error_message: str):
     known_applications = {

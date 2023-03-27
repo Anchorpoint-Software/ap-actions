@@ -56,7 +56,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
         has_conflicts = repo.has_conflicts()
         is_merging = repo.is_rebasing() or repo.is_merging()
-
+    
         if repo.has_remote() and not has_conflicts:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
@@ -120,11 +120,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
-        try:
-            sys.path.remove(script_dir)
-        except Exception as e: 
-            pass
-
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
         import sys, os
@@ -132,6 +129,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
         from vc.models import HistoryType
+        if script_dir in sys.path: sys.path.remove(script_dir)
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
@@ -203,13 +201,9 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
         return history_list
     except Exception as e:
-        print(e)
+        print(f"on_load_timeline_channel_entries exception: {str(e)}")
         return []
-    finally:
-        try:
-            sys.path.remove(script_dir)
-        except Exception as e: 
-            pass
+        
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
@@ -280,11 +274,9 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
-        try:
-            sys.path.remove(script_dir)
-            sys.path.remove(current_dir)
-        except Exception as e: 
-            pass
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        if current_dir in sys.path: sys.path.remove(current_dir)
+
 
 
 def run_func_wrapper(func, callback, *args):
@@ -339,10 +331,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     except Exception as e:
         raise e
     finally:
-        try:
-            sys.path.remove(script_dir)
-        except Exception as e: 
-            pass
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 
 def on_load_timeline_channel_stash_details(channel_id: str, ctx):
     import sys, os
@@ -395,10 +385,7 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
     except Exception as e:
         raise e
     finally:
-        try:
-            sys.path.remove(script_dir)
-        except Exception as e: 
-            pass
+        if script_dir in sys.path: sys.path.remove(script_dir)
 
 def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str, callback, ctx):
     ctx.run_async(run_func_wrapper, on_load_timeline_channel_entry_details, callback, channel_id, entry_id, ctx)
@@ -441,11 +428,8 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     except Exception as e:
         raise e
     finally:
-        try:
-            sys.path.remove(script_dir)
-        except Exception as e: 
-            pass
-
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 def on_vc_create_branch(channel_id: str, branch: str, ctx):
     import sys
     sys.path.insert(0, script_dir)
@@ -468,11 +452,8 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
     except Exception as e:
         raise e
     finally:
-        try:
-            sys.path.remove(script_dir)
-        except: 
-            pass
-
+        if script_dir in sys.path : sys.path.remove(script_dir)
+        
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -505,13 +486,11 @@ def refresh_async(channel_id: str, project_path):
             os.remove(lockfile)
 
     except Exception as e:
+        print("refresh_async exception: " + str(e))
         pass
     finally:
-        try:
-            sys.path.remove(script_dir)
-        except Exception as e: 
-            pass
-
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
 

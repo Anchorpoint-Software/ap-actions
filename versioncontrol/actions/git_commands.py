@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     from vc.apgit.repository import * 
     from vc.apgit.utility import get_repo_path
-    sys.path.remove(script_dir)
+    if script_dir in sys.path: sys.path.remove(script_dir)
 
     ctx = ap.get_context()
     project_path = ctx.project_path

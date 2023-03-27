@@ -32,9 +32,10 @@ def change_remote_switch(dialog: ap.Dialog, remote_enabled):
     dialog.hide_row("url", not remote_enabled)
 
 def add_git_ignore(repo, context, project_path, ignore_value = None):
-    sys.path.insert(0, os.path.dirname(__file__))
+    script_dir = os.path.dirname(__file__)
+    sys.path.insert(0, script_dir)
     import add_ignore_config
-    sys.path.pop(0)
+    if script_dir in sys.path: sys.path.remove(script_dir)
     repo.ignore(".ap/project.json", local_only=True)
     repo.ignore("*.approj", local_only=True)
     if platform.system() == "Darwin":
@@ -65,7 +66,7 @@ try:
 
             import git_repository_helper as githelper
             import vc.apgit_utility.install_git as install_git
-            sys.path.remove(script_dir)
+            if script_dir in sys.path: sys.path.remove(script_dir)
 
             self.git_installed = install_git.is_git_installed()
             self.dialog = ap.Dialog()
