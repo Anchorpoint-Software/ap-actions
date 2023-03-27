@@ -54,9 +54,10 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return info
 
-        is_merging = repo.has_conflicts()
+        has_conflicts = repo.has_conflicts()
+        is_merging = repo.is_rebasing() or repo.is_merging()
 
-        if repo.has_remote() and not is_merging:
+        if repo.has_remote() and not has_conflicts:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
                 pull.name = "Pull"
@@ -81,7 +82,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         refresh.tooltip = "Refresh the Git timeline"
         info.actions.append(refresh)
     
-        if is_merging:
+        if has_conflicts:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
@@ -90,12 +91,13 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
-            cancel = ap.TimelineChannelAction()
-            cancel.name = "Cancel"
-            cancel.identifier = "gitcancelmerge"
-            cancel.tooltip = "Cancel"
-            cancel.icon = aps.Icon(":/icons/revert.svg")
-            info.actions.append(cancel)
+            if is_merging:
+                cancel = ap.TimelineChannelAction()
+                cancel.name = "Cancel"
+                cancel.identifier = "gitcancelmerge"
+                cancel.tooltip = "Cancel"
+                cancel.icon = aps.Icon(":/icons/revert.svg")
+                info.actions.append(cancel)
 
         current_branch_name = repo.get_current_branch_name()
         branches = repo.get_branches()
