@@ -83,7 +83,7 @@ def pull(repo: GitRepository, channel_id: str):
         ui.show_error("Failed to update Git Repository")    
         return False
     else:
-        if repo.has_pending_changes(True):
+        if repo.is_merging():
             repo.continue_merge()
         
         if stashed_changes:
