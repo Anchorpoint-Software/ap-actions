@@ -84,7 +84,11 @@ def pull(repo: GitRepository, channel_id: str):
         return False
     else:
         if repo.is_merging():
-            repo.continue_merge()
+            try:
+                repo.continue_merge()
+            except Exception as e:
+                if "There is no merge in progress" in str(e):
+                    pass
         
         if stashed_changes:
             progress.set_text("Restoring Shelved Files")
