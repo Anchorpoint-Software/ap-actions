@@ -85,9 +85,13 @@ def pull_async(channel_id: str, project_path):
         elif state != UpdateState.OK:
             ui.show_error("Failed to update Git Repository")    
         else:
-            if repo.has_pending_changes(True):
-                repo.continue_merge()
-            
+            if repo.is_merging():
+                try:
+                    repo.continue_merge()
+                except Exception as e:
+                    if "There is no merge in progress" in str(e):
+                        pass
+                    
             if stashed_changes:
                 progress.set_text("Restoring Shelved Files")
                 repo.pop_stash()        
