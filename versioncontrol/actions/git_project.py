@@ -19,13 +19,23 @@ def validate_url(dialog: ap.Dialog, value):
     else:
         return
 
-def path_changed(dialog: ap.Dialog, path, ctx):
+def get_repo_url(git, path):
+    repo = git.GitRepository.load(path)
+    if repo:
+        return repo.get_remote_url()
+    return None
+
+def path_changed(dialog: ap.Dialog, git, path, ctx):
     from add_ignore_config import get_ignore_file_types, get_ignore_file_default, NO_IGNORE
     dropdown_values = get_ignore_file_types(ctx.yaml_dir)
     ignore_default = get_ignore_file_default(dropdown_values, path)
     if not ignore_default:
         ignore_default = NO_IGNORE
     dialog.set_value("ignore_dropdown", ignore_default)
+    url = get_repo_url(git, path)
+    if url and url != "":
+        dialog.set_value("url", url)
+
 
 def change_remote_switch(dialog: ap.Dialog, remote_enabled):
     dialog.hide_row("repotext", not remote_enabled)
@@ -93,7 +103,6 @@ try:
                 if self.git and os.path.exists(path) and path != "":
                     repo = self.git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
-                    remote_enabled = False
             except:
                 pass
             
@@ -104,7 +113,7 @@ try:
                 path_placeholder = "/Projects/ACME_Commercial"            
 
 
-            self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: path_changed(d,v,ctx))
+            self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: path_changed(d,self.git,v,ctx))
 
             from add_ignore_config import get_ignore_file_types, NO_IGNORE
             dropdown_values = get_ignore_file_types(ctx.yaml_dir)
@@ -123,7 +132,7 @@ try:
                 self.dialog.set_value("url", repo_url)
 
             change_remote_switch(self.dialog, self.dialog.get_value("remote"))
-            path_changed(self.dialog, self.path, ctx)
+            path_changed(self.dialog, self.git, self.path, ctx)
 
         def get_project_name_candidate(self):
             return os.path.basename(self.get_project_path())
