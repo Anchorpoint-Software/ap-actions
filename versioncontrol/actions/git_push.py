@@ -63,8 +63,7 @@ def push_async(channel_id: str, project_path):
             ap.stop_timeline_channel_action_processing(channel_id, "gitpush")    
             ap.refresh_timeline_channel(channel_id)
             return
-        show_push_failed("This repository is over its data quota", channel_id, project_path)    
-        return
+        
         state = repo.push(progress=PushProgress(progress))
         if state == UpdateState.CANCEL:
             ui.show_info("Push Canceled")
