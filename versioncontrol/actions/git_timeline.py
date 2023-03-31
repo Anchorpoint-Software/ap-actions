@@ -497,3 +497,34 @@ def on_project_directory_changed(ctx):
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
+
+
+def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
+    if channel_id != "Git": return None
+    try:
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return None
+
+        info = ap.VCGetChangesInfo()
+        rel_path = os.path.relpath(ctx.path, ctx.project_path)
+        
+        if entry_id:
+            info.modified_content = repo.get_file_content(rel_path, entry_id)
+            info.original_content = repo.get_file_content(rel_path, entry_id + "~")
+            
+        else:
+            info.modified_content = repo.get_file_content(rel_path, "HEAD")
+            with open(ctx.path) as f:
+                info.original_content = f.readlines()
+                info.original_filepath = ctx.path
+
+        return info
+
+    except Exception as e:
+        print("on_vc_get_changes_info exception: " + str(e))
+        return None
+    
