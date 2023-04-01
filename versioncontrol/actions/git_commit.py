@@ -41,6 +41,7 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
         progress.set_text("Staging files")
         if max > 0:
             progress.report_progress(current / max)
+
         return True
 
     try:
@@ -171,7 +172,6 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         repo.commit(message)
 
         if auto_push:
-            print("auto push enabled")
             progress.finish()
             commit_auto_push(repo, channel_id)
         else:
