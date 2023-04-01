@@ -559,9 +559,25 @@ class GitRepository(VCRepository):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
+    def _run_git_status(self):
+        try:
+            self.repo.git.status()
+        except Exception as e:
+            print(f"Failed to call git status: {str(e)}")
+
+    def _add_files_no_progress(self, *args, **kwargs):
+        self._check_index_lock()
+        try:
+            logging.info("Calling git add (no progress)")
+            self.repo.git.add(*args, **kwargs)
+        except Exception as e:
+            print(f"Failed to call git add (no progress): {str(e)}")
+            raise e
+
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
         self._check_index_lock()
+        proc = None
         try:
             proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
             proc.stderr.close()
@@ -581,10 +597,18 @@ class GitRepository(VCRepository):
                                 proc.terminate()
                             return
                 
-                if proc.returncode != 0:
-                    raise Exception(f"Failed to call git add")
+            if proc.returncode != 0:
+                print(f"Failed to call git add: {proc.returncode}")
+                self._run_git_status()
+                self._add_files_no_progress(*args, **kwargs)
+                proc = None
+
         except subprocess.CalledProcessError as e:
             raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
+            
+        finally:
+            if proc:
+                finalize_process(proc)
 
     def stage_all_files(self):
         self._check_index_lock()
