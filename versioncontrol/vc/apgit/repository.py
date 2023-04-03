@@ -574,16 +574,18 @@ class GitRepository(VCRepository):
 
     def _run_git_status(self):
         try:
-            out = self.repo.git.status()
+            self.repo.git.status()
         except Exception as e:
             print(f"Failed to call git status: {str(e)}")
 
     def _add_files_no_progress(self, *args, **kwargs):
         self._check_index_lock()
         try:
+            logging.info("Calling git add (no progress)")
             self.repo.git.add(*args, **kwargs)
         except Exception as e:
             print(f"Failed to call git add (no progress): {str(e)}")
+            raise e
 
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
@@ -612,6 +614,7 @@ class GitRepository(VCRepository):
                 print(f"Failed to call git add: {proc.returncode}")
                 self._run_git_status()
                 self._add_files_no_progress(*args, **kwargs)
+                proc = None
 
         except subprocess.CalledProcessError as e:
             raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
