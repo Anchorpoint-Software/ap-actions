@@ -1107,5 +1107,13 @@ class GitRepository(VCRepository):
                 return self.repo.git.show(f"{entry_id}:{path}")
             return self.repo.git.show(f"HEAD:{path}")
         except Exception as e:
-            print(f"Error getting file content for {path} at {entry_id}")
+            logging.info(f"Error getting file content for {path} at {entry_id}")
+            return ""
+        
+    def get_stash_content(self, path: str, stash: Stash):
+        try:
+            stash_id = f"stash@{{{stash.id}}}"
+            return self.repo.git.show(f"{stash_id}:{path}")
+        except Exception as e:
+            logging.info(f"Error getting file content for {path} at stash {stash_id}")
             return ""

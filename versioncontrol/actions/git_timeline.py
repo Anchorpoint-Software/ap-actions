@@ -513,14 +513,21 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
         rel_path = os.path.relpath(ctx.path, ctx.project_path)
         
         if entry_id:
-            info.modified_content = repo.get_file_content(rel_path, entry_id)
-            info.original_content = repo.get_file_content(rel_path, entry_id + "~")
+            if entry_id == "vcStashedChanges":
+                stash = repo.get_branch_stash()
+                if not stash:
+                    return None
+                info.modified_content = repo.get_stash_content(rel_path, stash)
+                info.original_content = repo.get_file_content(rel_path, "HEAD")
+            else:
+                info.modified_content = repo.get_file_content(rel_path, entry_id)
+                info.original_content = repo.get_file_content(rel_path, entry_id + "~")
             
         else:
-            info.modified_content = repo.get_file_content(rel_path, "HEAD")
+            info.original_content = repo.get_file_content(rel_path, "HEAD")
             with open(ctx.path) as f:
-                info.original_content = f.readlines()
-                info.original_filepath = ctx.path
+                info.modified_content = f.read()
+                info.modified_filepath = ctx.path
 
         return info
 
