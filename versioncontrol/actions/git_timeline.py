@@ -517,16 +517,16 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
                 stash = repo.get_branch_stash()
                 if not stash:
                     return None
-                info.modified_content = repo.get_stash_content(rel_path, stash)
-                info.original_content = repo.get_file_content(rel_path, "HEAD")
+                info.modified_content = repo.get_stash_content(rel_path, stash).rstrip()
+                info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
             else:
-                info.modified_content = repo.get_file_content(rel_path, entry_id)
-                info.original_content = repo.get_file_content(rel_path, entry_id + "~")
+                info.modified_content = repo.get_file_content(rel_path, entry_id).rstrip()
+                info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
             
         else:
-            info.original_content = repo.get_file_content(rel_path, "HEAD")
+            info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
             with open(ctx.path) as f:
-                info.modified_content = f.read()
+                info.modified_content = f.read().rstrip()
                 info.modified_filepath = ctx.path
 
         return info
