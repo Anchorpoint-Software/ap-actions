@@ -525,7 +525,7 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
             
         else:
             info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
-            with open(ctx.path) as f:
+            with open(ctx.path, encoding="utf-8") as f:                
                 info.modified_content = f.read().rstrip()
                 info.modified_filepath = ctx.path
 
