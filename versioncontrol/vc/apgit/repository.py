@@ -585,6 +585,9 @@ class GitRepository(VCRepository):
             self.repo.git.add(*args, **kwargs)
         except Exception as e:
             print(f"Failed to call git add (no progress): {str(e)}")
+            if "fsync error on '.git/objects/" in str(e):
+                import anchorpoint
+                anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
             raise e
 
     def _add_files(self, count, progress_callback, *args, **kwargs):
