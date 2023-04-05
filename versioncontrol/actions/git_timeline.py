@@ -257,19 +257,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
         info.entry_actions.append(revert)
 
-        has_stash = repo.branch_has_stash()
-        
-        stash = ap.TimelineChannelAction()
-        stash.name = "Shelve"
-        stash.identifier = "gitstashfiles"
-        stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
-        stash.enabled = not has_stash
-        if has_stash:
-            stash.tooltip = "You already have shelved files. Restore or delete them first"
-        else:
-            stash.tooltip = "Puts all your selected files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
-        info.entry_actions.append(stash)
-
         return info
     except Exception as e:
         print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
