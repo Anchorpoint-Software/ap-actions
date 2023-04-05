@@ -314,7 +314,7 @@ class GitRepository(VCRepository):
 
     def restore_files(self, files: list[str], changelist_id: Optional[str] = None):
         self._check_index_lock()
-     
+        logging.info(f"Restoring files: {files}")
         with tempfile.TemporaryDirectory() as dirpath:
             pathspec = os.path.join(dirpath, "restore_spec")
             self._write_pathspec_file(files, pathspec)
