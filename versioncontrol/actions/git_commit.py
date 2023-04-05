@@ -120,6 +120,10 @@ def repo_needs_pull(repo: GitRepository):
         ap.UI().show_info("Could not get remote changes", "Your changed files have been committed, you can push them manually to the server", duration = 8000)
         raise e
     
+def delay(func, *args, **kwargs):
+    import time
+    time.sleep(0.5)
+    func(*args, **kwargs)
 
 def commit_auto_push(repo: GitRepository, channel_id: str):
     ui = ap.UI()
@@ -135,7 +139,7 @@ def commit_auto_push(repo: GitRepository, channel_id: str):
             return
 
         # Queue async to give Anchorpoint a chance to update the timeline
-        ap.get_context().run_async(push_changes, repo, channel_id)
+        ap.get_context().run_async(delay, push_changes, repo, channel_id)
 
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
