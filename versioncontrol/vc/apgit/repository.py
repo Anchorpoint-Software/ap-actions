@@ -312,16 +312,72 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str], changelist_id: Optional[str] = None):
-        self._check_index_lock()
+    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False):
         logging.info(f"Restoring files: {files}")
-        with tempfile.TemporaryDirectory() as dirpath:
-            pathspec = os.path.join(dirpath, "restore_spec")
-            self._write_pathspec_file(files, pathspec)
-            if changelist_id:
-                self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
-            else:
-                self.repo.git.checkout(pathspec_from_file=pathspec)
+        
+        if not keep_original:
+            self._check_index_lock()
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "restore_spec")
+                self._write_pathspec_file(files, pathspec)
+                if changelist_id:
+                    self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
+                else:
+                    self.repo.git.checkout(pathspec_from_file=pathspec)
+        else:
+            # read data of files from git at specific commit
+            if not changelist_id:
+                changelist_id = "HEAD"
+            try:
+                kwargs = {}
+                if platform.system() == "Windows":
+                    from subprocess import CREATE_NO_WINDOW
+                    kwargs["creationflags"] = CREATE_NO_WINDOW
+
+                current_env = os.environ.copy()
+                current_env.update(GitRepository.get_git_environment())
+                for file in files:
+                    git_cat_file: subprocess.Popen = self.repo.git.cat_file("blob", f"{changelist_id}:{file}", as_process=True)
+                    apply_filter = subprocess.Popen(
+                        [install_git.get_lfs_path(), "smudge"],
+                        stdin=git_cat_file.stdout,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=self.get_root_path(),
+                        env=current_env,
+                        **kwargs)
+
+                    # get extension of file if it has any
+                    split = os.path.splitext(file)
+                    if len(split) > 1:
+                        new_file = split[0] + "_restored" + split[1]
+                    else:
+                        new_file = file + "_restored"
+
+                    new_file_absolute = os.path.join(self.get_root_path(), new_file)
+                    with open(new_file_absolute, "wb") as f:
+                        f.write(apply_filter.stdout.read())
+
+                    # Check for errors
+                    git_cat_file_error = git_cat_file.stderr.read().decode("utf-8").strip()
+                    apply_filter_error = apply_filter.stderr.read().decode("utf-8").strip()
+
+                    if git_cat_file_error:
+                        print(f"Error in git cat-file: {git_cat_file_error}")
+                        raise Exception(git_cat_file_error)
+
+                    if apply_filter_error:
+                        if "Unable to parse pointer at" in str(apply_filter_error):
+                            # This is not an error, it just means that the file was not a LFS pointer
+                            pass
+                        else:
+                            print(f"Error in smudge filter command: {apply_filter_error}")
+                            raise Exception(apply_filter_error)
+            except Exception as e:
+                print(f"Error restoring files {e}")
+                raise e
+                
+            pass
             
 
     def clean(self):
@@ -519,6 +575,15 @@ class GitRepository(VCRepository):
                 untracked_files.append(filename)
         finalize_process(proc)
         return untracked_files
+
+    def get_all_pending_changes(self):
+        changes = self.get_pending_changes()
+        staged_changes = self.get_pending_changes(True)
+        changes.new_files.extend(staged_changes.new_files)
+        changes.deleted_files.extend(staged_changes.deleted_files)
+        changes.modified_files.extend(staged_changes.modified_files)
+        changes.renamed_files.extend(staged_changes.renamed_files)
+        return changes
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         self._check_index_lock()

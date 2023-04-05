@@ -70,7 +70,7 @@ def run_git_command(args, cwd = None, **kwargs):
         
         return out
     except Exception as e:
-        print(e)
+        print("Failed to run git command: " + str(args))
         raise e
 
 def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
