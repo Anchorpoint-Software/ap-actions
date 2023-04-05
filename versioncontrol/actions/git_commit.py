@@ -123,6 +123,7 @@ def repo_needs_pull(repo: GitRepository):
 def delay(func, progress, *args, **kwargs):
     import time
     time.sleep(1)
+    if progress: progress.finish()
     func(*args, **kwargs)
 
 def commit_auto_push(repo: GitRepository, channel_id: str):
