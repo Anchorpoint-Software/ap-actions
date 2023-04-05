@@ -300,13 +300,6 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
             details.actions.append(revert)
 
-            revert_entry = ap.TimelineChannelAction()
-            revert_entry.name = "Undo"
-            revert_entry.icon = aps.Icon(":/icons/undo.svg")
-            revert_entry.identifier = "gitrevertcommitfiles"
-            revert_entry.tooltip = "Undoes all changes to the selected files from this commit. The files will show up as changed files."
-            details.entry_actions.append(revert_entry)
-
             restore_entry = ap.TimelineChannelAction()
             restore_entry.name = "Restore"
             restore_entry.icon = aps.Icon(":/icons/restore.svg")
