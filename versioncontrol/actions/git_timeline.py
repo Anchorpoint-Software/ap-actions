@@ -215,12 +215,13 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         from git_settings import GitSettings
         git_settings = GitSettings(ctx)
-        auto_push = git_settings.auto_push_enabled()
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
             return []
+
+        auto_push = git_settings.auto_push_enabled() and repo.has_remote()
 
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()

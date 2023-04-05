@@ -145,13 +145,14 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     
     from git_settings import GitSettings
     git_settings = GitSettings(ctx)
-    auto_push = git_settings.auto_push_enabled()
 
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
     try:
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
+
+        auto_push = git_settings.auto_push_enabled() and repo.has_remote()
         stage_files(changes, all_files_selected, repo, lfs, progress)
         if progress.canceled:
             ui.show_success("commit canceled")
