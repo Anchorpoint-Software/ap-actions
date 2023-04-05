@@ -510,8 +510,7 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
         if not repo: return None
 
         info = ap.VCGetChangesInfo()
-        rel_path = os.path.relpath(ctx.path, ctx.project_path)
-        print("on_vc_get_changes_info " + rel_path)
+        rel_path = os.path.relpath(ctx.path, ctx.project_path).replace("\\", "/")
         
         if entry_id:
             if entry_id == "vcStashedChanges":
