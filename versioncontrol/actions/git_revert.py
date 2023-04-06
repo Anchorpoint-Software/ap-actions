@@ -221,13 +221,14 @@ def async_wrapper(func, dialog, *args, **kwargs):
     ap.get_context().run_async(func, *args, **kwargs)
 
 def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channel_id: str):
+    first_file_name = os.path.basename(files[0])
+    
     dialog = ap.Dialog()
     dialog.title = "Restore Files"
     dialog.icon = ":/icons/restore.svg"
-    dialog.add_text("This might overwrite files in your project.")
-    dialog.add_text("Do you want to keep the original files?")
-    dialog.add_info("A file <b>level.umap</b> will be restored as <b>level_restored.umap</b>.")
-    dialog.add_button("Overwrite Files", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original Files", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
+    dialog.add_text("Restored files show up as changed files. <br> They can overwrite the original version.")
+    dialog.add_info(f"If you keep the original, <b>{first_file_name}</b> <br>will be restored as <b>{os.path.splitext(first_file_name)[0]}_restored{os.path.splitext(first_file_name)[1]}</b>")
+    dialog.add_button("Overwrite", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
     dialog.show()
 
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
