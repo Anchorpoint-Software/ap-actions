@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import git_errors, platform
+import platform
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -400,6 +400,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         try:
             repo.switch_branch(branch)
         except Exception as e:
+            import git_errors
             if not git_errors.handle_error(e):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
