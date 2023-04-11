@@ -221,13 +221,23 @@ def async_wrapper(func, dialog, *args, **kwargs):
     ap.get_context().run_async(func, *args, **kwargs)
 
 def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channel_id: str):
+    if len(files) == 0:
+        ap.UI().show_success("No Files Selected")
+        return
+    
     first_file_name = os.path.basename(files[0])
+    file_name_split = os.path.splitext(first_file_name)
+    if len(file_name_split) >= 1:
+        file_restored = file_name_split[0] + "_restored" + file_name_split[1]
+    else:
+        file_restored = first_file_name + "_restored"
+
     
     dialog = ap.Dialog()
     dialog.title = "Restore Files"
     dialog.icon = ":/icons/restore.svg"
     dialog.add_text("Restored files show up as changed files. <br> They can overwrite the original version.")
-    dialog.add_info(f"If you keep the original, <b>{first_file_name}</b> <br>will be restored as <b>{os.path.splitext(first_file_name)[0]}_restored{os.path.splitext(first_file_name)[1]}</b>")
+    dialog.add_info(f"If you keep the original, <b>{first_file_name}</b> <br>will be restored as <b>{file_restored}</b>")
     dialog.add_button("Overwrite", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
     dialog.show()
 
