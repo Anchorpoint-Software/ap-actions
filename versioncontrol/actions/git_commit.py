@@ -77,8 +77,6 @@ def push_changes(repo: GitRepository, channel_id: str):
 
     try:
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
-        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
-        ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
         state = repo.push(progress=PushProgress(progress))
         if state == UpdateState.CANCEL:
             ap.UI().show_info("Push Canceled")
@@ -132,7 +130,10 @@ def commit_auto_push(repo: GitRepository, channel_id: str):
     if canceled:
         ui.show_success("Push canceled")
     if not pull_required:
-        push_changes(repo, channel_id)
+        # Queue async to give Anchorpoint a chance to update the timeline
+        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
+        ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
+        ap.get_context().run_async(delay, push_changes, None, repo, channel_id)
     else:
         try:
             pull_changes(repo, channel_id)
@@ -142,6 +143,8 @@ def commit_auto_push(repo: GitRepository, channel_id: str):
             return
 
         # Queue async to give Anchorpoint a chance to update the timeline
+        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
+        ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
         ap.get_context().run_async(delay, push_changes, None, repo, channel_id)
 
 
