@@ -20,10 +20,13 @@ def validate_url(dialog: ap.Dialog, value):
         return
 
 def get_repo_url(git, path):
-    repo = git.GitRepository.load(path)
-    if repo:
-        return repo.get_remote_url()
-    return None
+    try:
+        repo = git.GitRepository.load(path)
+        if repo:
+            return repo.get_remote_url()
+        return None
+    except:
+        return None
 
 def path_changed(dialog: ap.Dialog, git, path, ctx):
     from add_ignore_config import get_ignore_file_types, get_ignore_file_default, NO_IGNORE
