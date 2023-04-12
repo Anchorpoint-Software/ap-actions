@@ -48,7 +48,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
                         paths_to_unstage.append(change.path)
 
                 for change in changes:
-                    rel_path = os.path.relpath(change.path, repo_root)
+                    rel_path = os.path.relpath(change.path, repo_root).replace("\\", "/")
                     if rel_path in relative_selected_paths:
                         if change.status == ap.VCFileStatus.New:
                             paths_to_delete.append(change.path)
