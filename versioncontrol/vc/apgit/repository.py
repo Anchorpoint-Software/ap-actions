@@ -336,7 +336,11 @@ class GitRepository(VCRepository):
 
                 current_env = os.environ.copy()
                 current_env.update(GitRepository.get_git_environment())
-                current_env["GIT_TRACE"] = "1"
+                
+                if platform.system() == "Windows":
+                    env_path = current_env["PATH"]
+                    current_env["PATH"] = f"{os.path.dirname(install_git.get_git_cmd_path())};{env_path}"
+                    print(current_env)
                 for file in files:
                     git_cat_file: subprocess.Popen = self.repo.git.cat_file("blob", f"{changelist_id}:{file}", as_process=True)
                     apply_filter = subprocess.Popen(
