@@ -6,6 +6,8 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
+from git_pull import pull
+from git_push import PushProgress, show_push_failed
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 if parent_dir in sys.path:
@@ -71,7 +73,6 @@ def push_changes(repo: GitRepository, channel_id: str):
     import sys
     script_dir = os.path.dirname(__file__)
     sys.path.insert(0, script_dir)
-    from git_push import PushProgress, show_push_failed
     if script_dir in sys.path:
         sys.path.remove(script_dir)
 
@@ -92,8 +93,6 @@ def push_changes(repo: GitRepository, channel_id: str):
         ap.refresh_timeline_channel(channel_id)
 
 def pull_changes(repo: GitRepository, channel_id: str):
-    from git_pull import pull
-    
     rebase = False
     if rebase: raise NotImplementedError()
 
