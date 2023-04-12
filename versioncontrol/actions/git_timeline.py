@@ -114,9 +114,11 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             info.has_stash = stash is not None
             if info.has_stash:
                 info.stashed_file_count = repo.get_stash_change_count(stash)
-
+        
         return info
     except Exception as e:
+        import git_errors
+        git_errors.handle_error(e)
         print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
@@ -259,6 +261,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         return info
     except Exception as e:
+        import git_errors
+        git_errors.handle_error(e)
         print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
@@ -514,6 +518,8 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
         return info
 
     except Exception as e:
+        import git_errors
+        git_errors.handle_error(e)
         print("on_vc_get_changes_info exception: " + str(e))
         return None
     

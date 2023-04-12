@@ -101,5 +101,9 @@ def handle_error(e: Exception):
     if "The following untracked working tree files would be overwritten by" in message:
         ap.UI().show_info("Files would be deleted", "This operation would delete files and we are not sure if this is intended. To clean your repository use the \"revert\" command instead.")
         return True
+
+    if "Not a git repository" in message:
+        ap.UI().show_info("Not a git repository", "This folder is not a git repository. Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.", duration=6000)
+        return True
     
     return False
