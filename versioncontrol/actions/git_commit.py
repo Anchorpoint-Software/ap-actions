@@ -189,9 +189,11 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             ui.show_success("Commit succeeded")
         
     except Exception as e:
-        print(str(e))
-        ui.show_error("Commit Failed", str(e).splitlines()[0])
-        raise e
+        import git_errors
+        if not git_errors.handle_error(e):
+            print(str(e))
+            ui.show_error("Commit Failed", str(e).splitlines()[0])
+            raise e
     finally:
         ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)

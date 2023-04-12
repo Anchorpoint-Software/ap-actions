@@ -61,7 +61,7 @@ def handle_error(e: Exception):
     except:
         message = str(e)
 
-    if "warning: failed to remove" in message or "error: unable to unlink" in message:
+    if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
         print(message)
         file = _get_file_from_error(message)
         application = None
