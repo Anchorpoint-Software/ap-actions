@@ -338,6 +338,7 @@ class GitRepository(VCRepository):
                 current_env.update(GitRepository.get_git_environment())
                 
                 if platform.system() == "Windows":
+                    # Set Path to git installation folder so that Git LFS can find git.exe
                     env_path = current_env["PATH"]
                     current_env["PATH"] = f"{os.path.dirname(install_git.get_git_cmd_path())};{env_path}"
                     
