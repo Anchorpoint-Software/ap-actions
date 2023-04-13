@@ -2,8 +2,9 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import git_errors, platform
+import platform
 
+current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
 def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool) -> ap.VCPendingChange:
@@ -53,9 +54,10 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return info
 
-        is_merging = repo.has_conflicts()
-
-        if repo.has_remote() and not is_merging:
+        has_conflicts = repo.has_conflicts()
+        is_merging = repo.is_rebasing() or repo.is_merging()
+    
+        if repo.has_remote() and not has_conflicts:
             if repo.is_pull_required():
                 pull = ap.TimelineChannelAction()
                 pull.name = "Pull"
@@ -80,7 +82,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         refresh.tooltip = "Refresh the Git timeline"
         info.actions.append(refresh)
     
-        if is_merging:
+        if has_conflicts:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
@@ -89,12 +91,13 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
 
-            cancel = ap.TimelineChannelAction()
-            cancel.name = "Cancel"
-            cancel.identifier = "gitcancelmerge"
-            cancel.tooltip = "Cancel"
-            cancel.icon = aps.Icon(":/icons/revert.svg")
-            info.actions.append(cancel)
+            if is_merging:
+                cancel = ap.TimelineChannelAction()
+                cancel.name = "Cancel"
+                cancel.identifier = "gitcancelmerge"
+                cancel.tooltip = "Cancel"
+                cancel.icon = aps.Icon(":/icons/revert.svg")
+                info.actions.append(cancel)
 
         current_branch_name = repo.get_current_branch_name()
         branches = repo.get_branches()
@@ -111,14 +114,16 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             info.has_stash = stash is not None
             if info.has_stash:
                 info.stashed_file_count = repo.get_stash_change_count(stash)
-
+        
         return info
     except Exception as e:
-        logging.info (f"on_load_timeline_channel_info exception: {str(e)}")
+        import git_errors
+        git_errors.handle_error(e)
+        print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
-        sys.path.remove(script_dir)
-
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
         import sys, os
@@ -126,6 +131,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
         from vc.models import HistoryType
+        if script_dir in sys.path: sys.path.remove(script_dir)
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
@@ -197,22 +203,27 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
         return history_list
     except Exception as e:
-        print(e)
+        print(f"on_load_timeline_channel_entries exception: {str(e)}")
         return []
-    finally:
-        sys.path.remove(script_dir)
+        
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
         import sys, os
+        sys.path.insert(0, current_dir)
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
+
+        from git_settings import GitSettings
+        git_settings = GitSettings(ctx)
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
             return []
+
+        auto_push = git_settings.auto_push_enabled() and repo.has_remote()
 
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
@@ -229,47 +240,35 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
-        commit.name = "Commit"
+        commit.name = "Commit" if not auto_push else "Push"
         commit.identifier = "gitcommit"
         commit.icon = aps.Icon(":/icons/submit.svg")
         commit.type = ap.ActionButtonType.Primary
         if is_rebasing:
             commit.enabled = False
-            commit.tooltip = "Cannot commit when resolving conflicts"
+            commit.tooltip = "Cannot commit when resolving conflicts" if not auto_push else "Cannot push when resolving conflicts"
         else:
             commit.enabled = has_changes
-            commit.tooltip = "Commit your changes to Git"
+            commit.tooltip = "Commit your changes to Git" if not auto_push else "Push your changes to Git (disable auto-push in Git settings)"
         info.actions.append(commit)
 
         revert = ap.TimelineChannelAction()
         revert.name = "Revert"
-        revert.identifier = "gitrevertall"
+        revert.identifier = "gitrevert"
         revert.icon = aps.Icon(":/icons/revert.svg")
-        revert.enabled = has_changes
         revert.tooltip = "Reverts all your modifications (cannot be undone)"
-        revert.type = ap.ActionButtonType.SecondaryText
-        info.actions.append(revert)
-
-        has_stash = repo.branch_has_stash()
-        
-        stash = ap.TimelineChannelAction()
-        stash.name = "Shelve"
-        stash.identifier = "gitstashfiles"
-        stash.icon = aps.Icon(":/icons/Misc/shelf.svg")
-        stash.enabled = has_changes and not has_stash
-        stash.type = ap.ActionButtonType.SecondaryText
-        if has_stash:
-            stash.tooltip = "You already have shelved files. Restore or delete them first"
-        else:
-            stash.tooltip = "Puts all your selected files in the shelf. The files will <br> disappear from the changed files, but can be restored at any time."
-        info.actions.append(stash)
+        info.entry_actions.append(revert)
 
         return info
     except Exception as e:
-        logging.info (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
+        import git_errors
+        git_errors.handle_error(e)
+        print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
-        sys.path.remove(script_dir)
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        if current_dir in sys.path: sys.path.remove(current_dir)
+
 
 
 def run_func_wrapper(func, callback, *args):
@@ -302,13 +301,23 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.icon = aps.Icon(":/icons/undo.svg")
             revert.identifier = "gitrevertcommit"
             revert.type = ap.ActionButtonType.SecondaryText
-            revert.tooltip = "Undos all file changes from a commit. The files will show up as changed files."
+            revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
             details.actions.append(revert)
+
+            restore_entry = ap.TimelineChannelAction()
+            restore_entry.name = "Restore"
+            restore_entry.icon = aps.Icon(":/icons/restore.svg")
+            restore_entry.identifier = "gitrestorecommitfiles"
+            restore_entry.tooltip = "Restores the selected files from this commit. The files will show up as changed files."
+            details.entry_actions.append(restore_entry)
             
         details.changes = ap.VCChangeList(changes.values())
         return details
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 
 def on_load_timeline_channel_stash_details(channel_id: str, ctx):
     import sys, os
@@ -358,8 +367,10 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
 
         details.changes = ap.VCChangeList(changes.values())
         return details
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
+        if script_dir in sys.path: sys.path.remove(script_dir)
 
 def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str, callback, ctx):
     ctx.run_async(run_func_wrapper, on_load_timeline_channel_entry_details, callback, channel_id, entry_id, ctx)
@@ -393,15 +404,18 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         try:
             repo.switch_branch(branch)
         except Exception as e:
+            import git_errors
             if not git_errors.handle_error(e):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
 
         if len(commits) > 0:
             ap.delete_timeline_channel_entries(channel_id, list(commits))
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
-
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 def on_vc_create_branch(channel_id: str, branch: str, ctx):
     import sys
     sys.path.insert(0, script_dir)
@@ -421,9 +435,11 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
         except Exception as e:
             ap.UI().show_info("Cannot create branch")
             return
+    except Exception as e:
+        raise e
     finally:
-        sys.path.remove(script_dir)
-
+        if script_dir in sys.path : sys.path.remove(script_dir)
+        
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -456,13 +472,58 @@ def refresh_async(channel_id: str, project_path):
             os.remove(lockfile)
 
     except Exception as e:
+        print("refresh_async exception: " + str(e))
         pass
     finally:
-        sys.path.remove(script_dir)
-
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
 def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
 
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
+
+
+def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
+    if channel_id != "Git": return None
+    try:
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return None
+
+        info = ap.VCGetChangesInfo()
+        rel_path = os.path.relpath(ctx.path, ctx.project_path).replace("\\", "/")
+        
+        if entry_id:
+            if entry_id == "vcStashedChanges":
+                stash = repo.get_branch_stash()
+                if not stash:
+                    return None
+                info.modified_content = repo.get_stash_content(rel_path, stash).rstrip()
+                info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+            else:
+                info.modified_content = repo.get_file_content(rel_path, entry_id).rstrip()
+                info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
+            
+        else:
+            info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+            if os.path.exists(ctx.path):
+                with open(ctx.path, encoding="utf-8") as f:                
+                    info.modified_content = f.read().rstrip()
+                    info.modified_filepath = ctx.path
+            else:
+                info.modified_content = ""
+                info.modified_filepath = ctx.path
+
+        return info
+
+    except Exception as e:
+        import git_errors
+        git_errors.handle_error(e)
+        print("on_vc_get_changes_info exception: " + str(e))
+        return None
+    

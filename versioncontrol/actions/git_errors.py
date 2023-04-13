@@ -5,9 +5,9 @@ import platform, sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.apgit.utility as utility
-sys.path.remove(script_dir)
+if script_dir in sys.path: sys.path.remove(script_dir)
 
-def _guess_application(error_message: str):
+def _guess_application(file: str):
     known_applications = {
         ".uasset": "Unreal Engine",
         ".umap": "Unreal Engine",
@@ -19,11 +19,23 @@ def _guess_application(error_message: str):
         
         ".blend": "Blender",
         ".c4d": "Cinema 4D",
-        ".psd": "Photoshop"
+        ".psd": "Photoshop",
+        ".indd": "InDesign",
+        ".idlk": "InDesign",
+        ".ai": "Illustrator",
+        ".skp": "SketchUp",
+        ".3ds": "3DS Max",
+        ".max": "3DS Max",
+        ".fbx": "3DS Max",
+        ".dae": "3DS Max",
+        ".obj": "3DS Max",
+        ".stl": "3DS Max",
+        ".ma": "Maya",
+        ".mb": "Maya",
     }
 
     for ext in known_applications:
-        if ext in error_message:
+        if ext in file:
             return known_applications[ext]
     return None
 
@@ -61,11 +73,10 @@ def handle_error(e: Exception):
     except:
         message = str(e)
 
-    if "warning: failed to remove" in message or "error: unable to unlink" in message:
+    if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
         print(message)
         file = _get_file_from_error(message)
-        application = None
-        
+        application = _guess_application(file)
         # This is too slow on Windows, unfortunately
         # if file:
         #     application = utility.get_locking_application(file)
@@ -79,7 +90,7 @@ def handle_error(e: Exception):
         if not file:
             user_error = f"Some file could not be changed because it is opened by an application,<br>or you don't have permissions to write the file."
         elif application:
-            user_error = f"The file <b>{file}</b><br> could not be changed because it is opened by the application <b>{application}</b>.<br>Please close {application} and try again."
+            user_error = f"The file <b>{file}</b> could not<br>be changed because it is opened by an application (probably <i>{application}</i>).<br>Please close {application} and try again."
         else:
             user_error = f"The file <b>{file}</b><br> could not be changed because it is opened by an application,<br>or you don't have permissions to write the file."
 
@@ -100,6 +111,10 @@ def handle_error(e: Exception):
 
     if "The following untracked working tree files would be overwritten by" in message:
         ap.UI().show_info("Files would be deleted", "This operation would delete files and we are not sure if this is intended. To clean your repository use the \"revert\" command instead.")
+        return True
+
+    if "Not a git repository" in message:
+        ap.UI().show_info("Not a git repository", "This folder is not a git repository. Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.", duration=6000)
         return True
     
     return False

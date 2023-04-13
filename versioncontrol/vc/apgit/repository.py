@@ -57,8 +57,13 @@ def _parse_lfs_status(progress, line: str):
             index = line.find("batch response: ")
             if index >= 0:
                 import anchorpoint
-                error_message = line[index:]
-                anchorpoint.UI().show_error("Git LFS Error", error_message, duration=8000)
+                if "This repository is over its data quota" in line:
+                    title = "The GitHub LFS limit has been reached"
+                    error_message = "To solve the problem open your GitHub Billing and Plans page and buy more Git LFS Data."
+                else :
+                    title = "Git LFS Error"
+                    error_message = line[index:]
+                anchorpoint.UI().show_error(title, error_message, duration=10000)
 
     except Exception as e:
         print(e)
@@ -307,9 +312,79 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str]):
-        self._check_index_lock()
-        self.repo.git.checkout("--", *files)
+    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False):
+        logging.info(f"Restoring files: {files}")
+        
+        if not keep_original:
+            self._check_index_lock()
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "restore_spec")
+                self._write_pathspec_file(files, pathspec)
+                if changelist_id:
+                    self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
+                else:
+                    self.repo.git.checkout(pathspec_from_file=pathspec)
+        else:
+            # read data of files from git at specific commit
+            if not changelist_id:
+                changelist_id = "HEAD"
+            try:
+                kwargs = {}
+                if platform.system() == "Windows":
+                    from subprocess import CREATE_NO_WINDOW
+                    kwargs["creationflags"] = CREATE_NO_WINDOW
+
+                current_env = os.environ.copy()
+                current_env.update(GitRepository.get_git_environment())
+                
+                if platform.system() == "Windows":
+                    # Set Path to git installation folder so that Git LFS can find git.exe
+                    env_path = current_env["PATH"]
+                    current_env["PATH"] = f"{os.path.dirname(install_git.get_git_cmd_path())};{env_path}"
+                    
+                for file in files:
+                    git_cat_file: subprocess.Popen = self.repo.git.cat_file("blob", f"{changelist_id}:{file}", as_process=True)
+                    apply_filter = subprocess.Popen(
+                        [install_git.get_lfs_path(), "smudge"],
+                        stdin=git_cat_file.stdout,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=self.get_root_path(),
+                        env=current_env,
+                        **kwargs)
+
+                    # get extension of file if it has any
+                    split = os.path.splitext(file)
+                    if len(split) > 1:
+                        new_file = split[0] + "_restored" + split[1]
+                    else:
+                        new_file = file + "_restored"
+
+                    new_file_absolute = os.path.join(self.get_root_path(), new_file)
+                    with open(new_file_absolute, "wb") as f:
+                        f.write(apply_filter.stdout.read())
+
+                    # Check for errors
+                    git_cat_file_error = git_cat_file.stderr.read().decode("utf-8").strip()
+                    apply_filter_error = apply_filter.stderr.read().decode("utf-8").strip()
+
+                    if git_cat_file_error:
+                        print(f"Error in git cat-file: {git_cat_file_error}")
+                        raise Exception(git_cat_file_error)
+
+                    if apply_filter_error:
+                        if "Unable to parse pointer at" in str(apply_filter_error):
+                            # This is not an error, it just means that the file was not a LFS pointer
+                            pass
+                        else:
+                            print(f"Error in smudge filter command: {apply_filter_error}")
+                            raise Exception(apply_filter_error)
+            except Exception as e:
+                print(f"Error restoring files {e}")
+                raise e
+                
+            pass
+            
 
     def clean(self):
         self.repo.git.clean("-fd")
@@ -507,6 +582,15 @@ class GitRepository(VCRepository):
         finalize_process(proc)
         return untracked_files
 
+    def get_all_pending_changes(self):
+        changes = self.get_pending_changes()
+        staged_changes = self.get_pending_changes(True)
+        changes.new_files.extend(staged_changes.new_files)
+        changes.deleted_files.extend(staged_changes.deleted_files)
+        changes.modified_files.extend(staged_changes.modified_files)
+        changes.renamed_files.extend(staged_changes.renamed_files)
+        return changes
+
     def get_pending_changes(self, staged: bool = False) -> Changes:
         self._check_index_lock()
         changes = Changes()
@@ -572,6 +656,9 @@ class GitRepository(VCRepository):
             self.repo.git.add(*args, **kwargs)
         except Exception as e:
             print(f"Failed to call git add (no progress): {str(e)}")
+            if "fsync error on '.git/objects/" in str(e):
+                import anchorpoint
+                anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
             raise e
 
     def _add_files(self, count, progress_callback, *args, **kwargs):
@@ -1087,3 +1174,20 @@ class GitRepository(VCRepository):
             except Exception as e:
                 logging.info(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
                 raise e
+    
+    def get_file_content(self, path: str, entry_id: Optional[str] = None):
+        try:
+            if entry_id:
+                return self.repo.git.show(f"{entry_id}:{path}")
+            return self.repo.git.show(f"HEAD:{path}")
+        except Exception as e:
+            logging.info(f"Error getting file content for {path} at {entry_id}")
+            return ""
+        
+    def get_stash_content(self, path: str, stash: Stash):
+        try:
+            stash_id = f"stash@{{{stash.id}}}"
+            return self.repo.git.show(f"{stash_id}:{path}")
+        except Exception as e:
+            logging.info(f"Error getting file content for {path} at stash {stash_id}")
+            return ""

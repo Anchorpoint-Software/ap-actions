@@ -36,8 +36,13 @@ def _check_update_available():
 # Returns True if any executable is running
 def is_executable_running(names: list[str]):
     import psutil
-    running = [p for p in psutil.process_iter(attrs=['name']) if len(p.name()) > 0 and p.name().lower() in names]
-    return len(running) > 0
+    for p in psutil.process_iter(attrs=['name']):
+        try:
+            if len(p.name()) > 0 and p.name().lower() in names:
+                return True 
+        except:
+            continue
+    return False
 
 def is_git_running():
     try:

@@ -6,6 +6,7 @@ import platform
 import subprocess
 import os, sys
 import json
+import socket
 
 sys.path.insert(0, os.path.dirname(__file__))
 import rclone_install_helper as rclone_install
@@ -51,6 +52,14 @@ def create_bat_file(command,drive):
     startup_path = f'{app_data}/Microsoft/Windows/Start Menu/Programs/Startup/ap_mount_{drive}.bat'
     with open(startup_path,'w') as f:
         f.write(command)
+
+def check_internet_connection():
+    try:
+        socket.create_connection(("www.google.com", 80))
+        return True
+    except OSError:
+        pass
+    return False
 
 def setup_mount(drive, workspace_id, configuration):
     def create_config_arguments():
@@ -227,7 +236,7 @@ def store_auto_mount(success: bool, drive: str, workspace_id: str):
     local_settings.store()
 
 def run_rclone(arguments, drive, workspace_id, startupinfo=None):
-    ui = ap.UI()
+    ui = ap.UI()    
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "SignatureDoesNotMatch"
     rlcone_wrong_access_key = "InvalidAccessKeyId"
@@ -431,7 +440,7 @@ def isWin():
         return True
     return False
 
-def on_application_started(ctx: ap.Context):
+def on_application_started(ctx: ap.Context):    
     try:
         shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
         mount_settings = aps.Settings(ctx.workspace_id)
@@ -455,12 +464,20 @@ def on_application_started(ctx: ap.Context):
             resolve_configuration(shared_settings, configuration, password)
         except:
             return
-
-        ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
+        if check_internet_connection():
+            ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
+        else:
+            ui = ap.UI()
+            ui.show_error("Cannot mount the Cloud Drive", "You are not connected to the Internet")
     except:
         pass
     
 
 if __name__ == "__main__":
-    ctx = ap.get_context()
-    ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
+    if check_internet_connection():
+        ctx = ap.get_context()
+        ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
+    else:
+        ui = ap.UI()
+        ui.show_error("Cannot mount the Cloud Drive", "You are not connected to the Internet")
+        

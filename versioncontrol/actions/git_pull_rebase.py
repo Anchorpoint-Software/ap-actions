@@ -11,7 +11,7 @@ sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-sys.path.remove(parent_dir)
+if parent_dir in sys.path: sys.path.remove(parent_dir)
 class PullProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()

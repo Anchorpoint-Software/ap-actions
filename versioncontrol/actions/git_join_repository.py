@@ -25,7 +25,7 @@ if __name__ == "__main__":
 
     import platform
     import git_repository_helper as helper
-    sys.path.remove(script_dir)
+    if script_dir in sys.path: sys.path.remove(script_dir)
 
     ctx = ap.get_context()
     ui = ap.UI()
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     dialog.add_input(placeholder=path_placeholder, var="location", width=400, browse=ap.BrowseType.Folder, validate_callback=lambda d,v: validate_path(d,v,remote_url), callback=update_dialog)
     
     if not remote_url:
-        dialog.add_text("<b>Reposistory URL</b>")
+        dialog.add_text("<b>Repository URL</b>")
         dialog.add_input(placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width=400, validate_callback=validate_url, callback=update_dialog)
         dialog.set_valid(False)
 
