@@ -10,7 +10,7 @@ sys.path.insert(0, parent_dir)
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 import git_repository_helper as helper
-sys.path.remove(parent_dir)
+if parent_dir in sys.path: sys.path.remove(parent_dir)
 
 def fetch_async(channel_id: str, project_path):
     ui = ap.UI()

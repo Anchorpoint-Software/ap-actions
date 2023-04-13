@@ -6,7 +6,7 @@ import sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.versioncontrol_interface as vc
-sys.path.remove(script_dir)
+if script_dir in sys.path: sys.path.remove(script_dir)
 
 CHANNEL_ID = "Git"
 

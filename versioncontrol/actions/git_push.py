@@ -9,7 +9,7 @@ sys.path.insert(0, parent_dir)
 importlib.invalidate_caches()
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-sys.path.remove(parent_dir)
+if parent_dir in sys.path: sys.path.remove(parent_dir)
 class PushProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
@@ -27,15 +27,19 @@ class PushProgress(Progress):
             self.ap_progress.stop_progress()
 
 def show_push_failed(error: str, channel_id, project_path):
-    from textwrap import TextWrapper
-    error = "\n".join(TextWrapper(width=100).wrap(error))
-
     d = ap.Dialog()
-    d.title = "Could not push"
+    d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
-    d.add_text("Something went wrong, the Git push did not work correctly")
-    if error != "":
-        d.add_text(error)
+
+    if "This repository is over its data quota" in error:
+        d.add_text("The GitHub LFS limit has been reached.")
+        d.add_info("To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.")
+    else:
+        from textwrap import TextWrapper
+        d.add_text("Something went wrong, the Git push did not work correctly")
+        error = "\n".join(TextWrapper(width=100).wrap(error))
+        if error != "":
+            d.add_text(error)
 
     def retry():
         ctx = ap.get_context()
@@ -59,7 +63,7 @@ def push_async(channel_id: str, project_path):
             ap.stop_timeline_channel_action_processing(channel_id, "gitpush")    
             ap.refresh_timeline_channel(channel_id)
             return
-
+        
         state = repo.push(progress=PushProgress(progress))
         if state == UpdateState.CANCEL:
             ui.show_info("Push Canceled")

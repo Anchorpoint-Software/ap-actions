@@ -9,7 +9,7 @@ sys.path.insert(0, script_dir)
 
 from vc.apgit.repository import * 
 from vc.models import ConflictResolveState
-sys.path.remove(script_dir)
+if script_dir in sys.path: sys.path.remove(script_dir)
 
 def cancel_merge(channel_id, project_path):
     from vc.apgit.utility import get_repo_path
@@ -57,7 +57,6 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             # When rebasing theirs and ours is inverse
             # When merging, ours is current working directory and theirs is merging changes
             # When applying a stash, theirs are the changes from the stash
-
             unstaged_files, staged_files = repo.get_deleted_files()
             if conflict_handling == ap.VCConflictHandling.TakeOurs:
                 progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
