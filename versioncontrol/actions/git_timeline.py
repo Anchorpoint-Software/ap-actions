@@ -249,7 +249,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
             commit.tooltip = "Cannot commit when resolving conflicts" if not auto_push else "Cannot push when resolving conflicts"
         else:
             commit.enabled = has_changes
-            commit.tooltip = "Commit your changes to Git" if not auto_push else "Push your changes to Git"
+            commit.tooltip = "Commit your changes to Git" if not auto_push else "Push your changes to Git (disable auto-push in Git settings)"
         info.actions.append(commit)
 
         revert = ap.TimelineChannelAction()
