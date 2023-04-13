@@ -57,7 +57,6 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             # When rebasing theirs and ours is inverse
             # When merging, ours is current working directory and theirs is merging changes
             # When applying a stash, theirs are the changes from the stash
-
             unstaged_files, staged_files = repo.get_deleted_files()
             if conflict_handling == ap.VCConflictHandling.TakeOurs:
                 progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
