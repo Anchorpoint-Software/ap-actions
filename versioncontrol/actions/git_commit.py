@@ -178,6 +178,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
         if len(ctx.username) > 0 and len(ctx.email) > 0:
             repo.set_username(ctx.username, ctx.email, ctx.project_path)
+        else:
+            ui.show_info("Cannot set username", "Please restart Anchorpoint and try again")
+            return True
 
         repo.commit(message)
 
