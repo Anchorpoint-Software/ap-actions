@@ -102,6 +102,18 @@ def set_variable_availability(dialog, value):
         for key in template_available_tokens[value]:
             dialog.hide_row(str(key),False)
 
+def get_user_input_for_template(template_name):
+    if template_name in template_available_tokens.keys():
+        tokens = template_available_tokens[template_name]
+        template_user_inputs = {}
+        for token in tokens:
+            if token in user_inputs.keys():
+                template_user_inputs[token] = user_inputs[token]
+        return template_user_inputs
+    else:
+        return {}
+    
+
 # Search for tokens in a single file oder folder name / entry
 def get_tokens(entry, variables: dict):
     entry_vars =  re.findall('\[[^\[\]]*\]',entry)
@@ -173,7 +185,7 @@ def create_template(dialog):
     if (os.path.isdir(template_path)):
         # Run everything async to not block the main thread
         if create_project : 
-            ctx.run_async(create_project_from_template, template_path, target_folder, ctx)    
+            ctx.run_async(create_project_from_template, template_path, target_folder, ctx, template_name)    
         else: 
             ctx.run_async(create_documents_from_template, template_path, target_folder, ctx)    
     else:
@@ -225,7 +237,7 @@ def create_dialog():
 def strip_spaces(string):
     return "".join(string.rstrip().lstrip())
     
-def create_project_from_template(template_path, target_folder, ctx):
+def create_project_from_template(template_path, target_folder, ctx, template_name):
     # Start the progress indicator in the top right corner
     ap.Progress("Creating Project", "Copying Files and Attributes")
     # Get the template root folder
@@ -261,7 +273,9 @@ def create_project_from_template(template_path, target_folder, ctx):
     # Add the resolved tokens as metadata to the project
     # This metadata can be used for any file and subfolder templates
     # The user won't need to enter this data again
-    project.update_metadata(user_inputs)
+    user_inputs_for_template = get_user_input_for_template(template_name)
+    if len(user_inputs_for_template) > 0:
+        project.update_metadata(user_inputs_for_template)
 
     if callbacks and "project_from_template_created" in dir(callbacks):
         callbacks.project_from_template_created(target, source, variables, project)
