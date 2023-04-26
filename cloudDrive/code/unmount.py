@@ -7,7 +7,14 @@ def kill_rclone():
     if platform.system() == "Windows":
         os.system("taskkill /IM rclone.exe /F")
     else:
-        os.system("umount /Volumes/Anchorpoint")
+        # try diskutil unmount first
+        r = os.system("diskutil unmount /Volumes/Anchorpoint")
+        if r == 0:
+            return
+        
+        # on error try killall
+        os.system("killall rclone")
+
     ap.UI().reload_drives()
 
 def remove_auto_mount(ctx: ap.Context):
