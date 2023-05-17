@@ -94,6 +94,10 @@ def check_and_install_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
     if not os.path.isfile(winfsp_path):
         progress = ap.Progress("Loading WinFsp",infinite = True)
+
+        # Call winget source update to install latest version
+        subprocess.run("winget source update", capture_output=True)
+
         winget = subprocess.run(
             "winget install -e --id WinFsp.WinFsp --accept-source-agreements", capture_output=True
         )
