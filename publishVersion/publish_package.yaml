@@ -1,0 +1,28 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Create Referenced File"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::versioncontrol"
+  category: "versioncontrol"
+  type: package
+  enable: false
+  description: Creates (publishes) a copy of the latest version in the incremental stack and removes the increment. Useful for importing an asset into a shot, for example.
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "extract.svg"
+
+  actions:
+    - ap::vc::publish
+
+
+    
