@@ -161,6 +161,9 @@ def resolve_tokens(variable_list):
             variables["YYMMDD"] = datetime.today().strftime('%y%m%d')
         elif variable == "YY-MM-DD":
             variables["YY-MM-DD"] = datetime.today().strftime('%y-%m-%d')
+        elif variable == "ProjectFolder":
+            projectFolder = os.path.basename(os.path.normpath(ctx.project_path))
+            variables["ProjectFolder"] = str(projectFolder)
         elif variable not in variables:
             variables[variable] = ""
 
