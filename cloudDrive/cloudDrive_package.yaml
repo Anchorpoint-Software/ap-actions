@@ -56,6 +56,7 @@ action:
     
   dependencies:
     - code/rclone_install_helper.py
+    - code/rclone_config_helper.py
     
   settings: code/package_settings.py
   actions:
