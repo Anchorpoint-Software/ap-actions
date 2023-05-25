@@ -499,19 +499,19 @@ def guarantee_rclone_config_setup( mount_path: str, workspace_id: str, configura
 def show_relogin_required_dialog(mount_path: str, workspace_id: str, configuration):
     ctx = ap.get_context()
     dialog = ap.Dialog()
-    dialog.title = "Login required"
-    dialog.icon = ctx.icon
-    dialog.add_text("Your login expired. You need to relogin with your account in the browser.")
-    dialog.add_button("Relogin", callback = lambda d: ctx.run_async(setup_rclone_config, dialog, mount_path, workspace_id, configuration, False))
+    dialog.title = "Login Expired"
+    dialog.icon = os.path.join(ctx.yaml_dir, "icons/google.svg")
+    dialog.add_text("Anchorpoint needs to connect to Google again. To do this,<br>log in with your Google account.")
+    dialog.add_button("Open Browser", callback = lambda d: ctx.run_async(setup_rclone_config, dialog, mount_path, workspace_id, configuration, False))
     dialog.show()    
 
 def show_login_required_dialog(mount_path: str, workspace_id: str, configuration):
     ctx = ap.get_context()
     dialog = ap.Dialog()
-    dialog.title = "Login required"
-    dialog.icon = ctx.icon
-    dialog.add_text("You need to login with your account in the browser first.")
-    dialog.add_button("Login", callback = lambda d: ctx.run_async(setup_rclone_config, dialog, mount_path, workspace_id, configuration, True))
+    dialog.title = "Log in to Google"
+    dialog.icon = os.path.join(ctx.yaml_dir, "icons/google.svg")
+    dialog.add_text("Anchorpoint needs to connect to Google. To do this,<br>log in with your Google account.")
+    dialog.add_button("Open Browser", callback = lambda d: ctx.run_async(setup_rclone_config, dialog, mount_path, workspace_id, configuration, True))
     dialog.show()    
 
 def create_pw_dialog(workspace_id: str):
@@ -520,6 +520,7 @@ def create_pw_dialog(workspace_id: str):
     dialog.title = "Enter Configuration Key"
     dialog.icon = ctx.icon
     dialog.add_text("Configuration Key").add_input(placeholder="Your configuration key", var="pw_var")
+    dialog.add_info("You will get this key from your workspace admin.")
     dialog.add_button("Ok", callback = lambda d: set_password(d, workspace_id))
     dialog.show()
 
