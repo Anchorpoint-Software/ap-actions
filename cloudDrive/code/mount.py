@@ -471,7 +471,7 @@ def get_settings(workspace_id: str):
 
 def guarantee_rclone_config_setup( mount_path: str, workspace_id: str, configuration, first_setup: bool) -> bool:
     if configuration["type"]!="gcs":
-        return
+        return True
     folder_dir = rclone_install._get_rclone_folder()
     if folder_dir is None:
         return False
