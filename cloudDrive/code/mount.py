@@ -107,9 +107,6 @@ def setup_mount(drive, workspace_id, configuration):
                     f"{configuration['s3wasabi_region']}"
                     ]
         
-        if(configuration["type"]=="gcs"):
-            config += ["--gcs-bucket-policy-only"]
-        
         #Azure
         if(configuration["type"]=="azureblob"):
             config += [
@@ -222,72 +219,28 @@ def setup_mount(drive, workspace_id, configuration):
     if isWin():
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
-        ctx.run_async(run_rclone, arguments, configuration, drive, workspace_id, startupinfo)
+        ctx.run_async(run_rclone, arguments, drive, workspace_id, startupinfo)
     else:
         #add daemon for mac
         arguments.append("--daemon")
-        ctx.run_async(run_rclone, arguments, configuration, drive, workspace_id)
+        ctx.run_async(run_rclone, arguments, drive, workspace_id)
     
-def setup_rclone_config(dialog : ap.Dialog, mount_path: str, workspace_id: str, configuration, continue_with_options: True):
+def setup_rclone_config(mount_path: str, workspace_id: str, configuration, continue_with_options: True):
     config_file_path = os.path.join(rclone_install._get_rclone_folder(),"rclone.conf")
-    base_arguments = [
-        rclone_install._get_rclone_path(),      
-        "config",
-        "create",
-        "--config",
-        config_file_path
-    ]
-    config_arguments = []
-    if(configuration["type"]=="gcs"):
-            ap_config = ap.get_config()
-            config_arguments += [
-                    "ap_gcs",
-                    'google cloud storage',
-                    "--gcs-client-id",
-                    f"{ap_config.gcs_client_id}",
-                    "--gcs-client-secret",
-                    f"{ap_config.gcs_key}"
-    ]
-            
-    arguments = base_arguments + config_arguments
+    json_file_path = os.path.join(rclone_install._get_rclone_folder(),"gcs.json")
 
-    args = {
-            "args":arguments, 
-            "stdout":subprocess.PIPE,
-            "stderr":subprocess.STDOUT,
-            "stdin":subprocess.PIPE,
-            "bufsize":1,
-            "universal_newlines":True
-        }
+    if not os.path.isfile(json_file_path):
+           with open(json_file_path, "w") as file:
+               file.write(configuration["gcs_service_account"])
 
-    if platform.system() == "Windows":
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW 
+    if not os.path.isfile(config_file_path):
+           with open(config_file_path, "w") as file:
+            file.write("[ap_gcs]\ntype = google cloud storage\nservice_account_file = " + json_file_path.replace("\\","/") + "\n")
 
-        args["startupinfo"] = startupinfo 
-
-    process = subprocess.Popen(**args)
-
-    output = ""
-    for line in process.stdout:   
-        output = output + line
-        if not output.endswith("\n"):
-            output = output + "\n"
-        
-    # wait for subprocess to terminate
-    process.communicate()
-    
-    ui = ap.UI()    
-    if process.returncode != 0:
-        print(output)
-        ui.show_error("Failed to login", description="Check Anchorpoint Console and try again.")
+    if continue_with_options:
+        show_options(mount_path, workspace_id, configuration)
     else:
-        ui.show_success("Login successful")
-        dialog.close()
-        if continue_with_options:
-            show_options(mount_path, workspace_id, configuration)
-        else:
-            setup_mount(mount_path, workspace_id, configuration)
+        setup_mount(mount_path, workspace_id, configuration)
 
 def dialog_setup_mount(dialog, workspace_id, configuration):
     if isWin():
@@ -307,15 +260,13 @@ def store_auto_mount(success: bool, drive: str, workspace_id: str):
         local_settings.remove("rclone-automount")
     local_settings.store()
 
-def run_rclone(arguments, configuration, drive, workspace_id, startupinfo=None):
+def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     ui = ap.UI()    
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "SignatureDoesNotMatch"
     rlcone_wrong_access_key = "InvalidAccessKeyId"
     count_msg = "queuing for upload"
     upload_succeeded_msg = "upload succeeded"
-    token_expired_msg = "token expired and there's no refresh token - manually refresh"
-    token_fetch_failed_msg = "oauth2: cannot fetch token: 401 Unauthorized"
     progress = None
     global_progress = ap.Progress("Mounting Cloud Drive", show_loading_screen=True)
     
@@ -334,6 +285,7 @@ def run_rclone(arguments, configuration, drive, workspace_id, startupinfo=None):
     
     for line in p.stdout:
         myjson = is_json(line)
+        print(line)
 
         if count_msg in line:
             count = add_to_count(count, 1)
@@ -344,9 +296,6 @@ def run_rclone(arguments, configuration, drive, workspace_id, startupinfo=None):
         if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Something went wrong")
             store_auto_mount(False, drive, workspace_id)
-            return
-        elif myjson != None and myjson["level"] == "error" and (token_expired_msg in myjson["msg"] or token_fetch_failed_msg in myjson["msg"]):
-            show_relogin_required_dialog(drive, workspace_id, configuration)
             return
         elif rclone_success in line:            
             ui.reload_drives()
@@ -480,10 +429,7 @@ def guarantee_rclone_config_setup( mount_path: str, workspace_id: str, configura
 
     conf_file_path = os.path.join(folder_dir, "rclone.conf")
     if not os.path.isfile(conf_file_path):
-        if first_setup:
-            show_login_required_dialog(mount_path, workspace_id, configuration)
-        else:
-            show_relogin_required_dialog(mount_path, workspace_id, configuration)
+        ctx.run_async(setup_rclone_config, mount_path, workspace_id, configuration, first_setup)
         return False
     with open(conf_file_path, "r") as conf_file:
         content = conf_file.read()
@@ -492,29 +438,8 @@ def guarantee_rclone_config_setup( mount_path: str, workspace_id: str, configura
             show_options(mount_path, workspace_id, configuration)
         return True
     else:
-        if first_setup:
-            show_login_required_dialog(mount_path, workspace_id, configuration)
-        else:
-            show_relogin_required_dialog(mount_path, workspace_id, configuration)
-        return False
-
-def show_relogin_required_dialog(mount_path: str, workspace_id: str, configuration):
-    ctx = ap.get_context()
-    dialog = ap.Dialog()
-    dialog.title = "Login Expired"
-    dialog.icon = os.path.join(ctx.yaml_dir, "icons/google.svg")
-    dialog.add_text("Anchorpoint needs to connect to Google again. To do this,<br>log in with your Google account.")
-    dialog.add_button("Open Browser", callback = lambda d: ctx.run_async(setup_rclone_config, dialog, mount_path, workspace_id, configuration, False))
-    dialog.show()    
-
-def show_login_required_dialog(mount_path: str, workspace_id: str, configuration):
-    ctx = ap.get_context()
-    dialog = ap.Dialog()
-    dialog.title = "Log in to Google"
-    dialog.icon = os.path.join(ctx.yaml_dir, "icons/google.svg")
-    dialog.add_text("Anchorpoint needs to connect to Google. To do this,<br>log in with your Google account.")
-    dialog.add_button("Open Browser", callback = lambda d: ctx.run_async(setup_rclone_config, dialog, mount_path, workspace_id, configuration, True))
-    dialog.show()    
+        ctx.run_async(setup_rclone_config, mount_path, workspace_id, configuration, first_setup)
+        return False  
 
 def create_pw_dialog(workspace_id: str):
     ctx = ap.get_context()

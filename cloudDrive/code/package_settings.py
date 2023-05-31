@@ -59,8 +59,8 @@ def create_dialog():
     dialog.add_text("Container/ Folder\t").add_input(configuration["azureblob_container_path"],placeholder="myContainer/myFolder...",var="azureblob_container_path_var")
 
     #Google Cloud Storage
-    print(configuration["gcs_bucket_name"])
     dialog.add_text("Bucket/ Folder\t").add_input(configuration["gcs_bucket_name"],placeholder="myBucket/myFolder...",var="gcs_bucket_name_var")
+    dialog.add_text("Service Account Json\t").add_input(configuration["gcs_service_account"],placeholder="{\"type\": \"service_account\", ...}",var="gcs_service_account_var")
 
     #s3 Other
     dialog.add_text("Access Key\t\t").add_input(configuration["s3other_access_key_id"],placeholder="XXXBTBISU...",var="s3other_access_key_id_var")
