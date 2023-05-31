@@ -58,6 +58,10 @@ def create_dialog():
     dialog.add_text("Shared access signature").add_input(configuration["azureblob_sas_url"],placeholder="https://myazureaccount...",var="azureblob_sas_url_var")
     dialog.add_text("Container/ Folder\t").add_input(configuration["azureblob_container_path"],placeholder="myContainer/myFolder...",var="azureblob_container_path_var")
 
+    #Google Cloud Storage
+    print(configuration["gcs_bucket_name"])
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["gcs_bucket_name"],placeholder="myBucket/myFolder...",var="gcs_bucket_name_var")
+
     #s3 Other
     dialog.add_text("Access Key\t\t").add_input(configuration["s3other_access_key_id"],placeholder="XXXBTBISU...",var="s3other_access_key_id_var")
     dialog.add_text("Secret Access Key\t").add_input(configuration["s3other_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3other_secret_access_key_var")
@@ -135,17 +139,20 @@ def apply_callback(dialog : ap.Dialog):
     import pyperclip as pc 
 
     configuration = get_configuration(dialog)
+    print(configuration)
     if(not configuration):
         ui.show_error("Configuration is incomplete","The cloud drive needs the necessary information to work properly")  
         return
 
     dumped_configuration = json.dumps(configuration)
+    print(dumped_configuration)
 
     password = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     salt = get_random_bytes(32)
     secret_key = generate_secret_key(password, salt)
 
     encrypted_configuration = encrypt(dumped_configuration, secret_key, salt)
+    print(encrypted_configuration)
 
     settings.set("Config",encrypted_configuration)
     settings.store()
@@ -174,7 +181,7 @@ def init_dialog():
             try:
                 decrypted_configuration = decrypt(encrypted_configuration, password)
                 undumped_configuration = json.loads(decrypted_configuration)
-                 
+
                 for i in configuration.keys():
                     configuration[i] = undumped_configuration[i]
 
