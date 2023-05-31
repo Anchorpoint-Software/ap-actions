@@ -26,6 +26,7 @@ configuration = {
 
     #Google Cloud Storage
     "gcs_bucket_name": "",
+    "gcs_service_account": "",
 
     #S3 other
     "s3other_access_key_id": "",
