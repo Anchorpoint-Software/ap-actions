@@ -285,7 +285,6 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     
     for line in p.stdout:
         myjson = is_json(line)
-        print(line)
 
         if count_msg in line:
             count = add_to_count(count, 1)
