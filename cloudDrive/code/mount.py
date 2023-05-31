@@ -106,6 +106,12 @@ def setup_mount(drive, workspace_id, configuration):
                     "--s3-region",
                     f"{configuration['s3wasabi_region']}"
                     ]
+
+        #GCS
+        if(configuration["type"]=="gcs"):
+            config += ["--gcs-bucket-policy-only"]
+        
+
         
         #Azure
         if(configuration["type"]=="azureblob"):
