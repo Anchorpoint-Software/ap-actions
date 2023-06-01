@@ -11,10 +11,10 @@ if project is None:
     sys.exit(0)
 
 settings = project.get_metadata()
-print(settings)
 
 def store_settings(dialog):
     settings["publish_version_appendix"] = dialog.get_value("appendix_var")
+    settings["checkbox"] = str(dialog.get_value("checkbox_var"))
     if(dialog.get_value("checkbox_var") == True):
         settings["publish_file_location"] = dialog.get_value("location_var")
     else:
@@ -28,6 +28,12 @@ def create_dialog():
     def checkBoxChecked(dialog,value):
         dialog.set_enabled("location_var",value)
         pass
+
+    checkbox_default = "False"
+    try:
+        checkbox_default=settings["checkbox"]
+    except:
+        pass    
 
     path = ""
     try: 
@@ -43,7 +49,7 @@ def create_dialog():
 
     dialog = ap.Dialog()
     dialog.title = "Referenced Model Settings"
-    dialog.add_text("Copy into a dedicated Folder").add_checkbox(var="checkbox_var",callback = checkBoxChecked)
+    dialog.add_text("Copy into a dedicated Folder").add_checkbox(var="checkbox_var",callback = checkBoxChecked,default=(checkbox_default=="True"))
     dialog.add_text("Folder\t    ").add_input(path,placeholder = "published_versions", browse=ap.BrowseType.Folder,browse_path=project.path, var="location_var", enabled = False)
     dialog.add_text("Appendix\t    ").add_input(appendix,placeholder = "_published",var="appendix_var", enabled = True)
     dialog.add_info("What should follow after the name without increment. E.g. <b>character_rig_v023.blend</b> <br>becomes <b>character_rig_published.blend</b>")
