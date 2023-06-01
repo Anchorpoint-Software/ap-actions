@@ -13,7 +13,7 @@ action:
   type: package
   enable: false
   author: Anchorpoint Software GmbH
-  description: A useful collection of Action examples that showcase how to write your own Actions
+  description: A useful collection of <a href='https://github.com/Anchorpoint-Software/ap-actions'>Action examples</a> that showcase how to write your own Actions
   icon:
     path: codingExamples.svg
 

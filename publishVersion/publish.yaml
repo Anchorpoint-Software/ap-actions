@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Create Referenced File
+
+  version: 1
+  id: ap::vc::publish
+  category: user
+  type: python
+  author: Anchorpoint Software GmbH
+  description: Creates a copy of this file without the increment
+  icon:
+    path: extract.svg
+
+  script: publish.py
+  settings: publish_settings.py
+
+  register:
+    file:
+      enable: true

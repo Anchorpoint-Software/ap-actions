@@ -381,6 +381,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
+        from git_lfs_helper import is_extension_tracked_by_lfs
         if channel_id != "Git": return None
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -389,11 +390,12 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
 
         if repo.get_current_branch_name() == branch:
             return
-        
-        if platform.system() == "Windows" or True:
+
+        if platform.system() == "Windows":
             if is_executable_running(["unrealeditor.exe"]):
-                ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
-                return
+                if is_extension_tracked_by_lfs(repo,"umap") or is_extension_tracked_by_lfs(repo,"uasset"):
+                    ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
+                    return
 
         progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
         try:

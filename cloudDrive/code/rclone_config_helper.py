@@ -24,15 +24,20 @@ configuration = {
     "azureblob_sas_url" :"",
     "azureblob_container_path" :"",
 
+    #Google Cloud Storage
+    "gcs_bucket_name": "",
+    "gcs_service_account": "",
+
     #S3 other
     "s3other_access_key_id": "",
     "s3other_secret_access_key": "",
     "s3other_endpoint": "",
     "s3other_root_folder":""
 }
-remote_options = ["B2 (Backblaze)\t","S3 (AWS)\t","S3 (Wasabi)\t", "Azure Blob Storage\t","S3 (Other)\t"]
+remote_options = ["B2 (Backblaze)\t","S3 (AWS)\t","S3 (Wasabi)\t", "Azure Blob Storage\t", "Google Cloud Storage\t", "S3 (Other)\t"]
 
 def get_config():
+    print("get_config called")
     return configuration
 
 def get_remote_options():
@@ -48,6 +53,8 @@ def get_config_type(value):
     if(value == remote_options[3]):
         return "azureblob"
     if(value == remote_options[4]):
+        return "gcs"
+    if(value == remote_options[5]):
         return "s3other"
     return ""
 
@@ -60,6 +67,8 @@ def get_dropdown_label(config_type):
         return remote_options[2]
     if(config_type == "azureblob"):
         return remote_options[3]
-    if(config_type == "s3other"):
+    if(config_type == "gcs"):
         return remote_options[4]
+    if(config_type == "s3other"):
+        return remote_options[5]
     return remote_options[0]

@@ -67,3 +67,23 @@ def lfs_track_binary_files(paths, repo, progress_callback = None):
         
     if add_gitattributes:
         paths.append(".gitattributes")
+
+def is_extension_tracked_by_lfs(repo, extension):
+    lfs_patterns = []
+    gitattributes_path = os.path.join(repo.get_root_path(), '.gitattributes')
+    if not os.path.exists(gitattributes_path):
+        return False
+    
+    try:
+        with open(gitattributes_path, 'r') as f:
+            for line in f.readlines():
+                if line.startswith('#'): continue
+                if 'filter=lfs' in line:
+                    lfs_patterns.append(line.split()[0])
+        
+        for pattern in lfs_patterns:
+            if pattern == f'*.{extension}':
+                return True
+        return False
+    except:
+        return False
