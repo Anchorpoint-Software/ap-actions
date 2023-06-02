@@ -224,6 +224,11 @@ def reset_commit(path, commit: HistoryEntry, channel_id):
         if repo.has_pending_changes(True):
             ui.show_error("Cannot reset project", "You have changed files. Commit them and try again")
             return 
+        
+        if repo.has_remote():
+            ui.show_error("Cannot reset project", "Reset Project cannot be used with local repositories")
+            return 
+
         repo.reset(commit.id, True)
 
         ap.vc_load_pending_changes(channel_id)
