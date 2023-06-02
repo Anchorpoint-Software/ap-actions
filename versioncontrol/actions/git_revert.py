@@ -310,7 +310,15 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             if repo.has_pending_changes(True):
                 ui.show_info("Cannot reset project", "You have changed files. Commit them and try again")
                 return True
-            else:
+            else:    
+                if platform.system() == "Windows":
+                    from vc.apgit.utility import is_executable_running
+                    from git_lfs_helper import is_extension_tracked_by_lfs
+                    if is_executable_running(["unrealeditor.exe"]):
+                        if is_extension_tracked_by_lfs(repo,"umap") or is_extension_tracked_by_lfs(repo,"uasset"):
+                            ap.UI().show_info("Cannot reset project", "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again", duration = 10000)
+                            return True
+
                 commit = repo.get_history_entry(entry_id)
                 show_restore_project_dialog(path, commit, channel_id)
 
