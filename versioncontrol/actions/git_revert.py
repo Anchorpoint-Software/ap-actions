@@ -216,6 +216,26 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
             logging.info(str(e))
             ui.show_error("Restore Failed", str(e))
 
+def reset_commit(path, commit: HistoryEntry, channel_id):
+    ui = ap.UI()
+    try:
+        progress = ap.Progress("Resetting Project", show_loading_screen=True)
+        repo = GitRepository.load(path)
+        if repo.has_pending_changes(True):
+            ui.show_error("Cannot reset project", "You have changed files. Commit them and try again")
+            return 
+        repo.reset(commit.id, True)
+
+        ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
+
+        ui.show_success("Reset Succeeded")
+
+    except Exception as e:
+        if not git_errors.handle_error(e):
+            logging.info(str(e))
+            ui.show_error("Reset Failed", str(e))
+
 def async_wrapper(func, dialog, *args, **kwargs):
     dialog.close()
     ap.get_context().run_async(func, *args, **kwargs)
@@ -241,6 +261,19 @@ def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channe
     dialog.add_button("Overwrite", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
     dialog.show()
 
+def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str):
+    author = commit.author
+    message = commit.message
+    if len(message) > 50:
+        message = message[:50] + "..."
+
+    dialog = ap.Dialog()
+    dialog.title = "Reset Project"
+    dialog.icon = ":/icons/restoreMultipleFiles.svg"
+    dialog.add_text("The project will be reset to the selected commit:<br><br><b>\"" + message.rstrip() + "\"</b><br>by " + author + "<br>")
+    dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+    dialog.show()
+
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
     ui = ap.UI()
     if action_id == "gitrevertcommit":
@@ -262,11 +295,33 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 ui.show_error("Undo Failed", str(e))
         finally:
             return True
+    
     if action_id == "gitrestorecommitfiles":
         path = get_repo_path(channel_id, ctx.project_path)
         show_restore_files_dialog(path, ctx.selected_files, entry_id, channel_id)
         return True
-        
+    
+    if action_id == "gitresetproject":
+        try:
+            path = get_repo_path(channel_id, ctx.project_path)
+            repo = GitRepository.load(path)
+            if not repo: return
+
+            if repo.has_pending_changes(True):
+                ui.show_info("Cannot reset project", "You have changed files. Commit them and try again")
+                return True
+            else:
+                commit = repo.get_history_entry(entry_id)
+                show_restore_project_dialog(path, commit, channel_id)
+
+        except Exception as e:
+            if not git_errors.handle_error(e):
+                logging.info(str(e))
+                ui.show_error("Reset Failed", str(e))
+        finally:
+            return True
+
+    
     if action_id == "gitrevertcommitfiles":
         try:
             path = get_repo_path(channel_id, ctx.project_path)
