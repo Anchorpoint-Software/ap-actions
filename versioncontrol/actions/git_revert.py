@@ -265,7 +265,7 @@ def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str
     dialog = ap.Dialog()
     dialog.title = "Reset Project"
     dialog.icon = ":/icons/restoreproject.svg"
-    dialog.add_text("This command will set all files in your project to this commit.<br>You can go back to the latest state by pulling from the remote repository.")
+    dialog.add_text("This command will set all files in your project to this commit. You can <br>go back to the latest state by pulling from the remote repository.")
     dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
     dialog.show()
 
