@@ -295,6 +295,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
 
+        has_remote = repo.has_remote()
+
         current_commit = repo.get_current_change_id()
 
         if repo.branch_contains(entry_id):
@@ -306,13 +308,13 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
             details.actions.append(revert)
 
-            if current_commit != entry_id:
+            if has_remote and current_commit != entry_id:
                 reset = ap.TimelineChannelAction()
                 reset.name = "Reset Project"
-                reset.icon = aps.Icon(":/icons/restoreMultipleFiles.svg")
+                reset.icon = aps.Icon(":/icons/restoreproject.svg")
                 reset.identifier = "gitresetproject"
                 reset.type = ap.ActionButtonType.SecondaryText
-                reset.tooltip = "Resets the entire project to the state of this commit."
+                reset.tooltip = "Resets the entire project to the state of this commit"
                 details.actions.append(reset)
 
             restore_entry = ap.TimelineChannelAction()

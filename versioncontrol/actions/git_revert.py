@@ -262,15 +262,10 @@ def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channe
     dialog.show()
 
 def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str):
-    author = commit.author
-    message = commit.message
-    if len(message) > 50:
-        message = message[:50] + "..."
-
     dialog = ap.Dialog()
     dialog.title = "Reset Project"
-    dialog.icon = ":/icons/restoreMultipleFiles.svg"
-    dialog.add_text("The project will be reset to the selected commit:<br><br><b>\"" + message.rstrip() + "\"</b><br>by " + author + "<br>")
+    dialog.icon = ":/icons/restoreproject.svg"
+    dialog.add_text("This command will set all files in your project to this commit.<br>You can go back to the latest state by pulling from the remote repository.")
     dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
     dialog.show()
 
