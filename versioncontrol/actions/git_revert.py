@@ -225,7 +225,7 @@ def reset_commit(path, commit: HistoryEntry, channel_id):
             ui.show_error("Cannot reset project", "You have changed files. Commit them and try again")
             return 
         
-        if repo.has_remote():
+        if not repo.has_remote():
             ui.show_error("Cannot reset project", "Reset Project cannot be used with local repositories")
             return 
 
