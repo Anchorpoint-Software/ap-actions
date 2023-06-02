@@ -8,6 +8,7 @@ sys.path.insert(0, parent_dir)
 
 from git_pull import pull
 from git_push import PushProgress, show_push_failed
+import git_errors
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 if parent_dir in sys.path:
@@ -86,7 +87,8 @@ def push_changes(repo: GitRepository, channel_id: str):
         else:
             ap.UI().show_success("Push Successful")
     except Exception as e:
-        show_push_failed(str(e), channel_id, repo.get_root_path())
+        if not git_errors.handle_error(e):
+            show_push_failed(str(e), channel_id, repo.get_root_path())
     finally:
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
         ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
@@ -114,6 +116,7 @@ def repo_needs_pull(repo: GitRepository):
         repo.fetch()
         return repo.is_pull_required(), progress.canceled
     except Exception as e:
+        git_errors.handle_error(e)
         ap.UI().show_info("Could not get remote changes", "Your changed files have been committed, you can push them manually to the server", duration = 8000)
         raise e
     
