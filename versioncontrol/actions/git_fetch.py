@@ -3,6 +3,8 @@ import anchorpoint as ap
 import apsync as aps
 
 import sys, os, importlib
+import git_errors
+        
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
@@ -29,8 +31,9 @@ def fetch_async(channel_id: str, project_path):
             progress.finish()
             
     except Exception as e:
-        ui.show_error("Failed to fetch Git Repository", str(e))
-        raise e
+        if not git_errors.handle_error(e):
+            ui.show_error("Failed to fetch Git Repository", str(e))
+            raise e
     finally:    
         if "vc_load_pending_changes" in dir(ap):
             ap.vc_load_pending_changes("Git")

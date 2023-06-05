@@ -7,6 +7,7 @@ parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
 importlib.invalidate_caches()
+import git_errors
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 if parent_dir in sys.path: sys.path.remove(parent_dir)
@@ -72,7 +73,8 @@ def push_async(channel_id: str, project_path):
         else:
             ui.show_success("Push Successful")
     except Exception as e:
-        show_push_failed(str(e), channel_id, project_path)
+        if not git_errors.handle_error(e):
+            show_push_failed(str(e), channel_id, project_path)
     finally:
         progress.finish()
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")

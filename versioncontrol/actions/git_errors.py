@@ -67,6 +67,80 @@ def _shorten_filepath(file: str):
 
     return file
 
+def _apply_azure_ipv4(d, ip_address, hostname):
+    import tempfile, subprocess
+
+    d.close()
+    temp_dir = tempfile.gettempdir()
+    batch_script = os.path.join(temp_dir, "Anchorpoint Azure DevOps Setup.bat")
+    python_script = os.path.join(temp_dir, "run_elevated.py")
+
+    batch_script = batch_script.replace("\\","/")
+
+    script_content = f'@echo off\n'
+    script_content += f'echo # Workaround for IPv6 issue for dev.azure.com, added by Anchorpoint >> C:\\Windows\\System32\\drivers\\etc\\hosts\n'
+    script_content += f'echo {ip_address} {hostname} >> C:\\Windows\\System32\\drivers\\etc\\hosts\n'
+    script_content += f'ping -n 2 127.0.0.1 > nul\n'  # Pause for a short duration
+
+    with open(batch_script, 'w') as f:
+        f.write(script_content)
+
+    script_content = f'import ctypes\n'
+    script_content += f'result = ctypes.windll.shell32.ShellExecuteW(None, \"runas\", \"{batch_script}\", None, None, 0)\n'
+    script_content += f'if int(result) <= 32: sys.exit(1)\n'
+
+    with open(python_script, 'w') as f:
+        f.write(script_content)
+
+    try:
+        print(f"Patching hosts file to use IPv4 for dev.azure.com ({ip_address})")
+        result = subprocess.call([sys.executable, python_script], creationflags=subprocess.CREATE_NO_WINDOW)
+        if result != 0:
+            ap.UI().show_error("Failed to run AzureDevops setup script as administator")
+            return
+        ap.UI().show_info("Setup Finished", "Please retry the operation", duration=4000)
+    finally:
+        os.remove(batch_script)
+        os.remove(python_script)
+
+def _handle_azure_ipv6():
+    import platform, socket
+    if platform.system() != "Windows":
+        print("Error: IPv6 error for dev.azure.com but not on Windows")
+        return False
+
+    hostname = "dev.azure.com"
+    def _entry_exists(ipv4_address):
+        try:
+            with open(r"C:\Windows\System32\drivers\etc\hosts", "r") as hosts_file:
+                for line in hosts_file:
+                    if f"{ipv4_address} {hostname}" in line:
+                        return True
+        except FileNotFoundError:
+            pass
+        return False
+
+    try:
+        ipv4_address = socket.gethostbyname(hostname)
+        if _entry_exists(ipv4_address):
+            print("Error: IPv6 error for dev.azure.com but hosts file already patched")
+            return False
+
+        d = ap.Dialog()
+        d.title = "Azure DevOps requires a configuration change"
+        d.icon = ":/icons/versioncontrol.svg"
+        d.add_text("May Anchorpoint apply the change for you?\nWindows will ask you for permission.")
+        d.add_info("Learn more about <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/#azure-devops-network-configuration\">Azure DevOps network configuration</a>")
+        d.add_button("Continue", callback=lambda d:_apply_azure_ipv4(d, ipv4_address, hostname))
+        d.show()
+        
+    except Exception as e:
+        print(e)
+        return False
+
+    return True
+
+
 def handle_error(e: Exception):
     try:
         message = e.stderr
@@ -116,5 +190,9 @@ def handle_error(e: Exception):
     if "Not a git repository" in message:
         ap.UI().show_info("Not a git repository", "This folder is not a git repository. Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.", duration=6000)
         return True
+
+    if "Connection was reset" in message and "fatal: unable to access" in message and "dev.azure" in message:
+        # azure fails to work with ipv6 in some cases: https://stackoverflow.com/questions/67230241/fatal-unable-to-access-https-dev-azure-com-xxx-openssl-ssl-connect-connec
+        return _handle_azure_ipv6()
     
     return False
