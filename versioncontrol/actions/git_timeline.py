@@ -198,7 +198,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
             history_list.append(entry)
 
-        count = ap.set_timeline_update_count()
+        count = ap.get_timeline_update_count()
         if newest_committime_to_pull > 0:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
         else:
@@ -224,7 +224,7 @@ def handle_git_autolock(repo, ctx, changes):
 
     paths_to_unlock = list[str]()
     for lock in locks: 
-        if lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git":
+        if lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
             paths_to_unlock.append(lock.path)
 
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
@@ -297,8 +297,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
         if current_dir in sys.path: sys.path.remove(current_dir)
-
-
 
 def run_func_wrapper(func, callback, *args):
     res = func(*args)

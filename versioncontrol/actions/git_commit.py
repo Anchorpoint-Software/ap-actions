@@ -70,10 +70,11 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
         else:
             raise e
 
-def push_changes(repo: GitRepository, channel_id: str):
+def push_changes(ctx, repo: GitRepository, channel_id: str):
     import sys
     script_dir = os.path.dirname(__file__)
     sys.path.insert(0, script_dir)
+    from git_push import handle_git_autolock as push_handle_git_autolock
     if script_dir in sys.path:
         sys.path.remove(script_dir)
 
@@ -85,6 +86,7 @@ def push_changes(repo: GitRepository, channel_id: str):
         elif state != UpdateState.OK:
             show_push_failed("", channel_id, repo.get_root_path())    
         else:
+            push_handle_git_autolock(ctx, repo)
             ap.UI().show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):
@@ -126,7 +128,7 @@ def delay(func, progress, *args, **kwargs):
     if progress: progress.finish()
     func(*args, **kwargs)
 
-def commit_auto_push(repo: GitRepository, channel_id: str):
+def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
     ui = ap.UI()
     pull_required, canceled = repo_needs_pull(repo)
     if canceled:
@@ -135,7 +137,7 @@ def commit_auto_push(repo: GitRepository, channel_id: str):
         # Queue async to give Anchorpoint a chance to update the timeline
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
         ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
-        ap.get_context().run_async(delay, push_changes, None, repo, channel_id)
+        ap.get_context().run_async(delay, push_changes, None, ctx, repo, channel_id)
     else:
         try:
             pull_changes(repo, channel_id)
@@ -147,7 +149,37 @@ def commit_auto_push(repo: GitRepository, channel_id: str):
         # Queue async to give Anchorpoint a chance to update the timeline
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
         ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
-        ap.get_context().run_async(delay, push_changes, None, repo, channel_id)
+        ap.get_context().run_async(delay, push_changes, None, ctx, repo, channel_id)
+
+def handle_git_autolock(repo, ctx, changes):
+    locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
+    lock_map = {}
+    for lock in locks:
+        print(f"Lock: {lock.path} {lock.metadata}")
+        if "type" in lock.metadata and lock.metadata["type"] == "git":
+            lock_map[lock.path] = lock
+
+    patched_locks = []
+    commit_id = repo.get_current_change_id()
+    branch = repo.get_current_branch_name()
+
+    def process_changes(changes):
+        for change in changes:
+            path = change.old_path if change.old_path else change.path
+            path = os.path.join(repo.get_root_path(), path)
+            if path in lock_map:
+                lock = lock_map[path]
+                metadata = lock.metadata
+                metadata["gitcommit"] = commit_id
+                metadata["gitbranch"] = branch
+                lock.metadata = metadata
+                patched_locks.append(lock)
+
+    process_changes(changes.modified_files)
+    process_changes(changes.deleted_files)
+    process_changes(changes.renamed_files)
+    
+    ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
 
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
@@ -165,6 +197,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         if not repo: return
 
         auto_push = git_settings.auto_push_enabled() and repo.has_remote()
+
         stage_files(changes, all_files_selected, repo, lfs, progress)
         if progress.canceled:
             ui.show_success("commit canceled")
@@ -186,10 +219,11 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             return True
 
         repo.commit(message)
+        handle_git_autolock(repo, ctx, staged)
 
         if auto_push:
             # Queue async to give Anchorpoint a chance to update the timeline
-            ap.get_context().run_async(delay, commit_auto_push, progress, repo, channel_id)
+            ap.get_context().run_async(delay, commit_auto_push, progress, ctx, repo, channel_id)
         else:
             ui.show_success("Commit succeeded")
         
