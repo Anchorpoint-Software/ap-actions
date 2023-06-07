@@ -125,7 +125,19 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         if script_dir in sys.path: sys.path.remove(script_dir)
 
 def load_timeline_callback():
-    pass
+    ap.open_timeline()
+
+def cleanup_orphan_locks(ctx, repo):
+    branch = repo.get_current_branch_name()
+    locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
+    paths_to_delete = []
+    for lock in locks:
+        if "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
+            paths_to_delete.append(lock.path)
+            print("Cleaning up orphan lock: " + lock.path)
+
+    ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_delete)
+
 
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
@@ -181,6 +193,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
           
             return entry
 
+        cleanup_locks = True
         commits_to_pull = 0
         newest_committime_to_pull = 0
         for commit in history:
@@ -196,6 +209,9 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                 if newest_committime_to_pull < commit.date:
                     newest_committime_to_pull = commit.date
 
+            if commit.type is HistoryType.LOCAL:
+                cleanup_locks = False
+
             history_list.append(entry)
 
         count = ap.get_timeline_update_count()
@@ -206,6 +222,9 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
         if count != commits_to_pull:
             ap.UI().show_system_notification("You have new commits to pull", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
+
+        if cleanup_locks:
+            cleanup_orphan_locks(ctx, repo)            
 
         return history_list
     except Exception as e:
