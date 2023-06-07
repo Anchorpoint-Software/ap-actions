@@ -26,6 +26,7 @@ action:
     - ap::examples::project
     - ap::examples::complexdialog
     - ap::examples::greetings
+    - ap::examples::notification
     - ap::examples::qml::greetings
     - ap::examples::widgets::greetings
     - ap::examples::settings
