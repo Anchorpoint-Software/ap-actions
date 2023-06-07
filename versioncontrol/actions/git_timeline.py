@@ -123,7 +123,10 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         return None
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
-        
+
+def load_timeline_callback():
+    pass
+
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
         import sys, os
@@ -195,11 +198,14 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
             history_list.append(entry)
 
-        if "set_timeline_update_count" in dir(ap):
-            if newest_committime_to_pull > 0:
-                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
-            else:
-                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
+        count = ap.set_timeline_update_count()
+        if newest_committime_to_pull > 0:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
+        else:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
+
+        if count != commits_to_pull:
+            ap.UI().show_system_notification("You have new commits to pull", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
 
         return history_list
     except Exception as e:
