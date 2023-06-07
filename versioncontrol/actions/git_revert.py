@@ -313,9 +313,10 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             else:    
                 if platform.system() == "Windows":
                     from vc.apgit.utility import is_executable_running
-                    from git_lfs_helper import is_extension_tracked_by_lfs
+                    from git_lfs_helper import LFSExtensionTracker
                     if is_executable_running(["unrealeditor.exe"]):
-                        if is_extension_tracked_by_lfs(repo,"umap") or is_extension_tracked_by_lfs(repo,"uasset"):
+                        lfsExtensions = LFSExtensionTracker(repo)
+                        if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
                             ap.UI().show_info("Cannot reset project", "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again", duration = 10000)
                             return True
 

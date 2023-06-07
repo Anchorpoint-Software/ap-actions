@@ -206,6 +206,23 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
         return []
         
+def handle_git_autolock(repo, ctx, changes):
+    from git_lfs_helper import LFSExtensionTracker
+    lfsExtensions = LFSExtensionTracker(repo)
+    paths_to_lock = set[str]()
+    for change in changes:
+        if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
+            paths_to_lock.add(change.path)
+    
+    locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
+
+    paths_to_unlock = list[str]()
+    for lock in locks: 
+        if lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git":
+            paths_to_unlock.append(lock.path)
+
+    ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
+    ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
@@ -224,6 +241,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
             return []
 
         auto_push = git_settings.auto_push_enabled() and repo.has_remote()
+        auto_lock = git_settings.auto_lock_enabled() and repo.has_remote()
 
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
@@ -235,6 +253,11 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         info = ap.VCPendingChangesInfo()
         info.changes = ap.VCPendingChangeList(changes.values())
         info.caption = f"changes in {os.path.basename(path)}"
+
+        try:
+            if auto_lock: handle_git_autolock(repo, ctx, info.changes)
+        except Exception as e:
+            print(f"Could not handle auto lock: {e}")
 
         has_changes = len(info.changes)
 
@@ -394,7 +417,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
-        from git_lfs_helper import is_extension_tracked_by_lfs
+        from git_lfs_helper import LFSExtensionTracker
         if channel_id != "Git": return None
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -406,7 +429,8 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
 
         if platform.system() == "Windows":
             if is_executable_running(["unrealeditor.exe"]):
-                if is_extension_tracked_by_lfs(repo,"umap") or is_extension_tracked_by_lfs(repo,"uasset"):
+                lfsExtensions = LFSExtensionTracker(repo)
+                if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
                     ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
                     return
 
