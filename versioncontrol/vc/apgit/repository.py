@@ -494,7 +494,7 @@ class GitRepository(VCRepository):
 
     def get_stash_changes(self, stash: Stash):
         status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
-
+      
         changes = Changes()
         i = 0
         while i < len(status_and_changes):
@@ -1085,6 +1085,46 @@ class GitRepository(VCRepository):
                 type = HistoryType.SYNCED if self.branch_contains(entry_id) else HistoryType.REMOTE
             return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
         return None
+
+    def get_files_to_pull(self, include_added: bool = True, include_modified: bool = True, include_deleted: bool = True) -> Changes:
+        if self.is_unborn() or not self.has_remote() or self.is_head_detached(): return []
+    
+        diff_filter = []
+        if include_added: diff_filter.append("--diff-filter=A")
+        if include_modified: diff_filter.append("--diff-filter=M")
+        if include_deleted: diff_filter.append("--diff-filter=D")
+        
+        if len(diff_filter) == 0: return []
+
+        status_and_changes = self.repo.git(no_pager=True).log("--name-status", "--no-renames", "--no-commit-id", "-z", *diff_filter, "HEAD..@{u}").split('\x00')
+        changes = Changes()
+        seen_files = set()
+
+        i = 0
+        while i < len(status_and_changes):
+            try:
+                kind = status_and_changes[i]
+                if kind == "":
+                    break
+                filename = status_and_changes[i+1]
+                i = i+2
+                
+                if filename not in seen_files:
+                    change = Change(filename)
+                    if kind.startswith("A"):
+                        changes.new_files.append(change)
+                    elif kind.startswith("D"):
+                        changes.deleted_files.append(change)
+                    else:
+                        changes.modified_files.append(change)
+                    
+                    seen_files.add(filename)
+
+            except Exception as e:
+                print(f"error in get_files_to_pull: {str(e)}")
+                break
+
+        return changes
 
 
     def branch_contains(self, changelist_id: str):

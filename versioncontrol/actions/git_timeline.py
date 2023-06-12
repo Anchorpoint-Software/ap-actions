@@ -138,6 +138,35 @@ def cleanup_orphan_locks(ctx, repo):
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_delete)
 
+def handle_files_to_pull(repo):
+    from git_lfs_helper import LFSExtensionTracker
+    lfsExtensions = LFSExtensionTracker(repo)
+
+    changes = repo.get_files_to_pull(include_added=False)
+    if not changes:
+        return
+    root_dir = repo.get_root_path()
+    def make_readonly(changes):
+        for change in changes:
+            path = root_dir + "/"+ change.path
+            if not os.path.exists(path):
+                continue
+
+            if not lfsExtensions.is_file_tracked(path):
+                continue
+
+            #make file readonly
+            print(f"Making {change.path} readonly")
+            try:
+                os.chmod(path, 0o444)
+            except Exception as e:
+                print(f"Failed to make {change.path} readonly: {str(e)}")
+                pass
+            
+    make_readonly(changes.modified_files)
+    make_readonly(changes.deleted_files)
+    make_readonly(changes.new_files)
+
 
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
@@ -147,12 +176,16 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         from vc.apgit.utility import get_repo_path
         from vc.models import HistoryType
         if script_dir in sys.path: sys.path.remove(script_dir)
+
+        from git_settings import GitSettings
+        git_settings = GitSettings(ctx)
+
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
             return []
-
+        
         history_list = list()
         try:
             history = repo.get_history(count, rev_spec=last_id)
@@ -225,6 +258,10 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
+
+        auto_lock = git_settings.auto_lock_enabled() and repo.has_remote()
+        if auto_lock:
+            handle_files_to_pull(repo)
 
         return history_list
     except Exception as e:

@@ -74,8 +74,6 @@ class LFSExtensionTracker:
         self.lfs_patterns = []
         if not os.path.exists(self.gitattributes_path):
             raise Exception("no .gitattributes file " + self.gitattributes_path)
-        else:
-            print(self.gitattributes_path)
         
         with open(self.gitattributes_path, 'r') as f:
             for line in f.readlines():
