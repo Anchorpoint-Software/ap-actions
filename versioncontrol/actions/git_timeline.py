@@ -167,6 +167,42 @@ def handle_files_to_pull(repo):
     make_readonly(changes.deleted_files)
     make_readonly(changes.new_files)
 
+def get_config_path():
+    from pathlib import Path
+    import os, sys
+    if sys.platform == "darwin":
+        return os.path.join(str(Path.home()), "Library", "Application Support", "Anchorpoint Software", "Anchorpoint", "git")
+    elif sys.platform == "win32":
+        return os.path.join(str(Path.home()), "AppData", "Roaming", "Anchorpoint Software", "Anchorpoint", "git")
+    raise Exception("Unsupported platform")
+
+def get_forced_unlocked_config_path():
+    return os.path.join(get_config_path(), "forced_unlocked.bin")
+    
+def load_last_seen_fetched_commit(project_id: str):
+    import pickle
+    file_path = os.path.join(get_config_path(), "last_seen_fetched_commit.bin")
+    if not os.path.exists(file_path):
+        return None
+    with open(file_path, "rb") as f:
+        project_commit = pickle.load(f)
+        if project_id in project_commit:
+            return project_commit[project_id]
+    return None
+
+def save_last_seen_fetched_commit(project_id: str, commit: str):
+    import pickle
+    file_path = os.path.join(get_config_path(), "last_seen_fetched_commit.bin")
+    project_commit = dict()
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            project_commit = pickle.load(f)
+    project_commit[project_id] = commit.id
+
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "wb") as f:
+        pickle.dump(project_commit, f)
 
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
@@ -227,6 +263,7 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         cleanup_locks = True
         commits_to_pull = 0
         newest_committime_to_pull = 0
+        newest_commit_to_pull = None
         for commit in history:
             entry = map_commit(commit)
             if "parents" in dir(entry):
@@ -239,20 +276,25 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                 commits_to_pull = commits_to_pull + 1
                 if newest_committime_to_pull < commit.date:
                     newest_committime_to_pull = commit.date
+                    newest_commit_to_pull = commit
 
             if commit.type is HistoryType.LOCAL:
                 cleanup_locks = False
 
             history_list.append(entry)
 
-        count = ap.get_timeline_update_count()
         if newest_committime_to_pull > 0:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
         else:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
 
-        if count != commits_to_pull:
+        last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
+        if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
+            print("New commits to pull")
             ap.UI().show_system_notification("You have new commits to pull", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
+            save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
+        else:
+            print("No new commits to pull")
 
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
@@ -265,16 +307,6 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
         return []
-
-def get_forced_unlocked_config_path():
-    from pathlib import Path
-    import os, sys
-    if sys.platform == "darwin":
-        return os.path.join(str(Path.home()), "Library", "Application Support", "Anchorpoint Software", "Anchorpoint", "git", "forced_unlocked.bin")
-    elif sys.platform == "win32":
-        return os.path.join(str(Path.home()), "AppData", "Roaming", "Anchorpoint Software", "Anchorpoint", "git", "forced_unlocked.bin")
-    raise Exception("Unsupported platform")
-
 
 def on_locks_removed(locks, ctx):
     # Git flagged locks (of this user) that are unlocked are stored in a file so that auto_lock will not lock them again
