@@ -221,8 +221,6 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                 entry.message = ""
                 if commit.type is HistoryType.SYNCED:
                     entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
-            else:
-                entry.caption = f"Committed in {os.path.basename(path)}"
           
             return entry
 
@@ -267,14 +265,71 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
         return []
-        
+
+def get_forced_unlocked_config_path():
+    from pathlib import Path
+    import os, sys
+    if sys.platform == "darwin":
+        return os.path.join(str(Path.home()), "Library", "Application Support", "Anchorpoint Software", "Anchorpoint", "git", "forced_unlocked.bin")
+    elif sys.platform == "win32":
+        return os.path.join(str(Path.home()), "AppData", "Roaming", "Anchorpoint Software", "Anchorpoint", "git", "forced_unlocked.bin")
+    raise Exception("Unsupported platform")
+
+
+def on_locks_removed(locks, ctx):
+    # Git flagged locks (of this user) that are unlocked are stored in a file so that auto_lock will not lock them again
+    import pickle
+    file_path = get_forced_unlocked_config_path()
+    print (f"on_locks_removed: {file_path}")
+    path_mod_status = {}
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as file:
+            path_mod_status = pickle.load(file)
+
+    for lock in locks:
+        if lock.owner_id != ctx.user_id and lock.metadata["type"] != "git": 
+            continue
+        if os.path.exists(lock.path):
+            path_mod_status[lock.path] = os.path.getmtime(lock.path)
+        else:
+            path_mod_status[lock.path] = None
+
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'wb') as file:
+        pickle.dump(path_mod_status, file)
+
 def handle_git_autolock(repo, ctx, changes):
     from git_lfs_helper import LFSExtensionTracker
+    import pickle
     lfsExtensions = LFSExtensionTracker(repo)
     paths_to_lock = set[str]()
+
+    path_mod_status = {}
+    file_path = get_forced_unlocked_config_path()
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as file:
+            path_mod_status = pickle.load(file)
+    
     for change in changes:
         if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
+            # Do not lock files that are manually unlocked
+            entry_exists = change.path in path_mod_status
+            if os.path.exists(change.path):
+                current_mtime = os.path.getmtime(change.path)
+            else:
+                current_mtime = None
+            if entry_exists and path_mod_status[change.path] == current_mtime:
+                continue
+            
+            if entry_exists:
+                del path_mod_status[change.path]
+
             paths_to_lock.add(change.path)
+    
+    if os.path.exists(file_path):
+        with open(file_path, 'wb') as file:
+            pickle.dump(path_mod_status, file)
     
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
 
@@ -582,7 +637,6 @@ def on_project_directory_changed(ctx):
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
-
 
 def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None
