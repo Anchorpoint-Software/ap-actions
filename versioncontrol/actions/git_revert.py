@@ -240,6 +240,8 @@ def reset_commit(path, commit: HistoryEntry, channel_id):
         if not git_errors.handle_error(e):
             logging.info(str(e))
             ui.show_error("Reset Failed", str(e))
+    finally:
+        ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
 
 def async_wrapper(func, dialog, *args, **kwargs):
     dialog.close()
@@ -266,12 +268,16 @@ def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channe
     dialog.add_button("Overwrite", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
     dialog.show()
 
+def cancel_restore_project(dialog, channel_id: str):
+    ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
+    dialog.close()
+
 def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str):
     dialog = ap.Dialog()
     dialog.title = "Reset Project"
     dialog.icon = ":/icons/restoreproject.svg"
     dialog.add_text("This command will set all files in your project to this commit. You can <br>go back to the latest state by pulling from the remote repository.")
-    dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+    dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: cancel_restore_project(d, channel_id), primary=False)
     dialog.show()
 
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
@@ -327,11 +333,11 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 show_restore_project_dialog(path, commit, channel_id)
 
         except Exception as e:
+            ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
             if not git_errors.handle_error(e):
                 logging.info(str(e))
                 ui.show_error("Reset Failed", str(e))
-        finally:
-            ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")    
+        finally:    
             return True
 
     
