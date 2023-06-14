@@ -37,7 +37,6 @@ configuration = {
 remote_options = ["B2 (Backblaze)\t","S3 (AWS)\t","S3 (Wasabi)\t", "Azure Blob Storage\t", "Google Cloud Storage\t", "S3 (Other)\t"]
 
 def get_config():
-    print("get_config called")
     return configuration
 
 def get_remote_options():
