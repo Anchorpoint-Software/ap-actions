@@ -189,7 +189,7 @@ class GitRepository(VCRepository):
         if remote_url and ("azure" in remote_url or "visualstudio" in remote_url):
             add_config_env(env, "http.version", "HTTP/1.1", config_counter)
             config_counter = config_counter + 1
-            add_config_env(env, "lfs.activitytimeout", "60", config_counter)
+            add_config_env(env, "lfs.activitytimeout", "600", config_counter)
             config_counter = config_counter + 1
         if platform.system() == "Windows":
             add_config_env(env, "core.longPaths", "1", config_counter)
