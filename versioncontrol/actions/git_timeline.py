@@ -300,8 +300,8 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
 
-        auto_lock = git_settings.auto_lock_enabled() and repo.has_remote()
-        if auto_lock:
+        workspace_settings = aps.SharedSettings(ctx.workspace_id, "remoteWorkspaceSettings")
+        if git_settings.auto_lock_enabled() and repo.has_remote() and workspace_settings.get("readonlyLocksEnabled", True):
             handle_files_to_pull(repo)
 
         return history_list
