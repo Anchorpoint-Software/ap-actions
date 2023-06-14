@@ -132,7 +132,7 @@ def cleanup_orphan_locks(ctx, repo):
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
     paths_to_delete = []
     for lock in locks:
-        if "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
+        if lock.owner_id == ctx.user_id and "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
             paths_to_delete.append(lock.path)
             print("Cleaning up orphan lock: " + lock.path)
 
@@ -364,7 +364,7 @@ def handle_git_autolock(repo, ctx, changes):
 
     paths_to_unlock = list[str]()
     for lock in locks: 
-        if lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
+        if lock.owner_id == ctx.user_id and lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
             paths_to_unlock.append(lock.path)
 
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
