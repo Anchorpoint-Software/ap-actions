@@ -73,7 +73,7 @@ class LFSExtensionTracker:
         self.gitattributes_path = os.path.join(repo.get_root_path(), '.gitattributes')
         self.lfs_patterns = []
         if not os.path.exists(self.gitattributes_path):
-            raise Exception("no .gitattributes file " + self.gitattributes_path)
+            return
         
         with open(self.gitattributes_path, 'r') as f:
             for line in f.readlines():
