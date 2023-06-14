@@ -317,7 +317,7 @@ def on_locks_removed(locks, ctx):
             path_mod_status = pickle.load(file)
 
     for lock in locks:
-        if lock.owner_id != ctx.user_id and lock.metadata["type"] != "git": 
+        if lock.owner_id != ctx.user_id or "type" not in lock.metadata or lock.metadata["type"] != "git": 
             continue
         if os.path.exists(lock.path):
             path_mod_status[lock.path] = os.path.getmtime(lock.path)
