@@ -310,7 +310,6 @@ def on_locks_removed(locks, ctx):
     # Git flagged locks (of this user) that are unlocked are stored in a file so that auto_lock will not lock them again
     import pickle
     file_path = get_forced_unlocked_config_path()
-    print (f"on_locks_removed: {file_path}")
     path_mod_status = {}
     if os.path.exists(file_path):
         with open(file_path, 'rb') as file:
