@@ -291,7 +291,10 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
         if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
             print("New commits to pull")
-            ap.UI().show_system_notification("You have new commits to pull", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
+            if commits_to_pull == 1:
+                ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
+            else:
+                ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
             save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
 
         if cleanup_locks:
