@@ -155,7 +155,6 @@ def handle_git_autolock(repo, ctx, changes):
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
     lock_map = {}
     for lock in locks:
-        print(f"Lock: {lock.path} {lock.metadata}")
         if "type" in lock.metadata and lock.metadata["type"] == "git":
             lock_map[lock.path] = lock
 
