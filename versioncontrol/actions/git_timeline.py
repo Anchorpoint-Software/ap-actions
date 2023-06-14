@@ -293,8 +293,6 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             print("New commits to pull")
             ap.UI().show_system_notification("You have new commits to pull", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
             save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
-        else:
-            print("No new commits to pull")
 
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
