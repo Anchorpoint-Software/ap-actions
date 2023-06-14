@@ -278,6 +278,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
     ui = ap.UI()
     if action_id == "gitrevertcommit":
         try:
+            ap.timeline_channel_action_processing(channel_id, "gitrevertcommit", "Undoing Commit...")
             path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
@@ -294,6 +295,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 logging.info(str(e))
                 ui.show_error("Undo Failed", str(e))
         finally:
+            ap.stop_timeline_channel_action_processing(channel_id, "gitrevertcommit")
             return True
     
     if action_id == "gitrestorecommitfiles":
@@ -303,6 +305,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
     
     if action_id == "gitresetproject":
         try:
+            ap.timeline_channel_action_processing(channel_id, "gitresetproject", "Resetting Project...")
             path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
@@ -328,6 +331,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 logging.info(str(e))
                 ui.show_error("Reset Failed", str(e))
         finally:
+            ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")    
             return True
 
     
