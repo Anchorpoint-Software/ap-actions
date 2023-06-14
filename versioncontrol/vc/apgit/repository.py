@@ -1096,7 +1096,10 @@ class GitRepository(VCRepository):
         
         if len(diff_filter) == 0: return None
 
-        status_and_changes = self.repo.git(no_pager=True).log("--name-status", "--no-renames", "--no-commit-id", "-z", *diff_filter, "HEAD..@{u}").split('\x00')
+        try:
+            status_and_changes = self.repo.git(no_pager=True).log("--name-status", "--no-renames", "--no-commit-id", "-z", *diff_filter, "HEAD..@{u}").split('\x00')
+        except:
+            return None
         changes = Changes()
         seen_files = set()
 
