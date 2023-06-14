@@ -165,7 +165,7 @@ def handle_git_autolock(repo, ctx, changes):
     def process_changes(changes):
         for change in changes:
             path = change.old_path if change.old_path else change.path
-            path = os.path.join(repo.get_root_path(), path)
+            path = os.path.join(repo.get_root_path(), path).replace("\\","/")
             if path in lock_map:
                 lock = lock_map[path]
                 metadata = lock.metadata
