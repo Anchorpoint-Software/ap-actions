@@ -1087,14 +1087,14 @@ class GitRepository(VCRepository):
         return None
 
     def get_files_to_pull(self, include_added: bool = True, include_modified: bool = True, include_deleted: bool = True) -> Changes:
-        if self.is_unborn() or not self.has_remote() or self.is_head_detached(): return []
+        if self.is_unborn() or not self.has_remote() or self.is_head_detached(): return None
     
         diff_filter = []
         if include_added: diff_filter.append("--diff-filter=A")
         if include_modified: diff_filter.append("--diff-filter=M")
         if include_deleted: diff_filter.append("--diff-filter=D")
         
-        if len(diff_filter) == 0: return []
+        if len(diff_filter) == 0: return None
 
         status_and_changes = self.repo.git(no_pager=True).log("--name-status", "--no-renames", "--no-commit-id", "-z", *diff_filter, "HEAD..@{u}").split('\x00')
         changes = Changes()
