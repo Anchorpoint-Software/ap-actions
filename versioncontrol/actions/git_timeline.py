@@ -644,6 +644,7 @@ def refresh_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
+        if not repo.has_remote(): return
 
         lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):
