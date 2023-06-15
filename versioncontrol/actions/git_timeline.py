@@ -427,7 +427,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.name = "Revert"
         revert.identifier = "gitrevert"
         revert.icon = aps.Icon(":/icons/revert.svg")
-        revert.tooltip = "Reverts all your modifications (cannot be undone)"
+        revert.tooltip = "Removes all your file changes (cannot be undone)"
         info.entry_actions.append(revert)
 
         return info
@@ -644,7 +644,6 @@ def refresh_async(channel_id: str, project_path):
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
-        if not repo.has_remote(): return
 
         lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):

@@ -93,11 +93,11 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         return True
 
     dialog = ap.Dialog()
-    dialog.title = "Revert Files"
+    dialog.title = "Confirm Reversion"
     dialog.icon = ":/icons/revert.svg"
-    dialog.add_text("This will reset your modified files to the last commit. Deleted <br>files will be restored. Newly created files will be deleted. <br>Attention, this command is not undoable.")
-    dialog.add_info("<a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/2-Git-commands/#revert'>Learn more about Revert</a>")
-    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, ctx.selected_files, changes, revert_all, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
+    dialog.add_text("Choosing <b>Revert</b> will reset your selected files to the last saved state in your repository. <ul> <li>Deleted files will be restored</li><li>New created files will be deleted</li><li>Modified files will return to their previously saved state</li> </ul>")
+    dialog.add_info("Attention, this command is not undoable. <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/2-Git-commands/#revert'>Learn more about Revert</a>")
+    dialog.add_button("Revert", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, ctx.selected_files, changes, revert_all, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
     dialog.show()
 
     return True
