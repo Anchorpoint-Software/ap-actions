@@ -27,7 +27,7 @@ class PushProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
-def show_push_failed(error: str, channel_id, project_path):
+def show_push_failed(error: str, channel_id, ctx):
     d = ap.Dialog()
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
@@ -44,16 +44,28 @@ def show_push_failed(error: str, channel_id, project_path):
 
     def retry():
         ctx = ap.get_context()
-        ctx.run_async(push_async, channel_id, project_path)
+        ctx.run_async(push_async, channel_id, ctx)
         d.close()
 
     d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
     d.show()
 
-def push_async(channel_id: str, project_path):
+def handle_git_autolock(ctx, repo):
+    branch = repo.get_current_branch_name()
+    locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
+
+    paths_to_unlock = []
+    for lock in locks:
+        if "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
+            paths_to_unlock.append(lock.path)
+
+    ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
+
+
+def push_async(channel_id: str, ctx):
     ui = ap.UI()
     try:
-        path = get_repo_path(channel_id, project_path)
+        path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
@@ -69,12 +81,13 @@ def push_async(channel_id: str, project_path):
         if state == UpdateState.CANCEL:
             ui.show_info("Push Canceled")
         elif state != UpdateState.OK:
-            show_push_failed("", channel_id, project_path)    
+            show_push_failed("", channel_id, ctx)    
         else:
+            handle_git_autolock(ctx, repo)
             ui.show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):
-            show_push_failed(str(e), channel_id, project_path)
+            show_push_failed(str(e), channel_id, ctx)
     finally:
         progress.finish()
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
@@ -83,5 +96,5 @@ def push_async(channel_id: str, project_path):
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id != "gitpush": return False
-    ctx.run_async(push_async, channel_id, ctx.project_path)
+    ctx.run_async(push_async, channel_id, ctx)
     return True

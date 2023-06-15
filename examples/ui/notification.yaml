@@ -1,0 +1,28 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "UI / System Notification"
+
+  #Optional Properties
+  version: 1
+  id: "ap::examples::notification"
+  category: "utility/code/examples/notification"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+  description: "This is a basic example that shows how to show a system notification"
+  icon:
+    path: ":icons/aplogo.svg"
+
+  script: "notification.py"
+
+  #Where to register this action: in all folders
+  register:
+    folder:
+      enable: true

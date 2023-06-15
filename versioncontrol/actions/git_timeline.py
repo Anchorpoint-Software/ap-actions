@@ -123,7 +123,85 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         return None
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
-        
+
+def load_timeline_callback():
+    ap.open_timeline()
+
+def cleanup_orphan_locks(ctx, repo):
+    branch = repo.get_current_branch_name()
+    locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
+    paths_to_delete = []
+    for lock in locks:
+        if lock.owner_id == ctx.user_id and "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
+            paths_to_delete.append(lock.path)
+            print("Cleaning up orphan lock: " + lock.path)
+
+    ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_delete)
+
+def handle_files_to_pull(repo):
+    from git_lfs_helper import LFSExtensionTracker
+    lfsExtensions = LFSExtensionTracker(repo)
+
+    changes = repo.get_files_to_pull(include_added=False)
+    if not changes:
+        return
+    root_dir = repo.get_root_path()
+    def make_readonly(changes):
+        for change in changes:
+            path = root_dir + "/"+ change.path
+            if not os.path.exists(path):
+                continue
+
+            if not lfsExtensions.is_file_tracked(path):
+                continue
+
+            try:
+                os.chmod(path, 0o444)
+            except Exception as e:
+                print(f"Failed to make {change.path} readonly: {str(e)}")
+                pass
+            
+    make_readonly(changes.modified_files)
+    make_readonly(changes.deleted_files)
+    make_readonly(changes.new_files)
+
+def get_config_path():
+    from pathlib import Path
+    import os, sys
+    if sys.platform == "darwin":
+        return os.path.join(str(Path.home()), "Library", "Application Support", "Anchorpoint Software", "Anchorpoint", "git")
+    elif sys.platform == "win32":
+        return os.path.join(str(Path.home()), "AppData", "Roaming", "Anchorpoint Software", "Anchorpoint", "git")
+    raise Exception("Unsupported platform")
+
+def get_forced_unlocked_config_path():
+    return os.path.join(get_config_path(), "forced_unlocked.bin")
+    
+def load_last_seen_fetched_commit(project_id: str):
+    import pickle
+    file_path = os.path.join(get_config_path(), "last_seen_fetched_commit.bin")
+    if not os.path.exists(file_path):
+        return None
+    with open(file_path, "rb") as f:
+        project_commit = pickle.load(f)
+        if project_id in project_commit:
+            return project_commit[project_id]
+    return None
+
+def save_last_seen_fetched_commit(project_id: str, commit: str):
+    import pickle
+    file_path = os.path.join(get_config_path(), "last_seen_fetched_commit.bin")
+    project_commit = dict()
+    if os.path.exists(file_path):
+        with open(file_path, "rb") as f:
+            project_commit = pickle.load(f)
+    project_commit[project_id] = commit.id
+
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, "wb") as f:
+        pickle.dump(project_commit, f)
+
 def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
     try:
         import sys, os
@@ -132,12 +210,16 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         from vc.apgit.utility import get_repo_path
         from vc.models import HistoryType
         if script_dir in sys.path: sys.path.remove(script_dir)
+
+        from git_settings import GitSettings
+        git_settings = GitSettings(ctx)
+
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
             return []
-
+        
         history_list = list()
         try:
             history = repo.get_history(count, rev_spec=last_id)
@@ -173,13 +255,13 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                 entry.message = ""
                 if commit.type is HistoryType.SYNCED:
                     entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
-            else:
-                entry.caption = f"Committed in {os.path.basename(path)}"
           
             return entry
 
+        cleanup_locks = True
         commits_to_pull = 0
         newest_committime_to_pull = 0
+        newest_commit_to_pull = None
         for commit in history:
             entry = map_commit(commit)
             if "parents" in dir(entry):
@@ -192,20 +274,103 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
                 commits_to_pull = commits_to_pull + 1
                 if newest_committime_to_pull < commit.date:
                     newest_committime_to_pull = commit.date
+                    newest_commit_to_pull = commit
+
+            if commit.type is HistoryType.LOCAL:
+                cleanup_locks = False
 
             history_list.append(entry)
 
-        if "set_timeline_update_count" in dir(ap):
-            if newest_committime_to_pull > 0:
-                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
-            else:
-                ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
+        if newest_committime_to_pull > 0:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
+        else:
+            ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
+
+        if git_settings.notifications_enabled():
+            last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
+            if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
+                print("New commits to pull")
+                if commits_to_pull == 1:
+                    ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
+                else:
+                    ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
+                save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
+
+        if cleanup_locks:
+            cleanup_orphan_locks(ctx, repo)            
+
+        workspace_settings = aps.SharedSettings(ctx.workspace_id, "remoteWorkspaceSettings")
+        if git_settings.auto_lock_enabled() and repo.has_remote() and workspace_settings.get("readonlyLocksEnabled", True):
+            handle_files_to_pull(repo)
 
         return history_list
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
         return []
-        
+
+def on_locks_removed(locks, ctx):
+    # Git flagged locks (of this user) that are unlocked are stored in a file so that auto_lock will not lock them again
+    import pickle
+    file_path = get_forced_unlocked_config_path()
+    path_mod_status = {}
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as file:
+            path_mod_status = pickle.load(file)
+
+    for lock in locks:
+        if lock.owner_id != ctx.user_id or "type" not in lock.metadata or lock.metadata["type"] != "git": 
+            continue
+        if os.path.exists(lock.path):
+            path_mod_status[lock.path] = os.path.getmtime(lock.path)
+        else:
+            path_mod_status[lock.path] = None
+
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'wb') as file:
+        pickle.dump(path_mod_status, file)
+
+def handle_git_autolock(repo, ctx, changes):
+    from git_lfs_helper import LFSExtensionTracker
+    import pickle
+    lfsExtensions = LFSExtensionTracker(repo)
+    paths_to_lock = set[str]()
+
+    path_mod_status = {}
+    file_path = get_forced_unlocked_config_path()
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as file:
+            path_mod_status = pickle.load(file)
+    
+    for change in changes:
+        if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
+            # Do not lock files that are manually unlocked
+            entry_exists = change.path in path_mod_status
+            if os.path.exists(change.path):
+                current_mtime = os.path.getmtime(change.path)
+            else:
+                current_mtime = None
+            if entry_exists and path_mod_status[change.path] == current_mtime:
+                continue
+            
+            if entry_exists:
+                del path_mod_status[change.path]
+
+            paths_to_lock.add(change.path)
+    
+    if os.path.exists(file_path):
+        with open(file_path, 'wb') as file:
+            pickle.dump(path_mod_status, file)
+    
+    locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
+
+    paths_to_unlock = list[str]()
+    for lock in locks: 
+        if lock.owner_id == ctx.user_id and lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
+            paths_to_unlock.append(lock.path)
+
+    ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
+    ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
@@ -224,6 +389,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
             return []
 
         auto_push = git_settings.auto_push_enabled() and repo.has_remote()
+        auto_lock = git_settings.auto_lock_enabled() and repo.has_remote()
 
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
@@ -235,6 +401,11 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         info = ap.VCPendingChangesInfo()
         info.changes = ap.VCPendingChangeList(changes.values())
         info.caption = f"changes in {os.path.basename(path)}"
+
+        try:
+            if auto_lock: handle_git_autolock(repo, ctx, info.changes)
+        except Exception as e:
+            print(f"Could not handle auto lock: {e}")
 
         has_changes = len(info.changes)
 
@@ -256,7 +427,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         revert.name = "Revert"
         revert.identifier = "gitrevert"
         revert.icon = aps.Icon(":/icons/revert.svg")
-        revert.tooltip = "Reverts all your modifications (cannot be undone)"
+        revert.tooltip = "Removes all your file changes (cannot be undone)"
         info.entry_actions.append(revert)
 
         return info
@@ -268,8 +439,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
         if current_dir in sys.path: sys.path.remove(current_dir)
-
-
 
 def run_func_wrapper(func, callback, *args):
     res = func(*args)
@@ -394,7 +563,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
-        from git_lfs_helper import is_extension_tracked_by_lfs
+        from git_lfs_helper import LFSExtensionTracker
         if channel_id != "Git": return None
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -406,7 +575,8 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
 
         if platform.system() == "Windows":
             if is_executable_running(["unrealeditor.exe"]):
-                if is_extension_tracked_by_lfs(repo,"umap") or is_extension_tracked_by_lfs(repo,"uasset"):
+                lfsExtensions = LFSExtensionTracker(repo)
+                if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
                     ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
                     return
 
@@ -498,7 +668,6 @@ def on_project_directory_changed(ctx):
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
-
 
 def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None

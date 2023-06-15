@@ -93,10 +93,11 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         return True
 
     dialog = ap.Dialog()
-    dialog.title = "Revert Files"
+    dialog.title = "Confirm Reversion"
     dialog.icon = ":/icons/revert.svg"
-    dialog.add_text("Do you really want to revert the selected files?<br>This cannot be undone.")
-    dialog.add_button("Continue", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, ctx.selected_files, changes, revert_all, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
+    dialog.add_text("Choosing <b>Revert</b> will reset your selected files to the last saved state in your repository. <ul> <li>Deleted files will be restored</li><li>New created files will be deleted</li><li>Modified files will return to their previously saved state</li> </ul>")
+    dialog.add_info("Attention, this command is not undoable. <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/2-Git-commands/#revert'>Learn more about Revert</a>")
+    dialog.add_button("Revert", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, ctx.selected_files, changes, revert_all, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
     dialog.show()
 
     return True
@@ -240,6 +241,8 @@ def reset_commit(path, commit: HistoryEntry, channel_id):
         if not git_errors.handle_error(e):
             logging.info(str(e))
             ui.show_error("Reset Failed", str(e))
+    finally:
+        ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
 
 def async_wrapper(func, dialog, *args, **kwargs):
     dialog.close()
@@ -266,18 +269,23 @@ def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channe
     dialog.add_button("Overwrite", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
     dialog.show()
 
+def cancel_restore_project(dialog, channel_id: str):
+    ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
+    dialog.close()
+
 def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str):
     dialog = ap.Dialog()
     dialog.title = "Reset Project"
     dialog.icon = ":/icons/restoreproject.svg"
     dialog.add_text("This command will set all files in your project to this commit. You can <br>go back to the latest state by pulling from the remote repository.")
-    dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+    dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: cancel_restore_project(d, channel_id), primary=False)
     dialog.show()
 
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
     ui = ap.UI()
     if action_id == "gitrevertcommit":
         try:
+            ap.timeline_channel_action_processing(channel_id, "gitrevertcommit", "Undoing Commit...")
             path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
@@ -294,6 +302,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 logging.info(str(e))
                 ui.show_error("Undo Failed", str(e))
         finally:
+            ap.stop_timeline_channel_action_processing(channel_id, "gitrevertcommit")
             return True
     
     if action_id == "gitrestorecommitfiles":
@@ -303,6 +312,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
     
     if action_id == "gitresetproject":
         try:
+            ap.timeline_channel_action_processing(channel_id, "gitresetproject", "Resetting Project...")
             path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
@@ -313,9 +323,10 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             else:    
                 if platform.system() == "Windows":
                     from vc.apgit.utility import is_executable_running
-                    from git_lfs_helper import is_extension_tracked_by_lfs
+                    from git_lfs_helper import LFSExtensionTracker
                     if is_executable_running(["unrealeditor.exe"]):
-                        if is_extension_tracked_by_lfs(repo,"umap") or is_extension_tracked_by_lfs(repo,"uasset"):
+                        lfsExtensions = LFSExtensionTracker(repo)
+                        if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
                             ap.UI().show_info("Cannot reset project", "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again", duration = 10000)
                             return True
 
@@ -323,10 +334,11 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 show_restore_project_dialog(path, commit, channel_id)
 
         except Exception as e:
+            ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
             if not git_errors.handle_error(e):
                 logging.info(str(e))
                 ui.show_error("Reset Failed", str(e))
-        finally:
+        finally:    
             return True
 
     
