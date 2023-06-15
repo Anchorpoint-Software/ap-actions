@@ -155,8 +155,6 @@ def handle_files_to_pull(repo):
             if not lfsExtensions.is_file_tracked(path):
                 continue
 
-            #make file readonly
-            print(f"Making {change.path} readonly")
             try:
                 os.chmod(path, 0o444)
             except Exception as e:
@@ -288,14 +286,15 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         else:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull)
 
-        last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
-        if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
-            print("New commits to pull")
-            if commits_to_pull == 1:
-                ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
-            else:
-                ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
-            save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
+        if git_settings.notifications_enabled():
+            last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
+            if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
+                print("New commits to pull")
+                if commits_to_pull == 1:
+                    ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
+                else:
+                    ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
+                save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
 
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
