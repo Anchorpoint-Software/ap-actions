@@ -86,8 +86,8 @@ dialog = ap.Dialog()
 dialog.title = "Create New Action"
 dialog.icon = ctx.icon
 
-dialog.add_text("Name:\t\t").add_input(placeholder="My Action", var=action_name_var, callback=cb_name)
-dialog.add_text("File:\t\t").add_input(".yaml", var=action_filename_var, enabled=False)
+dialog.add_text("Name:\t").add_input(placeholder="My Action", var=action_name_var, callback=cb_name)
+dialog.add_text("File:\t").add_input(".yaml", var=action_filename_var, enabled=False)
 dialog.add_text("Description:\t").add_input(placeholder="Describe your action", var=action_desc_var)
 dialog.add_checkbox(True, var=action_python_var).add_text("Use Python")
 dialog.add_info("Create a <b>python</b> action or create a <b>command</b> action that runs an exectuable")
