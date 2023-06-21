@@ -42,9 +42,34 @@ def check_changes_writable(repo, changes):
             return False
     return True
 
+def handle_files_to_pull(repo):
+    from git_lfs_helper import LFSExtensionTracker
+    lfsExtensions = LFSExtensionTracker(repo)
+
+    changes = repo.get_files_to_pull(include_added=False)
+    if not changes:
+        return
+    root_dir = repo.get_root_path()
+    def make_readwrite(changes):
+        for change in changes:
+            path = root_dir + "/"+ change.path
+            if not os.path.exists(path):
+                continue
+
+            if not lfsExtensions.is_file_tracked(path):
+                continue
+
+            utility.make_file_writable(path)
+            
+    make_readwrite(changes.modified_files)
+    make_readwrite(changes.deleted_files)
+    make_readwrite(changes.new_files)
+
+
 def pull(repo: GitRepository, channel_id: str):
     ui = ap.UI()
     progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
+    handle_files_to_pull(repo)
     changes = repo.get_pending_changes(False)
     staged_changes = repo.get_pending_changes(True)
     

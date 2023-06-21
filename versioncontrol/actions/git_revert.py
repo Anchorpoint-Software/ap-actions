@@ -25,6 +25,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
     for path in selected_files:
         relpath = os.path.relpath(path, repo_root)
         relative_selected_paths.add(relpath.replace("\\", "/"))
+        utility.make_file_writable(path)
         if not utility.is_file_writable(path):
             error = f"error: unable to unlink '{relpath}':"
             if not git_errors.handle_error(error):
@@ -131,6 +132,7 @@ def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
         for path in files:
             relpath = os.path.relpath(path, repo_root)
             relative_selected_paths.add(relpath.replace("\\", "/"))
+            utility.make_file_writable(path)
             if not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error):
@@ -175,6 +177,7 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
         for path in files:
             relpath = os.path.relpath(path, repo_root)
             relative_selected_paths.add(relpath.replace("\\", "/"))
+            utility.make_file_writable(path)
             if not keep_original and not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error):
