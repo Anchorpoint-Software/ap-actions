@@ -20,6 +20,7 @@ action:
   actions:
     - ap::examples::async
     - ap::examples::attributes
+    - ap::examples::attributes::read
     - ap::examples::tasks
     - ap::examples::input
     - ap::examples::inputcommand

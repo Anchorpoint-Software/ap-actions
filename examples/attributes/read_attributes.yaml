@@ -8,7 +8,7 @@ action:
   name: Example / Read Attributes
 
   version: 1
-  id: ap::examples::attributes
+  id: ap::examples::attributes::read
   category: utility/code/examples/attributes
   type: python
   enable: false
