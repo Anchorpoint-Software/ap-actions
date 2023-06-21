@@ -63,6 +63,14 @@ def get_locking_application(path: str):
             pass
     return None
 
+def make_file_writable(path: str):
+    try:
+        os.chmod(path, 0o666)
+        return True
+    except Exception as e:
+        print(f"Could not make file writable: {e}")
+        return False
+
 def is_file_writable(path: str):
     try:
         if not os.path.exists(path):

@@ -59,12 +59,7 @@ def handle_files_to_pull(repo):
             if not lfsExtensions.is_file_tracked(path):
                 continue
 
-            try:
-                # Make the file writable
-                os.chmod(path, 0o666)
-            except Exception as e:
-                print(f"Failed to make {change.path} readwrite: {str(e)}")
-                pass
+            utility.make_file_writable(path)
             
     make_readwrite(changes.modified_files)
     make_readwrite(changes.deleted_files)
