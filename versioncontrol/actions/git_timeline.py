@@ -3,6 +3,7 @@ import apsync as aps
 from typing import Optional
 import os, logging
 import platform
+from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -202,7 +203,7 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
-def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
+def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time_end: datetime, ctx):
     try:
         import sys, os
         sys.path.insert(0, script_dir)
@@ -213,18 +214,18 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
         from git_settings import GitSettings
         git_settings = GitSettings(ctx)
-
         
+        has_more_commits = True
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
-            return []
+            return [], False
         
         history_list = list()
         try:
-            history = repo.get_history(count, rev_spec=last_id)
+            history = repo.get_history(time_start, time_end)
         except Exception as e:
-            return history_list
+            return history_list, False
         
         def map_commit(commit):
             entry = ap.TimelineChannelEntry()
@@ -279,6 +280,8 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             if commit.type is HistoryType.LOCAL:
                 cleanup_locks = False
 
+            if len(entry.parents) == 0:
+                has_more_commits = False
             history_list.append(entry)
 
         if newest_committime_to_pull > 0:
@@ -303,10 +306,10 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         if git_settings.auto_lock_enabled() and repo.has_remote() and workspace_settings.get("readonlyLocksEnabled", True):
             handle_files_to_pull(repo)
 
-        return history_list
+        return history_list, has_more_commits
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
-        return []
+        return [], False
 
 def on_locks_removed(locks, ctx):
     # Git flagged locks (of this user) that are unlocked are stored in a file so that auto_lock will not lock them again
@@ -581,10 +584,6 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                     return
 
         progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
-        try:
-            commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
-        except Exception as e:
-            commits = []
         
         try:
             repo.switch_branch(branch)
@@ -594,8 +593,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
 
-        if len(commits) > 0:
-            ap.delete_timeline_channel_entries(channel_id, list(commits))
+        ap.reload_timeline_entries()
     except Exception as e:
         raise e
     finally:

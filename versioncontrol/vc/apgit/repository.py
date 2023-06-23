@@ -13,6 +13,7 @@ import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
 import logging
 import gc, subprocess, platform
+from datetime import datetime
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -1030,17 +1031,19 @@ class GitRepository(VCRepository):
                 parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
         return parents
 
-    def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
+    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None):
         history = []
         args = {}
-        if skip != None:
-            args["skip"] = skip
-        if max_count != None:
-            args["max_count"] = max_count
+        if time_start:
+            args["until"] = f'\"{time_start.strftime("%Y-%m-%d %H:%M:%S")}\"'
+        if time_end:
+            args["since"] = f'\"{time_end.strftime("%Y-%m-%d %H:%M:%S")}\"'
+
+        print(f"loading commits from {time_start} to {time_end}")
 
         unborn = self.is_unborn()
         if not unborn:
-            base_commits = list(self.repo.iter_commits(rev=rev_spec, **args))
+            base_commits = list(self.repo.iter_commits(**args))
         else:
             base_commits = []
 
@@ -1072,7 +1075,7 @@ class GitRepository(VCRepository):
 
         for commit in remote_commits:
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=self._get_commit_parents(commit,HistoryType.REMOTE)))
-
+        print(f"commits loaded {len(history)}")
         return history
     
     def get_history_entry(self, entry_id: str):
