@@ -203,9 +203,76 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
+def map_commit(commit):
+    import sys
+    sys.path.insert(0, script_dir)
+    from vc.models import HistoryType
+
+    entry = ap.TimelineChannelEntry()
+    entry.id = commit.id
+    entry.user_email = commit.author
+    entry.time = commit.date
+    entry.message = commit.message
+    entry.has_details = True
+    
+    icon_color = "#f3d582"
+    if commit.type is HistoryType.LOCAL:
+        icon_color = "#fbbc9f"
+        entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
+        entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
+    elif commit.type is HistoryType.REMOTE:
+        icon_color = "#90CAF9"
+        entry.icon = aps.Icon(":/icons/cloud.svg", icon_color)
+        entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
+    elif commit.type is HistoryType.SYNCED:
+        entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
+        entry.tooltip = "This commit is in sync with your team"
+
+    is_merge = len(commit.parents) > 1
+    if is_merge:
+        icon_color = "#9E9E9E"
+        entry.caption = f"Pulled and merged files"
+        entry.tooltip = entry.message
+        entry.message = ""
+        if commit.type is HistoryType.SYNCED:
+            entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
+    
+    if script_dir in sys.path:
+        sys.path.remove(script_dir)
+
+    return entry
+
+def on_load_first_timeline_channel_entry(channel_id: str, ctx):
+    import sys
+    try:
+        sys.path.insert(0, script_dir)
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo:
+            return None
+        
+        if repo.is_unborn():
+            if not repo.has_remote():
+                return None
+            commit = map_commit(repo.get_history_entry("@{u}"))
+            return commit
+        
+        return map_commit(repo.get_history_entry("HEAD"))
+
+    except Exception as e:
+        import git_errors
+        git_errors.handle_error(e)
+        print (f"on_load_first_timeline_channel_entry exception: {str(e)}")
+        return None
+    finally:
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
 def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time_end: datetime, ctx):
     try:
-        import sys, os
+        import sys
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -226,38 +293,6 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
             history = repo.get_history(time_start, time_end)
         except Exception as e:
             return history_list, False
-        
-        def map_commit(commit):
-            entry = ap.TimelineChannelEntry()
-            entry.id = commit.id
-            entry.user_email = commit.author
-            entry.time = commit.date
-            entry.message = commit.message
-            entry.has_details = True
-            
-            icon_color = "#f3d582"
-            if commit.type is HistoryType.LOCAL:
-                icon_color = "#fbbc9f"
-                entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
-                entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
-            elif commit.type is HistoryType.REMOTE:
-                icon_color = "#90CAF9"
-                entry.icon = aps.Icon(":/icons/cloud.svg", icon_color)
-                entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
-            elif commit.type is HistoryType.SYNCED:
-                entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
-                entry.tooltip = "This commit is in sync with your team"
-
-            is_merge = len(commit.parents) > 1
-            if is_merge:
-                icon_color = "#9E9E9E"
-                entry.caption = f"Pulled and merged files"
-                entry.tooltip = entry.message
-                entry.message = ""
-                if commit.type is HistoryType.SYNCED:
-                    entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
-          
-            return entry
 
         cleanup_locks = True
         commits_to_pull = 0
