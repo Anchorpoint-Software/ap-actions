@@ -49,6 +49,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
 
+        ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
+
         info = ap.TimelineChannelVCInfo()
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -124,6 +126,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         return None
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
+        ap.stop_timeline_channel_action_processing(channel_id, "gitrefresh")
 
 def load_timeline_callback():
     ap.open_timeline()
