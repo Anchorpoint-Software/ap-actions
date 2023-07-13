@@ -139,20 +139,17 @@ def apply_callback(dialog : ap.Dialog):
     import pyperclip as pc 
 
     configuration = get_configuration(dialog)
-    print(configuration)
     if(not configuration):
         ui.show_error("Configuration is incomplete","The cloud drive needs the necessary information to work properly")  
         return
 
     dumped_configuration = json.dumps(configuration)
-    print(dumped_configuration)
 
     password = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
     salt = get_random_bytes(32)
     secret_key = generate_secret_key(password, salt)
 
     encrypted_configuration = encrypt(dumped_configuration, secret_key, salt)
-    print(encrypted_configuration)
 
     settings.set("Config",encrypted_configuration)
     settings.store()
