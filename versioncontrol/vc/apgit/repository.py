@@ -1039,8 +1039,6 @@ class GitRepository(VCRepository):
         if time_end:
             args["since"] = f'\"{time_end.strftime("%Y-%m-%d %H:%M:%S")}\"'
 
-        print(f"loading commits from {time_start} to {time_end}")
-
         unborn = self.is_unborn()
         if not unborn:
             base_commits = list(self.repo.iter_commits(**args))
@@ -1075,7 +1073,7 @@ class GitRepository(VCRepository):
 
         for commit in remote_commits:
             history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=self._get_commit_parents(commit,HistoryType.REMOTE)))
-        print(f"commits loaded {len(history)}")
+        
         return history
     
     def get_history_entry(self, entry_id: str):
