@@ -322,6 +322,9 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
                 has_more_commits = False
             history_list.append(entry)
 
+        if len(history_list) == 0 and repo.is_unborn():
+            has_more_commits = False
+
         if newest_committime_to_pull > 0:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
         else:
