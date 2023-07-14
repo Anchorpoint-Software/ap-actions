@@ -3,6 +3,7 @@ import apsync as aps
 from typing import Optional
 import os, logging
 import platform
+from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -47,6 +48,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
+
+        ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
 
         info = ap.TimelineChannelVCInfo()
 
@@ -123,6 +126,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         return None
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
+        ap.stop_timeline_channel_action_processing(channel_id, "gitrefresh")
 
 def load_timeline_callback():
     ap.open_timeline()
@@ -202,9 +206,76 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
-def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optional[str], ctx):
+def map_commit(commit):
+    import sys
+    sys.path.insert(0, script_dir)
+    from vc.models import HistoryType
+
+    entry = ap.TimelineChannelEntry()
+    entry.id = commit.id
+    entry.user_email = commit.author
+    entry.time = commit.date
+    entry.message = commit.message
+    entry.has_details = True
+    
+    icon_color = "#f3d582"
+    if commit.type is HistoryType.LOCAL:
+        icon_color = "#fbbc9f"
+        entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
+        entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
+    elif commit.type is HistoryType.REMOTE:
+        icon_color = "#90CAF9"
+        entry.icon = aps.Icon(":/icons/cloud.svg", icon_color)
+        entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
+    elif commit.type is HistoryType.SYNCED:
+        entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
+        entry.tooltip = "This commit is in sync with your team"
+
+    is_merge = len(commit.parents) > 1
+    if is_merge:
+        icon_color = "#9E9E9E"
+        entry.caption = f"Pulled and merged files"
+        entry.tooltip = entry.message
+        entry.message = ""
+        if commit.type is HistoryType.SYNCED:
+            entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
+    
+    if script_dir in sys.path:
+        sys.path.remove(script_dir)
+
+    return entry
+
+def on_load_first_timeline_channel_entry(channel_id: str, ctx):
+    import sys
     try:
-        import sys, os
+        sys.path.insert(0, script_dir)
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo:
+            return None
+        
+        if repo.is_unborn():
+            if not repo.has_remote():
+                return None
+            commit = map_commit(repo.get_history_entry("@{u}"))
+            return commit
+        
+        return map_commit(repo.get_history_entry("HEAD"))
+
+    except Exception as e:
+        import git_errors
+        git_errors.handle_error(e)
+        print (f"on_load_first_timeline_channel_entry exception: {str(e)}")
+        return None
+    finally:
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
+def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time_end: datetime, ctx):
+    try:
+        import sys
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -213,50 +284,18 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
 
         from git_settings import GitSettings
         git_settings = GitSettings(ctx)
-
         
+        has_more_commits = True
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
-            return []
+            return [], False
         
         history_list = list()
         try:
-            history = repo.get_history(count, rev_spec=last_id)
+            history = repo.get_history(time_start, time_end)
         except Exception as e:
-            return history_list
-        
-        def map_commit(commit):
-            entry = ap.TimelineChannelEntry()
-            entry.id = commit.id
-            entry.user_email = commit.author
-            entry.time = commit.date
-            entry.message = commit.message
-            entry.has_details = True
-            
-            icon_color = "#f3d582"
-            if commit.type is HistoryType.LOCAL:
-                icon_color = "#fbbc9f"
-                entry.icon = aps.Icon(":/icons/upload.svg", icon_color)
-                entry.tooltip = "This is a local commit. <br> You need to push it to make it available to your team."
-            elif commit.type is HistoryType.REMOTE:
-                icon_color = "#90CAF9"
-                entry.icon = aps.Icon(":/icons/cloud.svg", icon_color)
-                entry.tooltip = "This commit is not yet synchronized with your project. <br> Press Pull to synchronize your project with the server."
-            elif commit.type is HistoryType.SYNCED:
-                entry.icon = aps.Icon(":/icons/versioncontrol.svg", icon_color)
-                entry.tooltip = "This commit is in sync with your team"
-
-            is_merge = len(commit.parents) > 1
-            if is_merge:
-                icon_color = "#9E9E9E"
-                entry.caption = f"Pulled and merged files"
-                entry.tooltip = entry.message
-                entry.message = ""
-                if commit.type is HistoryType.SYNCED:
-                    entry.icon = aps.Icon(":/icons/merge.svg", icon_color)
-          
-            return entry
+            return history_list, False
 
         cleanup_locks = True
         commits_to_pull = 0
@@ -279,7 +318,12 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
             if commit.type is HistoryType.LOCAL:
                 cleanup_locks = False
 
+            if len(entry.parents) == 0:
+                has_more_commits = False
             history_list.append(entry)
+
+        if len(history_list) == 0 and repo.is_unborn():
+            has_more_commits = False
 
         if newest_committime_to_pull > 0:
             ap.set_timeline_update_count(ctx.project_id, channel_id, commits_to_pull, newest_committime_to_pull)
@@ -303,10 +347,10 @@ def on_load_timeline_channel_entries(channel_id: str, count: int, last_id: Optio
         if git_settings.auto_lock_enabled() and repo.has_remote() and workspace_settings.get("readonlyLocksEnabled", True):
             handle_files_to_pull(repo)
 
-        return history_list
+        return history_list, has_more_commits
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
-        return []
+        return [], False
 
 def on_locks_removed(locks, ctx):
     # Git flagged locks (of this user) that are unlocked are stored in a file so that auto_lock will not lock them again
@@ -581,10 +625,6 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                     return
 
         progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
-        try:
-            commits = repo.get_new_commits(repo.get_current_branch_name(), branch)
-        except Exception as e:
-            commits = []
         
         try:
             repo.switch_branch(branch)
@@ -594,8 +634,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
 
-        if len(commits) > 0:
-            ap.delete_timeline_channel_entries(channel_id, list(commits))
+        ap.reload_timeline_entries()
     except Exception as e:
         raise e
     finally:
