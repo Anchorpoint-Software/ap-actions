@@ -800,20 +800,27 @@ class GitRepository(VCRepository):
                 
         return unstaged_files, staged_files
 
-    def get_conflicts(self):
+    def _is_conflict(self, status_ids: str):
+        if len(status_ids) <= 1: return False
+        if "U" in status_ids: return True
+        return status_ids in ["DD", "AA"]
+    
+    def is_file_conflicting(self, path: str):
+        return len(self.get_conflicts(path)) != 0
+
+    def get_conflicts(self, path: str = None):
         self._check_index_lock()
-        def is_conflict(status_ids: str):
-            if len(status_ids) <= 1: return False
-            if "U" in status_ids: return True
-            return status_ids in ["DD", "AA"]
 
         conflicts = []
-        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
+        if path:
+            status_lines = self.repo.git(no_pager=True).status(path, porcelain=True, untracked_files=True).splitlines()
+        else:
+            status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
                 status_ids = split[0]
-                if is_conflict(status_ids):
+                if self._is_conflict(status_ids):
                     conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 
         return conflicts
@@ -841,7 +848,7 @@ class GitRepository(VCRepository):
     def is_merging(self):
         repodir = self._get_repo_internal_dir()
         return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
-
+        
     def continue_merge(self):
         self._check_index_lock()
         self.repo.git(c = "core.editor=true").merge("--continue")
@@ -1076,6 +1083,17 @@ class GitRepository(VCRepository):
         
         return history
     
+    def get_last_history_entry_for_file(self, path: str, ref: str = None):
+        if not ref:
+            ref = "HEAD"
+        rel_path = os.path.relpath(path, self.get_root_path())
+        try:
+            commit = self.repo.git.log("-1", ref, "--format=\"%H\"", "--", rel_path).replace("\"", "").strip()
+            return self.get_history_entry(commit)
+        except Exception as e:
+            print(f"error in get_last_history_entry_for_file: {str(e)}")
+            return None
+
     def get_history_entry(self, entry_id: str):
         commit = self.repo.commit(entry_id)
         if commit:
@@ -1149,6 +1167,37 @@ class GitRepository(VCRepository):
         with open(os.path.join(dir, "exclude"), "a") as f:
             f.write(f"\n{pattern}")
             
+    def fetch_lfs_files(self, branches: list[str], paths: list[str], progress: Optional[Progress] = None):
+        if len(paths) == 0: return
+
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: return UpdateState.NO_REMOTE
+        remote_url = self._get_remote_url(remote)
+
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment(remote_url))
+        progress_wrapper = None if not progress else _InternalProgress(progress)
+        lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches, paths)
+
+        pass
+
+    def get_lfs_filehash(self, paths: list[str], ref: str = None):
+        import re
+        args = ["ls-files"] 
+        if ref:
+            args.append(ref)
+        args.extend(["-l", "-I", *paths])
+
+        output = self.repo.git.lfs(*args)
+
+        result = {}
+        hashes_and_files = re.findall(r'([a-f0-9]+) - (.+)', output)
+        for hash_value, file_path in hashes_and_files:
+            result[file_path] = hash_value
+        return result
+        
+
     def prune_lfs(self):
         output = self.repo.git.lfs("prune")
 

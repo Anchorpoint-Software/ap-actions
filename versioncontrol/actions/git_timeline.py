@@ -273,6 +273,8 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if script_dir in sys.path:
             sys.path.remove(script_dir)
 
+
+
 def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time_end: datetime, ctx):
     try:
         import sys
@@ -290,7 +292,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         repo = GitRepository.load(path)
         if not repo:
             return [], False
-        
+
         history_list = list()
         try:
             history = repo.get_history(time_start, time_end)

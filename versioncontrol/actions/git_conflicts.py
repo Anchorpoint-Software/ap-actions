@@ -8,6 +8,7 @@ script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 
 from vc.apgit.repository import * 
+from vc.apgit.utility import get_repo_path
 from vc.models import ConflictResolveState
 if script_dir in sys.path: sys.path.remove(script_dir)
 
@@ -102,3 +103,87 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             if rebase_head:
                 ids_to_delete = [rebase_head]
                 ap.delete_timeline_channel_entries(channel_id, ids_to_delete)
+
+def load_file_content(path):
+    import os
+    if not os.path.exists(path):
+        return None
+    with open(path, "r") as f:
+        return f.read() 
+
+def is_conflicting_pointer_file(file_content):
+    import re
+    try:
+        pattern = r'^version\s+https:\/\/git-lfs\.github\.com\/spec\/v1\n<<<<<<<\s+\w+\noid\s+sha256:[a-f0-9]+\nsize\s+\d+\n=======\noid\s+sha256:[a-f0-9]+\nsize\s+\d+\n>>>>>>>\s+\w+'
+        match = re.match(pattern, file_content)
+        return match is not None
+    except Exception as e:
+        print(f"is_conflicting_pointer_file exception: {str(e)}")
+        return False
+    
+def extract_conflicting_branches(file_content):
+    import re
+    branch_current = re.findall(r'<<<<<<< (\w+)', file_content)[0]
+    branch_incoming = re.findall(r'>>>>>>> (\w+)', file_content)[0]
+    return branch_current, branch_incoming
+
+def get_lfs_cached_file(sha256, repo_dir):
+    import os
+    try:
+        first_digits = sha256[:2]
+        second_digits = sha256[2:4]
+        lfs_cache_file = os.path.join(repo_dir, ".git", "lfs", "objects", first_digits, second_digits, sha256)
+        
+        if not os.path.exists(lfs_cache_file):
+            return None
+        return lfs_cache_file
+    except Exception as e:
+        print(f"get_lfs_cached_file exception: {str(e)}")
+        return None
+
+def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo:
+        print("Could not load repository")
+        return None
+    
+    if not repo.is_file_conflicting(file_path):
+        print("File is not conflicting")
+        return None
+    
+    content = load_file_content(file_path)
+    if not content:
+        print("Could not load file content")
+        return None
+    
+    rel_filepath = os.path.relpath(file_path, path)
+    branch_current, branch_incoming = extract_conflicting_branches(content)
+    
+    class ConflictModel():
+        pass
+
+    conflict_model = ConflictModel()
+    conflict_model.branch_current = branch_current
+    conflict_model.branch_incoming = branch_incoming
+    conflict_model.commit_current = repo.get_last_history_entry_for_file(path, branch_current)
+    conflict_model.commit_incoming = repo.get_last_history_entry_for_file(path, branch_incoming)
+
+    if is_conflicting_pointer_file(content):
+        conflict_model.is_binary_file = True
+        hash_current = repo.get_lfs_filehash([rel_filepath], branch_current)
+        hash_incoming = repo.get_lfs_filehash([rel_filepath], branch_incoming)
+        conflict_model.file_current = None if len(hash_current) == 0 else get_lfs_cached_file(hash_current[rel_filepath], path)
+        conflict_model.file_incoming = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
+    else:
+        conflict_model.is_binary_file = False
+        conflict_model.file_current = None
+        conflict_model.file_incoming = None
+    
+    print(f"ConflictModel: {conflict_model.__dict__}")
+
+    return conflict_model
+
+    
+def on_timeout(ctx):
+    on_vc_load_conflict_details("Git", "/Users/jochenhunz/Documents/Anchorpoint/projects/dev-backend/Virtual Production/References/set/B_1222_AVSP_1.jpg", ctx)
