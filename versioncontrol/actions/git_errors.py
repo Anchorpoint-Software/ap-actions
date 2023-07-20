@@ -5,6 +5,7 @@ import platform, sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.apgit.utility as utility
+from vc.apgit.repository import GitRepository
 if script_dir in sys.path: sys.path.remove(script_dir)
 
 def _guess_application(file: str):
@@ -140,6 +141,30 @@ def _handle_azure_ipv6():
 
     return True
 
+def restore_corrupted_index():
+    print("restoring corrupted index")
+    try:
+        progress = ap.Progress("Restoring Git Index", show_loading_screen=True)
+        context = ap.get_context()
+        if not context: 
+            return
+
+        repo_path = utility.get_repo_path("Git", context.project_path)
+        if not repo_path: 
+            return
+
+        repo = GitRepository.load(repo_path)
+        if not repo: 
+            return
+
+        index = os.path.join(repo.get_git_dir(), "index")
+        if os.path.exists(index): 
+            os.remove(index)
+
+        repo.reset(None, False)
+    except Exception as e:
+        print(e)
+
 
 def handle_error(e: Exception):
     try:
@@ -194,5 +219,9 @@ def handle_error(e: Exception):
     if "Connection was reset" in message and "fatal: unable to access" in message and "dev.azure" in message:
         # azure fails to work with ipv6 in some cases: https://stackoverflow.com/questions/67230241/fatal-unable-to-access-https-dev-azure-com-xxx-openssl-ssl-connect-connec
         return _handle_azure_ipv6()
+    
+    if "index file corrupt" in message or "unknown index entry format" in message:
+        restore_corrupted_index()
+        return True
     
     return False
