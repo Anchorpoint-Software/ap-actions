@@ -606,6 +606,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
+    lock_disabler = ap.LockDisabler()
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
