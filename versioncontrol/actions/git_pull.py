@@ -67,6 +67,7 @@ def handle_files_to_pull(repo):
 
 
 def pull(repo: GitRepository, channel_id: str):
+    lock_disabler = ap.LockDisabler()
     ui = ap.UI()
     progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
     handle_files_to_pull(repo)
