@@ -385,8 +385,12 @@ def handle_git_autolock(repo, ctx, changes):
     path_mod_status = {}
     file_path = get_forced_unlocked_config_path()
     if os.path.exists(file_path):
-        with open(file_path, 'rb') as file:
-            path_mod_status = pickle.load(file)
+        try:
+            with open(file_path, 'rb') as file:
+                path_mod_status = pickle.load(file)
+        except Exception as e:
+            print(f"Could not load forced unlocked files: {e}")
+            os.remove(file_path)
     
     for change in changes:
         if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
