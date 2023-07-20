@@ -394,13 +394,15 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.checkout(".")
 
-    def reset(self, commit_id: str, hard: bool = False):
+    def reset(self, commit_id: Optional[str], hard: bool = False):
         self._check_index_lock()
+        args = []
         if hard:
-            self.repo.git.reset("--hard", commit_id)
-        else:
-            self.repo.git.reset(commit_id)
-
+            args.append("--hard")
+        if commit_id:
+            args.append(commit_id)
+        self.repo.git.reset(*args)
+        
     def switch_branch(self, branch_name: str):
         self._check_index_lock()
         split = branch_name.split("/")
