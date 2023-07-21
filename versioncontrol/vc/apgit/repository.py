@@ -541,7 +541,14 @@ class GitRepository(VCRepository):
             return next(urls)
             
         return None
-
+    
+    def update_remote_url(self, url):
+        if not self.has_remote():
+            raise "No remote"
+        
+        self.repo.git.remote("set-url", "origin", url)
+        
+    
     def is_unborn(self):
         try:
             self.repo.rev_parse("HEAD")

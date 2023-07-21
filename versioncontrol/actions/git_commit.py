@@ -186,8 +186,8 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     if action_id != "gitcommit": return False
     ui = ap.UI()
     
-    from git_settings import GitSettings
-    git_settings = GitSettings(ctx)
+    from git_settings import GitAccountSettings
+    git_settings = GitAccountSettings(ctx)
 
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
     try:

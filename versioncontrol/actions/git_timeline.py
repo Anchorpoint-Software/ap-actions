@@ -284,8 +284,8 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         from vc.models import HistoryType
         if script_dir in sys.path: sys.path.remove(script_dir)
 
-        from git_settings import GitSettings
-        git_settings = GitSettings(ctx)
+        from git_settings import GitAccountSettings
+        git_settings = GitAccountSettings(ctx)
         
         has_more_commits = True
         path = get_repo_path(channel_id, ctx.project_path)
@@ -430,8 +430,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
 
-        from git_settings import GitSettings
-        git_settings = GitSettings(ctx)
+        from git_settings import GitAccountSettings
+        git_settings = GitAccountSettings(ctx)
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
