@@ -165,6 +165,31 @@ def restore_corrupted_index():
     except Exception as e:
         print(e)
 
+def show_repository_not_found_error(message):
+    def extract_repository_url(input_string):
+        import re
+        pattern = r"repository '([^']+)' not found"
+        matches = re.findall(pattern, input_string)
+        if matches:
+            return matches[0]
+        return None
+    
+    url = extract_repository_url(message)
+    context = ap.get_context()
+    if not context: 
+        return False
+
+    if url:
+        d = ap.Dialog()
+        d.title = "Your repository was not found"
+        d.icon = ":/icons/versioncontrol.svg"
+        d.add_text(f"The URL {url}<br>cannot be found under your account.")
+        d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
+        d.add_button("OK")
+        d.show()
+        return True
+
+    return False
 
 def handle_error(e: Exception):
     try:
@@ -223,5 +248,8 @@ def handle_error(e: Exception):
     if "index file corrupt" in message or "unknown index entry format" in message:
         restore_corrupted_index()
         return True
+    
+    if "fatal: repository" in message and "not found" in message:
+        return show_repository_not_found_error(message)
     
     return False
