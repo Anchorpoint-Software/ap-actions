@@ -44,13 +44,13 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
     try:
-        import sys, os
+        import sys
         sys.path.insert(0, script_dir)
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
 
+        progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=2000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
-
         info = ap.TimelineChannelVCInfo()
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -498,7 +498,7 @@ def on_load_timeline_channel_pending_changes_async(channel_id: str, callback, ct
     ctx.run_async(run_func_wrapper, on_load_timeline_channel_pending_changes, callback, channel_id, ctx)
 
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
-    import sys, os
+    import sys
     sys.path.insert(0, script_dir)
     try:
         from vc.apgit.utility import get_repo_path
