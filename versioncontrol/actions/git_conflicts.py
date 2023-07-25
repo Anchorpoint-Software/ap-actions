@@ -68,7 +68,11 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
                 else: # Merging 
                     if len(unstaged_files) > 0:
-                        repo.remove_files(unstaged_files)
+                        try:
+                            repo.remove_files(unstaged_files)
+                        except Exception as e:
+                            print("Could not call git rm, ignored: " + str(e))
+                            pass
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
 
             elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
@@ -76,7 +80,11 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                 
                 if not is_merging or is_rebasing:
                     if len(unstaged_files) > 0:
-                        repo.remove_files(unstaged_files)
+                        try:
+                            repo.remove_files(unstaged_files)
+                        except Exception as e:
+                            print("Could not call git rm, ignored: " + str(e))
+                            pass
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
                 else: # Merging
                     if len(staged_files) > 0:
