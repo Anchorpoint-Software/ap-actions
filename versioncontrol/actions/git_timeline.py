@@ -711,6 +711,26 @@ def refresh_async(channel_id: str, project_path):
 def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
 
+def on_add_logging_data(channel_id: str, ctx):
+    try:
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return ""
+        
+        log = "\nStatus:\n"
+        log = log + "=========\n"
+        log = log + repo.git_status()
+
+        log = log + "\n\nLog:\n"
+        log = log + "=========\n"
+        log = log + repo.git_log()
+
+        return log
+    except Exception as e:
+        print("on_add_logging_data exception: " + str(e))
+        return ""
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)

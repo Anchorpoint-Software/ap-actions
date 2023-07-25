@@ -660,9 +660,18 @@ class GitRepository(VCRepository):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
+    def git_status(self):
+        return self._run_git_status()
+    
+    def git_log(self):
+        if self.has_remote() and not self.is_unborn():
+            return self.repo.git(no_pager=True).log("-10", "@{u}")
+        else:
+            return self.repo.git(no_pager=True).log("-10")
+
     def _run_git_status(self):
         try:
-            self.repo.git.status()
+            return self.repo.git(no_pager=True).status()
         except Exception as e:
             print(f"Failed to call git status: {str(e)}")
 
