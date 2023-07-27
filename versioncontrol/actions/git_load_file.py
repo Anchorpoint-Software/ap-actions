@@ -28,7 +28,7 @@ def get_lfs_cached_file(sha256, repo_dir):
         first_digits = sha256[:2]
         second_digits = sha256[2:4]
         lfs_cache_file = os.path.join(repo_dir, ".git", "lfs", "objects", first_digits, second_digits, sha256)
-        
+        print(f"Checking for LFS cached file: {lfs_cache_file}")
         if not os.path.exists(lfs_cache_file):
             return None
         return lfs_cache_file
@@ -50,23 +50,30 @@ def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], 
     path = get_repo_path(channel_id, ctx.project_path)
     repo = GitRepository.load(path)
     if not repo:
+        print("Could not load repository")
         return
     
-    files = {}
+    files = dict[str,Optional[str]]()
+    print(f"Loading files: {filepaths}")
     for filepath in filepaths:
         rel_filepath = os.path.relpath(filepath, path)
-        hash_result = repo.get_lfs_filehash(rel_filepath, ref)
+        hash_result = repo.get_lfs_filehash([rel_filepath], ref)
+        print(f"Hash result: {hash_result}")
         if len(hash_result) == 0:
+            print(f"Could not get hash for file {filepath}")
             files[filepath] = None
-            
-        cached_file = get_lfs_cached_file(hash, path)
+            continue
+        
+        file_hash = hash_result[rel_filepath]            
+
+        cached_file = get_lfs_cached_file(file_hash, path)
         if cached_file:
             print(f"File {filepath} is already cached")
             files[filepath] = cached_file
         else:
             print(f"File {filepath} is not cached")
             repo.fetch_lfs_files([ref] if ref else None, [rel_filepath], None)
-            cached_file = get_lfs_cached_file(hash, path)
+            cached_file = get_lfs_cached_file(file_hash, path)
             if cached_file:
                 print(f"File {filepath} is now cached")
                 files[filepath] = cached_file
