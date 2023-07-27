@@ -536,7 +536,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
                 reset.icon = aps.Icon(":/icons/restoreproject.svg")
                 reset.identifier = "gitresetproject"
                 reset.type = ap.ActionButtonType.SecondaryText
-                reset.tooltip = "Resets the entire project to the state of this commit"
+                reset.tooltip = "Resets the entire project to the state of this commit" if not repo.is_push_required() else "Cannot reset project, push your changes first"
+                reset.enabled = not repo.is_push_required()
                 details.actions.append(reset)
 
             restore_entry = ap.TimelineChannelAction()
