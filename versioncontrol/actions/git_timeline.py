@@ -189,7 +189,10 @@ def load_last_seen_fetched_commit(project_id: str):
     with open(file_path, "rb") as f:
         project_commit = pickle.load(f)
         if project_id in project_commit:
-            return project_commit[project_id]
+            commit = project_commit[project_id]
+            if type(commit) != str:
+                return None
+            return commit
     return None
 
 def save_last_seen_fetched_commit(project_id: str, commit: str):
@@ -199,7 +202,7 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             project_commit = pickle.load(f)
-    project_commit[project_id] = commit.id
+    project_commit[project_id] = commit
 
     if not os.path.exists(file_path):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -340,7 +343,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
                     ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
                 else:
                     ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
-                save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
+                save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull.id)
 
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
