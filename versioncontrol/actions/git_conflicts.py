@@ -10,6 +10,9 @@ sys.path.insert(0, script_dir)
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 from vc.models import ConflictResolveState
+
+from git_timeline import map_commit
+
 if script_dir in sys.path: sys.path.remove(script_dir)
 
 def cancel_merge(channel_id, project_path):
@@ -176,23 +179,34 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     rel_filepath = os.path.relpath(file_path, path)
     branch_current, branch_incoming = extract_conflicting_branches(content)
 
+    if branch_current == "HEAD":
+        branch_current = repo.get_current_branch_name()
+
     conflict_model = ap.ConflictDetails()
-    conflict_model.branch_current = branch_current
-    conflict_model.branch_incoming = branch_incoming
-    conflict_model.commit_current = repo.get_last_history_entry_for_file(path, branch_current)
-    conflict_model.commit_incoming = repo.get_last_history_entry_for_file(path, branch_incoming)
+    conflict_model.current_branch = branch_current
+    conflict_model.incoming_branch = branch_incoming
+    conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(path, branch_current))
+    conflict_model.incoming_entry = map_commit(repo.get_last_history_entry_for_file(path, branch_incoming))
+
+    status_current, status_incoming = repo.get_file_status(rel_filepath)
+    
+    if status_current:
+        conflict_model.current_change.status = status_current
+    conflict_model.current_change.path = file_path
+    
+    if status_incoming:
+        conflict_model.incoming_change.status = status_incoming
+    conflict_model.incoming_change.path = file_path
 
     if is_conflicting_pointer_file(content):
         conflict_model.is_text = False
         hash_current = repo.get_lfs_filehash([rel_filepath], branch_current)
         hash_incoming = repo.get_lfs_filehash([rel_filepath], branch_incoming)
-        conflict_model.file_current = None if len(hash_current) == 0 else get_lfs_cached_file(hash_current[rel_filepath], path)
-        conflict_model.file_incoming = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
+        conflict_model.current_change.cached_path = None if len(hash_current) == 0 else get_lfs_cached_file(hash_current[rel_filepath], path)
+        conflict_model.incoming_change.cached_path = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
     else:
         conflict_model.is_text = True
         conflict_model.file_current = None
         conflict_model.file_incoming = None
     
-    print(f"ConflictDetails: {conflict_model.__dict__}")
-
     return conflict_model

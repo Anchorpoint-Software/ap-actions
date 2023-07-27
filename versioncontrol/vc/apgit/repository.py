@@ -14,6 +14,7 @@ import vc.apgit.lfs as lfs
 import logging
 import gc, subprocess, platform
 from datetime import datetime
+import anchorpoint as ap
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -825,6 +826,31 @@ class GitRepository(VCRepository):
     
     def is_file_conflicting(self, path: str):
         return len(self.get_conflicts(path)) != 0
+
+    def get_file_status(self, rel_path: str):
+        self._check_index_lock()
+        status_lines = self.repo.git(no_pager=True).status("-z", rel_path, porcelain=True, untracked_files=True).split('\x00')
+        
+        if len(status_lines) == 1:
+            return None, None
+        
+        marker = status_lines[0].split()[0]
+        if marker == "UU":
+            return ap.VCFileStatus.Modified, ap.VCFileStatus.Modified
+        elif marker == "AA":
+            return ap.VCFileStatus.New, ap.VCFileStatus.New
+        elif marker == "DU":
+            return ap.VCFileStatus.Deleted, ap.VCFileStatus.Modified
+        elif marker == "UD":
+            return ap.VCFileStatus.Modified, ap.VCFileStatus.Deleted
+        elif marker == "DD":
+            return ap.VCFileStatus.Deleted, ap.VCFileStatus.Deleted
+        elif marker == "AU":
+            return ap.VCFileStatus.New, ap.VCFileStatus.Conflicted
+        elif marker == "UA":
+            return ap.VCFileStatus.Conflicted, ap.VCFileStatus.New
+        else:
+            return ap.VCFileStatus.Conflicted, ap.VCFileStatus.Conflicted
 
     def get_conflicts(self, path: str = None):
         self._check_index_lock()
