@@ -1130,9 +1130,8 @@ class GitRepository(VCRepository):
     def get_last_history_entry_for_file(self, path: str, ref: str = None):
         if not ref:
             ref = "HEAD"
-        rel_path = os.path.relpath(path, self.get_root_path())
         try:
-            commit = self.repo.git.log("-1", ref, "--format=\"%H\"", "--", rel_path).replace("\"", "").strip()
+            commit = self.repo.git.log("-1", ref, "--format=\"%H\"", "--", path).replace("\"", "").strip()
             return self.get_history_entry(commit)
         except Exception as e:
             print(f"error in get_last_history_entry_for_file: {str(e)}")

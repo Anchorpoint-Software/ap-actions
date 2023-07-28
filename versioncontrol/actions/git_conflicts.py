@@ -63,7 +63,9 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             # When applying a stash, theirs are the changes from the stash
             unstaged_files, staged_files = repo.get_deleted_files()
             if conflict_handling == ap.VCConflictHandling.TakeOurs:
-                progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
+                progress = None
+                if not paths:
+                    progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
                 
                 if not is_merging or is_rebasing:
                     if len(staged_files) > 0:
@@ -185,8 +187,8 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     conflict_model = ap.ConflictDetails()
     conflict_model.current_branch = branch_current
     conflict_model.incoming_branch = branch_incoming
-    conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(path, branch_current))
-    conflict_model.incoming_entry = map_commit(repo.get_last_history_entry_for_file(path, branch_incoming))
+    conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_current))
+    conflict_model.incoming_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
 
     status_current, status_incoming = repo.get_file_status(rel_filepath)
     
