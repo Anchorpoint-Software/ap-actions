@@ -85,7 +85,9 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
 
             elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
-                progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
+                progress = None
+                if not paths:
+                    progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
                 
                 if not is_merging or is_rebasing:
                     if len(unstaged_files) > 0:
