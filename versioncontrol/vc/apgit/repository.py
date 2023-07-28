@@ -977,6 +977,22 @@ class GitRepository(VCRepository):
     def get_current_branch_name(self) -> str:
         return self.repo.git.branch("--show-current")
 
+    def get_merge_branch_name(self) -> str:
+        merge_head = os.path.join(self._get_repo_internal_dir(), "MERGE_HEAD")
+        if not os.path.exists(merge_head):
+            return None
+        
+        merge_head_commitid = None
+        with open(merge_head, "r", encoding="utf-8") as f:
+            merge_head_commitid = f.readline().replace("\n", "").strip()
+        
+        try:
+            merge_branch = self.repo.git.branch("-a", "--contains", merge_head_commitid).split('\n')[0].strip()
+            return merge_branch
+        except Exception as e:
+            print(f"Error getting merge branch: {e}")
+            return merge_head_commitid
+
     def get_branches(self) -> list[Branch]:
         def _map_ref(ref) -> Branch:
             commit = ref.commit
@@ -1231,11 +1247,9 @@ class GitRepository(VCRepository):
         if ref:
             args.append(ref)
         args.extend(["-l", "-I", *paths])
-
         output = self.repo.git.lfs(*args)
-
         result = {}
-        hashes_and_files = re.findall(r'([a-f0-9]+) - (.+)', output)
+        hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)
         for hash_value, file_path in hashes_and_files:
             result[file_path] = hash_value
         return result

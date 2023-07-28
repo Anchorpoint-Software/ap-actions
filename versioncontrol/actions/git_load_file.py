@@ -54,31 +54,33 @@ def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], 
         return
     
     files = dict[str,Optional[str]]()
-    print(f"Loading files: {filepaths}")
     for filepath in filepaths:
         rel_filepath = os.path.relpath(filepath, path)
         hash_result = repo.get_lfs_filehash([rel_filepath], ref)
-        print(f"Hash result: {hash_result}")
+
         if len(hash_result) == 0:
-            print(f"Could not get hash for file {filepath}")
-            files[filepath] = None
-            continue
+            # Maybe the file is deleted, try to get the hash from the last commit
+            last_commit = repo.get_last_history_entry_for_file(rel_filepath, ref)
+            if last_commit:
+                ref = last_commit.id + "^"
+                hash_result = repo.get_lfs_filehash([rel_filepath], ref)
+
+            if len(hash_result) == 0:
+                print(f"Could not get hash for file {filepath}")
+                files[filepath] = None
+                continue
         
         file_hash = hash_result[rel_filepath]            
 
         cached_file = get_lfs_cached_file(file_hash, path)
         if cached_file:
-            print(f"File {filepath} is already cached")
             files[filepath] = cached_file
         else:
-            print(f"File {filepath} is not cached")
             repo.fetch_lfs_files([ref] if ref else None, [rel_filepath], None)
             cached_file = get_lfs_cached_file(file_hash, path)
             if cached_file:
-                print(f"File {filepath} is now cached")
                 files[filepath] = cached_file
             else:
-                print(f"Could not cache File {filepath}")
                 files[filepath] = None
             
     return files
