@@ -45,6 +45,11 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
 
     is_rebasing = repo.is_rebasing()
     is_merging = repo.is_merging()
+    is_conflict_from_stash = not is_rebasing and not is_merging
+
+    if is_rebasing:
+        raise "Conflict resolving for Rebasing is not supported yet"
+
     try:
         if is_rebasing:
             rebase_head = repo.get_rebase_head()
@@ -58,17 +63,13 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             progress = ap.Progress("Running External Program", show_loading_screen=True)
             repo.launch_external_merge("vscode", paths)    
         else:
-
-            # When rebasing theirs and ours is inverse
-            # When merging, ours is current working directory and theirs is merging changes
-            # When applying a stash, theirs are the changes from the stash
-
+            # When rebasing or applying a stash theirs and ours is inverse
             if conflict_handling == ap.VCConflictHandling.TakeOurs:
                 progress = None
                 if not paths:
                     progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
                 
-                if not is_merging or is_rebasing:
+                if is_conflict_from_stash or is_rebasing:
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
                 else: # Merging 
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
@@ -78,7 +79,7 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                 if not paths:
                     progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
                 
-                if not is_merging or is_rebasing:
+                if is_conflict_from_stash or is_rebasing:
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
                 else: # Merging
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
@@ -93,6 +94,17 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                 repo.continue_rebasing()
             elif repo.is_merging():
                 repo.continue_merge()
+            elif is_conflict_from_stash:
+                stash = repo.get_branch_stash()
+                if stash:
+                    dialog = ap.Dialog()
+                    dialog.icon = ":/icons/user-interface/information.svg"
+                    dialog.title = "You have Shelved Files"
+                    dialog.add_text("You have successfully resolved the conflicts.<br>Your original files were saved as backup copies, referred to as <b>Shelved Files</b>")
+                    dialog.add_text("When everything is in order you can safely delete the Shelved Files")
+                    dialog.add_button("OK", callback=lambda d: d.close())
+                    dialog.show()
+
         except Exception as e:
             if repo.has_conflicts() and repo.is_rebasing():
                 # When rebasing, the next commit to rebase can conflict again. This is not an error but OK
@@ -133,6 +145,13 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
 
     branch_current = repo.get_current_branch_name()
     branch_incoming = repo.get_merge_branch_name()
+    is_conflict_from_stash = False
+
+    if repo.is_merging() == False and repo.is_rebasing() == False:
+        # When not merging or rebasing, we have conflicts from the stash application
+        branch_incoming = branch_current # Incoming branch is pulled commit aka current branch
+        branch_current = None # Branch is None aka not committed
+        is_conflict_from_stash = True
 
     lfsExtensions = LFSExtensionTracker(repo)
 
@@ -142,7 +161,8 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     if branch_incoming:
         conflict_model.incoming_branch = branch_incoming
     
-    conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_current))
+    if branch_current:
+        conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_current))
     conflict_model.incoming_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
 
     status_current, status_incoming = repo.get_file_conflict_status(rel_filepath)
@@ -157,15 +177,24 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
 
     if lfsExtensions.is_file_tracked(file_path):
         # Ref where the file still existed
-        lfs_ref_current = conflict_model.current_entry.id
+        lfs_ref_current = conflict_model.current_entry.id if not is_conflict_from_stash else None
         lfs_ref_incoming = conflict_model.incoming_entry.id
-        if status_current == ap.VCFileStatus.Deleted:
+        if status_current == ap.VCFileStatus.Deleted and not is_conflict_from_stash:
             lfs_ref_current = lfs_ref_current + "^"
         if status_incoming == ap.VCFileStatus.Deleted:
             lfs_ref_incoming = lfs_ref_incoming + "^"
 
         conflict_model.is_text = False
-        hash_current = repo.get_lfs_filehash([rel_filepath], lfs_ref_current)
+        if is_conflict_from_stash:
+            stash = repo.get_branch_stash()
+            if stash:
+                stash_id = f"stash@{{{stash.id}}}"
+                hash_current = repo.get_lfs_filehash([rel_filepath], stash_id)
+            else:
+                hash_current = []
+        else:
+            hash_current = repo.get_lfs_filehash([rel_filepath], lfs_ref_current)
+
         hash_incoming = repo.get_lfs_filehash([rel_filepath], lfs_ref_incoming)
         conflict_model.current_change.cached_path = None if len(hash_current) == 0 else get_lfs_cached_file(hash_current[rel_filepath], path)
         conflict_model.incoming_change.cached_path = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
