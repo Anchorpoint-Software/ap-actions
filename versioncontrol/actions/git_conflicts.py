@@ -62,27 +62,15 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
             # When rebasing theirs and ours is inverse
             # When merging, ours is current working directory and theirs is merging changes
             # When applying a stash, theirs are the changes from the stash
-            unstaged_files, staged_files = repo.get_deleted_files()
+
             if conflict_handling == ap.VCConflictHandling.TakeOurs:
                 progress = None
                 if not paths:
                     progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
                 
                 if not is_merging or is_rebasing:
-                    if len(staged_files) > 0:
-                        try:
-                            repo.remove_files(staged_files)
-                        except Exception as e:
-                            print("Could not call git rm, ignored: " + str(e))
-                            pass
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
                 else: # Merging 
-                    if len(unstaged_files) > 0:
-                        try:
-                            repo.remove_files(unstaged_files)
-                        except Exception as e:
-                            print("Could not call git rm, ignored: " + str(e))
-                            pass
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
 
             elif conflict_handling == ap.VCConflictHandling.TakeTheirs:
@@ -91,20 +79,8 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     progress = ap.Progress("Resolving Conflicts", show_loading_screen=True)
                 
                 if not is_merging or is_rebasing:
-                    if len(unstaged_files) > 0:
-                        try:
-                            repo.remove_files(unstaged_files)
-                        except Exception as e:
-                            print("Could not call git rm, ignored: " + str(e))
-                            pass
                     repo.conflict_resolved(ConflictResolveState.TAKE_OURS, paths)
                 else: # Merging
-                    if len(staged_files) > 0:
-                        try:
-                            repo.remove_files(staged_files)
-                        except Exception as e:
-                            print("Could not call git rm, ignored: " + str(e))
-                            pass
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
 
     except Exception as e:
@@ -169,7 +145,7 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_current))
     conflict_model.incoming_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
 
-    status_current, status_incoming = repo.get_file_status(rel_filepath)
+    status_current, status_incoming = repo.get_file_conflict_status(rel_filepath)
     
     if status_current:
         conflict_model.current_change.status = status_current
