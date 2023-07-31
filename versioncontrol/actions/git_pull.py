@@ -94,9 +94,8 @@ def pull(repo: GitRepository, channel_id: str):
         ui.show_info("Branch does not track a remote branch", "Push your branch first")    
         return False
     elif state == UpdateState.CONFLICT:
-        ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
+        ui.show_info("Conflicts detected", "Please resolve your conflicts")    
         ap.refresh_timeline_channel(channel_id)
-        ap.vc_resolve_conflicts(channel_id)
         progress.finish()
         return False
     elif state == UpdateState.CANCEL:
@@ -136,7 +135,13 @@ def pull_async(channel_id: str, project_path):
     except Exception as e:
         if not git_errors.handle_error(e):
             print(e)
-            ui.show_error("Failed to update Git Repository", "Please try again")    
+            if "conflict" in str(e):
+                if repo.is_merging():
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
+                else:
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts")    
+            else:
+                ui.show_error("Failed to update Git Repository", "Please try again")    
                    
     ap.vc_load_pending_changes(channel_id, True)
     ap.refresh_timeline_channel(channel_id)
