@@ -153,7 +153,7 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
         print("File is not conflicting")
         return None
     
-    rel_filepath = os.path.relpath(file_path, path)
+    rel_filepath = os.path.relpath(file_path, path).replace("\\", "/")
 
     branch_current = repo.get_current_branch_name()
     branch_incoming = repo.get_merge_branch_name()
