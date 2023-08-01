@@ -827,7 +827,7 @@ class GitRepository(VCRepository):
     def is_file_conflicting(self, path: str):
         return len(self.get_conflicts(path)) != 0
 
-    def get_file_status(self, rel_path: str):
+    def get_file_conflict_status(self, rel_path: str):
         self._check_index_lock()
         status_lines = self.repo.git(no_pager=True).status("-z", rel_path, porcelain=True, untracked_files=True).split('\x00')
         
@@ -857,9 +857,9 @@ class GitRepository(VCRepository):
 
         conflicts = []
         if path:
-            status_lines = self.repo.git(no_pager=True).status(path, porcelain=True, untracked_files=True).splitlines()
+            status_lines = self.repo.git(no_pager=True).status(path, "--untracked-files=all", porcelain=True).splitlines()
         else:
-            status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
+            status_lines = self.repo.git(no_pager=True).status("--untracked-files=all", porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
@@ -920,28 +920,103 @@ class GitRepository(VCRepository):
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
         self._check_index_lock()
-        if not paths:
-            conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U", "-z").split('\x00')
-            path_args = []
-            if len(conflicts) > 20:
-                path_args = ["."] # This is not cool, can be improved by using a pathspec file instead
-            else:
-                path_args[:] = (file for file in conflicts if file != "" and ".gitattributes" not in file)
-            
-            for conflict in conflicts:
-                if ".gitattributes" in conflict:
-                    attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
-                    self._merge_gitattributes(attributes_file)
-                    self.repo.git.add(attributes_file)
-        else:
-            path_args = paths
 
-        if len(path_args) > 0:
-            if state is ConflictResolveState.TAKE_OURS:
-                self.repo.git.checkout("--ours", *path_args)
-            elif state is ConflictResolveState.TAKE_THEIRS:
-                self.repo.git.checkout("--theirs", *path_args)
-            self.repo.git.add(*path_args)
+        checkout_ours = []
+        checkout_theirs = []
+        remove = []
+
+        relative_paths = set()
+        if paths:
+            for path in paths:
+                relative_paths.add(os.path.relpath(path, self.get_root_path()).replace("\\", "/"))
+
+        file_status = self.repo.git(no_pager=True).status("--porcelain", "--untracked-files=all", "-z").split('\x00')
+        for entry in file_status:
+            try:
+                status, file = entry.split(' ', 1)
+            except:
+                continue
+
+            if paths and not file in relative_paths:
+                continue
+
+            if ".gitattributes" in file:
+                attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
+                self._merge_gitattributes(attributes_file)
+                self.repo.git.add(attributes_file)
+
+            # UU: Both the file in the index (staging area) and the working directory are updated, indicating a conflict in the file's content.
+            if status == "UU":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # AU: The file has been added in the current branch and updated in the merging branch.
+            if status == "AU":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # UA: The file has been updated in the current branch and added in the merging branch.
+            if status == "UA":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # AA: Both the current branch and the merging branch have added the file, indicating a conflict.
+            if status == "AA":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+        
+            # DU: The file has been deleted in the current branch but updated in the merging branch.
+            if status == "DU":
+                if state is ConflictResolveState.TAKE_OURS:
+                    remove.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # UD: The file has been deleted in the merging branch but updated in the current branch.
+            if status == "UD":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    remove.append(file)
+
+            # DD: The file has been deleted in both the current branch and the merging branch.
+            if status == "DD":
+                remove.append(file)
+         
+        def run_with_pathspec(paths, callback):
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "conflict_spec")
+                self._write_pathspec_file(paths, pathspec)
+                callback(pathspec)
+
+        print(f"checkout_ours: {checkout_ours}")
+        print(f"checkout_theirs: {checkout_theirs}")
+        print(f"remove: {remove}")
+
+        if len(checkout_ours) > 0:
+            run_with_pathspec(checkout_ours,
+                                lambda pathspec: self.repo.git.checkout("--ours", pathspec_from_file=pathspec))
+            run_with_pathspec(checkout_ours,
+                                lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
+
+        if len(checkout_theirs) > 0:
+            run_with_pathspec(checkout_theirs,
+                                lambda pathspec: self.repo.git.checkout("--theirs", pathspec_from_file=pathspec))
+            run_with_pathspec(checkout_theirs,
+                                lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
+
+        if len(remove) > 0:
+            run_with_pathspec(remove,
+                                lambda pathspec: self.repo.git.rm(pathspec_from_file=pathspec))
+            
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
