@@ -579,11 +579,19 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
 
         has_changes = repo.has_pending_changes(True)
 
+        drop = ap.TimelineChannelAction()
+        drop.name = "Clear"
+        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
+        drop.identifier = "gitstashdrop"
+        drop.type = ap.ActionButtonType.SecondaryText
+        drop.tooltip = "Removes all files in the shelf (cannot be undone)"
+        details.actions.append(drop)   
+
         apply = ap.TimelineChannelAction()
         apply.name = "Move to Changed Files"
         apply.icon = aps.Icon(":/icons/restoreMultipleFiles.svg")
         apply.identifier = "gitstashapply"
-        apply.type = ap.ActionButtonType.Primary
+        apply.type = ap.ActionButtonType.SecondaryText
         if not has_changes:
             apply.enabled = True
             apply.tooltip = "Moves all files from the shelf to the changed files."
@@ -592,14 +600,6 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
             apply.tooltip = "Unable to move shelved files when you already have changed files"
 
         details.actions.append(apply)
-            
-        drop = ap.TimelineChannelAction()
-        drop.name = "Delete"
-        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
-        drop.identifier = "gitstashdrop"
-        drop.type = ap.ActionButtonType.SecondaryText
-        drop.tooltip = "Permanently deletes all files in the shelf (cannot be undone)"
-        details.actions.append(drop)       
 
         details.changes = ap.VCChangeList(changes.values())
         return details

@@ -98,11 +98,11 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                 stash = repo.get_branch_stash()
                 if stash:
                     dialog = ap.Dialog()
-                    dialog.icon = ":/icons/user-interface/information.svg"
-                    dialog.title = "You have Shelved Files"
-                    dialog.add_text("You have successfully resolved the conflicts.<br>Your original files were saved as backup copies, referred to as <b>Shelved Files</b>")
-                    dialog.add_text("When everything is in order you can safely delete the Shelved Files")
-                    dialog.add_button("OK", callback=lambda d: d.close())
+                    dialog.icon = ":/icons/Misc/shelf.svg"
+                    dialog.title = "Shelved Files"
+                    dialog.add_text("Anchorpoint has created backup copies of your recent changes. They are called <b>shelved files</b>.<br>Check your project if everything is ok and clear your shelved files afterwards.")
+                    dialog.add_info("Learn more about <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/4-Resolving-conflicts/#shelved-files'>Shelved Files</a>")
+                    dialog.add_button("Continue", callback=lambda d: d.close())
                     dialog.show()
 
         except Exception as e:
