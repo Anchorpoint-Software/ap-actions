@@ -4,7 +4,6 @@ import apsync as aps
 import os 
 import tempfile
 import subprocess
-import pyperclip
 
 def win_copy_image_to_clipboard(image_path):
 
@@ -41,7 +40,7 @@ def get_image(workspace_id,input_path):
         print("An error occured: %s", copy.stderr)
     else:
         ui = ap.UI()
-        ui.show_success("Image copied to clipboard") 
+        ui.show_success("Image copied to clipboard","Paste it as a PNG file") 
 
     progress.finish()
 
@@ -50,7 +49,5 @@ def create_temp_directory():
     temp_dir = tempfile.mkdtemp()
     return temp_dir
 
-
 ctx = ap.get_context()
 ctx.run_async(get_image, ctx.workspace_id,ctx.path) 
-
