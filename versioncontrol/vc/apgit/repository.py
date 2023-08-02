@@ -420,6 +420,15 @@ class GitRepository(VCRepository):
             self.stash(True)
         
         self.repo.git.switch(branch_name)
+
+    def merge_branch(self, branch_name: str): 
+        self._check_index_lock()
+        
+        if self.has_pending_changes(True):
+            raise Exception("Cannot merge branch with pending changes.")
+        
+        status = self.repo.git.merge(branch_name, "--no-ff")
+
         
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
@@ -1173,7 +1182,7 @@ class GitRepository(VCRepository):
                 parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
         return parents
 
-    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None):
+    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
         history = []
         args = {}
         if time_start:
@@ -1182,7 +1191,7 @@ class GitRepository(VCRepository):
             args["since"] = f'\"{time_end.strftime("%Y-%m-%d %H:%M:%S")}\"'
 
         unborn = self.is_unborn()
-        if not unborn:
+        if not unborn and not remote_only:
             base_commits = list(self.repo.iter_commits(**args))
         else:
             base_commits = []
@@ -1301,8 +1310,8 @@ class GitRepository(VCRepository):
         with open(os.path.join(dir, "exclude"), "a") as f:
             f.write(f"\n{pattern}")
             
-    def fetch_lfs_files(self, branches: list[str], paths: list[str], progress: Optional[Progress] = None):
-        if len(paths) == 0: return
+    def fetch_lfs_files(self, branches: list[str], paths: list[str] = None, progress: Optional[Progress] = None):
+        if paths is not None and len(paths) == 0: return
 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
@@ -1315,6 +1324,19 @@ class GitRepository(VCRepository):
         lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches, paths)
 
         pass
+
+    def fetch_lfs_files_of_branch(self, branch_name: str, progress: Optional[Progress] = None):
+        split = branch_name.split("/")
+        if len(split) > 1:
+            try:
+                remote = self.repo.remote(split[0])
+                if remote:
+                    branch_name = "/".join(split[1:])
+            except Exception as e:
+                # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
+                pass
+
+        self.fetch_lfs_files(branches=[branch_name], progress=progress)
 
     def get_lfs_filehash(self, paths: list[str], ref: str = None):
         import re

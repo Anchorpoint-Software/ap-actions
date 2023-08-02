@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import platform
+import platform, re
 from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
@@ -209,7 +209,7 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
-def map_commit(commit):
+def map_commit(repo, commit):
     import sys
     sys.path.insert(0, script_dir)
     from vc.models import HistoryType
@@ -236,8 +236,27 @@ def map_commit(commit):
 
     is_merge = len(commit.parents) > 1
     if is_merge:
+        def extract_into_branch(merge_string):
+            match = re.search(r"into\s+'?([^'\s]+)'?", merge_string)
+            if match:
+                into_branch = match.group(1)
+                return into_branch
+            else:
+                return None
+            
+        caption = "Pulled and merged files"
+        current_branch_name = repo.get_current_branch_name()
+        branch_occurences = entry.message.count(current_branch_name)
+        print(f"current_branch_name: {current_branch_name}, branch_occurences: {branch_occurences}")    
+        if branch_occurences == 1:
+            into_branch = extract_into_branch(entry.message)
+            if into_branch:
+                caption = f"Merged branch {into_branch}"
+            else:
+                caption = "Merged branch"
+
         icon_color = "#9E9E9E"
-        entry.caption = f"Pulled and merged files"
+        entry.caption = caption
         entry.tooltip = entry.message
         entry.message = ""
         if commit.type is HistoryType.SYNCED:
@@ -262,10 +281,10 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if repo.is_unborn():
             if not repo.has_remote():
                 return None
-            commit = map_commit(repo.get_history_entry("@{u}"))
+            commit = map_commit(repo, repo.get_history_entry("@{u}"))
             return commit
         
-        return map_commit(repo.get_history_entry("HEAD"))
+        return map_commit(repo, repo.get_history_entry("HEAD"))
 
     except Exception as e:
         import git_errors
@@ -307,11 +326,11 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         newest_committime_to_pull = 0
         newest_commit_to_pull = None
         for commit in history:
-            entry = map_commit(commit)
+            entry = map_commit(repo, commit)
             if "parents" in dir(entry):
                 parents_list = list()
                 for parent in commit.parents:
-                    parents_list.append(map_commit(parent))
+                    parents_list.append(map_commit(repo, parent))
                 entry.parents = parents_list
 
             if commit.type is HistoryType.REMOTE:
@@ -579,11 +598,19 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
 
         has_changes = repo.has_pending_changes(True)
 
+        drop = ap.TimelineChannelAction()
+        drop.name = "Clear"
+        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
+        drop.identifier = "gitstashdrop"
+        drop.type = ap.ActionButtonType.SecondaryText
+        drop.tooltip = "Removes all files in the shelf (cannot be undone)"
+        details.actions.append(drop)   
+
         apply = ap.TimelineChannelAction()
         apply.name = "Move to Changed Files"
         apply.icon = aps.Icon(":/icons/restoreMultipleFiles.svg")
         apply.identifier = "gitstashapply"
-        apply.type = ap.ActionButtonType.Primary
+        apply.type = ap.ActionButtonType.SecondaryText
         if not has_changes:
             apply.enabled = True
             apply.tooltip = "Moves all files from the shelf to the changed files."
@@ -592,14 +619,6 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
             apply.tooltip = "Unable to move shelved files when you already have changed files"
 
         details.actions.append(apply)
-            
-        drop = ap.TimelineChannelAction()
-        drop.name = "Delete"
-        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
-        drop.identifier = "gitstashdrop"
-        drop.type = ap.ActionButtonType.SecondaryText
-        drop.tooltip = "Permanently deletes all files in the shelf (cannot be undone)"
-        details.actions.append(drop)       
 
         details.changes = ap.VCChangeList(changes.values())
         return details
@@ -645,6 +664,66 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
 
+        ap.reload_timeline_entries()
+    except Exception as e:
+        raise e
+    finally:
+        if script_dir in sys.path: sys.path.remove(script_dir)
+
+def on_vc_merge_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    import git_repository_helper as helper
+    sys.path.insert(0, script_dir)
+    lock_disabler = ap.LockDisabler()
+    try:
+        from vc.apgit.utility import get_repo_path, is_executable_running
+        from vc.apgit.repository import GitRepository
+        from vc.models import UpdateState
+        from git_lfs_helper import LFSExtensionTracker
+        if channel_id != "Git": return None
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
+
+        if repo.get_current_branch_name() == branch:
+            return
+        
+        ui = ap.UI()
+
+        # if platform.system() == "Windows":
+        #     if is_executable_running(["unrealeditor.exe"]):
+        #         lfsExtensions = LFSExtensionTracker(repo)
+        #         if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
+        #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
+        #             return
+
+        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
+
+        if repo.has_remote():
+            try:
+                state = repo.fetch(progress=helper.FetchProgress(progress))
+                if state != UpdateState.OK:
+                    print("failed to fetch in merge")
+                repo.fetch_lfs_files_of_branch(branch, progress)
+            except Exception as e:
+                print("failed to fetch in merge", str(e))
+
+        progress.set_text(f"Merging Branch: {branch}")
+        
+        try:
+            repo.merge_branch(branch)
+        except Exception as e:
+            import git_errors
+            if not git_errors.handle_error(e):
+                if "conflict" in str(e):
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts.")  
+                    ap.vc_load_pending_changes(channel_id, True)  
+                else:
+                    ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+            return
+
+        ap.vc_load_pending_changes(channel_id, True)  
         ap.reload_timeline_entries()
     except Exception as e:
         raise e
