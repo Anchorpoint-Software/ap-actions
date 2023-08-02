@@ -711,7 +711,8 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         progress.set_text(f"Merging Branch: {branch}")
         
         try:
-            repo.merge_branch(branch)
+            if not repo.merge_branch(branch):
+                ui.show_info("Merge not needed", "Branch is already up to date.")
         except Exception as e:
             import git_errors
             if not git_errors.handle_error(e):

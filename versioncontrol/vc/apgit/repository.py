@@ -83,7 +83,7 @@ class _InternalProgress(git.RemoteProgress):
         return super().line_dropped(line)
 
     def canceled(self):
-        return self.progress.ap_progress.canceled
+        return self.progress.canceled
 class GitRepository(VCRepository):
     repo: git.Repo = None
 
@@ -421,13 +421,16 @@ class GitRepository(VCRepository):
         
         self.repo.git.switch(branch_name)
 
-    def merge_branch(self, branch_name: str): 
+    def merge_branch(self, branch_name: str) -> bool:
         self._check_index_lock()
         
         if self.has_pending_changes(True):
             raise Exception("Cannot merge branch with pending changes.")
         
         status = self.repo.git.merge(branch_name, "--no-ff")
+        if "Already up to date." in status:
+            return False
+        return True
 
         
     def create_branch(self, branch_name: str):
