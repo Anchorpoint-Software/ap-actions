@@ -90,3 +90,6 @@ class FetchProgress(vc.Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
+
+    def canceled(self):
+        return self.ap_progress.canceled

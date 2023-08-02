@@ -34,6 +34,9 @@ class PullProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+    def canceled(self):
+        return self.ap_progress.canceled
+
 def check_changes_writable(repo, changes):
     for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
         path = os.path.join(repo.get_root_path(), change.path)

@@ -83,7 +83,7 @@ class _InternalProgress(git.RemoteProgress):
         return super().line_dropped(line)
 
     def canceled(self):
-        return self.progress.canceled
+        return self.progress.canceled()
 class GitRepository(VCRepository):
     repo: git.Repo = None
 
