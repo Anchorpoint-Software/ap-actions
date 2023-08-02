@@ -669,6 +669,66 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         raise e
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
+
+def on_vc_merge_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    import git_repository_helper as helper
+    sys.path.insert(0, script_dir)
+    lock_disabler = ap.LockDisabler()
+    try:
+        from vc.apgit.utility import get_repo_path, is_executable_running
+        from vc.apgit.repository import GitRepository
+        from vc.models import UpdateState
+        from git_lfs_helper import LFSExtensionTracker
+        if channel_id != "Git": return None
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
+
+        if repo.get_current_branch_name() == branch:
+            return
+        
+        ui = ap.UI()
+
+        # if platform.system() == "Windows":
+        #     if is_executable_running(["unrealeditor.exe"]):
+        #         lfsExtensions = LFSExtensionTracker(repo)
+        #         if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
+        #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
+        #             return
+
+        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
+
+        if repo.has_remote():
+            try:
+                state = repo.fetch(progress=helper.FetchProgress(progress))
+                if state != UpdateState.OK:
+                    print("failed to fetch in merge")
+                repo.fetch_lfs_files_of_branch(branch, progress)
+            except Exception as e:
+                print("failed to fetch in merge", str(e))
+
+        progress.set_text(f"Merging Branch: {branch}")
+        
+        try:
+            repo.merge_branch(branch)
+        except Exception as e:
+            import git_errors
+            if not git_errors.handle_error(e):
+                if "conflict" in str(e):
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts.")  
+                    ap.vc_load_pending_changes(channel_id, True)  
+                else:
+                    ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+            return
+
+        ap.vc_load_pending_changes(channel_id, True)  
+        ap.reload_timeline_entries()
+    except Exception as e:
+        raise e
+    finally:
+        if script_dir in sys.path: sys.path.remove(script_dir)
         
 def on_vc_create_branch(channel_id: str, branch: str, ctx):
     import sys
