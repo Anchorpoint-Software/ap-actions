@@ -162,8 +162,8 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
         conflict_model.incoming_branch = branch_incoming
     
     if branch_current:
-        conflict_model.current_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_current))
-    conflict_model.incoming_entry = map_commit(repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
+        conflict_model.current_entry = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_current))
+    conflict_model.incoming_entry = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
 
     status_current, status_incoming = repo.get_file_conflict_status(rel_filepath)
     

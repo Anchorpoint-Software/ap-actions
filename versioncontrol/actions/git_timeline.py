@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import platform
+import platform, re
 from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
@@ -209,7 +209,7 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
-def map_commit(commit):
+def map_commit(repo, commit):
     import sys
     sys.path.insert(0, script_dir)
     from vc.models import HistoryType
@@ -236,8 +236,27 @@ def map_commit(commit):
 
     is_merge = len(commit.parents) > 1
     if is_merge:
+        def extract_into_branch(merge_string):
+            match = re.search(r"into\s+'?([^'\s]+)'?", merge_string)
+            if match:
+                into_branch = match.group(1)
+                return into_branch
+            else:
+                return None
+            
+        caption = "Pulled and merged files"
+        current_branch_name = repo.get_current_branch_name()
+        branch_occurences = entry.message.count(current_branch_name)
+        print(f"current_branch_name: {current_branch_name}, branch_occurences: {branch_occurences}")    
+        if branch_occurences == 1:
+            into_branch = extract_into_branch(entry.message)
+            if into_branch:
+                caption = f"Merged branch {into_branch}"
+            else:
+                caption = "Merged branch"
+
         icon_color = "#9E9E9E"
-        entry.caption = f"Pulled and merged files"
+        entry.caption = caption
         entry.tooltip = entry.message
         entry.message = ""
         if commit.type is HistoryType.SYNCED:
@@ -262,10 +281,10 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if repo.is_unborn():
             if not repo.has_remote():
                 return None
-            commit = map_commit(repo.get_history_entry("@{u}"))
+            commit = map_commit(repo, repo.get_history_entry("@{u}"))
             return commit
         
-        return map_commit(repo.get_history_entry("HEAD"))
+        return map_commit(repo, repo.get_history_entry("HEAD"))
 
     except Exception as e:
         import git_errors
@@ -307,11 +326,11 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         newest_committime_to_pull = 0
         newest_commit_to_pull = None
         for commit in history:
-            entry = map_commit(commit)
+            entry = map_commit(repo, commit)
             if "parents" in dir(entry):
                 parents_list = list()
                 for parent in commit.parents:
-                    parents_list.append(map_commit(parent))
+                    parents_list.append(map_commit(repo, parent))
                 entry.parents = parents_list
 
             if commit.type is HistoryType.REMOTE:

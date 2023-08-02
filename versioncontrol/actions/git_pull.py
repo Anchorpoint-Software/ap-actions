@@ -127,7 +127,7 @@ def pull(repo: GitRepository, channel_id: str):
             history = []
             for commit in commits_to_pull:
                 commit.type = HistoryType.SYNCED
-                history.append(map_commit(commit))
+                history.append(map_commit(repo, commit))
             ap.update_timeline_channel_entries(channel_id, history)
 
 
