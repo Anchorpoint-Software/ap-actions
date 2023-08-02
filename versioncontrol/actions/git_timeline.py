@@ -242,17 +242,24 @@ def map_commit(repo, commit):
                 into_branch = match.group(1)
                 return into_branch
             else:
-                return None
+                # If there's no 'into' branch, return the branch after 'merge branch'
+                match = re.search(r"merge branch\s+'?([^'\s]+)'?", merge_string, re.IGNORECASE)
+                if match:
+                    branch = match.group(1)
+                    return branch
+                else:
+                    return None
             
         caption = "Pulled and merged files"
         current_branch_name = repo.get_current_branch_name()
         branch_occurences = entry.message.count(current_branch_name)
-        if branch_occurences == 1:
+        if branch_occurences <= 1:
             into_branch = extract_into_branch(entry.message)
-            if into_branch:
-                caption = f"Merged branch {into_branch}"
-            else:
-                caption = "Merged branch"
+            if into_branch != current_branch_name: 
+                if into_branch:
+                    caption = f"Merged branch {into_branch}"
+                else:
+                    caption = "Merged branch"
 
         icon_color = "#9E9E9E"
         entry.caption = caption
@@ -697,9 +704,8 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
         #             return
 
-        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
-
         if repo.has_remote():
+            progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
             try:
                 state = repo.fetch(progress=helper.FetchProgress(progress))
                 if state != UpdateState.OK:
@@ -707,8 +713,9 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                 repo.fetch_lfs_files_of_branch(branch, progress)
             except Exception as e:
                 print("failed to fetch in merge", str(e))
+                raise e
 
-        progress.set_text(f"Merging Branch: {branch}")
+        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
             repo.merge_branch(branch)
