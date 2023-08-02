@@ -5,19 +5,6 @@ import os
 import tempfile
 import subprocess
 
-def win_copy_image_to_clipboard(image_path):
-
-    # adjust the path so that powershell understands it
-    path = image_path.replace("\\","\\\\").replace("/","\\\\")
-
-    # build your PowerShell command
-    cmd = f'Get-ChildItem "{path}" | Set-Clipboard'
-
-    # execute the command
-    completed = subprocess.run(["powershell", "-Command",cmd], capture_output=True)
-    return completed
-
-
 def get_image(workspace_id,input_path):
     # start progress
     progress = ap.Progress("Copying image", "Processing", infinite=True)
@@ -34,13 +21,9 @@ def get_image(workspace_id,input_path):
     os.rename(image_path,renamed_image_path)    
 
     # trigger the copy to clipboard function
-    copy = win_copy_image_to_clipboard(renamed_image_path)
+    ap.copy_files_to_clipboard([renamed_image_path])
     
-    if copy.returncode != 0:
-        print("An error occured: %s", copy.stderr)
-    else:
-        ui = ap.UI()
-        ui.show_success("Image copied to clipboard","Paste it as a PNG file") 
+    ap.UI().show_success("Image copied to clipboard","Paste it as a PNG file") 
 
     progress.finish()
 
