@@ -1173,7 +1173,7 @@ class GitRepository(VCRepository):
                 parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
         return parents
 
-    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None):
+    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
         history = []
         args = {}
         if time_start:
@@ -1182,7 +1182,7 @@ class GitRepository(VCRepository):
             args["since"] = f'\"{time_end.strftime("%Y-%m-%d %H:%M:%S")}\"'
 
         unborn = self.is_unborn()
-        if not unborn:
+        if not unborn and not remote_only:
             base_commits = list(self.repo.iter_commits(**args))
         else:
             base_commits = []

@@ -6,12 +6,14 @@ import git_errors
 import itertools
 
 import sys, os, importlib
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+from git_timeline import map_commit
 if parent_dir in sys.path: sys.path.remove(parent_dir)
 class PullProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
@@ -88,6 +90,8 @@ def pull(repo: GitRepository, channel_id: str):
     progress.set_cancelable(True)
     progress.set_text("Talking to Server")
 
+    commits_to_pull = repo.get_history(remote_only=True)
+
     state = repo.update(progress=PullProgress(progress), rebase=False)
     progress.set_cancelable(False)
     if state == UpdateState.NO_REMOTE:
@@ -119,6 +123,14 @@ def pull(repo: GitRepository, channel_id: str):
             progress.set_text("Restoring Shelved Files")
             repo.pop_stash()        
     
+        if commits_to_pull and len(commits_to_pull) > 0:
+            history = []
+            for commit in commits_to_pull:
+                commit.type = HistoryType.SYNCED
+                history.append(map_commit(commit))
+            ap.update_timeline_channel_entries(channel_id, history)
+
+
     return True
 
 
