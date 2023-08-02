@@ -1006,10 +1006,6 @@ class GitRepository(VCRepository):
                 self._write_pathspec_file(paths, pathspec)
                 callback(pathspec)
 
-        print(f"checkout_ours: {checkout_ours}")
-        print(f"checkout_theirs: {checkout_theirs}")
-        print(f"remove: {remove}")
-
         if len(checkout_ours) > 0:
             run_with_pathspec(checkout_ours,
                                 lambda pathspec: self.repo.git.checkout("--ours", pathspec_from_file=pathspec))

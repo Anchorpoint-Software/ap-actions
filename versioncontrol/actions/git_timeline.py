@@ -247,7 +247,6 @@ def map_commit(repo, commit):
         caption = "Pulled and merged files"
         current_branch_name = repo.get_current_branch_name()
         branch_occurences = entry.message.count(current_branch_name)
-        print(f"current_branch_name: {current_branch_name}, branch_occurences: {branch_occurences}")    
         if branch_occurences == 1:
             into_branch = extract_into_branch(entry.message)
             if into_branch:
