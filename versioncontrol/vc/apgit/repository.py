@@ -486,6 +486,15 @@ class GitRepository(VCRepository):
         if not stash:
             stash = self.get_branch_stash()
         if stash:
+            if not self.has_pending_changes(True):
+                # workaround to fix 'file already exists, no checkout' error
+                changes = self.get_stash_changes(stash)
+                root = self.get_root_path()
+                for new_file in changes.new_files:
+                    file = os.path.join(root, new_file.path)
+                    if os.path.exists(file):
+                        os.remove(file)
+
             self.repo.git.stash("pop", stash.id)
         else:
             raise Exception("No stash to pop")
