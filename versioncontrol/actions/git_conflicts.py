@@ -149,6 +149,7 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
 
     if repo.is_merging() == False and repo.is_rebasing() == False:
         # When not merging or rebasing, we have conflicts from the stash application
+        # Swap entries when conflict is from stash
         branch_incoming = branch_current # Incoming branch is pulled commit aka current branch
         branch_current = None # Branch is None aka not committed
         is_conflict_from_stash = True
@@ -200,5 +201,12 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
         conflict_model.incoming_change.cached_path = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
     else:
         conflict_model.is_text = True
+
+    if is_conflict_from_stash:
+        from copy import copy
+        # Swap when conflict is from stash
+        temp = copy(conflict_model.incoming_change)
+        conflict_model.incoming_change = copy(conflict_model.current_change)
+        conflict_model.current_change = copy(temp)
     
     return conflict_model
