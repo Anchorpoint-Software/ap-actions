@@ -761,6 +761,21 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
     finally:
         if script_dir in sys.path : sys.path.remove(script_dir)
         
+def delete_lockfiles(repo_git_dir):
+    import glob
+    pattern = os.path.join(repo_git_dir, "ap-fetch-*.lock")
+
+    # Find all files that match the pattern
+    lockfiles = glob.glob(pattern)
+
+    # And delete them
+    for lockfile in lockfiles:
+        try:
+            os.remove(lockfile)
+        except Exception as e:
+            print(f"An error occurred while deleting {lockfile}: {e}")
+
+
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -781,16 +796,17 @@ def refresh_async(channel_id: str, project_path):
         repo = GitRepository.load(path)
         if not repo: return
 
-        lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
+        git_dir = repo.get_git_dir()
+        lockfile = os.path.join(git_dir, f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):
             return
 
         try:
             with open(lockfile, "w") as f:
-                repo.fetch()    
+                repo.fetch()
         finally:
             ap.refresh_timeline_channel(channel_id)
-            os.remove(lockfile)
+            delete_lockfiles(git_dir)
 
     except Exception as e:
         print("refresh_async exception: " + str(e))
