@@ -287,7 +287,11 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if repo.is_unborn():
             if not repo.has_remote():
                 return None
-            commit = map_commit(repo, repo.get_history_entry("@{u}"))
+            
+            try:
+                commit = map_commit(repo, repo.get_history_entry("@{u}"))
+            except:
+                return None
             return commit
         
         return map_commit(repo, repo.get_history_entry("HEAD"))
@@ -380,6 +384,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         return history_list, has_more_commits
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
+        raise e
         return [], False
 
 def on_locks_removed(locks, ctx):
