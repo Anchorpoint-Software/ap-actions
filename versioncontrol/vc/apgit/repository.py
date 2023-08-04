@@ -1069,23 +1069,28 @@ class GitRepository(VCRepository):
     def get_current_branch_name(self) -> str:
         return self.repo.git.branch("--show-current")
 
-    def get_merge_branch_name(self) -> str:
+    def get_merge_head(self):
         merge_head = os.path.join(self._get_repo_internal_dir(), "MERGE_HEAD")
         if not os.path.exists(merge_head):
             return None
         
-        merge_head_commitid = None
-        with open(merge_head, "r", encoding="utf-8") as f:
-            merge_head_commitid = f.readline().replace("\n", "").strip()
-        
         try:
-            merge_branch = self.repo.git.branch("-a", "--contains", merge_head_commitid).split('\n')[0].strip()
+            with open(merge_head, "r", encoding="utf-8") as f:
+                return f.readline().replace("\n", "").strip()
+        except Exception as e:
+            return None
+
+    def get_branch_name_from_id(self, id: str) -> str:
+        try:
+            merge_branch = self.repo.git(no_pager=True).branch("-a", "--points-at", id).split('\n')[0].strip()
+            if "->" in merge_branch:
+                merge_branch = merge_branch.split("->")[1].strip()
             if merge_branch.startswith("remotes/"):
                 merge_branch = merge_branch[len("remotes/"):]
             return merge_branch
         except Exception as e:
             print(f"Error getting merge branch: {e}")
-            return merge_head_commitid
+            return id
 
     def get_branches(self) -> list[Branch]:
         def _map_ref(ref) -> Branch:

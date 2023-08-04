@@ -144,7 +144,8 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     rel_filepath = os.path.relpath(file_path, path).replace("\\", "/")
 
     branch_current = repo.get_current_branch_name()
-    branch_incoming = repo.get_merge_branch_name()
+    merge_head_id = repo.get_merge_head()
+    branch_incoming = repo.get_branch_name_from_id(merge_head_id)
     is_conflict_from_stash = False
 
     if repo.is_merging() == False and repo.is_rebasing() == False:
