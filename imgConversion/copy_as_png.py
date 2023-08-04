@@ -12,11 +12,11 @@ def get_image(workspace_id,input_path):
     output_folder = create_temp_directory()
 
     # generate the thumbnail which is a png file and put it in the temporary directory
-    aps.generate_thumbnails([input_path],  output_folder, with_detail = False, with_preview = True, workspace_id = workspace_id)    
+    aps.generate_thumbnails([input_path],  output_folder, with_detail = True, with_preview = False, workspace_id = workspace_id)    
 
     # get the proper filename, rename it because the generated PNG file has a _pt appendix
     file_name = os.path.basename(input_path).split(".")[0]
-    image_path = os.path.join(output_folder,file_name+str("_pt")+str(".png"))
+    image_path = os.path.join(output_folder,file_name+str("_dt")+str(".png"))
     renamed_image_path = os.path.join(output_folder,file_name+str(".png"))
     os.rename(image_path,renamed_image_path)    
 
