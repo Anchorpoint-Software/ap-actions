@@ -1347,8 +1347,9 @@ class GitRepository(VCRepository):
             except Exception as e:
                 # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
                 pass
-
-        self.fetch_lfs_files(branches=[branch_name], progress=progress)
+        
+        branches = [branch_name]
+        self.fetch_lfs_files(branches=branches, progress=progress)
 
     def get_lfs_filehash(self, paths: list[str], ref: str = None):
         import re
