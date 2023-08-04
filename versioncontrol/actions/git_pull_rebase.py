@@ -31,6 +31,9 @@ class PullProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+    def canceled(self):
+        return self.ap_progress.canceled
+
 def pull_async(channel_id: str, project_path):
     ui = ap.UI()
     try:

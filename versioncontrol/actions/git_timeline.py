@@ -242,17 +242,24 @@ def map_commit(repo, commit):
                 into_branch = match.group(1)
                 return into_branch
             else:
-                return None
+                # If there's no 'into' branch, return the branch after 'merge branch'
+                match = re.search(r"merge branch\s+'?([^'\s]+)'?", merge_string, re.IGNORECASE)
+                if match:
+                    branch = match.group(1)
+                    return branch
+                else:
+                    return None
             
         caption = "Pulled and merged files"
         current_branch_name = repo.get_current_branch_name()
         branch_occurences = entry.message.count(current_branch_name)
-        if branch_occurences == 1:
+        if branch_occurences <= 1:
             into_branch = extract_into_branch(entry.message)
-            if into_branch:
-                caption = f"Merged branch {into_branch}"
-            else:
-                caption = "Merged branch"
+            if into_branch != current_branch_name: 
+                if into_branch:
+                    caption = f"Merged branch {into_branch}"
+                else:
+                    caption = "Merged branch"
 
         icon_color = "#9E9E9E"
         entry.caption = caption
@@ -280,7 +287,11 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if repo.is_unborn():
             if not repo.has_remote():
                 return None
-            commit = map_commit(repo, repo.get_history_entry("@{u}"))
+            
+            try:
+                commit = map_commit(repo, repo.get_history_entry("@{u}"))
+            except:
+                return None
             return commit
         
         return map_commit(repo, repo.get_history_entry("HEAD"))
@@ -373,6 +384,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         return history_list, has_more_commits
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
+        raise e
         return [], False
 
 def on_locks_removed(locks, ctx):
@@ -697,18 +709,18 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
         #             return
 
-        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
-
         if repo.has_remote():
+            progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
             try:
                 state = repo.fetch(progress=helper.FetchProgress(progress))
                 if state != UpdateState.OK:
                     print("failed to fetch in merge")
-                repo.fetch_lfs_files_of_branch(branch, progress)
+                repo.fetch_lfs_files_of_branch(branch, helper.FetchProgress(progress))
             except Exception as e:
                 print("failed to fetch in merge", str(e))
+                raise e
 
-        progress.set_text(f"Merging Branch: {branch}")
+        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
             if not repo.merge_branch(branch):
@@ -754,6 +766,21 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
     finally:
         if script_dir in sys.path : sys.path.remove(script_dir)
         
+def delete_lockfiles(repo_git_dir):
+    import glob
+    pattern = os.path.join(repo_git_dir, "ap-fetch-*.lock")
+
+    # Find all files that match the pattern
+    lockfiles = glob.glob(pattern)
+
+    # And delete them
+    for lockfile in lockfiles:
+        try:
+            os.remove(lockfile)
+        except Exception as e:
+            print(f"An error occurred while deleting {lockfile}: {e}")
+
+
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -774,16 +801,17 @@ def refresh_async(channel_id: str, project_path):
         repo = GitRepository.load(path)
         if not repo: return
 
-        lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
+        git_dir = repo.get_git_dir()
+        lockfile = os.path.join(git_dir, f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):
             return
 
         try:
             with open(lockfile, "w") as f:
-                repo.fetch()    
+                repo.fetch()
         finally:
             ap.refresh_timeline_channel(channel_id)
-            os.remove(lockfile)
+            delete_lockfiles(git_dir)
 
     except Exception as e:
         print("refresh_async exception: " + str(e))

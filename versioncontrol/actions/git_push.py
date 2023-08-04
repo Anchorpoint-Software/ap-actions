@@ -27,6 +27,9 @@ class PushProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+    def canceled(self):
+        return self.ap_progress.canceled
+
 def show_push_failed(error: str, channel_id, ctx):
     d = ap.Dialog()
     d.title = "Could not Push"

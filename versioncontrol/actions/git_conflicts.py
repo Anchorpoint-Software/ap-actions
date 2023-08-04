@@ -144,11 +144,13 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     rel_filepath = os.path.relpath(file_path, path).replace("\\", "/")
 
     branch_current = repo.get_current_branch_name()
-    branch_incoming = repo.get_merge_branch_name()
+    merge_head_id = repo.get_merge_head()
+    branch_incoming = repo.get_branch_name_from_id(merge_head_id)
     is_conflict_from_stash = False
 
     if repo.is_merging() == False and repo.is_rebasing() == False:
         # When not merging or rebasing, we have conflicts from the stash application
+        # Swap entries when conflict is from stash
         branch_incoming = branch_current # Incoming branch is pulled commit aka current branch
         branch_current = None # Branch is None aka not committed
         is_conflict_from_stash = True
@@ -165,7 +167,10 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
         conflict_model.current_entry = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_current))
     conflict_model.incoming_entry = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
 
-    status_current, status_incoming = repo.get_file_conflict_status(rel_filepath)
+    if is_conflict_from_stash: 
+        status_incoming, status_current = repo.get_file_conflict_status(rel_filepath)
+    else:
+        status_current, status_incoming = repo.get_file_conflict_status(rel_filepath)
     
     if status_current:
         conflict_model.current_change.status = status_current

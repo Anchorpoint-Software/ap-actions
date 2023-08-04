@@ -83,7 +83,7 @@ class _InternalProgress(git.RemoteProgress):
         return super().line_dropped(line)
 
     def canceled(self):
-        return self.progress.canceled
+        return self.progress.canceled()
 class GitRepository(VCRepository):
     repo: git.Repo = None
 
@@ -486,6 +486,15 @@ class GitRepository(VCRepository):
         if not stash:
             stash = self.get_branch_stash()
         if stash:
+            if not self.has_pending_changes(True):
+                # workaround to fix 'file already exists, no checkout' error
+                changes = self.get_stash_changes(stash)
+                root = self.get_root_path()
+                for new_file in changes.new_files:
+                    file = os.path.join(root, new_file.path)
+                    if os.path.exists(file):
+                        os.remove(file)
+
             self.repo.git.stash("pop", stash.id)
         else:
             raise Exception("No stash to pop")
@@ -1060,21 +1069,28 @@ class GitRepository(VCRepository):
     def get_current_branch_name(self) -> str:
         return self.repo.git.branch("--show-current")
 
-    def get_merge_branch_name(self) -> str:
+    def get_merge_head(self):
         merge_head = os.path.join(self._get_repo_internal_dir(), "MERGE_HEAD")
         if not os.path.exists(merge_head):
             return None
         
-        merge_head_commitid = None
-        with open(merge_head, "r", encoding="utf-8") as f:
-            merge_head_commitid = f.readline().replace("\n", "").strip()
-        
         try:
-            merge_branch = self.repo.git.branch("-a", "--contains", merge_head_commitid).split('\n')[0].strip()
+            with open(merge_head, "r", encoding="utf-8") as f:
+                return f.readline().replace("\n", "").strip()
+        except Exception as e:
+            return None
+
+    def get_branch_name_from_id(self, id: str) -> str:
+        try:
+            merge_branch = self.repo.git(no_pager=True).branch("-a", "--points-at", id).split('\n')[0].strip()
+            if "->" in merge_branch:
+                merge_branch = merge_branch.split("->")[1].strip()
+            if merge_branch.startswith("remotes/"):
+                merge_branch = merge_branch[len("remotes/"):]
             return merge_branch
         except Exception as e:
             print(f"Error getting merge branch: {e}")
-            return merge_head_commitid
+            return id
 
     def get_branches(self) -> list[Branch]:
         def _map_ref(ref) -> Branch:
@@ -1183,7 +1199,7 @@ class GitRepository(VCRepository):
 
     def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
         history = []
-        args = {}
+        args = {"first_parent": True}
         if time_start:
             args["until"] = f'\"{time_start.strftime("%Y-%m-%d %H:%M:%S")}\"'
         if time_end:
@@ -1202,9 +1218,9 @@ class GitRepository(VCRepository):
                 has_upstream = self._has_upstream()
                 if has_upstream:
                     if unborn:
-                        remote_commits = list(self.repo.iter_commits(rev="@{u}"))
+                        remote_commits = list(self.repo.iter_commits(first_parent = True, rev="@{u}"))
                     else:
-                        remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
+                        remote_commits = list(self.repo.iter_commits(first_parent = True, rev="HEAD..@{u}"))
                 
                 if not unborn:
                     local_commits = self._get_local_commits(has_upstream)
