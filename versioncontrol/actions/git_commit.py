@@ -116,7 +116,6 @@ def repo_needs_pull(repo: GitRepository):
     
     try:
         repo.fetch()
-        repo.merge(branch)
         return repo.is_pull_required(), progress.canceled
     except Exception as e:
         git_errors.handle_error(e)
