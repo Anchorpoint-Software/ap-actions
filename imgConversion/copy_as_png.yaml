@@ -1,0 +1,33 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: "1.0"
+
+action: 
+  #Must Have Properties
+  name: "Copy as PNG"
+
+  #Optional Properties
+  version: 1
+  id: "ap::image::copy"
+  category: "utility/code/examples/dialog"
+  type: python
+  enable: true
+  author: "Anchorpoint Software GmbH"
+  description: "This command takes an image, converts it to png and copies the bitmap to clipboard"
+  icon:
+    path: "icons/copyImage.svg"
+    
+  script: "copy_as_png.py"
+
+  python_packages: 
+  - pyperclip
+  - temp
+
+  #Where to register this action: on specific filetypes
+  register:
+    file: 
+      enable: true 
+      filter: "*.psd;*.exr;*.tga;*.obj;*.fbx;*.glb;*.gltf;*.hdr" 
