@@ -1008,7 +1008,12 @@ class GitRepository(VCRepository):
             # DD: The file has been deleted in both the current branch and the merging branch.
             if status == "DD":
                 remove.append(file)
-         
+
+        lock_disabler = ap.LockDisabler()
+        def make_writable(paths: list[str]):
+            for path in paths:
+                utility.make_file_writable(path)
+
         def run_with_pathspec(paths, callback):
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "conflict_spec")
@@ -1016,18 +1021,21 @@ class GitRepository(VCRepository):
                 callback(pathspec)
 
         if len(checkout_ours) > 0:
+            make_writable(checkout_ours)
             run_with_pathspec(checkout_ours,
                                 lambda pathspec: self.repo.git.checkout("--ours", pathspec_from_file=pathspec))
             run_with_pathspec(checkout_ours,
                                 lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
 
         if len(checkout_theirs) > 0:
+            make_writable(checkout_theirs)
             run_with_pathspec(checkout_theirs,
                                 lambda pathspec: self.repo.git.checkout("--theirs", pathspec_from_file=pathspec))
             run_with_pathspec(checkout_theirs,
                                 lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
 
         if len(remove) > 0:
+            make_writable(remove)
             run_with_pathspec(remove,
                                 lambda pathspec: self.repo.git.rm(pathspec_from_file=pathspec))
             
