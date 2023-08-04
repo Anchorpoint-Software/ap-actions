@@ -449,9 +449,7 @@ def handle_git_autolock(repo, ctx, changes):
 
     paths_to_unlock = list[str]()
     for lock in locks:
-        print(f"Lock: {lock.path} owner_id: {lock.owner_id} user_id: {ctx.user_id} metadata: {lock.metadata}") 
         if lock.owner_id == ctx.user_id and lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
-            print(f"Unlocking file {lock.path}")
             paths_to_unlock.append(lock.path)
 
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})

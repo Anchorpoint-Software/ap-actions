@@ -59,7 +59,7 @@ def handle_git_autolock(ctx, repo):
 
     paths_to_unlock = []
     for lock in locks:
-        if "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
+        if lock.owner_id == ctx.user_id and "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
             paths_to_unlock.append(lock.path)
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
