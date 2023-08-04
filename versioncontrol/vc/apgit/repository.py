@@ -1337,20 +1337,6 @@ class GitRepository(VCRepository):
 
         pass
 
-    def fetch_lfs_files_of_branch(self, branch_name: str, progress: Optional[Progress] = None):
-        split = branch_name.split("/")
-        if len(split) > 1:
-            try:
-                remote = self.repo.remote(split[0])
-                if remote:
-                    branch_name = "/".join(split[1:])
-            except Exception as e:
-                # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
-                pass
-        
-        branches = [branch_name]
-        self.fetch_lfs_files(branches=branches, progress=progress)
-
     def get_lfs_filehash(self, paths: list[str], ref: str = None):
         import re
         args = ["ls-files"] 
