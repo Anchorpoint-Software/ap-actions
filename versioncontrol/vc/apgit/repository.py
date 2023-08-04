@@ -1199,6 +1199,7 @@ class GitRepository(VCRepository):
 
     def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
         history = []
+        args = {}
         if time_start:
             args["until"] = f'\"{time_start.strftime("%Y-%m-%d %H:%M:%S")}\"'
         if time_end:
