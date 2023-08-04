@@ -1080,6 +1080,8 @@ class GitRepository(VCRepository):
         
         try:
             merge_branch = self.repo.git.branch("-a", "--contains", merge_head_commitid).split('\n')[0].strip()
+            if merge_branch.startswith("remotes/"):
+                merge_branch = merge_branch[len("remotes/"):]
             return merge_branch
         except Exception as e:
             print(f"Error getting merge branch: {e}")
