@@ -424,9 +424,6 @@ class GitRepository(VCRepository):
     def merge_branch(self, branch_name: str) -> bool:
         self._check_index_lock()
         
-        if self.has_pending_changes(True):
-            raise Exception("Cannot merge branch with pending changes.")
-        
         status = self.repo.git.merge(branch_name, "--no-ff")
         if "Already up to date." in status:
             return False

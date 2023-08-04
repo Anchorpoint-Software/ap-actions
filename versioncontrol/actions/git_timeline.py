@@ -709,6 +709,9 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
         #             return
 
+        if repo.has_pending_changes(True):
+            raise Exception("Cannot merge branch with pending changes.")
+
         if repo.has_remote():
             progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
             try:
