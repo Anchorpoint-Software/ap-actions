@@ -1199,7 +1199,6 @@ class GitRepository(VCRepository):
 
     def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
         history = []
-        args = {"first_parent": True}
         if time_start:
             args["until"] = f'\"{time_start.strftime("%Y-%m-%d %H:%M:%S")}\"'
         if time_end:
@@ -1218,9 +1217,9 @@ class GitRepository(VCRepository):
                 has_upstream = self._has_upstream()
                 if has_upstream:
                     if unborn:
-                        remote_commits = list(self.repo.iter_commits(first_parent = True, rev="@{u}"))
+                        remote_commits = list(self.repo.iter_commits(rev="@{u}"))
                     else:
-                        remote_commits = list(self.repo.iter_commits(first_parent = True, rev="HEAD..@{u}"))
+                        remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
                 
                 if not unborn:
                     local_commits = self._get_local_commits(has_upstream)
