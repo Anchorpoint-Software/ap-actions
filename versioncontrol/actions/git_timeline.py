@@ -710,7 +710,8 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         #             return
 
         if repo.has_pending_changes(True):
-            raise Exception("Cannot merge branch with pending changes.")
+            ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+            return
 
         if repo.has_remote():
             progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
