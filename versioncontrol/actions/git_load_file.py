@@ -55,7 +55,7 @@ def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], 
     
     files = dict[str,Optional[str]]()
     for filepath in filepaths:
-        rel_filepath = os.path.relpath(filepath, path)
+        rel_filepath = os.path.relpath(filepath, path).replace("\\", "/")
         hash_result = repo.get_lfs_filehash([rel_filepath], ref)
 
         if len(hash_result) == 0:
