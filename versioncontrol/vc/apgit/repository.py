@@ -1087,6 +1087,9 @@ class GitRepository(VCRepository):
 
     def get_branch_name_from_id(self, id: str) -> str:
         try:
+            if id == None:
+                return id
+            
             merge_branch = self.repo.git(no_pager=True).branch("-a", "--points-at", id).split('\n')[0].strip()
             if "->" in merge_branch:
                 merge_branch = merge_branch.split("->")[1].strip()
