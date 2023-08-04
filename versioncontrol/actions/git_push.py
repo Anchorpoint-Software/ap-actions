@@ -35,6 +35,9 @@ def show_push_failed(error: str, channel_id, ctx):
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
 
+    if "Updates were rejected because the remote contains work that you do" in error:
+        ap.UI().show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
+        return
     if "This repository is over its data quota" in error:
         d.add_text("The GitHub LFS limit has been reached.")
         d.add_info("To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.")
