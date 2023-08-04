@@ -6,6 +6,8 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
+from git_timeline import clear_forced_unlocked_config
+
 importlib.invalidate_caches()
 import git_errors
 from vc.apgit.repository import * 
@@ -66,7 +68,7 @@ def handle_git_autolock(ctx, repo):
             paths_to_unlock.append(lock.path)
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
-
+    clear_forced_unlocked_config()
 
 def push_async(channel_id: str, ctx):
     ui = ap.UI()
