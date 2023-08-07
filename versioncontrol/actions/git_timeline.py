@@ -214,6 +214,43 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
+import re
+
+def extract_branches_from_commit_message(commit_message, current_branch):
+    # Handle case: "Merge branch 'master' into conflicting-branch"
+    into_regex = r"Merge branch '([\w\-\/\.]+)' into ([\w\-\/\.]+)"
+    match = re.match(into_regex, commit_message)
+    if match:
+        return match.group(1),match.group(2)
+
+    # Handle case: "Merge branch 'master' of remote-url" 
+    # And also: "Merge branch 'wip/1520-new_merge_dialog' of remote-url into wip/1520-new_merge_dialog"
+    of_regex = r"Merge branch '([\w\-\/\.]+)' of https:\/\/[\w\.\/\-]+(?: into ([\w\-\/\.]+))?"
+    match = re.match(of_regex, commit_message)
+    if match:
+        return match.group(1), match.group(2) if match.group(2) else current_branch
+
+    # Handle case: "Merge remote-tracking branch 'origin/conflicting-branch'"
+    remote_regex = r"Merge remote-tracking branch '([\w\-\/\.]+)'"
+    match = re.match(remote_regex, commit_message)
+    if match:
+        return match.group(1),current_branch
+
+    # Handle case: "Merge pull request #42 from repo/branch"
+    pr_regex = r"Merge pull request #\d+ from [\w\-\/\.]+/([\w\-\/\.]+)"
+    match = re.match(pr_regex, commit_message)
+    if match:
+        return match.group(1),current_branch
+
+    # Handle general case: "Merge 'branch'"
+    merge_regex = r"Merge '([\w\-\/\.]+)'"
+    match = re.match(merge_regex, commit_message)
+    if match:
+        return match.group(1),current_branch
+
+    # Return None if no match
+    return None, None
+
 def map_commit(repo, commit):
     import sys
     sys.path.insert(0, script_dir)
@@ -241,31 +278,15 @@ def map_commit(repo, commit):
 
     is_merge = len(commit.parents) > 1
     if is_merge:
-        def extract_into_branch(merge_string):
-            match = re.search(r"into\s+'?([^'\s]+)'?", merge_string)
-            if match:
-                into_branch = match.group(1)
-                return into_branch
-            else:
-                # If there's no 'into' branch, return the branch after 'merge branch'
-                match = re.search(r"merge branch\s+'?([^'\s]+)'?", merge_string, re.IGNORECASE)
-                if match:
-                    branch = match.group(1)
-                    return branch
-                else:
-                    return None
-            
         caption = "Pulled and merged files"
         current_branch_name = repo.get_current_branch_name()
-        branch_occurences = entry.message.count(current_branch_name)
-        if branch_occurences <= 1:
-            into_branch = extract_into_branch(entry.message)
-            if into_branch != current_branch_name: 
-                if into_branch:
-                    caption = f"Merged branch {into_branch}"
-                else:
-                    caption = "Merged branch"
-
+        src_branch, target_branch = extract_branches_from_commit_message(commit.message, current_branch_name)
+        print(f"src_branch: {src_branch}, target_branch: {target_branch}, current_branch_name: {current_branch_name}")
+        if target_branch == current_branch_name and src_branch != f"origin/{current_branch_name}":
+            caption = f"Merged branch {src_branch}"
+        if src_branch == current_branch_name and target_branch != f"origin/{current_branch_name}" and target_branch != current_branch_name:
+            caption = f"Merged branch {src_branch} into {target_branch}"
+            
         icon_color = "#9E9E9E"
         entry.caption = caption
         entry.tooltip = entry.message
