@@ -281,7 +281,6 @@ def map_commit(repo, commit):
         caption = "Pulled and merged files"
         current_branch_name = repo.get_current_branch_name()
         src_branch, target_branch = extract_branches_from_commit_message(commit.message, current_branch_name)
-        print(f"src_branch: {src_branch}, target_branch: {target_branch}, current_branch_name: {current_branch_name}")
         if target_branch == current_branch_name and src_branch != f"origin/{current_branch_name}":
             caption = f"Merged branch {src_branch}"
         if src_branch == current_branch_name and target_branch != f"origin/{current_branch_name}" and target_branch != current_branch_name:
