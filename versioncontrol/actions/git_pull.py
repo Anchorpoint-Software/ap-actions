@@ -97,11 +97,21 @@ def pull(repo: GitRepository, channel_id: str):
 
     state = repo.update(progress=PullProgress(progress), rebase=False)
     progress.set_cancelable(False)
+
+    def update_pulled_commits():
+        if commits_to_pull and len(commits_to_pull) > 0:
+            history = []
+            for commit in commits_to_pull:
+                commit.type = HistoryType.SYNCED
+                history.append(map_commit(repo, commit))
+            ap.update_timeline_channel_entries(channel_id, history)
+
     if state == UpdateState.NO_REMOTE:
         ui.show_info("Branch does not track a remote branch", "Push your branch first")    
         return False
     elif state == UpdateState.CONFLICT:
         ui.show_info("Conflicts detected", "Please resolve your conflicts")    
+        update_pulled_commits()
         ap.refresh_timeline_channel(channel_id)
         progress.finish()
         return False
@@ -126,13 +136,7 @@ def pull(repo: GitRepository, channel_id: str):
             progress.set_text("Restoring Shelved Files")
             repo.pop_stash()        
     
-        if commits_to_pull and len(commits_to_pull) > 0:
-            history = []
-            for commit in commits_to_pull:
-                commit.type = HistoryType.SYNCED
-                history.append(map_commit(repo, commit))
-            ap.update_timeline_channel_entries(channel_id, history)
-
+        update_pulled_commits()
 
     return True
 
