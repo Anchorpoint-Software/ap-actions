@@ -181,6 +181,11 @@ def get_config_path():
 def get_forced_unlocked_config_path():
     return os.path.join(get_config_path(), "forced_unlocked.bin")
     
+def clear_forced_unlocked_config():
+    file_path = get_forced_unlocked_config_path()
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
 def load_last_seen_fetched_commit(project_id: str):
     import pickle
     file_path = os.path.join(get_config_path(), "last_seen_fetched_commit.bin")
@@ -423,7 +428,7 @@ def handle_git_autolock(repo, ctx, changes):
                 path_mod_status = pickle.load(file)
         except Exception as e:
             print(f"Could not load forced unlocked files: {e}")
-            os.remove(file_path)
+            clear_forced_unlocked_config()
     
     for change in changes:
         if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
