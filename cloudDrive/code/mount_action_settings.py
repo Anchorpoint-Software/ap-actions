@@ -8,7 +8,11 @@ import rclone_install_helper as rclone_install
 
 ctx = ap.get_context()
 ui = ap.UI()
-settings = aps.Settings("rclone")
+try:
+    settings = aps.Settings("rclone")
+except:
+    ui.show_error("Cannot load settings","Please refer to the <a href='https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.")
+    exit()
 
 def isWin():
     if platform.system() == "Windows":
