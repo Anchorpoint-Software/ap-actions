@@ -1,7 +1,7 @@
 from cgitb import enable
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, sys
 import shutil, platform
 
 import rclone_install_helper as rclone_install
@@ -12,7 +12,7 @@ try:
     settings = aps.Settings("rclone")
 except:
     ui.show_error("Cannot load settings","Please refer to the <a href='https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.")
-    exit()
+    sys.exit()
 
 def isWin():
     if platform.system() == "Windows":
