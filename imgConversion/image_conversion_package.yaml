@@ -17,12 +17,9 @@ action:
   enable: true
   author: "Anchorpoint Software GmbH"
   description: Converts any image to PNG and puts it on the clipboard
-  
+
   icon:
     path: "icons/imageConversion.svg"
-  
-  platforms:
-    - win
 
   actions:
     - ap::image::copy
