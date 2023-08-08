@@ -228,7 +228,7 @@ def extract_branches_from_commit_message(commit_message, current_branch):
     of_regex = r"Merge branch '([\w\-\/\.]+)' of https:\/\/[\w\.\/\-]+(?: into ([\w\-\/\.]+))?"
     match = re.match(of_regex, commit_message)
     if match:
-        return match.group(1), match.group(2) if match.group(2) else current_branch
+        return match.group(1), match.group(2) if match.group(2) else None if current_branch == match.group(1) else current_branch
 
     # Handle case: "Merge remote-tracking branch 'origin/conflicting-branch'"
     remote_regex = r"Merge remote-tracking branch '([\w\-\/\.]+)'"
@@ -283,7 +283,7 @@ def map_commit(repo, commit):
         src_branch, target_branch = extract_branches_from_commit_message(commit.message, current_branch_name)
         if target_branch == current_branch_name and src_branch != f"origin/{current_branch_name}":
             caption = f"Merged branch {src_branch}"
-        if src_branch == current_branch_name and target_branch != f"origin/{current_branch_name}" and target_branch != current_branch_name:
+        if src_branch == current_branch_name and target_branch and target_branch != f"origin/{current_branch_name}" and target_branch != current_branch_name:
             caption = f"Merged branch {src_branch} into {target_branch}"
             
         icon_color = "#9E9E9E"
