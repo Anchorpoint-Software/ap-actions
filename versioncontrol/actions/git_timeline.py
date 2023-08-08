@@ -843,7 +843,8 @@ def refresh_async(channel_id: str, project_path):
             delete_lockfiles(git_dir)
 
     except Exception as e:
-        print("refresh_async exception: " + str(e))
+        if "didn't exist" not in str(e):
+            print("refresh_async exception: " + str(e))
         pass
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
