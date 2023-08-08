@@ -6,6 +6,8 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
+from git_timeline import clear_forced_unlocked_config
+
 importlib.invalidate_caches()
 import git_errors
 from vc.apgit.repository import * 
@@ -27,11 +29,17 @@ class PushProgress(Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+    def canceled(self):
+        return self.ap_progress.canceled
+
 def show_push_failed(error: str, channel_id, ctx):
     d = ap.Dialog()
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
 
+    if "Updates were rejected because the remote contains work that you do" in error:
+        ap.UI().show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
+        return
     if "This repository is over its data quota" in error:
         d.add_text("The GitHub LFS limit has been reached.")
         d.add_info("To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.")
@@ -56,11 +64,11 @@ def handle_git_autolock(ctx, repo):
 
     paths_to_unlock = []
     for lock in locks:
-        if "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
+        if lock.owner_id == ctx.user_id and "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
             paths_to_unlock.append(lock.path)
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
-
+    clear_forced_unlocked_config()
 
 def push_async(channel_id: str, ctx):
     ui = ap.UI()

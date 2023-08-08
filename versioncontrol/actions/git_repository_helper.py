@@ -75,6 +75,9 @@ class CloneProgress(vc.Progress):
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
 
+    def canceled(self):
+        return self.ap_progress.canceled
+
 class FetchProgress(vc.Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
@@ -90,3 +93,6 @@ class FetchProgress(vc.Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
+
+    def canceled(self):
+        return self.ap_progress.canceled

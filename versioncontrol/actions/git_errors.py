@@ -5,6 +5,7 @@ import platform, sys, os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.apgit.utility as utility
+from vc.apgit.repository import GitRepository
 if script_dir in sys.path: sys.path.remove(script_dir)
 
 def _guess_application(file: str):
@@ -140,6 +141,55 @@ def _handle_azure_ipv6():
 
     return True
 
+def restore_corrupted_index():
+    print("restoring corrupted index")
+    try:
+        progress = ap.Progress("Restoring Git Index", show_loading_screen=True)
+        context = ap.get_context()
+        if not context: 
+            return
+
+        repo_path = utility.get_repo_path("Git", context.project_path)
+        if not repo_path: 
+            return
+
+        repo = GitRepository.load(repo_path)
+        if not repo: 
+            return
+
+        index = os.path.join(repo.get_git_dir(), "index")
+        if os.path.exists(index): 
+            os.remove(index)
+
+        repo.reset(None, False)
+    except Exception as e:
+        print(e)
+
+def show_repository_not_found_error(message):
+    def extract_repository_url(input_string):
+        import re
+        pattern = r"repository '([^']+)' not found"
+        matches = re.findall(pattern, input_string)
+        if matches:
+            return matches[0]
+        return None
+    
+    url = extract_repository_url(message)
+    context = ap.get_context()
+    if not context: 
+        return False
+
+    if url:
+        d = ap.Dialog()
+        d.title = "Your repository was not found"
+        d.icon = ":/icons/versioncontrol.svg"
+        d.add_text(f"The URL {url}<br>cannot be found under your account.")
+        d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
+        d.add_button("OK")
+        d.show()
+        return True
+
+    return False
 
 def handle_error(e: Exception):
     try:
@@ -194,5 +244,12 @@ def handle_error(e: Exception):
     if "Connection was reset" in message and "fatal: unable to access" in message and "dev.azure" in message:
         # azure fails to work with ipv6 in some cases: https://stackoverflow.com/questions/67230241/fatal-unable-to-access-https-dev-azure-com-xxx-openssl-ssl-connect-connec
         return _handle_azure_ipv6()
+    
+    if "index file corrupt" in message or "unknown index entry format" in message:
+        restore_corrupted_index()
+        return True
+    
+    if "fatal: repository" in message and "not found" in message:
+        return show_repository_not_found_error(message)
     
     return False

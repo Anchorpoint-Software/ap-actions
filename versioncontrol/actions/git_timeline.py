@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import platform
+import platform, re
 from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
@@ -44,13 +44,13 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
     try:
-        import sys, os
+        import sys
         sys.path.insert(0, script_dir)
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
 
+        progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=2000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
-
         info = ap.TimelineChannelVCInfo()
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -181,6 +181,11 @@ def get_config_path():
 def get_forced_unlocked_config_path():
     return os.path.join(get_config_path(), "forced_unlocked.bin")
     
+def clear_forced_unlocked_config():
+    file_path = get_forced_unlocked_config_path()
+    if os.path.exists(file_path):
+        os.remove(file_path)
+
 def load_last_seen_fetched_commit(project_id: str):
     import pickle
     file_path = os.path.join(get_config_path(), "last_seen_fetched_commit.bin")
@@ -189,7 +194,10 @@ def load_last_seen_fetched_commit(project_id: str):
     with open(file_path, "rb") as f:
         project_commit = pickle.load(f)
         if project_id in project_commit:
-            return project_commit[project_id]
+            commit = project_commit[project_id]
+            if type(commit) != str:
+                return None
+            return commit
     return None
 
 def save_last_seen_fetched_commit(project_id: str, commit: str):
@@ -199,14 +207,51 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             project_commit = pickle.load(f)
-    project_commit[project_id] = commit.id
+    project_commit[project_id] = commit
 
     if not os.path.exists(file_path):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
-def map_commit(commit):
+import re
+
+def extract_branches_from_commit_message(commit_message, current_branch):
+    # Handle case: "Merge branch 'master' into conflicting-branch"
+    into_regex = r"Merge branch '([\w\-\/\.]+)' into ([\w\-\/\.]+)"
+    match = re.match(into_regex, commit_message)
+    if match:
+        return match.group(1),match.group(2)
+
+    # Handle case: "Merge branch 'master' of remote-url" 
+    # And also: "Merge branch 'wip/1520-new_merge_dialog' of remote-url into wip/1520-new_merge_dialog"
+    of_regex = r"Merge branch '([\w\-\/\.]+)' of https:\/\/[\w\.\/\-]+(?: into ([\w\-\/\.]+))?"
+    match = re.match(of_regex, commit_message)
+    if match:
+        return match.group(1), match.group(2) if match.group(2) else None if current_branch == match.group(1) else current_branch
+
+    # Handle case: "Merge remote-tracking branch 'origin/conflicting-branch'"
+    remote_regex = r"Merge remote-tracking branch '([\w\-\/\.]+)'"
+    match = re.match(remote_regex, commit_message)
+    if match:
+        return match.group(1),current_branch
+
+    # Handle case: "Merge pull request #42 from repo/branch"
+    pr_regex = r"Merge pull request #\d+ from [\w\-\/\.]+/([\w\-\/\.]+)"
+    match = re.match(pr_regex, commit_message)
+    if match:
+        return match.group(1),current_branch
+
+    # Handle general case: "Merge 'branch'"
+    merge_regex = r"Merge '([\w\-\/\.]+)'"
+    match = re.match(merge_regex, commit_message)
+    if match:
+        return match.group(1),current_branch
+
+    # Return None if no match
+    return None, None
+
+def map_commit(repo, commit):
     import sys
     sys.path.insert(0, script_dir)
     from vc.models import HistoryType
@@ -233,8 +278,16 @@ def map_commit(commit):
 
     is_merge = len(commit.parents) > 1
     if is_merge:
+        caption = "Pulled and merged files"
+        current_branch_name = repo.get_current_branch_name()
+        src_branch, target_branch = extract_branches_from_commit_message(commit.message, current_branch_name)
+        if target_branch == current_branch_name and src_branch != f"origin/{current_branch_name}":
+            caption = f"Merged branch {src_branch}"
+        if src_branch == current_branch_name and target_branch and target_branch != f"origin/{current_branch_name}" and target_branch != current_branch_name:
+            caption = f"Merged branch {src_branch} into {target_branch}"
+            
         icon_color = "#9E9E9E"
-        entry.caption = f"Pulled and merged files"
+        entry.caption = caption
         entry.tooltip = entry.message
         entry.message = ""
         if commit.type is HistoryType.SYNCED:
@@ -259,10 +312,14 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if repo.is_unborn():
             if not repo.has_remote():
                 return None
-            commit = map_commit(repo.get_history_entry("@{u}"))
+            
+            try:
+                commit = map_commit(repo, repo.get_history_entry("@{u}"))
+            except:
+                return None
             return commit
         
-        return map_commit(repo.get_history_entry("HEAD"))
+        return map_commit(repo, repo.get_history_entry("HEAD"))
 
     except Exception as e:
         import git_errors
@@ -273,6 +330,8 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         if script_dir in sys.path:
             sys.path.remove(script_dir)
 
+
+
 def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time_end: datetime, ctx):
     try:
         import sys
@@ -282,15 +341,15 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         from vc.models import HistoryType
         if script_dir in sys.path: sys.path.remove(script_dir)
 
-        from git_settings import GitSettings
-        git_settings = GitSettings(ctx)
+        from git_settings import GitAccountSettings
+        git_settings = GitAccountSettings(ctx)
         
         has_more_commits = True
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo:
             return [], False
-        
+
         history_list = list()
         try:
             history = repo.get_history(time_start, time_end)
@@ -302,11 +361,11 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         newest_committime_to_pull = 0
         newest_commit_to_pull = None
         for commit in history:
-            entry = map_commit(commit)
+            entry = map_commit(repo, commit)
             if "parents" in dir(entry):
                 parents_list = list()
                 for parent in commit.parents:
-                    parents_list.append(map_commit(parent))
+                    parents_list.append(map_commit(repo, parent))
                 entry.parents = parents_list
 
             if commit.type is HistoryType.REMOTE:
@@ -338,7 +397,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
                     ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
                 else:
                     ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
-                save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull)
+                save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull.id)
 
         if cleanup_locks:
             cleanup_orphan_locks(ctx, repo)            
@@ -350,6 +409,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         return history_list, has_more_commits
     except Exception as e:
         print(f"on_load_timeline_channel_entries exception: {str(e)}")
+        raise e
         return [], False
 
 def on_locks_removed(locks, ctx):
@@ -383,8 +443,12 @@ def handle_git_autolock(repo, ctx, changes):
     path_mod_status = {}
     file_path = get_forced_unlocked_config_path()
     if os.path.exists(file_path):
-        with open(file_path, 'rb') as file:
-            path_mod_status = pickle.load(file)
+        try:
+            with open(file_path, 'rb') as file:
+                path_mod_status = pickle.load(file)
+        except Exception as e:
+            print(f"Could not load forced unlocked files: {e}")
+            clear_forced_unlocked_config()
     
     for change in changes:
         if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
@@ -409,7 +473,7 @@ def handle_git_autolock(repo, ctx, changes):
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
 
     paths_to_unlock = list[str]()
-    for lock in locks: 
+    for lock in locks:
         if lock.owner_id == ctx.user_id and lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
             paths_to_unlock.append(lock.path)
 
@@ -424,8 +488,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
 
-        from git_settings import GitSettings
-        git_settings = GitSettings(ctx)
+        from git_settings import GitAccountSettings
+        git_settings = GitAccountSettings(ctx)
         
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
@@ -492,7 +556,7 @@ def on_load_timeline_channel_pending_changes_async(channel_id: str, callback, ct
     ctx.run_async(run_func_wrapper, on_load_timeline_channel_pending_changes, callback, channel_id, ctx)
 
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
-    import sys, os
+    import sys
     sys.path.insert(0, script_dir)
     try:
         from vc.apgit.utility import get_repo_path
@@ -527,7 +591,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
                 reset.icon = aps.Icon(":/icons/restoreproject.svg")
                 reset.identifier = "gitresetproject"
                 reset.type = ap.ActionButtonType.SecondaryText
-                reset.tooltip = "Resets the entire project to the state of this commit"
+                reset.tooltip = "Resets the entire project to the state of this commit" if not repo.is_push_required() else "Cannot reset project, push your changes first"
+                reset.enabled = not repo.is_push_required()
                 details.actions.append(reset)
 
             restore_entry = ap.TimelineChannelAction()
@@ -569,11 +634,19 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
 
         has_changes = repo.has_pending_changes(True)
 
+        drop = ap.TimelineChannelAction()
+        drop.name = "Clear"
+        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
+        drop.identifier = "gitstashdrop"
+        drop.type = ap.ActionButtonType.SecondaryText
+        drop.tooltip = "Removes all files in the shelf (cannot be undone)"
+        details.actions.append(drop)   
+
         apply = ap.TimelineChannelAction()
         apply.name = "Move to Changed Files"
         apply.icon = aps.Icon(":/icons/restoreMultipleFiles.svg")
         apply.identifier = "gitstashapply"
-        apply.type = ap.ActionButtonType.Primary
+        apply.type = ap.ActionButtonType.SecondaryText
         if not has_changes:
             apply.enabled = True
             apply.tooltip = "Moves all files from the shelf to the changed files."
@@ -582,14 +655,6 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
             apply.tooltip = "Unable to move shelved files when you already have changed files"
 
         details.actions.append(apply)
-            
-        drop = ap.TimelineChannelAction()
-        drop.name = "Delete"
-        drop.icon = aps.Icon("qrc:/icons/multimedia/trash.svg")
-        drop.identifier = "gitstashdrop"
-        drop.type = ap.ActionButtonType.SecondaryText
-        drop.tooltip = "Permanently deletes all files in the shelf (cannot be undone)"
-        details.actions.append(drop)       
 
         details.changes = ap.VCChangeList(changes.values())
         return details
@@ -604,6 +669,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
+    lock_disabler = ap.LockDisabler()
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
@@ -639,6 +705,71 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         raise e
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
+
+def on_vc_merge_branch(channel_id: str, branch: str, ctx):
+    import sys, os
+    import git_repository_helper as helper
+    sys.path.insert(0, script_dir)
+    lock_disabler = ap.LockDisabler()
+    try:
+        from vc.apgit.utility import get_repo_path, is_executable_running
+        from vc.apgit.repository import GitRepository
+        from vc.models import UpdateState
+        from git_lfs_helper import LFSExtensionTracker
+        if channel_id != "Git": return None
+
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return
+
+        if repo.get_current_branch_name() == branch:
+            return
+        
+        ui = ap.UI()
+
+        # if platform.system() == "Windows":
+        #     if is_executable_running(["unrealeditor.exe"]):
+        #         lfsExtensions = LFSExtensionTracker(repo)
+        #         if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
+        #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
+        #             return
+
+        if repo.has_pending_changes(True):
+            ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+            return
+
+        if repo.has_remote():
+            progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
+            try:
+                state = repo.fetch(progress=helper.FetchProgress(progress))
+                if state != UpdateState.OK:
+                    print("failed to fetch in merge")
+                repo.fetch_lfs_files([branch], progress=helper.FetchProgress(progress))
+            except Exception as e:
+                print("failed to fetch in merge", str(e))
+                raise e
+
+        progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
+        
+        try:
+            if not repo.merge_branch(branch):
+                ui.show_info("Merge not needed", "Branch is already up to date.")
+        except Exception as e:
+            import git_errors
+            if not git_errors.handle_error(e):
+                if "conflict" in str(e):
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts.")  
+                    ap.vc_load_pending_changes(channel_id, True)  
+                else:
+                    ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+            return
+
+        ap.vc_load_pending_changes(channel_id, True)  
+        ap.reload_timeline_entries()
+    except Exception as e:
+        raise e
+    finally:
+        if script_dir in sys.path: sys.path.remove(script_dir)
         
 def on_vc_create_branch(channel_id: str, branch: str, ctx):
     import sys
@@ -664,6 +795,21 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
     finally:
         if script_dir in sys.path : sys.path.remove(script_dir)
         
+def delete_lockfiles(repo_git_dir):
+    import glob
+    pattern = os.path.join(repo_git_dir, "ap-fetch-*.lock")
+
+    # Find all files that match the pattern
+    lockfiles = glob.glob(pattern)
+
+    # And delete them
+    for lockfile in lockfiles:
+        try:
+            os.remove(lockfile)
+        except Exception as e:
+            print(f"An error occurred while deleting {lockfile}: {e}")
+
+
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -684,19 +830,21 @@ def refresh_async(channel_id: str, project_path):
         repo = GitRepository.load(path)
         if not repo: return
 
-        lockfile = os.path.join(repo.get_git_dir(), f"ap-fetch-{os.getpid()}.lock")
+        git_dir = repo.get_git_dir()
+        lockfile = os.path.join(git_dir, f"ap-fetch-{os.getpid()}.lock")
         if os.path.exists(lockfile):
             return
 
         try:
             with open(lockfile, "w") as f:
-                repo.fetch()    
+                repo.fetch()
         finally:
             ap.refresh_timeline_channel(channel_id)
-            os.remove(lockfile)
+            delete_lockfiles(git_dir)
 
     except Exception as e:
-        print("refresh_async exception: " + str(e))
+        if "didn't exist" not in str(e):
+            print("refresh_async exception: " + str(e))
         pass
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
@@ -704,6 +852,26 @@ def refresh_async(channel_id: str, project_path):
 def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
 
+def on_add_logging_data(channel_id: str, ctx):
+    try:
+        from vc.apgit.repository import GitRepository
+        from vc.apgit.utility import get_repo_path
+        path = get_repo_path(channel_id, ctx.project_path)
+        repo = GitRepository.load(path)
+        if not repo: return ""
+        
+        log = "\nStatus:\n"
+        log = log + "=========\n"
+        log = log + repo.git_status()
+
+        log = log + "\n\nLog:\n"
+        log = log + "=========\n"
+        log = log + repo.git_log()
+
+        return log
+    except Exception as e:
+        print("on_add_logging_data exception: " + str(e))
+        return ""
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)

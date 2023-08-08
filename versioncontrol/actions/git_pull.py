@@ -6,12 +6,14 @@ import git_errors
 import itertools
 
 import sys, os, importlib
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+from git_timeline import map_commit
 if parent_dir in sys.path: sys.path.remove(parent_dir)
 class PullProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
@@ -31,6 +33,9 @@ class PullProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
+
+    def canceled(self):
+        return self.ap_progress.canceled
 
 def check_changes_writable(repo, changes):
     for change in itertools.chain(changes.new_files, changes.renamed_files, changes.modified_files, changes.deleted_files):
@@ -67,6 +72,7 @@ def handle_files_to_pull(repo):
 
 
 def pull(repo: GitRepository, channel_id: str):
+    lock_disabler = ap.LockDisabler()
     ui = ap.UI()
     progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
     handle_files_to_pull(repo)
@@ -87,15 +93,26 @@ def pull(repo: GitRepository, channel_id: str):
     progress.set_cancelable(True)
     progress.set_text("Talking to Server")
 
+    commits_to_pull = repo.get_history(remote_only=True)
+
     state = repo.update(progress=PullProgress(progress), rebase=False)
     progress.set_cancelable(False)
+
+    def update_pulled_commits():
+        if commits_to_pull and len(commits_to_pull) > 0:
+            history = []
+            for commit in commits_to_pull:
+                commit.type = HistoryType.SYNCED
+                history.append(map_commit(repo, commit))
+            ap.update_timeline_channel_entries(channel_id, history)
+
     if state == UpdateState.NO_REMOTE:
         ui.show_info("Branch does not track a remote branch", "Push your branch first")    
         return False
     elif state == UpdateState.CONFLICT:
-        ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
+        ui.show_info("Conflicts detected", "Please resolve your conflicts")    
+        update_pulled_commits()
         ap.refresh_timeline_channel(channel_id)
-        ap.vc_resolve_conflicts(channel_id)
         progress.finish()
         return False
     elif state == UpdateState.CANCEL:
@@ -119,6 +136,8 @@ def pull(repo: GitRepository, channel_id: str):
             progress.set_text("Restoring Shelved Files")
             repo.pop_stash()        
     
+        update_pulled_commits()
+
     return True
 
 
@@ -135,7 +154,13 @@ def pull_async(channel_id: str, project_path):
     except Exception as e:
         if not git_errors.handle_error(e):
             print(e)
-            ui.show_error("Failed to update Git Repository", "Please try again")    
+            if "conflict" in str(e):
+                if repo.is_merging():
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
+                else:
+                    ui.show_info("Conflicts detected", "Please resolve your conflicts")    
+            else:
+                ui.show_error("Failed to update Git Repository", "Please try again")    
                    
     ap.vc_load_pending_changes(channel_id, True)
     ap.refresh_timeline_channel(channel_id)

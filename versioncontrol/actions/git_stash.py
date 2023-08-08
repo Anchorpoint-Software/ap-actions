@@ -89,11 +89,11 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             if not repo: return
 
             dialog = ap.Dialog()
-            dialog.title = "Delete Shelved Files"
+            dialog.title = "Clear Shelved Files"
             dialog.icon = ":/icons/trash.svg"
-            dialog.add_text("This will <b>delete all files</b> in your shelf.<br>This cannot be undone.")
-            dialog.add_empty()
-            dialog.add_button("Delete Files", callback=lambda d: delete_button_pressed(path, channel_id, d)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+            dialog.add_text("Are you sure to <b>remove all files</b><br>in the shelf. This cannot be undone.")
+            dialog.add_info("Learn more about <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/4-Resolving-conflicts/#shelved-files'>Shelved Files</a>")
+            dialog.add_button("Clear", callback=lambda d: delete_button_pressed(path, channel_id, d)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
             
         except Exception as e:
@@ -129,9 +129,6 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
 
             ap.close_timeline_sidebar()
             ap.vc_load_pending_changes(channel_id)
-
-            if repo.has_conflicts():
-                ap.vc_resolve_conflicts(channel_id)
 
         except Exception as e:
             error = str(e)
