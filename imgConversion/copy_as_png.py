@@ -17,6 +17,12 @@ def get_image(workspace_id,input_path):
     # get the proper filename, rename it because the generated PNG file has a _pt appendix
     file_name = os.path.basename(input_path).split(".")[0]
     image_path = os.path.join(output_folder,file_name+str("_dt")+str(".png"))
+
+    if not os.path.exists(image_path):
+        ap.UI().show_error("Cannot copy to clipboard","PNG file could not be generated")
+        progress.finish()
+        return
+
     renamed_image_path = os.path.join(output_folder,file_name+str(".png"))
     os.rename(image_path,renamed_image_path)    
 
