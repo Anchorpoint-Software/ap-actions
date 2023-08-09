@@ -13,18 +13,21 @@ action:
   type: package
   enable: false
   author: Anchorpoint Software GmbH
-  description: A useful collection of Action examples that showcase how to write your own Actions
+  description: A useful collection of <a href='https://github.com/Anchorpoint-Software/ap-actions'>Action examples</a> that showcase how to write your own Actions
   icon:
     path: codingExamples.svg
 
   actions:
     - ap::examples::async
     - ap::examples::attributes
+    - ap::examples::attributes::read
+    - ap::examples::tasks
     - ap::examples::input
     - ap::examples::inputcommand
     - ap::examples::project
     - ap::examples::complexdialog
     - ap::examples::greetings
+    - ap::examples::notification
     - ap::examples::qml::greetings
     - ap::examples::widgets::greetings
     - ap::examples::settings

@@ -6,7 +6,7 @@ import random
 
 import rclone_config_helper as rclone_config
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
 local_settings = aps.Settings("rclone")
@@ -48,7 +48,6 @@ def create_dialog():
     dialog.add_text("Location Constraint\t").add_input(configuration["s3aws_location_constraint"],placeholder="EU (Optional)",var="s3aws_location_constraint_var")
     dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3aws_root_folder"],placeholder="myBucket/myFolder...",var="s3aws_root_folder_var")
 
-
     #s3 Wasabi
     dialog.add_text("Access Key\t\t").add_input(configuration["s3wasabi_access_key_id"],placeholder="XXXBTBISU...",var="s3wasabi_access_key_id_var")
     dialog.add_text("Secret Access Key\t").add_input(configuration["s3wasabi_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3wasabi_secret_access_key_var")
@@ -59,7 +58,17 @@ def create_dialog():
     dialog.add_text("Shared access signature").add_input(configuration["azureblob_sas_url"],placeholder="https://myazureaccount...",var="azureblob_sas_url_var")
     dialog.add_text("Container/ Folder\t").add_input(configuration["azureblob_container_path"],placeholder="myContainer/myFolder...",var="azureblob_container_path_var")
 
-    dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "").add_button("Clear Configuration", callback = clear_config)
+    #Google Cloud Storage
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["gcs_bucket_name"],placeholder="myBucket/myFolder...",var="gcs_bucket_name_var")
+    dialog.add_text("Service Account Json\t").add_input(configuration["gcs_service_account"],placeholder="{\"type\": \"service_account\", ...}",var="gcs_service_account_var")
+
+    #s3 Other
+    dialog.add_text("Access Key\t\t").add_input(configuration["s3other_access_key_id"],placeholder="XXXBTBISU...",var="s3other_access_key_id_var")
+    dialog.add_text("Secret Access Key\t").add_input(configuration["s3other_secret_access_key"],placeholder="XXXO1jJ.../73Hu...",var="s3other_secret_access_key_var")
+    dialog.add_text("Endpoint\t\t").add_input(configuration["s3other_endpoint"],placeholder="s3.something.com",var="s3other_endpoint_var")
+    dialog.add_text("Bucket/ Folder\t").add_input(configuration["s3other_root_folder"],placeholder="myBucket/myFolder...",var="s3other_root_folder_var")
+
+    dialog.add_button("Copy Configuration Key", callback = copy_configuration_key, enabled = local_settings.get("encryption_password") != "", primary=False).add_button("Clear Configuration", callback = clear_config, primary=False)
     dialog.add_info("Your configuration is stored encrypted. The key allows any <br> of your team to mount a drive with this configuration.<br> Copy the key and share it with your team members.")
     dialog.add_button("Apply", callback = apply_callback)
 
@@ -114,7 +123,7 @@ def get_configuration(dialog : ap.Dialog):
         if i !="type" and configuration["type"] in str(i):
             configuration_val = str(dialog.get_value(f"{i}_var")).strip()
             #print (i,configuration_val,f"{i}_var")
-            if configuration_val is not "":
+            if configuration_val != "":
                 configuration[i] = configuration_val
             elif is_optional(f"{i}_var"): 
                 configuration[i] = configuration_val
@@ -169,7 +178,7 @@ def init_dialog():
             try:
                 decrypted_configuration = decrypt(encrypted_configuration, password)
                 undumped_configuration = json.loads(decrypted_configuration)
-                 
+
                 for i in configuration.keys():
                     configuration[i] = undumped_configuration[i]
 

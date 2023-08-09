@@ -13,11 +13,7 @@ action:
   type: python
   author: Anchorpoint Software GmbH
   description: Adds an existing Git Repository to your project
+  enable: false
+  script: "none"
   icon:
     path: :/icons/versioncontrol.svg
-
-  script: open_git_repository.py
-
-  register:
-    add_project_files:
-      enable: true

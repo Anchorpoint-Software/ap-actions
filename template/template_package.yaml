@@ -13,53 +13,9 @@ action:
   type: package
   enable: true
   author: Anchorpoint Software GmbH
-  description: Create new file and folder structures from templates
+  description: Create new file and folder structures from <a href='https://docs.anchorpoint.app/docs/4-assets-and-tasks/1-Templates/'>templates</a>
   icon:
-    path: folderTemplates.svg
-
-  details: '
-    <p>Enables template actions in the context menu and when creating new files and folders in the Anchorpoint browser. Take a look at this <a href="https://www.anchorpoint.app/blog/automate-folder-structures-and-naming-conventions-without-writing-code">tutorial</a> for more details.</p>
-
-    <p><b>Open the template dialog</b></p>
-    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new01.png" width="400"></p>
-    <p>You can open the dialog from the context menu or via the <b>New</b> button of folders and files.</p>
-    <p><b>Pick a Template like Assets, Motion Graphics or Shot</b></p>
-    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new04.png" width="400"></p>
-
-    <p><b>Customize the template</b></p>
-
-    <p>When creating a file or folder from a template you are presented with a dialog. If necessary, the dialog asks the user for input. The input fields are based on tokens (placeholders) in your template. Tokens can be present in folders or file names and will be replaced by the provided input.  <br>
-    <i>[Client]_[Project]_shot[Number]_v001.blend</i><br>becomes<br><i>ACME_Commercial_shot0020_v001.blend</i> </p>
-
-    <p>The great thing about this is that you can replace multiple tokens at once. You save all the cumbersome renaming of your folders and files.</p>
-
-    <b>What if the template is a project?</b>
-    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new05.png" width="400"></p>
-    <p>Enable "This is a project" if your folder structure represents a complete project and not just a part of it. If the template is a project, Anchorpoint automatically creates an entry in your project list.</p>
-
-    <h2>Use your own templates</h2>
-    You can save any file or folder structure as a template by selecting <b>Save as Template</b>. After creation, the location of your saved template is opened in a new tab. You can always customize your templates by adding files and folders, for example.
-    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new06.png" width="600"></p>
-
-    <h3>Tokens</h3>
-
-    <p>Put tokens in your folders or file names. For each token, the user is asked to provide a proper replacement when using the template. You can have a token in multiple places e.g. in folder and file names. All these tokens will be replaced when the template is used. So you can create a naming convention once and never need to name folders or files again.</p>
-
-    <p><img src = "https://raw.githubusercontent.com/Anchorpoint-Software/ap-actions-data/main/png/template_new07.png" width="300"></p>
-
-    <p>Certain tokens are converted automatically.</p>
-
-    <ul>
-      <li>[Increment] <br> The number of the folder or file <br> e.g. [Increment]_MyProject -> 0010_MyProject</li>
-      <li>[YYYYMMDD] <br> Date of today <br> e.g. [YYYYMMDD]_WIP -> 20220414_WIP</li>
-    </ul>
-
-    For [YYYYMMDD], variants such as [YYMMDD], [YYYY], [YYYYMM] or [YYYY-MM-DD] are also possible.
-
-    <h3>Implement your own logic with Python</h3>
-
-    You can always adapt the source of the actions, of course. Even better: you can implement a set of provided <b>event callbacks</b> for the template actions. Click on the "Create from Templates" settings to setup the event callbacks for your workspace.
-    '
+    path: folderTemplates.svg  
 
   settings: code/template_settings.py
   inputs:

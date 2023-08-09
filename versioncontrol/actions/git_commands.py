@@ -14,16 +14,40 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
 def open_terminal_pressed(dialog):
     sys.path.insert(0, os.path.join(os.path.split(__file__)[0], ".."))
     from vc.apgit.repository import GitRepository
-    from vc.apgit.utility import get_git_cmd_path
+    from vc.apgit_utility.install_git import get_git_cmd_path
     import platform
 
     env = GitRepository.get_git_environment()
     for key,value in env.items():
         os.putenv(key, value)
-    
-    ctx = ap.Context.instance()
+
+    ctx = ap.get_context()
     if platform.system() == "Darwin":
-        os.system(f"open -a Terminal \"{ctx.project_path}\"")
+        def get_osascript():
+            gitdir = os.path.dirname(get_git_cmd_path())
+            return (
+                f"if application \"Terminal\" is running then\n"
+                f"\ttell application \"Terminal\"\n"
+                f"\t\tdo script \"cd \\\"{ctx.project_path}\\\" && export PATH=\\\"{gitdir}\\\":$PATH\"\n"
+                f"\t\tactivate\n"
+                f"\tend tell\n"
+                f"else\n"
+                f"\ttell application \"Terminal\"\n"
+                f"\t\tdo script \"cd \\\"{ctx.project_path}\\\" && export PATH=\\\"{gitdir}\\\":$PATH\" in window 1\n"
+                f"\t\tactivate\n"
+                f"\tend tell\n"
+                f"end if\n"
+            )
+        
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            with open(tmp.name, "w") as f:
+                f.write(get_osascript())
+        finally:
+            os.system(f"osascript \"{tmp.name}\"")
+            os.remove(tmp.name)
+
     elif platform.system() == "Windows":
         path = os.environ["PATH"]
         os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
@@ -37,9 +61,9 @@ if __name__ == "__main__":
 
     from vc.apgit.repository import * 
     from vc.apgit.utility import get_repo_path
-    sys.path.remove(script_dir)
+    if script_dir in sys.path: sys.path.remove(script_dir)
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     project_path = ctx.project_path
 
     settings = aps.Settings("gitsettings")
@@ -65,11 +89,11 @@ if __name__ == "__main__":
     dialog.icon = ctx.icon
     dialog.title = "Git Commands"
 
-    dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed)
+    dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
     dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
     dialog.add_empty()
 
-    dialog.add_button("Clear Cache", callback=prune_pressed)
+    dialog.add_button("Clear Cache", callback=prune_pressed, primary=False)
     dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
     dialog.show(settings)

@@ -5,7 +5,7 @@ import subprocess
 import os
 from os import path
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 drive_var = "drive"

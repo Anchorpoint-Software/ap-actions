@@ -6,9 +6,13 @@ import platform
 import subprocess
 import os, sys
 import json
+import socket
+import time
 
-sys.path.insert(0, os.path.dirname(__file__))
+# current fix to make sure that no old module is loaded
+if 'rclone_install_helper' in sys.modules: del sys.modules['rclone_install_helper']
 import rclone_install_helper as rclone_install
+if 'rclone_config_helper' in sys.modules: del sys.modules['rclone_config_helper']
 import rclone_config_helper as rclone_config
 
 path_var = "path"
@@ -52,6 +56,14 @@ def create_bat_file(command,drive):
     with open(startup_path,'w') as f:
         f.write(command)
 
+def check_internet_connection():
+    try:
+        socket.create_connection(("www.google.com", 80))
+        return True
+    except OSError:
+        pass
+    return False
+
 def setup_mount(drive, workspace_id, configuration):
     def create_config_arguments():
         config = []
@@ -94,13 +106,32 @@ def setup_mount(drive, workspace_id, configuration):
                     "--s3-region",
                     f"{configuration['s3wasabi_region']}"
                     ]
+
+        #GCS
+        if(configuration["type"]=="gcs"):
+            config += ["--gcs-bucket-policy-only"]
         
+
         
         #Azure
         if(configuration["type"]=="azureblob"):
             config += [
                     "--azureblob-sas-url",
                     f"{configuration['azureblob_sas_url']}"
+                    ]
+
+
+        #Other
+        if(configuration["type"]=="s3other"):
+            config += [
+                    "--s3-provider",
+                    "Other",
+                    "--s3-access-key-id",
+                    f"{configuration['s3other_access_key_id']}",
+                    "--s3-secret-access-key",
+                    f"{configuration['s3other_secret_access_key']}",
+                    "--s3-endpoint",
+                    f"{configuration['s3other_endpoint']}"
                     ]
 
         return config
@@ -121,6 +152,14 @@ def setup_mount(drive, workspace_id, configuration):
         #Azure
         if(configuration["type"]=="azureblob"):
             return f":azureblob:{configuration['azureblob_container_path']}"
+        
+        #Google Cloud Storage
+        if(configuration["type"]=="gcs"):
+            return f"ap_gcs:{configuration['gcs_bucket_name']}"
+
+        #Other
+        if(configuration["type"]=="s3other"):
+            return f":s3:{configuration['s3other_root_folder']}"
 
     local_settings = aps.Settings("rclone")    
     cache_path = local_settings.get("cachepath",default=get_default_cache_path())
@@ -134,6 +173,10 @@ def setup_mount(drive, workspace_id, configuration):
     ]    
     config_arguments = create_config_arguments()
     config_arguments.append(create_location_arguments())
+
+    if(configuration["type"]=="gcs"):
+        config_arguments.append("--config")
+        config_arguments.append(os.path.join(rclone_install._get_rclone_folder(),"rclone.conf"))
 
     if isWin():
         config_arguments.append(f"{drive}:")
@@ -161,12 +204,14 @@ def setup_mount(drive, workspace_id, configuration):
         "10",
         "--network-mode",
         "--use-server-modtime",
+        "--fast-list",
         "--cache-dir",
         cache_path,
         "--dir-cache-time",
         "5s",
         "--volname=Anchorpoint",
         "--file-perms=0777",
+        "--dir-perms=0777",
         "--use-json-log",
         "--stats",
         "1s",
@@ -176,7 +221,7 @@ def setup_mount(drive, workspace_id, configuration):
 
     arguments = base_arguments + config_arguments + rclone_arguments
 
-    ctx = ap.Context.instance()
+    ctx = ap.get_context()
     if isWin():
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags = subprocess.CREATE_NEW_CONSOLE | subprocess.STARTF_USESHOWWINDOW 
@@ -186,7 +231,22 @@ def setup_mount(drive, workspace_id, configuration):
         arguments.append("--daemon")
         ctx.run_async(run_rclone, arguments, drive, workspace_id)
     
-    
+def setup_rclone_config(mount_path: str, workspace_id: str, configuration, continue_with_options: True):
+    config_file_path = os.path.join(rclone_install._get_rclone_folder(),"rclone.conf")
+    json_file_path = os.path.join(rclone_install._get_rclone_folder(),"gcs.json")
+
+    if not os.path.isfile(json_file_path):
+           with open(json_file_path, "w") as file:
+               file.write(configuration["gcs_service_account"])
+
+    if not os.path.isfile(config_file_path):
+           with open(config_file_path, "w") as file:
+            file.write("[ap_gcs]\ntype = google cloud storage\nservice_account_file = " + json_file_path.replace("\\","/") + "\n")
+
+    if continue_with_options:
+        show_options(mount_path, workspace_id, configuration)
+    else:
+        setup_mount(mount_path, workspace_id, configuration)
 
 def dialog_setup_mount(dialog, workspace_id, configuration):
     if isWin():
@@ -207,8 +267,7 @@ def store_auto_mount(success: bool, drive: str, workspace_id: str):
     local_settings.store()
 
 def run_rclone(arguments, drive, workspace_id, startupinfo=None):
-    ui = ap.UI()
-    prepare_mount_progress = ap.Progress("Preparing Mount", infinite=True)
+    ui = ap.UI()    
     rclone_success = "The service rclone has been started"
     rlcone_wrong_credentials = "SignatureDoesNotMatch"
     rlcone_wrong_access_key = "InvalidAccessKeyId"
@@ -232,7 +291,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
     
     for line in p.stdout:
         myjson = is_json(line)
-        
+
         if count_msg in line:
             count = add_to_count(count, 1)
         
@@ -244,13 +303,11 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             store_auto_mount(False, drive, workspace_id)
             return
         elif rclone_success in line:            
-            prepare_mount_progress.finish()
-            prepare_mount_progress = None
-            if not isWin() and "reload_drives" in dir(ui):
-                ui.reload_drives()
+            ui.reload_drives()
             store_auto_mount(True, drive, workspace_id)
             ui.show_success("Mount Successful")
             global_progress.finish()
+            global_progress = None
             ui.reload()
 
         elif rlcone_wrong_credentials in line:
@@ -262,17 +319,15 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
             store_auto_mount(False, drive, workspace_id)
             return
 
-        if myjson and "Transferred" in myjson["msg"]:
+        if not global_progress and myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress, count, count_uploaded)
             
         if progress == None:
             count = set_count_to(count, 0)
             count_uploaded = set_count_to(count_uploaded, 0)
 
-    if not isWin() and prepare_mount_progress is not None:
+    if not isWin():
         # Mac runs in daemon mode, so we assume everything has worked when we reach this point
-        prepare_mount_progress.finish()
-        prepare_mount_progress = None
         if not isWin() and "reload_drives" in dir(ui):
             ui.reload_drives()
         ui.show_success("Mount Successful")
@@ -342,7 +397,6 @@ def resolve_configuration(shared_settings, configuration, password):
     undumped_configuration = json.loads(decrypted_configuration)
     for i in configuration.keys():
         configuration[i] = undumped_configuration[i]
-
     return True
 
 def get_settings(workspace_id: str):
@@ -365,15 +419,40 @@ def get_settings(workspace_id: str):
         else:
             try:
                 resolve_configuration(shared_settings, configuration, password)
-                show_options(shared_settings.get("mount_path"), workspace_id, configuration)
+                guarantee_rclone_config_setup(shared_settings.get("mount_path"), workspace_id, configuration, first_setup=True)
             except:
                 create_pw_dialog(workspace_id)
 
+def guarantee_rclone_config_setup( mount_path: str, workspace_id: str, configuration, first_setup: bool) -> bool:
+    if configuration["type"]!="gcs":
+        if first_setup:
+            show_options(mount_path, workspace_id, configuration)
+        return True
+    folder_dir = rclone_install._get_rclone_folder()
+    if folder_dir is None:
+        return False
+
+    conf_file_path = os.path.join(folder_dir, "rclone.conf")
+    if not os.path.isfile(conf_file_path):
+        ctx.run_async(setup_rclone_config, mount_path, workspace_id, configuration, first_setup)
+        return False
+    with open(conf_file_path, "r") as conf_file:
+        content = conf_file.read()
+    if "[ap_gcs]" in content:
+        if first_setup:
+            show_options(mount_path, workspace_id, configuration)
+        return True
+    else:
+        ctx.run_async(setup_rclone_config, mount_path, workspace_id, configuration, first_setup)
+        return False  
+
 def create_pw_dialog(workspace_id: str):
+    ctx = ap.get_context()
     dialog = ap.Dialog()
     dialog.title = "Enter Configuration Key"
     dialog.icon = ctx.icon
     dialog.add_text("Configuration Key").add_input(placeholder="Your configuration key", var="pw_var")
+    dialog.add_info("You will get this key from your workspace admin.")
     dialog.add_button("Ok", callback = lambda d: set_password(d, workspace_id))
     dialog.show()
 
@@ -384,6 +463,7 @@ def set_password(dialog : ap.Dialog, workspace_id: str):
     get_settings(workspace_id)
 
 def show_options(mount_path: str, workspace_id: str, configuration):    
+    ctx = ap.get_context()
     ui = ap.UI()
     dialog = ap.Dialog()
     dialog.title = "Mount Cloud Drive"
@@ -416,33 +496,46 @@ def isWin():
         return True
     return False
 
-def on_application_started(ctx: ap.Context):
-    shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
-    mount_settings = aps.Settings(ctx.workspace_id)
-    if not mount_settings.contains("rclone-automount") or not mount_settings.contains("rclone-drive"):
-        return
-
-    drive = mount_settings.get("rclone-drive")
-    auto_mount = mount_settings.get("rclone-automount")
-    if not auto_mount: 
-        return
-
-    if (os.path.exists(drive)):
-        return
-
-    local_settings = aps.Settings("rclone")
-    configuration = rclone_config.get_config()
-    password = local_settings.get("encryption_password")
-    if password == None: 
-        return
+def on_application_started(ctx: ap.Context):    
     try:
-        resolve_configuration(shared_settings, configuration, password)
-    except:
-        return
+        shared_settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointCloudMount")
+        mount_settings = aps.Settings(ctx.workspace_id)
+        if not mount_settings.contains("rclone-automount") or not mount_settings.contains("rclone-drive"):
+            return
 
-    ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
+        drive = mount_settings.get("rclone-drive")
+        auto_mount = mount_settings.get("rclone-automount")
+        if not auto_mount: 
+            return
+
+        if (os.path.exists(drive)):
+            return
+
+        local_settings = aps.Settings("rclone")
+        configuration = rclone_config.get_config()
+        password = local_settings.get("encryption_password")
+        if password == None: 
+            return
+        try:
+            resolve_configuration(shared_settings, configuration, password)
+            if not guarantee_rclone_config_setup(drive, ctx.workspace_id, configuration, first_setup=False):
+                return
+        except:
+            return
+        if check_internet_connection():
+            ctx.run_async(setup_mount, drive, ctx.workspace_id, configuration)
+        else:
+            ui = ap.UI()
+            ui.show_error("Cannot mount the Cloud Drive", "You are not connected to the Internet")
+    except:
+        pass
     
 
 if __name__ == "__main__":
-    ctx = ap.Context.instance()
-    ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
+    if check_internet_connection():
+        ctx = ap.get_context()
+        ctx.run_async(rclone_install.check_winfsp_and_rclone, get_settings, ctx.workspace_id)
+    else:
+        ui = ap.UI()
+        ui.show_error("Cannot mount the Cloud Drive", "You are not connected to the Internet")
+        

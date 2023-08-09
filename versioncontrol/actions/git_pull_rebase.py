@@ -11,7 +11,7 @@ sys.path.insert(0, parent_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
-sys.path.remove(parent_dir)
+if parent_dir in sys.path: sys.path.remove(parent_dir)
 class PullProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
@@ -30,6 +30,9 @@ class PullProgress(Progress):
         else:
             self.ap_progress.set_text("Talking to Server")
             self.ap_progress.stop_progress()
+
+    def canceled(self):
+        return self.ap_progress.canceled
 
 def pull_async(channel_id: str, project_path):
     ui = ap.UI()
@@ -74,7 +77,7 @@ def pull_async(channel_id: str, project_path):
             if repo.has_pending_changes(True):
                 ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
             else:
-                ui.show_error("Failed to update Git Repository")    
+                ui.show_error("Failed to update Git Repository", "Please try again")    
                 raise e
             
         

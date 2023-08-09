@@ -11,7 +11,7 @@ import platform
 import ffmpeg_helper
 
 ui = ap.UI()
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 
 try:
     filename = ctx.filename.rstrip(string.digits).rstrip("-,.")

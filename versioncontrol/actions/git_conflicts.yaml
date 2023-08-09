@@ -1,0 +1,19 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Git Conflicts
+
+  version: 1
+  id: git::conflicts
+  category: git
+  type: python
+  author: Anchorpoint Software GmbH
+  description: ""
+  icon:
+    path: :/icons/version.svg
+
+  script: git_conflicts.py

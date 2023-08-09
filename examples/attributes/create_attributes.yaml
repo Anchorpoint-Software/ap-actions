@@ -22,3 +22,5 @@ action:
   register:
     file: 
       enable: true
+    folder:
+      enable: true

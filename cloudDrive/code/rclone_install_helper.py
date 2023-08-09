@@ -8,7 +8,7 @@ import zipfile
 import anchorpoint as ap
 import requests
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 show_menu = None
@@ -17,12 +17,12 @@ show_menu_kwargs = {}
 
 rclone_folder_path = "~/Documents/Anchorpoint/actions/rclone"
 rclone_folder_path_mac = "~/library/application support/anchorpoint software/anchorpoint/actions/rclone"
-macFUSE_folder_path = "/Library/Frameworks/macFUSE.framework"
+fuset_folder_path = "/Library/Application Support/fuse-t"
 
-RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-windows-amd64.zip"
-RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-arm64.zip"
-RCLONE_INSTALL_URL_MAC_X86 = "https://github.com/rclone/rclone/releases/download/v1.59.0/rclone-v1.59.0-osx-amd64.zip"
-MACFUSE_INSTALL_URL = "https://github.com/osxfuse/osxfuse/releases/download/macfuse-4.4.0/macfuse-4.4.0.dmg"
+RCLONE_INSTALL_URL_WIN = "https://github.com/rclone/rclone/releases/download/v1.62.2/rclone-v1.62.2-windows-amd64.zip"
+RCLONE_INSTALL_URL_MAC = "https://github.com/rclone/rclone/releases/download/v1.62.2/rclone-v1.62.2-osx-arm64.zip"
+RCLONE_INSTALL_URL_MAC_X86 = "https://github.com/rclone/rclone/releases/download/v1.62.2/rclone-v1.62.2-osx-amd64.zip"
+FUSET_INSTALL_URL = "https://github.com/macos-fuse-t/fuse-t/releases/download/1.0.19/fuse-t-macos-installer-1.0.19.pkg"
 
 def _get_zip_executable(url: str):
     base = os.path.splitext(os.path.basename(url))[0]
@@ -51,16 +51,16 @@ def check_winfsp_and_rclone(menu, *args, **kwargs):
     show_menu = menu
     show_menu_args = args
     show_menu_kwargs = kwargs
-    macFuse = False
+    fuset = False
     
     if isWin():
         winfsp_path = os.path.isfile(os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe"))
     else:
-        macFuse = True if os.path.isdir(macFUSE_folder_path) else False
+        fuset = True if os.path.isdir(fuset_folder_path) else False
         
     rclone_path = os.path.isfile(_get_rclone_path())
 
-    if (isWin() and not winfsp_path) or not rclone_path or (not macFuse and not isWin()):
+    if (isWin() and not winfsp_path) or not rclone_path or (not fuset and not isWin()):
         show_install_dialog()
     else:
         ctx.run_async(check_and_install_modules)
@@ -75,7 +75,7 @@ def show_install_dialog():
         dialog.add_text("The Anchorpoint network drive is based on Rclone and WinFSP.")
         dialog.add_info("When installing them you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a> and <a href=\"https://github.com/winfsp/winfsp/blob/master/License.txt\">WinFsp</a>.")
     else:
-        dialog.add_text("The Anchorpoint network drive is based on Rclone and macFUSE.<br>When clicking <b>Install</b> we will download and launch the macFUSE installer.")
+        dialog.add_text("The Anchorpoint network drive is based on Rclone and FUSE-T.<br>When clicking <b>Install</b> we will download and launch the FUSE-T installer.")
         dialog.add_info("When installing you are accepting the license of <a href=\"https://raw.githubusercontent.com/rclone/rclone/master/COPYING\">Rclone</a>.")
     
     dialog.add_button("Install", callback=prepare_module_install)
@@ -87,13 +87,17 @@ def prepare_module_install(dialog):
         ctx.run_async(check_and_install_winfsp)
     check_rclone()
     if not isWin(): # install after rclone
-        check_macfuse()
+        check_fuset()
     dialog.close()
 
 def check_and_install_winfsp():
     winfsp_path = os.path.join(os.environ["ProgramFiles(x86)"],"WinFsp/bin/launcher-x64.exe")
     if not os.path.isfile(winfsp_path):
         progress = ap.Progress("Loading WinFsp",infinite = True)
+
+        # Call winget source update to install latest version
+        subprocess.run("winget source update", capture_output=True)
+
         winget = subprocess.run(
             "winget install -e --id WinFsp.WinFsp --accept-source-agreements", capture_output=True
         )
@@ -162,30 +166,28 @@ def _install_rclone_async():
     dialog.icon = ctx.icon
     dialog.show()
         
-def check_macfuse():
-    if not os.path.isdir(macFUSE_folder_path):
+def check_fuset():
+    if not os.path.isdir(fuset_folder_path):
         ctx.run_async(_install_mac_fuse_async)
 
 def _install_mac_fuse_async():
     # download zip
-    progress = ap.Progress("Loading macFUSE", infinite = True)
+    progress = ap.Progress("Loading FUSE-T", infinite = True)
 
-    request_url = MACFUSE_INSTALL_URL
+    request_url = FUSET_INSTALL_URL
     r = requests.get(request_url)
 
-    folder_macfuse = os.path.expanduser("~/Downloads")
-    path_macfuse = os.path.join(folder_macfuse, 'macfuse.dmg')
+    folder_fuset = os.path.expanduser("~/Downloads")
+    path_fuset = os.path.join(folder_fuset, 'fuset.pkg')
 
-    with open(path_macfuse, 'wb') as f:
+    with open(path_fuset, 'wb') as f:
         f.write(r.content)
 
     try:
-        subprocess.check_call(["hdiutil", "mount", "macfuse.dmg"], cwd=folder_macfuse)
-        subprocess.check_call(["open", "-W", "/Volumes/macFUSE/Install macFUSE.pkg"])
+        subprocess.check_call(["open", "-W", path_fuset])
     finally:
-        if os.path.exists(path_macfuse):
-            os.remove(path_macfuse)
-        #subprocess.check_call(["hdiutil", "unmount", "/Volumes/macFUSE/"], cwd=folder_macfuse)
+        if os.path.exists(path_fuset):
+            os.remove(path_fuset)
 
     progress.finish()
 

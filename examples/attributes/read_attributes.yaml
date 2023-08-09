@@ -1,0 +1,26 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Example / Read Attributes
+
+  version: 1
+  id: ap::examples::attributes::read
+  category: utility/code/examples/attributes
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Example action to demonstrate how to read all kinds of attributes
+  icon:
+    path: :/icons/action.svg
+
+  script: read_attributes.py
+
+  register:
+    file: 
+      enable: true
+    folder:
+      enable: true

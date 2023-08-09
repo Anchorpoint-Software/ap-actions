@@ -13,11 +13,7 @@ action:
   type: python
   author: Anchorpoint Software GmbH
   description: Creates a new project with a Git Repository
+  enable: false
+  script: "none"
   icon:
     path: :/icons/versioncontrol.svg
-
-  script: new_git_repository.py
-
-  register:
-    new_folder: 
-      enable: new_git_repository.py

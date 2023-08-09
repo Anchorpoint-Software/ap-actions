@@ -7,7 +7,7 @@ import string
 import os
 
 ui = ap.UI()
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 
 def create_random_text():
     ran = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))    

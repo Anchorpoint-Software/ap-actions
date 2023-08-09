@@ -3,7 +3,7 @@ import anchorpoint as ap
 import apsync as aps
 import os
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 template_dir = os.path.join(ctx.yaml_dir, ctx.inputs["template_dir"]).replace("/", os.sep)

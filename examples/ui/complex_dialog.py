@@ -4,7 +4,7 @@ import anchorpoint as ap
 import apsync as aps
 import os
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 current_folder = ctx.path

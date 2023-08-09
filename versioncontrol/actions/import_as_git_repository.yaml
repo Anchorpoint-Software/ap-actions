@@ -13,11 +13,7 @@ action:
   type: python
   author: Anchorpoint Software GmbH
   description: Creates a new Git repository in the selected folder
+  enable: false
+  script: "none"
   icon:
     path: :/icons/versioncontrol.svg
-
-  script: git_import_repository.py
-
-  register:
-    folder:
-      enable: git_import_repository.py

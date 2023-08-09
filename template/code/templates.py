@@ -5,7 +5,7 @@ from datetime import datetime
 
 import template_utility
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
 
 target_folder = ctx.path
@@ -40,11 +40,6 @@ template = ctx.inputs["template_dir"]
 template_subdir = ctx.inputs["template_subdir"]
 template_dir = os.path.join(ctx.yaml_dir, template)
 yaml_dir = ctx.yaml_dir
-
-if aps.get_api_version() >= aps.ApiVersion("1.2.0"):
-    workspace_id_kwarg = {"workspace_id": ctx.workspace_id}
-else:
-    workspace_id_kwarg = {}
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
 template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
@@ -102,6 +97,18 @@ def set_variable_availability(dialog, value):
         for key in template_available_tokens[value]:
             dialog.hide_row(str(key),False)
 
+def get_user_input_for_template(template_name):
+    if template_name in template_available_tokens.keys():
+        tokens = template_available_tokens[template_name]
+        template_user_inputs = {}
+        for token in tokens:
+            if token in user_inputs.keys():
+                template_user_inputs[token] = user_inputs[token]
+        return template_user_inputs
+    else:
+        return {}
+    
+
 # Search for tokens in a single file oder folder name / entry
 def get_tokens(entry, variables: dict):
     entry_vars =  re.findall('\[[^\[\]]*\]',entry)
@@ -149,6 +156,9 @@ def resolve_tokens(variable_list):
             variables["YYMMDD"] = datetime.today().strftime('%y%m%d')
         elif variable == "YY-MM-DD":
             variables["YY-MM-DD"] = datetime.today().strftime('%y-%m-%d')
+        elif variable == "ProjectFolder":
+            projectFolder = os.path.basename(os.path.normpath(ctx.project_path))
+            variables["ProjectFolder"] = str(projectFolder)
         elif variable not in variables:
             variables[variable] = ""
 
@@ -173,9 +183,9 @@ def create_template(dialog):
     if (os.path.isdir(template_path)):
         # Run everything async to not block the main thread
         if create_project : 
-            ctx.run_async(create_project_from_template, template_path, target_folder, ctx)    
+            ctx.run_async(create_project_from_template_async, template_path, target_folder, ctx, template_name)    
         else: 
-            ctx.run_async(create_documents_from_template, template_path, target_folder, ctx)    
+            ctx.run_async(create_documents_from_template_async, template_path, target_folder, ctx)    
     else:
         ui.show_error("Template does not exist", f"Please add a proper template")
 
@@ -225,7 +235,7 @@ def create_dialog():
 def strip_spaces(string):
     return "".join(string.rstrip().lstrip())
     
-def create_project_from_template(template_path, target_folder, ctx):
+def create_project_from_template_async(template_path, target_folder, ctx, template_name):
     # Start the progress indicator in the top right corner
     ap.Progress("Creating Project", "Copying Files and Attributes")
     # Get the template root folder
@@ -254,14 +264,16 @@ def create_project_from_template(template_path, target_folder, ctx):
     project_display_name = project_display_name.replace("-", " ").replace("_", " ")
 
     # Create the actual project and write it in the database
-    project = ctx.create_project(target, strip_spaces(project_display_name))
+    project = ctx.create_project(target, strip_spaces(project_display_name), workspace_id = ctx.workspace_id)
     # Copy the whole folder structure and resolve all tokens using the variables dict
-    aps.copy_from_template(source, target, variables, **workspace_id_kwarg)
+    aps.copy_from_template(source, target, variables, workspace_id = ctx.workspace_id)
 
     # Add the resolved tokens as metadata to the project
     # This metadata can be used for any file and subfolder templates
     # The user won't need to enter this data again
-    project.update_metadata(user_inputs)
+    user_inputs_for_template = get_user_input_for_template(template_name)
+    if len(user_inputs_for_template) > 0:
+        project.update_metadata(user_inputs_for_template)
 
     if callbacks and "project_from_template_created" in dir(callbacks):
         callbacks.project_from_template_created(target, source, variables, project)
@@ -269,18 +281,18 @@ def create_project_from_template(template_path, target_folder, ctx):
     ui.show_success("Project successfully created")
 
 
-def create_documents_from_template(template_path, target_folder, ctx):
+def create_documents_from_template_async(template_path, target_folder, ctx):
     # Start the progress indicator in the top right corner
     ap.Progress("Creating From Template", "Copying Files and Attributes")
 
     # Copy the whole folder structure and resolve all tokens using the variables dict
     try:
         if file_mode:
-            aps.copy_file_from_template(template_path, target_folder, variables, **workspace_id_kwarg)
+            aps.copy_file_from_template(template_path, target_folder, variables, workspace_id = ctx.workspace_id)
             if callbacks and "file_from_template_created" in dir(callbacks):
                 callbacks.file_from_template_created(target_folder, template_path, variables)
         else:
-            aps.copy_from_template(template_path, target_folder, variables, **workspace_id_kwarg)
+            aps.copy_from_template(template_path, target_folder, variables, workspace_id = ctx.workspace_id)
             if callbacks and "folder_from_template_created" in dir(callbacks):
                 callbacks.folder_from_template_created(target_folder, template_path, variables)
 

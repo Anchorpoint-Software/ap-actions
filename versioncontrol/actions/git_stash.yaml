@@ -1,0 +1,15 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Git Stash
+
+  version: 1
+  id: git::stash
+  type: python
+  author: Anchorpoint Software GmbH
+  
+  script: git_stash.py

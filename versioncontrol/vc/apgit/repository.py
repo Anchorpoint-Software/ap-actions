@@ -9,9 +9,12 @@ import git.cmd
 from gitdb.util import to_bin_sha
 from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
+import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-
-import gc
+import logging
+import gc, subprocess, platform
+from datetime import datetime
+import anchorpoint as ap
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -56,8 +59,13 @@ def _parse_lfs_status(progress, line: str):
             index = line.find("batch response: ")
             if index >= 0:
                 import anchorpoint
-                error_message = line[index:]
-                anchorpoint.UI().show_error("Git LFS Error", error_message, duration=8000)
+                if "This repository is over its data quota" in line:
+                    title = "The GitHub LFS limit has been reached"
+                    error_message = "To solve the problem open your GitHub Billing and Plans page and buy more Git LFS Data."
+                else :
+                    title = "Git LFS Error"
+                    error_message = line[index:]
+                anchorpoint.UI().show_error(title, error_message, duration=10000)
 
     except Exception as e:
         print(e)
@@ -75,7 +83,7 @@ class _InternalProgress(git.RemoteProgress):
         return super().line_dropped(line)
 
     def canceled(self):
-        return self.progress.ap_progress.canceled
+        return self.progress.canceled()
 class GitRepository(VCRepository):
     repo: git.Repo = None
 
@@ -96,7 +104,7 @@ class GitRepository(VCRepository):
     def is_authenticated(url: str) -> bool: 
         try:
             import subprocess
-            utility.run_git_command([utility.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+            install_git.run_git_command([install_git.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
         except Exception as e:
             return False
         return True
@@ -109,7 +117,7 @@ class GitRepository(VCRepository):
         host = parsedurl.hostname
         protocol = parsedurl.scheme
         
-        cmd = [utility.get_gcm_path(), "store"]
+        cmd = [install_git.get_gcm_path(), "store"]
         p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
@@ -130,7 +138,7 @@ class GitRepository(VCRepository):
 
     @classmethod
     def create(cls, path: str, username: str, email: str):
-        utility.run_git_command([utility.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
+        install_git.run_git_command([install_git.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
         repo = GitRepository.load(path)
         repo.set_username(username, email, path)
         return repo
@@ -170,21 +178,20 @@ class GitRepository(VCRepository):
             config["GIT_CONFIG_COUNT"] = str(config_count + 1)
 
         env = {
-            "GIT_EXEC_PATH": utility.get_git_exec_path().replace("\\","/"),
+            "GIT_EXEC_PATH": install_git.get_git_exec_path().replace("\\","/"),
             "GIT_LFS_FORCE_PROGRESS": "1" 
         }
 
         config_counter = 0
-        add_config_env(env, "credential.helper", utility.get_gcm_path(), config_counter)
+        add_config_env(env, "credential.helper", install_git.get_gcm_path(), config_counter)
         config_counter = config_counter + 1
         add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
         config_counter = config_counter + 1
-        add_config_env(env, "http.postBuffer", "1048576000", config_counter)
-        config_counter = config_counter + 1
-        if remote_url and "azure" in remote_url:
+        
+        if remote_url and ("azure" in remote_url or "visualstudio" in remote_url):
             add_config_env(env, "http.version", "HTTP/1.1", config_counter)
             config_counter = config_counter + 1
-            add_config_env(env, "lfs.activitytimeout", "60", config_counter)
+            add_config_env(env, "lfs.activitytimeout", "600", config_counter)
             config_counter = config_counter + 1
         if platform.system() == "Windows":
             add_config_env(env, "core.longPaths", "1", config_counter)
@@ -202,8 +209,11 @@ class GitRepository(VCRepository):
         except:
             return False
 
-    def _set_upstream(self, remote, branch):
-        self.repo.git.branch("-u", remote, branch)
+    def set_upstream(self, branch, remote = "origin"):
+        self.repo.git.branch("-u", f"{remote}/{branch}")
+
+    def track_branch(self, branch, remote = "origin"):
+        self.repo.git.branch("-u", f"{remote}/{branch}")
 
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
@@ -247,10 +257,18 @@ class GitRepository(VCRepository):
         return state
 
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
+        self._check_index_lock()
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: return UpdateState.NO_REMOTE
         remote_url = self._get_remote_url(remote)
+
+        kwargs = {}
+        if rebase:
+            kwargs["rebase"] = True
+        else:
+            kwargs["ff"] = True
+            kwargs["no-commit"] = True
 
         state = UpdateState.OK
         try:
@@ -259,7 +277,7 @@ class GitRepository(VCRepository):
             progress_wrapper = None if not progress else _InternalProgress(progress)
             lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
             if progress_wrapper.canceled(): return UpdateState.CANCEL
-            for info in self.repo.remote(remote).pull(progress = progress_wrapper, rebase = rebase, refspec=branch):
+            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 
@@ -271,8 +289,9 @@ class GitRepository(VCRepository):
         return state
 
     def revert_changelist(self, changelist_id: str):
+        self._check_index_lock()
         try:
-            self.repo.git.revert(changelist_id, "-Xtheirs", "-n")
+            self.repo.git.revert(changelist_id, "-n")
             
             try:
                 # don't revert top-level gitattributes
@@ -281,24 +300,112 @@ class GitRepository(VCRepository):
             except:
                 pass
         except Exception as e:
-            self.repo.git.revert("--abort")
-            raise e
+            error = str(e)
+            if not "CONFLICT" in error:
+                self.repo.git.revert("--abort")
+                raise e
         
         self.repo.git.revert("--quit")
 
+    def undo_last_commit(self):
+        self.repo.git.reset("HEAD~")
+
     def restore_changelist(self, changelist_id: str):
+        self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str]):
-        self.repo.git.checkout("--", *files)
+    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False):
+        logging.info(f"Restoring files: {files}")
+        
+        if not keep_original:
+            self._check_index_lock()
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "restore_spec")
+                self._write_pathspec_file(files, pathspec)
+                if changelist_id:
+                    self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
+                else:
+                    self.repo.git.checkout(pathspec_from_file=pathspec)
+        else:
+            # read data of files from git at specific commit
+            if not changelist_id:
+                changelist_id = "HEAD"
+            try:
+                kwargs = {}
+                if platform.system() == "Windows":
+                    from subprocess import CREATE_NO_WINDOW
+                    kwargs["creationflags"] = CREATE_NO_WINDOW
+
+                current_env = os.environ.copy()
+                current_env.update(GitRepository.get_git_environment())
+                
+                if platform.system() == "Windows":
+                    # Set Path to git installation folder so that Git LFS can find git.exe
+                    env_path = current_env["PATH"]
+                    current_env["PATH"] = f"{os.path.dirname(install_git.get_git_cmd_path())};{env_path}"
+                    
+                for file in files:
+                    git_cat_file: subprocess.Popen = self.repo.git.cat_file("blob", f"{changelist_id}:{file}", as_process=True)
+                    apply_filter = subprocess.Popen(
+                        [install_git.get_lfs_path(), "smudge"],
+                        stdin=git_cat_file.stdout,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        cwd=self.get_root_path(),
+                        env=current_env,
+                        **kwargs)
+
+                    # get extension of file if it has any
+                    split = os.path.splitext(file)
+                    if len(split) > 1:
+                        new_file = split[0] + "_restored" + split[1]
+                    else:
+                        new_file = file + "_restored"
+
+                    new_file_absolute = os.path.join(self.get_root_path(), new_file)
+                    with open(new_file_absolute, "wb") as f:
+                        f.write(apply_filter.stdout.read())
+
+                    # Check for errors
+                    git_cat_file_error = git_cat_file.stderr.read().decode("utf-8").strip()
+                    apply_filter_error = apply_filter.stderr.read().decode("utf-8").strip()
+
+                    if git_cat_file_error:
+                        print(f"Error in git cat-file: {git_cat_file_error}")
+                        raise Exception(git_cat_file_error)
+
+                    if apply_filter_error:
+                        if "Unable to parse pointer at" in str(apply_filter_error):
+                            # This is not an error, it just means that the file was not a LFS pointer
+                            pass
+                        else:
+                            print(f"Error in smudge filter command: {apply_filter_error}")
+                            raise Exception(apply_filter_error)
+            except Exception as e:
+                print(f"Error restoring files {e}")
+                raise e
+                
+            pass
+            
 
     def clean(self):
         self.repo.git.clean("-fd")
 
     def restore_all_files(self):
+        self._check_index_lock()
         self.repo.git.checkout(".")
 
+    def reset(self, commit_id: Optional[str], hard: bool = False):
+        self._check_index_lock()
+        args = []
+        if hard:
+            args.append("--hard")
+        if commit_id:
+            args.append(commit_id)
+        self.repo.git.reset(*args)
+        
     def switch_branch(self, branch_name: str):
+        self._check_index_lock()
         split = branch_name.split("/")
         if len(split) > 1:
             try:
@@ -306,19 +413,144 @@ class GitRepository(VCRepository):
                 if remote:
                     branch_name = "/".join(split[1:])
             except Exception as e:
-                print(str(e))
+                # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
                 pass
         
+        if self.has_pending_changes(True):
+            self.stash(True)
+        
         self.repo.git.switch(branch_name)
+
+    def merge_branch(self, branch_name: str) -> bool:
+        self._check_index_lock()
+        
+        status = self.repo.git.merge(branch_name, "--no-ff")
+        if "Already up to date." in status:
+            return False
+        return True
+
         
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name)
 
-    def stash(self):
-        self.repo.git.stash()
+    def _get_stash_message(self):
+        branch = self.get_current_branch_name()
+        return f"!!Anchorpoint<{branch}>"
+    
+    def _get_stashes(self):
+        import re
+        stashes_raw = self.repo.git(no_pager=True).stash("list", "-z").split('\x00')
+        stashes = []
+        for raw_stash in stashes_raw:
+            try:
+                id = re.search("\{\d+\}", raw_stash).group().replace("}","").replace("{","")
+                msg = re.search(": .*", raw_stash).group().replace(": ", "")
+                branch_result = re.search("!!Anchorpoint<.*>", raw_stash)
+                if branch_result:
+                    branch = branch_result.group().replace("!!Anchorpoint<", "").replace(">", "")
+                else:
+                    branch = None
 
-    def pop_stash(self):
-        self.repo.git.stash("pop")
+                stashes.append(Stash(id, msg, branch))
+            except:
+                pass
+        return stashes
+
+    def stash(self, include_untracked: bool, paths: list[str] = None):
+        stash = self.get_branch_stash()
+        if stash:
+            raise FileExistsError(f"Stash on branch {stash.branch} already exists")
+
+        self._check_index_lock()
+        message = self._get_stash_message()
+        kwargs = {
+            "message": message
+            }
+        if include_untracked:
+            kwargs["include_untracked"] = True
+
+        if paths is not None:
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "stash_spec")
+                self._write_pathspec_file(paths, pathspec)
+                self.repo.git.stash(pathspec_from_file=pathspec, **kwargs)
+                return
+
+        self.repo.git.stash(**kwargs)
+
+    def pop_stash(self, stash: Optional[Stash] = None):
+        self._check_index_lock()
+        if not stash:
+            stash = self.get_branch_stash()
+        if stash:
+            if not self.has_pending_changes(True):
+                # workaround to fix 'file already exists, no checkout' error
+                changes = self.get_stash_changes(stash)
+                root = self.get_root_path()
+                for new_file in changes.new_files:
+                    file = os.path.join(root, new_file.path)
+                    if os.path.exists(file):
+                        os.remove(file)
+
+            self.repo.git.stash("pop", stash.id)
+        else:
+            raise Exception("No stash to pop")
+
+    def get_branch_stash(self) -> Optional[Stash]:
+        branch = self.get_current_branch_name()
+        stashes = self._get_stashes()
+        for stash in stashes:
+            if stash.branch == branch: 
+                return stash
+        return None
+    
+    def drop_stash(self, stash: Stash):
+        self.repo.git.stash("drop", stash.id)
+
+    def branch_has_stash(self):
+        return self.get_branch_stash() != None
+    
+    def get_stash_change_count(self, stash: Stash):
+        changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "--name-status").split('\n')
+        return len(changes)
+
+    def get_stash_changes(self, stash: Stash):
+        status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
+      
+        changes = Changes()
+        i = 0
+        while i < len(status_and_changes):
+            try:
+                kind = status_and_changes[i]
+                if kind == "":
+                    break
+                filename = status_and_changes[i+1]
+                
+                if len(kind) > 1: #<X><score>
+                    renamed_filename = status_and_changes[i+2]
+                    i = i+3
+                else:
+                    i = i+2
+                    renamed_filename = None
+
+                if renamed_filename:
+                    change = Change(filename, renamed_filename)
+                else:
+                    change = Change(filename)
+                if kind.startswith("A"):
+                    changes.new_files.append(change)
+                elif kind.startswith("D"):
+                    changes.deleted_files.append(change)
+                elif kind.startswith("R"):
+                    changes.renamed_files.append(change)
+                else:
+                    changes.modified_files.append(change)
+                
+            except Exception as e:
+                print(f"error in list_stash_changes: {str(e)}")
+                break
+            
+        return changes
 
     def get_remote_url(self):
         if self.has_remote():
@@ -328,7 +560,14 @@ class GitRepository(VCRepository):
             return next(urls)
             
         return None
-
+    
+    def update_remote_url(self, url):
+        if not self.has_remote():
+            raise "No remote"
+        
+        self.repo.git.remote("set-url", "origin", url)
+        
+    
     def is_unborn(self):
         try:
             self.repo.rev_parse("HEAD")
@@ -357,8 +596,10 @@ class GitRepository(VCRepository):
         import sys
         defenc = sys.getfilesystemencoding()
 
+        self._check_index_lock()
+
         # make sure we get all files, not only untracked directories
-        proc = self.repo.git.status(*args, "-z",
+        proc = self.repo.git(no_pager=True).status(*args, "-z",
                                porcelain=True,
                                untracked_files=True,
                                as_process=True,
@@ -377,14 +618,24 @@ class GitRepository(VCRepository):
         finalize_process(proc)
         return untracked_files
 
+    def get_all_pending_changes(self):
+        changes = self.get_pending_changes()
+        staged_changes = self.get_pending_changes(True)
+        changes.new_files.extend(staged_changes.new_files)
+        changes.deleted_files.extend(staged_changes.deleted_files)
+        changes.modified_files.extend(staged_changes.modified_files)
+        changes.renamed_files.extend(staged_changes.renamed_files)
+        return changes
+
     def get_pending_changes(self, staged: bool = False) -> Changes:
+        self._check_index_lock()
         changes = Changes()
         try:
             if staged:
                 if not self.is_unborn():
                     diff = self.repo.head.commit.diff()
                 else:
-                    diff = self.repo.index.diff(self._get_empty_tree_id())
+                    diff = self.repo.index.diff(self._get_empty_tree_id(), R=True)
             else:
                 diff = self.repo.index.diff(None) 
             
@@ -428,19 +679,75 @@ class GitRepository(VCRepository):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
+    def git_status(self):
+        return self._run_git_status()
+    
+    def git_log(self):
+        if self.has_remote() and not self.is_unborn():
+            return self.repo.git(no_pager=True).log("-10", "@{u}")
+        else:
+            return self.repo.git(no_pager=True).log("-10")
+
+    def _run_git_status(self):
+        try:
+            return self.repo.git(no_pager=True).status()
+        except Exception as e:
+            print(f"Failed to call git status: {str(e)}")
+
+    def _add_files_no_progress(self, *args, **kwargs):
+        self._check_index_lock()
+        try:
+            logging.info("Calling git add (no progress)")
+            self.repo.git.add(*args, **kwargs)
+        except Exception as e:
+            print(f"Failed to call git add (no progress): {str(e)}")
+            if "fsync error on '.git/objects/" in str(e):
+                import anchorpoint
+                anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
+            raise e
+
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
-        proc = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
-        proc.stderr.close()
-        if progress_callback:
-            for i, _ in enumerate(proc.stdout):
-                progress_callback(i+1,count-1)
-        finalize_process(proc)
+        self._check_index_lock()
+        proc = None
+        try:
+            proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+            proc.stderr.close()
+            if progress_callback:
+                i = 0
+                while True:
+                    i = i + 1
+                    output = proc.stdout.readline()
+                    if not output and proc.poll() is not None:
+                        break
+                    if output:
+                        cont = progress_callback(i,count-1)
+                        if not cont:
+                            if platform.system() == "Windows":
+                                os.system(f"taskkill /F /T /PID {proc.pid}")
+                            else:
+                                proc.terminate()
+                            return
+                
+            if proc.returncode != 0:
+                print(f"Failed to call git add: {proc.returncode}")
+                self._run_git_status()
+                self._add_files_no_progress(*args, **kwargs)
+                proc = None
+
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
+            
+        finally:
+            if proc:
+                finalize_process(proc)
 
     def stage_all_files(self):
+        self._check_index_lock()
         self.repo.git.add(".")
 
     def unstage_all_files(self):
+        self._check_index_lock()
         self.repo.git.restore("--staged", ".")
 
     def stage_files(self, paths: list[str], progress_callback = None):
@@ -453,6 +760,7 @@ class GitRepository(VCRepository):
             self._add_files(len(paths), progress_callback, *paths)
 
     def unstage_files(self, paths: list[str]):
+        self._check_index_lock()
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "unstage_spec")
@@ -463,7 +771,7 @@ class GitRepository(VCRepository):
 
     def sync_staged_files(self, paths: list[str], add_all, progress_callback = None):
         if not self.is_unborn():
-            staged_files = self.repo.git.diff("--name-only", "--staged", "-z").split('\x00')
+            staged_files = self.repo.git(no_pager=True).diff("--name-only", "--staged", "-z").split('\x00')
             staged_files[:] = (file for file in staged_files if file != "")
             if len(staged_files) > 0:
                 self.unstage_files(staged_files)
@@ -473,6 +781,7 @@ class GitRepository(VCRepository):
             self._add_files(len(paths), progress_callback, ".")
 
     def remove_files(self, paths: list[str]):
+        self._check_index_lock()
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "rm_spec")
@@ -482,13 +791,14 @@ class GitRepository(VCRepository):
             self.repo.git.rm(*paths)
 
     def commit(self, message: str):
-        args = [utility.get_git_cmd_path(), "commit", "-m", message]
+        self._check_index_lock()
+        args = [install_git.get_git_cmd_path(), "commit", "-m", message]
         gpg = shutil.which("gpg")
         if not gpg:
             args.insert(1, "commit.gpgsign=false")
             args.insert(1, "-c") 
             
-        utility.run_git_command(args, cwd=self.get_root_path())
+        install_git.run_git_command(args, cwd=self.get_root_path())
 
     def get_git_dir(self):
         return self.repo.git_dir
@@ -506,9 +816,10 @@ class GitRepository(VCRepository):
         self.repo.git.lfs("track", rel_paths)
 
     def get_deleted_files(self):
+        self._check_index_lock()
         unstaged_files = []
         staged_files = []
-        status_lines = self.repo.git.status(porcelain=True).splitlines()
+        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
@@ -526,25 +837,60 @@ class GitRepository(VCRepository):
                 
         return unstaged_files, staged_files
 
-    def get_conflicts(self):
-        def is_conflict(status_ids: str):
-            if len(status_ids) <= 1: return False
-            if "U" in status_ids: return True
-            return status_ids in ["DD", "AA"]
+    def _is_conflict(self, status_ids: str):
+        if len(status_ids) <= 1: return False
+        if "U" in status_ids: return True
+        return status_ids in ["DD", "AA"]
+    
+    def is_file_conflicting(self, path: str):
+        return len(self.get_conflicts(path)) != 0
+
+    def get_file_conflict_status(self, rel_path: str):
+        self._check_index_lock()
+        status_lines = self.repo.git(no_pager=True).status("-z", rel_path, porcelain=True, untracked_files=True).split('\x00')
+        
+        if len(status_lines) == 1:
+            return None, None
+        
+        marker = status_lines[0].split()[0]
+        if marker == "UU":
+            return ap.VCFileStatus.Modified, ap.VCFileStatus.Modified
+        elif marker == "AA":
+            return ap.VCFileStatus.New, ap.VCFileStatus.New
+        elif marker == "DU":
+            return ap.VCFileStatus.Deleted, ap.VCFileStatus.Modified
+        elif marker == "UD":
+            return ap.VCFileStatus.Modified, ap.VCFileStatus.Deleted
+        elif marker == "DD":
+            return ap.VCFileStatus.Deleted, ap.VCFileStatus.Deleted
+        elif marker == "AU":
+            return ap.VCFileStatus.New, ap.VCFileStatus.Conflicted
+        elif marker == "UA":
+            return ap.VCFileStatus.Conflicted, ap.VCFileStatus.New
+        else:
+            return ap.VCFileStatus.Conflicted, ap.VCFileStatus.Conflicted
+
+    def get_conflicts(self, path: str = None):
+        self._check_index_lock()
 
         conflicts = []
-        status_lines = self.repo.git.status(porcelain=True).splitlines()
+        if path:
+            status_lines = self.repo.git(no_pager=True).status(path, "--untracked-files=all", porcelain=True).splitlines()
+        else:
+            status_lines = self.repo.git(no_pager=True).status("--untracked-files=all", porcelain=True).splitlines()
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
                 status_ids = split[0]
-                if is_conflict(status_ids):
+                if self._is_conflict(status_ids):
                     conflicts.append(" ".join(split[1:]).replace("\"", ""))    
 
         return conflicts
 
     def has_conflicts(self):
-        return len(self.get_conflicts()) > 0
+        self._check_index_lock()
+        conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U")
+        return conflicts != None and len(conflicts) > 0
 
     def is_rebasing(self):
         repodir = self._get_repo_internal_dir()
@@ -554,19 +900,23 @@ class GitRepository(VCRepository):
         return False
         
     def continue_rebasing(self):
+        self._check_index_lock()
         self.repo.git(c = "core.editor=true").rebase("--continue")
 
     def abort_rebasing(self):
+        self._check_index_lock()
         self.repo.git.rebase("--abort")
 
     def is_merging(self):
         repodir = self._get_repo_internal_dir()
         return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
-
+        
     def continue_merge(self):
+        self._check_index_lock()
         self.repo.git(c = "core.editor=true").merge("--continue")
 
     def abort_merge(self):
+        self._check_index_lock()
         self.repo.git.merge("--abort")
 
     def _merge_gitattributes(self, file: str):
@@ -587,28 +937,108 @@ class GitRepository(VCRepository):
                 f.write(attr)
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
-        if not paths:
-            conflicts = self.repo.git.diff("--name-only", "--diff-filter=U", "-z").split('\x00')
-            path_args = []
-            if len(conflicts) > 20:
-                path_args = ["."] # This is not cool, can be improved by using a pathspec file instead
-            else:
-                path_args[:] = (file for file in conflicts if file != "" and ".gitattributes" not in file)
-            
-            for conflict in conflicts:
-                if ".gitattributes" in conflict:
-                    attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
-                    self._merge_gitattributes(attributes_file)
-                    self.repo.git.add(attributes_file)
-        else:
-            path_args = paths
+        self._check_index_lock()
 
-        if len(path_args) > 0:
-            if state is ConflictResolveState.TAKE_OURS:
-                self.repo.git.checkout("--ours", *path_args)
-            elif state is ConflictResolveState.TAKE_THEIRS:
-                self.repo.git.checkout("--theirs", *path_args)
-            self.repo.git.add(*path_args)
+        checkout_ours = []
+        checkout_theirs = []
+        remove = []
+
+        relative_paths = set()
+        if paths:
+            for path in paths:
+                relative_paths.add(os.path.relpath(path, self.get_root_path()).replace("\\", "/"))
+
+        file_status = self.repo.git(no_pager=True).status("--porcelain", "--untracked-files=all", "-z").split('\x00')
+        for entry in file_status:
+            try:
+                status, file = entry.split(' ', 1)
+            except:
+                continue
+
+            if paths and not file in relative_paths:
+                continue
+
+            if ".gitattributes" in file:
+                attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
+                self._merge_gitattributes(attributes_file)
+                self.repo.git.add(attributes_file)
+
+            # UU: Both the file in the index (staging area) and the working directory are updated, indicating a conflict in the file's content.
+            if status == "UU":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # AU: The file has been added in the current branch and updated in the merging branch.
+            if status == "AU":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # UA: The file has been updated in the current branch and added in the merging branch.
+            if status == "UA":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # AA: Both the current branch and the merging branch have added the file, indicating a conflict.
+            if status == "AA":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+        
+            # DU: The file has been deleted in the current branch but updated in the merging branch.
+            if status == "DU":
+                if state is ConflictResolveState.TAKE_OURS:
+                    remove.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    checkout_theirs.append(file)
+
+            # UD: The file has been deleted in the merging branch but updated in the current branch.
+            if status == "UD":
+                if state is ConflictResolveState.TAKE_OURS:
+                    checkout_ours.append(file)
+                elif state is ConflictResolveState.TAKE_THEIRS:
+                    remove.append(file)
+
+            # DD: The file has been deleted in both the current branch and the merging branch.
+            if status == "DD":
+                remove.append(file)
+
+        lock_disabler = ap.LockDisabler()
+        def make_writable(paths: list[str]):
+            for path in paths:
+                utility.make_file_writable(path)
+
+        def run_with_pathspec(paths, callback):
+            with tempfile.TemporaryDirectory() as dirpath:
+                pathspec = os.path.join(dirpath, "conflict_spec")
+                self._write_pathspec_file(paths, pathspec)
+                callback(pathspec)
+
+        if len(checkout_ours) > 0:
+            make_writable(checkout_ours)
+            run_with_pathspec(checkout_ours,
+                                lambda pathspec: self.repo.git.checkout("--ours", pathspec_from_file=pathspec))
+            run_with_pathspec(checkout_ours,
+                                lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
+
+        if len(checkout_theirs) > 0:
+            make_writable(checkout_theirs)
+            run_with_pathspec(checkout_theirs,
+                                lambda pathspec: self.repo.git.checkout("--theirs", pathspec_from_file=pathspec))
+            run_with_pathspec(checkout_theirs,
+                                lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
+
+        if len(remove) > 0:
+            make_writable(remove)
+            run_with_pathspec(remove,
+                                lambda pathspec: self.repo.git.rm(pathspec_from_file=pathspec))
+            
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
@@ -643,6 +1073,32 @@ class GitRepository(VCRepository):
 
     def get_current_branch_name(self) -> str:
         return self.repo.git.branch("--show-current")
+
+    def get_merge_head(self):
+        merge_head = os.path.join(self._get_repo_internal_dir(), "MERGE_HEAD")
+        if not os.path.exists(merge_head):
+            return None
+        
+        try:
+            with open(merge_head, "r", encoding="utf-8") as f:
+                return f.readline().replace("\n", "").strip()
+        except Exception as e:
+            return None
+
+    def get_branch_name_from_id(self, id: str) -> str:
+        try:
+            if id == None:
+                return id
+            
+            merge_branch = self.repo.git(no_pager=True).branch("-a", "--points-at", id).split('\n')[0].strip()
+            if "->" in merge_branch:
+                merge_branch = merge_branch.split("->")[1].strip()
+            if merge_branch.startswith("remotes/"):
+                merge_branch = merge_branch[len("remotes/"):]
+            return merge_branch
+        except Exception as e:
+            print(f"Error getting merge branch: {e}")
+            return id
 
     def get_branches(self) -> list[Branch]:
         def _map_ref(ref) -> Branch:
@@ -724,7 +1180,7 @@ class GitRepository(VCRepository):
         local_commits = self._get_local_commits(self._has_upstream())
         
         for commit in local_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL, parents=self._get_commit_parents(commit,HistoryType.LOCAL)))
         return history
 
     def get_new_commits(self, base, target):
@@ -741,18 +1197,25 @@ class GitRepository(VCRepository):
                 ids.add(commit.hexsha)
         
         return ids
+    
+    def _get_commit_parents(self, commit, type):
+        parents = []
+        if commit.parents:
+            for commit in commit.parents:
+                parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
+        return parents
 
-    def get_history(self, max_count: Optional[int] = None, skip: Optional[int] = None, rev_spec: Optional[str] = None):
+    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
         history = []
         args = {}
-        if skip != None:
-            args["skip"] = skip
-        if max_count != None:
-            args["max_count"] = max_count
+        if time_start:
+            args["until"] = f'\"{time_start.strftime("%Y-%m-%d %H:%M:%S")}\"'
+        if time_end:
+            args["since"] = f'\"{time_end.strftime("%Y-%m-%d %H:%M:%S")}\"'
 
         unborn = self.is_unborn()
-        if not unborn:
-            base_commits = list(self.repo.iter_commits(rev=rev_spec, **args))
+        if not unborn and not remote_only:
+            base_commits = list(self.repo.iter_commits(**args))
         else:
             base_commits = []
 
@@ -774,18 +1237,83 @@ class GitRepository(VCRepository):
 
         except Exception as e:
             pass
-            
+     
         for commit in base_commits:
             if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
                 type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type))
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type)))
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE))
-
+            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=self._get_commit_parents(commit,HistoryType.REMOTE)))
+        
         return history
+    
+    def get_last_history_entry_for_file(self, path: str, ref: str = None):
+        if not ref:
+            ref = "HEAD"
+        try:
+            commit = self.repo.git.log("-1", ref, "--format=\"%H\"", "--", path).replace("\"", "").strip()
+            return self.get_history_entry(commit)
+        except Exception as e:
+            print(f"error in get_last_history_entry_for_file: {str(e)}")
+            return None
+
+    def get_history_entry(self, entry_id: str):
+        commit = self.repo.commit(entry_id)
+        if commit:
+            remote_branches = self.repo.git.branch("-r", "--contains", entry_id)
+            if len(remote_branches) == 0:
+                type = HistoryType.LOCAL
+            else:
+                type = HistoryType.SYNCED if self.branch_contains(entry_id) else HistoryType.REMOTE
+            return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
+        return None
+
+    def get_files_to_pull(self, include_added: bool = True, include_modified: bool = True, include_deleted: bool = True) -> Changes:
+        if self.is_unborn() or not self.has_remote() or self.is_head_detached(): return None
+    
+        diff_filter = []
+        if include_added: diff_filter.append("--diff-filter=A")
+        if include_modified: diff_filter.append("--diff-filter=M")
+        if include_deleted: diff_filter.append("--diff-filter=D")
+        
+        if len(diff_filter) == 0: return None
+
+        try:
+            status_and_changes = self.repo.git(no_pager=True).log("--name-status", "--no-renames", "--no-commit-id", "-z", *diff_filter, "HEAD..@{u}").split('\x00')
+        except:
+            return None
+        changes = Changes()
+        seen_files = set()
+
+        i = 0
+        while i < len(status_and_changes):
+            try:
+                kind = status_and_changes[i]
+                if kind == "":
+                    break
+                filename = status_and_changes[i+1]
+                i = i+2
+                
+                if filename not in seen_files:
+                    change = Change(filename)
+                    if kind.startswith("A"):
+                        changes.new_files.append(change)
+                    elif kind.startswith("D"):
+                        changes.deleted_files.append(change)
+                    else:
+                        changes.modified_files.append(change)
+                    
+                    seen_files.add(filename)
+
+            except Exception as e:
+                print(f"error in get_files_to_pull: {str(e)}")
+                break
+
+        return changes
+
 
     def branch_contains(self, changelist_id: str):
         branch_name = self.get_current_branch_name()
@@ -805,6 +1333,35 @@ class GitRepository(VCRepository):
         with open(os.path.join(dir, "exclude"), "a") as f:
             f.write(f"\n{pattern}")
             
+    def fetch_lfs_files(self, branches: list[str], paths: list[str] = None, progress: Optional[Progress] = None):
+        if paths is not None and len(paths) == 0: return
+
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: return UpdateState.NO_REMOTE
+        remote_url = self._get_remote_url(remote)
+
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment(remote_url))
+        progress_wrapper = None if not progress else _InternalProgress(progress)
+        lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches, paths)
+
+        pass
+
+    def get_lfs_filehash(self, paths: list[str], ref: str = None):
+        import re
+        args = ["ls-files"] 
+        if ref:
+            args.append(ref)
+        args.extend(["-l", "-I", *paths])
+        output = self.repo.git.lfs(*args)
+        result = {}
+        hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)
+        for hash_value, file_path in hashes_and_files:
+            result[file_path] = hash_value
+        return result
+        
+
     def prune_lfs(self):
         output = self.repo.git.lfs("prune")
 
@@ -865,3 +1422,36 @@ class GitRepository(VCRepository):
 
     def _get_repo_internal_dir(self):
         return os.path.join(self.repo.working_dir, ".git")
+
+    def _check_index_lock(self):
+        # check if the index is already locked
+        index_lock = os.path.join(self.get_git_dir(), "index.lock")
+        if os.path.exists(index_lock):
+            # check if git is running. If not, the index.lock is a leftover of a crashed git command
+            if utility.is_git_running():
+                raise PermissionError("Git process already running and the index is locked")
+            
+            # remove the leftover lock
+            try:
+                os.remove(index_lock)
+                logging.info(f"removed index.lock: {index_lock}")
+            except Exception as e:
+                logging.info(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
+                raise e
+    
+    def get_file_content(self, path: str, entry_id: Optional[str] = None):
+        try:
+            if entry_id:
+                return self.repo.git.show(f"{entry_id}:{path}")
+            return self.repo.git.show(f"HEAD:{path}")
+        except Exception as e:
+            logging.info(f"Error getting file content for {path} at {entry_id}")
+            return ""
+        
+    def get_stash_content(self, path: str, stash: Stash):
+        try:
+            stash_id = f"stash@{{{stash.id}}}"
+            return self.repo.git.show(f"{stash_id}:{path}")
+        except Exception as e:
+            logging.info(f"Error getting file content for {path} at stash {stash_id}")
+            return ""

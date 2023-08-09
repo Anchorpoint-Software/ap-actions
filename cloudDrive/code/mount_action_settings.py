@@ -1,14 +1,18 @@
 from cgitb import enable
 import anchorpoint as ap
 import apsync as aps
-import os
+import os, sys
 import shutil, platform
 
 import rclone_install_helper as rclone_install
 
-ctx = ap.Context.instance()
+ctx = ap.get_context()
 ui = ap.UI()
-settings = aps.Settings("rclone")
+try:
+    settings = aps.Settings("rclone")
+except:
+    ui.show_error("Cannot load settings","Please refer to the <a href='https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.")
+    sys.exit()
 
 def isWin():
     if platform.system() == "Windows":
@@ -68,7 +72,7 @@ def open_dialog():
     if ctx.icon:
         dialog.icon = ctx.icon    
 
-    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_empty)
+    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_empty, primary=False)
     dialog.show()
 
 
