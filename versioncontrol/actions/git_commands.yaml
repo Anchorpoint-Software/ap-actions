@@ -17,7 +17,3 @@ action:
     path: :/icons/versioncontrol.svg
 
   script: git_commands.py
-
-  register:
-    sidebar:
-      enable: git_commands.py
