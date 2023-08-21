@@ -48,6 +48,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
+        from git_push import push_in_progress
 
         progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=2000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
@@ -69,7 +70,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 pull.type = ap.ActionButtonType.Primary
                 pull.tooltip = "Get all changed files from the remote Git repository"
                 info.actions.append(pull)
-            elif repo.is_push_required():
+            elif repo.is_push_required() and not push_in_progress(repo.get_git_dir()):
                 push = ap.TimelineChannelAction()
                 push.name = "Push"
                 push.icon = aps.Icon(":/icons/upload.svg")
@@ -490,6 +491,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
+        from git_push import push_in_progress
 
         from git_settings import GitAccountSettings
         git_settings = GitAccountSettings(ctx)
@@ -520,9 +522,10 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         has_changes = len(info.changes)
 
+        is_push_in_progress = push_in_progress(repo.get_git_dir())
         is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
-        commit.name = "Commit" if not auto_push else "Push"
+        commit.name = "Commit" if not auto_push or is_push_in_progress else "Push"
         commit.identifier = "gitcommit"
         commit.icon = aps.Icon(":/icons/submit.svg")
         commit.type = ap.ActionButtonType.Primary
