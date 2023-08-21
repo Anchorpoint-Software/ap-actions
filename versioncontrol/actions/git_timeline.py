@@ -669,6 +669,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
+    progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     lock_disabler = ap.LockDisabler()
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
@@ -690,8 +691,6 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                     ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
                     return
 
-        progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
-        
         try:
             repo.switch_branch(branch)
         except Exception as e:
