@@ -439,6 +439,7 @@ def handle_git_autolock(repo, ctx, changes):
     import pickle
     lfsExtensions = LFSExtensionTracker(repo)
     paths_to_lock = set[str]()
+    all_paths = set[str]()
 
     path_mod_status = {}
     file_path = get_forced_unlocked_config_path()
@@ -452,6 +453,8 @@ def handle_git_autolock(repo, ctx, changes):
     
     for change in changes:
         if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
+            all_paths.add(change.path)
+
             # Do not lock files that are manually unlocked
             entry_exists = change.path in path_mod_status
             if os.path.exists(change.path):
@@ -474,7 +477,7 @@ def handle_git_autolock(repo, ctx, changes):
 
     paths_to_unlock = list[str]()
     for lock in locks:
-        if lock.owner_id == ctx.user_id and lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
+        if lock.owner_id == ctx.user_id and lock.path not in all_paths and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
             paths_to_unlock.append(lock.path)
 
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
