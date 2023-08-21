@@ -598,6 +598,8 @@ class GitRepository(VCRepository):
 
         self._check_index_lock()
 
+        root = self.get_root_path()
+
         # make sure we get all files, not only untracked directories
         proc = self.repo.git(no_pager=True).status(*args, "-z",
                                porcelain=True,
@@ -614,6 +616,10 @@ class GitRepository(VCRepository):
                 if not line.startswith(prefix):
                     continue
                 filename = line[len(prefix):].rstrip('\x00')
+                
+                if filename.endswith("/") and os.path.exists(os.path.join(root,filename,".git")):
+                    raise Exception(f"Another Git repository found in {filename}. Please remove it and try again.")
+
                 untracked_files.append(filename)
         finalize_process(proc)
         return untracked_files
