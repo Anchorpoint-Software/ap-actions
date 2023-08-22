@@ -164,7 +164,7 @@ class AzureDevOpsClient:
                     raise AccessDeniedError
                 raise TokenExpiredError
             
-            AzureDevOpsClient._store_token(response.json())
+            self._store_token(response.json())
             self.init()
             return func(*args, **kwargs)
 
@@ -174,6 +174,7 @@ class AzureDevOpsClient:
                 raise TokenExpiredError
 
             if response.status_code == 401:
+                print("Access denied from refresh token")
                 raise AccessDeniedError
 
             if response.status_code != 200:

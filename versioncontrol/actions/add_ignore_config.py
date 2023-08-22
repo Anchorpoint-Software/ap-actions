@@ -3,7 +3,7 @@ import anchorpoint as ap
 import apsync as aps
 import sys, os
 
-NO_IGNORE = "Choose a gitignore Template"
+NO_IGNORE = "No .gitingore"
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
     try:
@@ -37,8 +37,20 @@ def _add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
 
 def get_ignore_file_types(yaml_dir):
     ignore_files_dir = get_ignore_dir(yaml_dir)
+
     dropdown_values = []
-    dropdown_values = [os.path.splitext(f)[0] for f in os.listdir(ignore_files_dir) if os.path.isfile(os.path.join(ignore_files_dir, f))]
+    
+    for f in os.listdir(ignore_files_dir):
+        if os.path.isfile(os.path.join(ignore_files_dir, f)):
+            base_name, ext = os.path.splitext(f)
+            if ext == '.gitignore':
+                entry = ap.DropdownEntry()
+                icon_filename = base_name + '.svg'
+                entry.name = base_name
+                if icon_filename in os.listdir(ignore_files_dir):
+                    entry.icon = os.path.join(ignore_files_dir, icon_filename)
+                dropdown_values.append(entry)
+
     return dropdown_values
 
 def get_ignore_file_default(ignore_template_names, path: str):
@@ -49,7 +61,7 @@ def get_ignore_file_default(ignore_template_names, path: str):
             return False
 
     for ignore_template in ignore_template_names:
-        if "Unreal" in ignore_template and type_exists(".uproject"): return ignore_template
+        if "Unreal" in ignore_template.name and type_exists(".uproject"): return ignore_template
     return None    
 
 if __name__ == "__main__":
@@ -69,7 +81,7 @@ if __name__ == "__main__":
 
     dropdown_default = get_ignore_file_default(dropdown_values, ctx.path)
 
-    dialog.add_text("Template: ").add_dropdown(dropdown_values[0], dropdown_values, var="dropdown")
+    dialog.add_text("Template: ").add_dropdown(dropdown_values[0].name, dropdown_values, var="dropdown")
     dialog.add_info("Add a <b>gitignore</b> to your project to exclude certain files from being<br> committed to Git (e.g. Unreal Engine's build result).") 
     dialog.add_button("Create", callback=lambda d: _add_git_ignore(ctx.path, ctx.yaml_dir, d))
     dialog.show(settings)
