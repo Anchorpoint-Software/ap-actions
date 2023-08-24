@@ -197,9 +197,9 @@ class DevopsIntegration(ap.ApIntegration):
 
     def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
         if action_id == create_repo_dialog_entry:
-            self.create_new_repo(project_name)
+            return self.create_new_repo(project_name)
         elif action_id == existing_repo_dialog_entry:
-            self.use_existing_repo(dialog)
+            return self.use_existing_repo(dialog)
 
     def on_repository_selected(self, dialog: ap.Dialog, value):
         if value == "Pick a Repository":
@@ -235,9 +235,9 @@ class DevopsIntegration(ap.ApIntegration):
         value = dialog.get_value(repo_dropdown_entry)
         if value is None or value == "" or value == "Pick a Repository" or value == "No Access" or value == "Error":
             raise Exception("No repository selected")
-        print(f"use existing project {value}")
+        current_org = self.client.get_current_organization()
         try:
-            repo = self.client.get_project_by_name(value)
+            repo = self.client.get_project_by_name(current_org, value)
             if repo is None:
                 raise Exception("Failed to find project")
             return repo.https_url
