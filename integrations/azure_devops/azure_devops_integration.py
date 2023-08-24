@@ -3,9 +3,54 @@ import apsync as aps
 from azure_devops_client import *
 import os
 
+connect_action_id = "azure_devops_connect"
+disconnect_action_id = "azure_devops_disconnect"
+reconnect_action_id = "azure_devops_reconnect"
+settings_action_id = "azure_devops_settings"
+create_repo_dialog_entry = "azure_devops_create_repo"
+existing_repo_dialog_entry = "azure_devops_use_existing_repo"
+repo_dropdown_entry = "azure_devops_repository_dropdown"
+
 def on_load_integrations(integrations, ctx: ap.Context):
+    # for i in range(15):
+    #     integration = DummyIntegration(ctx, i)
+    #     integrations.add(integration)
+
     integration = DevopsIntegration(ctx)
     integrations.add(integration)
+
+# class DummyIntegration(ap.ApIntegration):
+#     def __init__(self, ctx: ap.Context, index: int):
+#         super().__init__()
+#         self.ctx = ctx
+#         self.name = 'Dummy Integration'
+#         self.description = "Some dummy integration for testing purposes"
+#         self.priority = 101 + index
+#         self.tags = ['git']
+
+#         icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.png")
+#         self.dashboard_icon = icon_path
+#         self.preferences_icon = icon_path
+#         self.is_setup = False
+#         self.is_connected = False
+
+#     def execute_preferences_action(self, action_id: str):
+#         print(f"execute_preferences_action {action_id}")
+
+#     def on_auth_deeplink_received(self, url: str):
+#         print(f"on_auth_deeplink_received {url}")
+
+#     def supports_create_project(self, remote):
+#         return False
+
+#     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
+#         print(f"setup_create_project_dialog_entries {action_id}")
+
+#     def on_create_project_dialog_entry_selected(self, action_id: str, dialog: ap.Dialog):
+#         print(f"on_create_project_dialog_entry_selected {action_id}")
+
+#     def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
+#         print(f"setup_project {action_id}")
 
 class DevopsIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
@@ -38,7 +83,7 @@ class DevopsIntegration(ap.ApIntegration):
         connect.name = "Connect"
         connect.enabled = True
         connect.icon = aps.Icon(":/icons/plug.svg")
-        connect.identifier = "azure_devops_connect"
+        connect.identifier = connect_action_id
         connect.tooltip = "Connect to Azure DevOps"
         self.preferences_actions.append(connect)
         self.create_project_actions.clear()
@@ -50,7 +95,7 @@ class DevopsIntegration(ap.ApIntegration):
         disconnect.name = "Disconnect"
         disconnect.enabled = True
         disconnect.icon = aps.Icon(":/icons/unPlug.svg")
-        disconnect.identifier = "azure_devops_disconnect"
+        disconnect.identifier = disconnect_action_id
         disconnect.tooltip = "Disconnect from Azure DevOps"
         self.preferences_actions.append(disconnect)
 
@@ -58,21 +103,21 @@ class DevopsIntegration(ap.ApIntegration):
         settings.name = "Settings"
         settings.enabled = True
         settings.icon = aps.Icon(":/icons/wheel.svg")
-        settings.identifier = "azure_devops_settings"
+        settings.identifier = settings_action_id
         settings.tooltip = "Open settings for Azure DevOps integration"
         self.preferences_actions.append(settings)
 
         self.create_project_actions.clear()
         createRepo = ap.IntegrationCreateProjectAction()
         createRepo.name = "New Azure DevOps Repository"
-        createRepo.identifier = "azure_devops_create_repo"
+        createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
         createRepo.icon = aps.Icon(os.path.join(self.ctx.yaml_dir, "azure_devops/azureNew.svg"))
         self.create_project_actions.append(createRepo)
 
         existingRepo = ap.IntegrationCreateProjectAction()
         existingRepo.name = "Existing Azure DevOps Repository"
-        existingRepo.identifier = "azure_devops_use_existing_repo"
+        existingRepo.identifier = existing_repo_dialog_entry
         existingRepo.enabled = True
         existingRepo.icon = aps.Icon(os.path.join(self.ctx.yaml_dir, "azure_devops/azure.svg"))
         self.create_project_actions.append(existingRepo)
@@ -85,24 +130,24 @@ class DevopsIntegration(ap.ApIntegration):
         reconnect.name = "Reconnect"
         reconnect.enabled = True
         reconnect.icon = aps.Icon(":/icons/plug.svg")
-        reconnect.identifier = "azure_devops_reconnect"
+        reconnect.identifier = reconnect_action_id
         reconnect.tooltip = "Reconnect to Azure DevOps"
         self.preferences_actions.append(reconnect)
         self.create_project_actions.clear()
         self.is_connected = False
     
-    def execute_preferences_action(self, actionId: str):
-        if actionId == "azure_devops_connect":
+    def execute_preferences_action(self, action_id: str):
+        if action_id == connect_action_id:
             self.client.start_auth()
             self.start_auth()
-        elif actionId == "azure_devops_disconnect":
+        elif action_id == disconnect_action_id:
             self.client.clear_integration()
             self.is_setup = False
             self._setup_not_connected_state()
             self.start_update()
-        elif actionId == "azure_devops_reconnect":
+        elif action_id == reconnect_action_id:
             self.client.start_auth()
-        elif actionId == "azure_devops_settings":
+        elif action_id == settings_action_id:
             try:
                 user = self.client.get_user()
                 organizations = self.client.get_organizations(user)
@@ -135,20 +180,28 @@ class DevopsIntegration(ap.ApIntegration):
         except Exception as e:
             ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
             return
-        
-    def setup_create_project_dialog_entries(self, actionId, dialog: ap.Dialog):
-        if actionId == "azure_devops_create_repo":
-            return []
-        elif actionId == "azure_devops_use_existing_repo":
-            dialog.add_dropdown("", [], var="azure_devops_repository_dropdown", callback=self.on_repository_selected)
-            return ["azure_devops_repository_dropdown"]
 
-    def on_create_project_dialog_entry_selected(self, actionId: str, dialog: ap.Dialog):
-        if actionId == "azure_devops_use_existing_repo":
+    def supports_create_project(self, remote):
+        return any(azure_remote in remote for azure_remote in ["dev.azure.com", "visualstudio.com"])
+        
+    def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
+        if action_id == create_repo_dialog_entry:
+            return []
+        elif action_id == existing_repo_dialog_entry:
+            dialog.add_dropdown("", [], var=repo_dropdown_entry, callback=self.on_repository_selected)
+            return [repo_dropdown_entry]
+
+    def on_create_project_dialog_entry_selected(self, action_id: str, dialog: ap.Dialog):
+        if action_id == existing_repo_dialog_entry:
             self.ctx.run_async(load_git_repositories_async, self.client, dialog)
 
+    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
+        if action_id == create_repo_dialog_entry:
+            self.create_new_repo(project_name)
+        elif action_id == existing_repo_dialog_entry:
+            self.use_existing_repo(dialog)
+
     def on_repository_selected(self, dialog: ap.Dialog, value):
-        print(f"on_repository_selected called with value {value}")
         if value == "Pick a Repository":
             return
         dialog.set_valid(True)
@@ -158,7 +211,7 @@ class DevopsIntegration(ap.ApIntegration):
 
     def show_settings_dialog(self, current_org: str, organizations):
         dialog = ap.Dialog()
-        dialog.name = "azure_devops_settings"
+        dialog.name = settings_action_id
         dialog.title = "Azure DevOps"
         dialog.icon = ":/icons/wheel.svg"
 
@@ -166,17 +219,43 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_dropdown(current_org, organizations, var="organization_dropdown", callback=self.org_callback)
         dialog.show()
 
+    def create_new_repo(self, project_name: str) -> str:
+        print(f"create new project {project_name}")
+        current_org = self.client.get_current_organization()
+        try:
+            new_repo = self.client.create_project_and_repository(current_org, project_name)
+            if new_repo is None:
+                raise Exception("Failed to create project")
+            return new_repo.https_url
+        except Exception as e:
+            ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=6000, description=f'Failed to create, because "{str(e)}". Please try again.')
+            raise e
+
+    def use_existing_repo(self, dialog: ap.Dialog) -> str:
+        value = dialog.get_value(repo_dropdown_entry)
+        if value is None or value == "" or value == "Pick a Repository" or value == "No Access" or value == "Error":
+            raise Exception("No repository selected")
+        print(f"use existing project {value}")
+        try:
+            repo = self.client.get_project_by_name(value)
+            if repo is None:
+                raise Exception("Failed to find project")
+            return repo.https_url
+        except Exception as e:
+            ap.UI().show_error(title='Cannot select Azure DevOps Project', duration=6000, description=f'Failed to select project {value}, because "{str(e)}". Please try again.')
+            raise e
+
+#needs to be outside of class otherwise crash in python execution
 def load_git_repositories_async(client, dialog: ap.Dialog):
     if not dialog:
         return
     
-    current_value = dialog.get_value("azure_devops_repository_dropdown")
-    print(f"current value: {current_value}")
+    current_value = dialog.get_value(repo_dropdown_entry)
     if current_value not in ["", "No Access", "Error"]:
         return
 
     dialog.set_valid(False)
-    dialog.set_processing("azure_devops_repository_dropdown", True)
+    dialog.set_processing(repo_dropdown_entry, True)
     organization = client.get_current_organization()
     error_message = None
     try:
@@ -189,14 +268,14 @@ def load_git_repositories_async(client, dialog: ap.Dialog):
         ap.UI().show_error("Cannot load repositories", f"Request failed with error {str(e)}", 6000)
 
     if error_message:    
-        dialog.set_dropdown_values("azure_devops_repository_dropdown", error_message, [])
-        dialog.set_enabled("azure_devops_repository_dropdown", False)
+        dialog.set_dropdown_values(repo_dropdown_entry, error_message, [])
+        dialog.set_enabled(repo_dropdown_entry, False)
     else:
         repositories = []
         for repo in repos:
             repositories.append(repo.display_name)
 
-        dialog.set_dropdown_values("azure_devops_repository_dropdown", "Pick a Repository", repositories)
-        dialog.set_enabled("azure_devops_repository_dropdown", True)
+        dialog.set_dropdown_values(repo_dropdown_entry, "Pick a Repository", repositories)
+        dialog.set_enabled(repo_dropdown_entry, True)
 
-    dialog.set_processing("azure_devops_repository_dropdown", False)
+    dialog.set_processing(repo_dropdown_entry, False)
