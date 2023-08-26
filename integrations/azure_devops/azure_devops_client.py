@@ -325,7 +325,7 @@ class AzureDevOpsClient:
                         if repo.display_name == name:
                             return repo
                     return None
-                
+
     def add_user_to_organization(self, organization: str, user_email: str):
         body = {
             "accessLevel": {
@@ -340,6 +340,11 @@ class AzureDevOpsClient:
         response = self._request_with_refresh(self.oauth.post, f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0", json=body)
         if not response:
             raise Exception("Could not add user to organization: ", response.text)
+
+        group_name = "Project Collection Administrators"
+        group_descriptor = self._get_group_descriptor_by_name(organization, group_name)        
+        user_descriptor = self._get_user_descriptor_by_email(organization, user_email)
+        self._add_user_to_group(organization, user_descriptor, group_descriptor, group_name)
 
     def add_user_to_project(self, organization: str, user_email: str, project_id: str):
         body = {
@@ -363,6 +368,7 @@ class AzureDevOpsClient:
         }
         
         response = self._request_with_refresh(self.oauth.post, f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0", json=body)
+        print(f"Add user to project: {response}")
         if not response:
             raise Exception("Could not add user to repository: ", response.text)
 
@@ -370,6 +376,7 @@ class AzureDevOpsClient:
     def remove_user_from_organization(self, organization: str, user_email: str):    
         user_id = self._get_user_id_by_email(organization, user_email)
         response = self._request_with_refresh(self.oauth.delete, f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements/{user_id}?api-version=7.0")
+        print(f"Remove user from organization: {response}")
         if not response:
             raise Exception("Could not add user to repository: ", response.text) 
 
@@ -392,6 +399,44 @@ class AzureDevOpsClient:
                 return member_json["id"]
         
         raise Exception("Could not find user in organization")
+    
+    def _get_user_descriptor_by_email(self, organization: str, user_email: str):
+        users_response = self._request_with_refresh(self.oauth.get,f"https://vssps.dev.azure.com/{organization}/_apis/graph/users?api-version=7.0-preview.1")
+        if not users_response or users_response.status_code != 200:
+            raise Exception(f"Could not load users of {organization}: ", users_response.text)
+        users_data = users_response.json()["value"];
+        for user in users_data:
+            if user["mailAddress"] == user_email:
+                return user["descriptor"]
+            
+        raise Exception(f"Could not find user {user_email}")
+    
+    def _get_group_descriptor_by_name(self, organization: str, group_name: str):
+        groups_response = self._request_with_refresh(self.oauth.get, (f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?api-version=7.0-preview.1"))
+        if not groups_response or groups_response.status_code != 200:
+            raise Exception(f"Could not load groups of {organization}: ", groups_response.text)
+        groups_data = groups_response.json()["value"];
+        for group in groups_data:
+            if group["displayName"] == group_name:
+                return group["descriptor"]
+        
+        raise Exception(f"Could not find group {group_name}")
+    
+    def _add_user_to_group(self, organization: str, user_descriptor: str, group_descriptor: str, group_name: str):
+        membership_check_response = self._request_with_refresh(self.oauth.get,f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
+        print(membership_check_response)
+
+        if membership_check_response.status_code == 200:
+            print(f"User is already a member of {group_name} group")
+        elif membership_check_response.status_code == 404:
+            membership_add_response = self._request_with_refresh(self.oauth.put,f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
+
+            if membership_add_response.status_code == 201:
+                print(f"User added to {group_name} group")
+            else:
+                raise Exception(f"Failed to add user to {group_name} group")
+        else:
+            raise Exception("Membership check failed")
 
     def remove_user_from_project(self, organization: str, user_email: str, project_name: str):
         project = self.get_project_by_name(organization, project_name)
@@ -410,11 +455,10 @@ class AzureDevOpsClient:
         if not group_descriptor:
             raise Exception("No group descriptor found")
         
-        user_id = self._get_user_id_by_email(organization, user_email)
-        user_descriptor = self._get_graph_descriptor(user_id)
+        user_descriptor = self._get_user_descriptor_by_email(organization, user_email)
 
         response = self._request_with_refresh(self.oauth.delete, f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
-
+        print(f"Remove user from project: {response}")
         if not response:
             raise Exception("Could not remove user from project: ", response.text)
         

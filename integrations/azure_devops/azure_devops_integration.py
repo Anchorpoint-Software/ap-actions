@@ -3,12 +3,13 @@ import apsync as aps
 from azure_devops_client import *
 import os
 
+integration_tags = ["git", "azure_devops"]
 connect_action_id = "azure_devops_connect"
 disconnect_action_id = "azure_devops_disconnect"
 reconnect_action_id = "azure_devops_reconnect"
 settings_action_id = "azure_devops_settings"
+settings_org_dropdown_entry = "organization_dropdown"
 create_repo_dialog_entry = "azure_devops_create_repo"
-existing_repo_dialog_entry = "azure_devops_use_existing_repo"
 repo_dropdown_entry = "azure_devops_repository_dropdown"
 
 def on_load_integrations(integrations, ctx: ap.Context):
@@ -52,6 +53,115 @@ def on_load_integrations(integrations, ctx: ap.Context):
 #     def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
 #         print(f"setup_project {action_id}")
 
+def on_add_user_to_workspace(email, ctx: ap.Context):
+    client = AzureDevOpsClient(ctx.workspace_id)
+
+    if not client.is_setup():
+        return
+
+    if not client.setup_refresh_token():
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        return
+    
+    current_org = client.get_current_organization()
+    if current_org is None:
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please add manually.')
+        return
+
+    try:
+        client.add_user_to_organization(current_org, email)
+        ap.UI().show_success(title='User added to Azure DevOps', duration=3000, description=f'User {email} added to organization {current_org}.')
+    except Exception as e:
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually.')
+
+def on_remove_user_from_workspace(email, ctx: ap.Context):
+    client = AzureDevOpsClient(ctx.workspace_id)
+
+    if not client.is_setup():
+        return
+
+    if not client.setup_refresh_token():
+        ap.UI().show_error(title='Cannot remove user to Azure DevOps', duration=6000, description=f'Failed to connect integration. Please remove manually.')
+        return
+    
+    current_org = client.get_current_organization()
+    if current_org is None:
+        ap.UI().show_error(title='Cannot remove user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please remove manually.')
+        return
+
+    try:
+        client.remove_user_from_organization(current_org, email)
+        ap.UI().show_success(title='User removed from Azure DevOps', duration=3000, description=f'User {email} removed from organization {current_org}.')
+    except Exception as e:
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually.')
+
+def on_add_user_to_project(email, ctx: ap.Context):
+    settings = aps.Settings(ctx.workspace_id, f"{ctx.project_id}_integration_info")
+    project_integration_tags = settings.get("integration_tags")
+    supports_all_tags = all(tag in project_integration_tags.split(';') for tag in integration_tags)
+
+    if not supports_all_tags:
+        return
+    
+    project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
+    if project is None:
+        ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        return
+    
+    client = AzureDevOpsClient(ctx.workspace_id)
+    
+    if not client.is_setup():
+        ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=6000, description=f'Azure DevOps integration is not setup. Please add manually.')
+        return
+    
+    if not client.setup_refresh_token():
+        ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        return
+    
+    current_org = client.get_current_organization()
+
+    try:
+        project = client.get_project_by_name(current_org, project.name)
+        client.add_user_to_project(current_org, email, project.project_id)
+        ap.UI().show_success(title='User added to Azure DevOps project', duration=3000, description=f'User {email} added to project {project.name}.')
+    except Exception as e:
+        ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually.')
+        return
+    
+def on_remove_user_from_project(email, ctx: ap.Context):
+
+    settings = aps.Settings(ctx.workspace_id, f"{ctx.project_id}_integration_info")
+    project_integration_tags = settings.get("integration_tags")
+    supports_all_tags = all(tag in project_integration_tags.split(';') for tag in integration_tags)
+
+    if not supports_all_tags:
+        return
+    
+    project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
+    if project is None:
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        return
+    
+    client = AzureDevOpsClient(ctx.workspace_id)
+    
+    if not client.is_setup():
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Azure DevOps integration is not setup. Please add manually.')
+        return
+    
+    if not client.setup_refresh_token():
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        return
+    
+    current_org = client.get_current_organization()
+
+    try:
+        project = client.get_project_by_name(current_org, project.name)
+        client.remove_user_from_project(current_org, email, project.project_id)
+        ap.UI().show_success(title='User removed from Azure DevOps project', duration=3000, description=f'User {email} removed from project {project.name}.')
+    except Exception as e:
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
+        return
+
 class DevopsIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
         super().__init__()
@@ -61,7 +171,7 @@ class DevopsIntegration(ap.ApIntegration):
         self.name = 'Azure DevOps'
         self.description = "Create repositories, add participants and do it all directly in Anchorpoint.<br>Each participant will need an Azure DevOps account. <a href'https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/'>Learn more</a> "
         self.priority = 100
-        self.tags = ['git']
+        self.tags = integration_tags
         self.repos_loaded = False
 
         icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.png")
@@ -115,13 +225,6 @@ class DevopsIntegration(ap.ApIntegration):
         createRepo.icon = aps.Icon(os.path.join(self.ctx.yaml_dir, "azure_devops/azureNew.svg"))
         self.create_project_actions.append(createRepo)
 
-        existingRepo = ap.IntegrationCreateProjectAction()
-        existingRepo.name = "Existing Azure DevOps Repository"
-        existingRepo.identifier = existing_repo_dialog_entry
-        existingRepo.enabled = True
-        existingRepo.icon = aps.Icon(os.path.join(self.ctx.yaml_dir, "azure_devops/azure.svg"))
-        self.create_project_actions.append(existingRepo)
-
         self.is_connected = True
 
     def _setup_reconnect_state(self):
@@ -172,7 +275,8 @@ class DevopsIntegration(ap.ApIntegration):
             if current_org is None:
                 current_org = organizations[0]
                 self.client.set_current_organization(current_org)
-            self.show_settings_dialog(current_org, organizations)
+            if len(organizations) > 1:
+                self.show_settings_dialog(current_org, organizations)
             self._setup_connected_state()
             self.is_setup = True
             self.is_connected = True
@@ -187,40 +291,41 @@ class DevopsIntegration(ap.ApIntegration):
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
         if action_id == create_repo_dialog_entry:
             return []
-        elif action_id == existing_repo_dialog_entry:
-            dialog.add_dropdown("", [], var=repo_dropdown_entry, callback=self.on_repository_selected)
-            return [repo_dropdown_entry]
 
     def on_create_project_dialog_entry_selected(self, action_id: str, dialog: ap.Dialog):
-        if action_id == existing_repo_dialog_entry:
-            self.ctx.run_async(load_git_repositories_async, self.client, dialog)
+        #stub
+        return
 
     def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
         if action_id == create_repo_dialog_entry:
             return self.create_new_repo(project_name)
-        elif action_id == existing_repo_dialog_entry:
-            return self.use_existing_repo(dialog)
 
     def on_repository_selected(self, dialog: ap.Dialog, value):
         if value == "Pick a Repository":
             return
         dialog.set_valid(True)
 
-    def org_callback(self, dialog: ap.Dialog, value):
-        self.client.set_current_organization(value)
+    def apply_org_callback(self, dialog: ap.Dialog, value):
+        org = dialog.get_value(settings_org_dropdown_entry)
+        self.client.set_current_organization(org)
 
     def show_settings_dialog(self, current_org: str, organizations):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
-        dialog.title = "Azure DevOps"
-        dialog.icon = ":/icons/wheel.svg"
+        dialog.title = "Azure DevOps Settings"
+        dialog.icon = os.path.join(self.ctx.yaml_dir, "azure_devops/azure.svg")
 
-        dialog.add_text("Organization", var="orgtext")
-        dialog.add_dropdown(current_org, organizations, var="organization_dropdown", callback=self.org_callback)
+        dialog.add_text("<b>Organization</b>", var="orgtext")
+        dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry)
+
+        if len(organizations) > 1:
+            dialog.add_info("It looks like you have multiple organizations on Azure DevOps.<br>Select the one you want to connect to this Anchorpoint workspace.")
+
+        dialog.add_empty()
+        dialog.add_button("Apply", var="apply", callback=self.apply_org_callback)
         dialog.show()
 
     def create_new_repo(self, project_name: str) -> str:
-        print(f"create new project {project_name}")
         current_org = self.client.get_current_organization()
         try:
             new_repo = self.client.create_project_and_repository(current_org, project_name)
@@ -228,54 +333,8 @@ class DevopsIntegration(ap.ApIntegration):
                 raise Exception("Failed to create project")
             return new_repo.https_url
         except Exception as e:
-            ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=6000, description=f'Failed to create, because "{str(e)}". Please try again.')
+            if "project already exists" in e.message:
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
+            else:
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again.')
             raise e
-
-    def use_existing_repo(self, dialog: ap.Dialog) -> str:
-        value = dialog.get_value(repo_dropdown_entry)
-        if value is None or value == "" or value == "Pick a Repository" or value == "No Access" or value == "Error":
-            raise Exception("No repository selected")
-        current_org = self.client.get_current_organization()
-        try:
-            repo = self.client.get_project_by_name(current_org, value)
-            if repo is None:
-                raise Exception("Failed to find project")
-            return repo.https_url
-        except Exception as e:
-            ap.UI().show_error(title='Cannot select Azure DevOps Project', duration=6000, description=f'Failed to select project {value}, because "{str(e)}". Please try again.')
-            raise e
-
-#needs to be outside of class otherwise crash in python execution
-def load_git_repositories_async(client, dialog: ap.Dialog):
-    if not dialog:
-        return
-    
-    current_value = dialog.get_value(repo_dropdown_entry)
-    if current_value not in ["", "No Access", "Error"]:
-        return
-
-    dialog.set_valid(False)
-    dialog.set_processing(repo_dropdown_entry, True)
-    organization = client.get_current_organization()
-    error_message = None
-    try:
-        repos = client.get_repositories(organization)
-    except AccessDeniedError as e:
-        error_message = "No Access"
-        ap.UI().show_error("Cannot load repositories", f"You have no access to the organization {organization}", 6000)
-    except Exception as e:
-        error_message = "Error"
-        ap.UI().show_error("Cannot load repositories", f"Request failed with error {str(e)}", 6000)
-
-    if error_message:    
-        dialog.set_dropdown_values(repo_dropdown_entry, error_message, [])
-        dialog.set_enabled(repo_dropdown_entry, False)
-    else:
-        repositories = []
-        for repo in repos:
-            repositories.append(repo.display_name)
-
-        dialog.set_dropdown_values(repo_dropdown_entry, "Pick a Repository", repositories)
-        dialog.set_enabled(repo_dropdown_entry, True)
-
-    dialog.set_processing(repo_dropdown_entry, False)

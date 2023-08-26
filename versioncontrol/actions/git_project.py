@@ -32,12 +32,13 @@ def get_repo_url(git, path):
         return None
 
 def path_changed(dialog: ap.Dialog, git, path, ctx):
-    from add_ignore_config import get_ignore_file_types, get_ignore_file_default, NO_IGNORE
-    dropdown_values = get_ignore_file_types(ctx.yaml_dir)
+    from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
+    dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
     ignore_default = get_ignore_file_default(dropdown_values, path)
     if not ignore_default:
-        ignore_default = NO_IGNORE
-    dialog.set_value("ignore_dropdown", ignore_default)
+        dialog.set_value("ignore_dropdown", NO_IGNORE)
+    else:
+        dialog.set_value("ignore_dropdown", ignore_default)
     url = get_repo_url(git, path)
     if url and url != "":
         dialog.set_value("url", url)
@@ -118,8 +119,8 @@ try:
 
             self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: path_changed(d,self.git,v,ctx))
 
-            from add_ignore_config import get_ignore_file_types, NO_IGNORE
-            dropdown_values = get_ignore_file_types(ctx.yaml_dir)
+            from add_ignore_config import get_ignore_file_dropdown_entries, NO_IGNORE
+            dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
 
             self.dialog.add_text("<b>.gitignore Template</b>", var="gitignoretext")
             no_entry = ap.DropdownEntry()
@@ -152,11 +153,11 @@ try:
 
             local_entry = ap.DropdownEntry()
             local_entry.name = no_remote_dropdown_entry_name
-            local_entry.icon = ":icons/Misc/git.svg"
+            local_entry.icon = ":icons/desktop.svg"
             self.create_project_dropdown_entries.append(local_entry)
             self.dialogVarMap[local_entry.name] = []
 
-            self.dialog.add_dropdown(remote_entry.name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change)
+            self.dialog.add_dropdown(remote_entry.name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change, filterable = True)
 
             #create dialog entries for each dropdown entry
             for integration in self.git_integrations:
@@ -229,6 +230,7 @@ try:
 
             remote_enabled = False
             repo_url = ""
+            integration_tags = None
 
             if action_id == remote_dropdown_entry_name:
                 repo_url = self.dialog.get_value(remote_entry_url_input)
@@ -240,6 +242,7 @@ try:
                     for action in integration.create_project_actions:
                         if action.name == action_id:
                             repo_url = integration.setup_project(action.identifier, self.dialog, self.project.name)
+                            integration_tags = integration.tags
                             remote_enabled = True
                             break
 
@@ -266,6 +269,11 @@ try:
                 # Case 4: Folder Contains Git in Subdir -> Error
                 ap.UI().show_error("Could not setup project", "Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
                 sys.exit(0)
+
+            if integration_tags != None:
+                settings = aps.SharedSettings(self.context.workspace_id, f"{project_id}_integration_info")
+                settings.set("integration_tags", ";".join(integration_tags))
+                settings.store()
 
             print(f"project_path {project_path}")
             print(f"git_ignore {git_ignore}")   

@@ -35,7 +35,7 @@ def _add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
     dialog.close()
     ap.UI().show_success("Ignore File Created")
 
-def get_ignore_file_types(yaml_dir):
+def get_ignore_file_dropdown_entries(yaml_dir):
     ignore_files_dir = get_ignore_dir(yaml_dir)
 
     dropdown_values = []
@@ -61,7 +61,7 @@ def get_ignore_file_default(ignore_template_names, path: str):
             return False
 
     for ignore_template in ignore_template_names:
-        if "Unreal" in ignore_template.name and type_exists(".uproject"): return ignore_template
+        if "Unreal" in ignore_template.name and type_exists(".uproject"): return ignore_template.name
     return None    
 
 if __name__ == "__main__":
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     dialog.title = "Add Git Ignore File"
     dialog.icon = ctx.icon
 
-    dropdown_values = get_ignore_file_types(ctx.yaml_dir)
+    dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
     if len(dropdown_values) == 0:
         ui.show_info("No gitignore templates found")
         sys.exit(0)
