@@ -1,6 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys
+import os, sys, pathlib, platform
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -74,6 +74,69 @@ def apply_git_url(dialog, ctx, repo_path):
         aps.update_timeline_channel(project, channel)
         ap.UI().show_error("Could not change URL", "The URL could not be changed")
 
+def open_terminal_pressed(dialog): 
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    from vc.apgit_utility.install_git import get_git_cmd_path
+    if script_dir in sys.path: sys.path.remove(script_dir)
+
+    env = GitRepository.get_git_environment()
+    for key,value in env.items():
+        os.putenv(key, value)
+
+    ctx = ap.get_context()
+    if platform.system() == "Darwin":
+        def get_osascript():
+            gitdir = os.path.dirname(get_git_cmd_path())
+            return (
+                f"if application \"Terminal\" is running then\n"
+                f"\ttell application \"Terminal\"\n"
+                f"\t\tdo script \"cd \\\"{ctx.project_path}\\\" && export PATH=\\\"{gitdir}\\\":$PATH\"\n"
+                f"\t\tactivate\n"
+                f"\tend tell\n"
+                f"else\n"
+                f"\ttell application \"Terminal\"\n"
+                f"\t\tdo script \"cd \\\"{ctx.project_path}\\\" && export PATH=\\\"{gitdir}\\\":$PATH\" in window 1\n"
+                f"\t\tactivate\n"
+                f"\tend tell\n"
+                f"end if\n"
+            )
+        
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(delete=False)
+        try:
+            with open(tmp.name, "w") as f:
+                f.write(get_osascript())
+        finally:
+            os.system(f"osascript \"{tmp.name}\"")
+            os.remove(tmp.name)
+
+    elif platform.system() == "Windows":
+        path = os.environ["PATH"]
+        os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
+        os.system(f"start cmd /k \"{pathlib.Path(ctx.project_path).drive} & cd {ctx.project_path}\"")
+
+def prune(project_path):
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    from vc.apgit.utility import get_repo_path
+    if script_dir in sys.path: sys.path.remove(script_dir)
+
+    ui = ap.UI()
+    repo_path = get_repo_path("Git", project_path)
+    repo = GitRepository.load(repo_path)
+    if not repo: return
+
+    progress = ap.Progress("Clearing Cache")
+    count = repo.prune_lfs()
+    if count == 0: 
+        ui.show_info("Cache is already cleared")
+    else:
+        ui.show_info(f"Cleared {count} objects")
+
+def prune_pressed(ctx: ap.Context):
+    ctx.run_async(prune, ctx.project_path)
+
 class GitProjectSettings(ap.AnchorpointSettings):
     def __init__(self, ctx: ap.Context):
         super().__init__()
@@ -100,6 +163,15 @@ class GitProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_input(url if url else "", var="url", width=400)
             self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
             self.dialog.add_button("Apply", callback=lambda d: apply_git_url(d, self.ctx, path))
+
+            self.dialog.add_empty()
+            self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
+            self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
+            self.dialog.add_empty()
+
+            self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False)
+            self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
+
             self.dialog.load_settings(self.get_settings())
 
     def get_dialog(self):         

@@ -252,4 +252,8 @@ def handle_error(e: Exception):
     if "fatal: repository" in message and "not found" in message:
         return show_repository_not_found_error(message)
     
+    if "Another Git repository found in" in message:
+        ap.UI().show_error("Another Git repository found", message, duration=10000)
+        return True
+    
     return False

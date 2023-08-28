@@ -70,6 +70,27 @@ def handle_git_autolock(ctx, repo):
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
     clear_forced_unlocked_config()
 
+def get_push_lockfile(repo_git_dir):
+    return os.path.join(repo_git_dir, f"ap-push-{os.getpid()}.lock")
+
+def push_in_progress(repo_git_dir):
+    lockfile = get_push_lockfile(repo_git_dir)
+    return os.path.exists(lockfile)
+
+def delete_push_lockfiles(repo_git_dir):
+    import glob
+    pattern = os.path.join(repo_git_dir, "ap-push-*.lock")
+
+    # Find all files that match the pattern
+    lockfiles = glob.glob(pattern)
+
+    # And delete them
+    for lockfile in lockfiles:
+        try:
+            os.remove(lockfile)
+        except Exception as e:
+            print(f"An error occurred while deleting {lockfile}: {e}")
+
 def push_async(channel_id: str, ctx):
     ui = ap.UI()
     try:
@@ -77,7 +98,13 @@ def push_async(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
+        
+        git_dir = repo.get_git_dir()
+        if push_in_progress(git_dir):
+            return
+        
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
+        
         repo.fetch()
         if repo.is_pull_required():
             ui.show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
@@ -85,19 +112,24 @@ def push_async(channel_id: str, ctx):
             ap.refresh_timeline_channel(channel_id)
             return
         
-        state = repo.push(progress=PushProgress(progress))
-        if state == UpdateState.CANCEL:
-            ui.show_info("Push Canceled")
-        elif state != UpdateState.OK:
-            show_push_failed("", channel_id, ctx)    
-        else:
-            handle_git_autolock(ctx, repo)
-            ui.show_success("Push Successful")
+        lockfile = get_push_lockfile(git_dir)
+        with open(lockfile, "w") as f:
+            state = repo.push(progress=PushProgress(progress))
+        
+            if state == UpdateState.CANCEL:
+                ui.show_info("Push Canceled")
+            elif state != UpdateState.OK:
+                show_push_failed("", channel_id, ctx)    
+            else:
+                handle_git_autolock(ctx, repo)
+                ui.show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):
             show_push_failed(str(e), channel_id, ctx)
     finally:
         progress.finish()
+        if git_dir:
+            delete_push_lockfiles(git_dir)
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
 
     ap.refresh_timeline_channel(channel_id)
