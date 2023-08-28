@@ -440,7 +440,7 @@ class AzureDevOpsClient:
 
     def remove_user_from_project(self, organization: str, user_email: str, project_name: str):
         project = self.get_project_by_name(organization, project_name)
-        project_descriptor = self._get_graph_descriptor(project.project_id)
+        project_descriptor = self._get_graph_descriptor(organization, project.project_id)
         
         response = self._request_with_refresh(self.oauth.get, f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?scopeDescriptor={project_descriptor}&api-version=7.0-preview.1")
           
@@ -458,7 +458,6 @@ class AzureDevOpsClient:
         user_descriptor = self._get_user_descriptor_by_email(organization, user_email)
 
         response = self._request_with_refresh(self.oauth.delete, f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
-        print(f"Remove user from project: {response}")
         if not response:
             raise Exception("Could not remove user from project: ", response.text)
         

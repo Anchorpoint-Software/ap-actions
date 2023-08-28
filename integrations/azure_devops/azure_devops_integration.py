@@ -96,7 +96,7 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
         ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually.')
 
 def on_add_user_to_project(email, ctx: ap.Context):
-    settings = aps.Settings(ctx.workspace_id, f"{ctx.project_id}_integration_info")
+    settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
     supports_all_tags = all(tag in project_integration_tags.split(';') for tag in integration_tags)
 
@@ -121,16 +121,15 @@ def on_add_user_to_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        project = client.get_project_by_name(current_org, project.name)
-        client.add_user_to_project(current_org, email, project.project_id)
+        azureProject = client.get_project_by_name(current_org, project.name)
+        client.add_user_to_project(current_org, email, azureProject.project_id)
         ap.UI().show_success(title='User added to Azure DevOps project', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually.')
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
-
-    settings = aps.Settings(ctx.workspace_id, f"{ctx.project_id}_integration_info")
+    settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
     supports_all_tags = all(tag in project_integration_tags.split(';') for tag in integration_tags)
 
@@ -155,8 +154,7 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        project = client.get_project_by_name(current_org, project.name)
-        client.remove_user_from_project(current_org, email, project.project_id)
+        client.remove_user_from_project(current_org, email, project.name)
         ap.UI().show_success(title='User removed from Azure DevOps project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
         ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
@@ -222,7 +220,7 @@ class DevopsIntegration(ap.ApIntegration):
         createRepo.name = "New Azure DevOps Repository"
         createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
-        createRepo.icon = aps.Icon(os.path.join(self.ctx.yaml_dir, "azure_devops/azureNew.svg"))
+        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOpsNew.svg")
         self.create_project_actions.append(createRepo)
 
         self.is_connected = True
@@ -296,9 +294,9 @@ class DevopsIntegration(ap.ApIntegration):
         #stub
         return
 
-    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
+    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str, progress: ap.Progress):
         if action_id == create_repo_dialog_entry:
-            return self.create_new_repo(project_name)
+            return self.create_new_repo(project_name, progress)
 
     def on_repository_selected(self, dialog: ap.Dialog, value):
         if value == "Pick a Repository":
@@ -325,15 +323,17 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_button("Apply", var="apply", callback=self.apply_org_callback)
         dialog.show()
 
-    def create_new_repo(self, project_name: str) -> str:
+    def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:
         current_org = self.client.get_current_organization()
         try:
+            progress.set_text("Creating Azure DevOps Project")
             new_repo = self.client.create_project_and_repository(current_org, project_name)
+            progress.set_text("")
             if new_repo is None:
                 raise Exception("Failed to create project")
             return new_repo.https_url
         except Exception as e:
-            if "project already exists" in e.message:
+            if "project already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again.')

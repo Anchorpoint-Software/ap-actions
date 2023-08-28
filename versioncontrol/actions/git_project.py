@@ -241,13 +241,18 @@ try:
                 for integration in self.git_integrations:
                     for action in integration.create_project_actions:
                         if action.name == action_id:
-                            repo_url = integration.setup_project(action.identifier, self.dialog, self.project.name)
+                            repo_url = integration.setup_project(action.identifier, self.dialog, self.project.name, progress)
                             integration_tags = integration.tags
                             remote_enabled = True
                             break
 
             folder_is_empty = self.githelper.folder_empty(project_path)
             git_parent_dir = self._get_git_parent_dir(project_path)
+
+            if integration_tags != None:
+                settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
+                settings.set("integration_tags", ";".join(integration_tags))
+                settings.store()
 
             if folder_is_empty and remote_enabled:
                 # Case 1: Empty Folder & Remote URL -> Clone
@@ -269,11 +274,6 @@ try:
                 # Case 4: Folder Contains Git in Subdir -> Error
                 ap.UI().show_error("Could not setup project", "Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
                 sys.exit(0)
-
-            if integration_tags != None:
-                settings = aps.SharedSettings(self.context.workspace_id, f"{project_id}_integration_info")
-                settings.set("integration_tags", ";".join(integration_tags))
-                settings.store()
 
             print(f"project_path {project_path}")
             print(f"git_ignore {git_ignore}")   
