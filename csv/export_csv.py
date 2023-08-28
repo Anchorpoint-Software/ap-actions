@@ -1,6 +1,7 @@
 import os 
 import tempfile
 import anchorpoint
+import apsync
 from pathlib import Path
 from datetime import datetime
 
@@ -38,10 +39,13 @@ def read_attributes(selection,output_filename):
         output+=format_data(str(attribute.name).strip())+","
     output = output[:-1]+"\n"        
 
-    for path in selection:
-        output+= str(Path(path).stem)+","
+    for target in selection:
+        if isinstance(target, apsync.Task):
+            output+=target.name+","
+        else:
+            output+= str(Path(target).stem)+","
         for attribute in attributes:
-            attribute_value = api.attributes.get_attribute_value(path,attribute.name)            
+            attribute_value = api.attributes.get_attribute_value(target,attribute.name)            
             if(attribute_value is None):
                 output+=","
             else:
@@ -77,21 +81,25 @@ def create_temp_directory():
     temp_dir = tempfile.mkdtemp()
     return temp_dir
 
-def create_csv_files(folders,files):
+def create_csv_files(folder,folders,files,tasks):
     # start progress
     progress = anchorpoint.Progress("Creating CSV files", "Processing", infinite=True)
 
     temp_dir = create_temp_directory()
-    csv_folder_location = os.path.join(temp_dir,str(ctx.folder)+str("_folders.csv"))
-    csv_file_location = os.path.join(temp_dir,str(ctx.folder)+str("_files.csv"))
+    csv_folder_location = os.path.join(temp_dir,folder+"_folders.csv")
+    csv_file_location = os.path.join(temp_dir,folder+"_files.csv")
+    csv_task_location = os.path.join(temp_dir,folder+"_tasks.csv")
     csv_files=[]
 
-    if(folders):
+    if folders:
         read_attributes(folders,csv_folder_location)
         csv_files.append(csv_folder_location)
-    if(files):
+    if files:
         read_attributes(files,csv_file_location)
         csv_files.append(csv_file_location)
+    if tasks:
+        read_attributes(tasks,csv_task_location)
+        csv_files.append(csv_task_location)
 
     if not os.path.exists(csv_folder_location) and not os.path.exists(csv_file_location):
         ui.show_error("Cannot copy to clipboard","CSV file could not be generated")
@@ -107,5 +115,6 @@ ui = anchorpoint.UI()
 #Get the current selection of files and folders
 selected_files = ctx.selected_files
 selected_folders = ctx.selected_folders
+selected_tasks = ctx.selected_tasks
 
-ctx.run_async(create_csv_files,selected_folders,selected_files)
+ctx.run_async(create_csv_files,ctx.folder,selected_folders,selected_files,selected_tasks)
