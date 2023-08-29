@@ -78,14 +78,14 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 push.type = ap.ActionButtonType.Primary
                 push.tooltip = "Push all commits to the remote Git repository"
                 info.actions.append(push)
-            
+
         refresh = ap.TimelineChannelAction()
         refresh.name = "Refresh"
         refresh.icon = aps.Icon(":/icons/update.svg")
         refresh.identifier = "gitrefresh"
         refresh.tooltip = "Refresh the Git timeline"
         info.actions.append(refresh)
-    
+
         if has_conflicts:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
