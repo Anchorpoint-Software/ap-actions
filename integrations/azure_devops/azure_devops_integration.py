@@ -71,6 +71,8 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     try:
         client.add_user_to_organization(current_org, email)
         ap.UI().show_success(title='User added to Azure DevOps', duration=3000, description=f'User {email} added to organization {current_org}.')
+    except BillingSetupRequiredException as bsre:
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'You need to setup <a href="{bsre.href_url}">billing</a> to invite more members.')
     except Exception as e:
         ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually.')
 
@@ -124,6 +126,8 @@ def on_add_user_to_project(email, ctx: ap.Context):
         azureProject = client.get_project_by_name(current_org, project.name)
         client.add_user_to_project(current_org, email, azureProject.project_id)
         ap.UI().show_success(title='User added to Azure DevOps project', duration=3000, description=f'User {email} added to project {project.name}.')
+    except BillingSetupRequiredException as bsre:
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'You need to setup <a href="{bsre.href_url}">billing</a> to invite more members.')
     except Exception as e:
         ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually.')
         return

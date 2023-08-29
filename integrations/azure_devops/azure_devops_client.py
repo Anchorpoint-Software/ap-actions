@@ -37,6 +37,13 @@ class RemoteRepository:
     project_id: str
     repository_id: str
 
+class BillingSetupRequiredException(Exception):
+    def __init__(self, message, href_url):
+        self.message = message
+        self.href_url = href_url
+        super().__init__(self.message)
+
+
 class AzureDevOpsClient:
     def __init__(self, workspace_id: str, clear = False) -> None:
         super().__init__()
@@ -325,10 +332,30 @@ class AzureDevOpsClient:
                         if repo.display_name == name:
                             return repo
                     return None
+                
+    def _check_user_entitlements_result(self, response):
+        if not response:
+            raise Exception("Could not check user entitlements: ", response.text)
+        
+        data = response.json()
+        print(data)
+        if data.get('operationResult', {}).get('isSuccess', False) is False:
+            errors = data.get('operationResult', {}).get('errors', [])
+            
+            for error in errors:
+                if error.get('key', 0) == 5015:
+                    error_value = error.get('value', '')
+                    start_index = error_value.find('href="') + 6
+                    end_index = error_value.find('"', start_index)
+                    href_url = error_value[start_index:end_index]
+                    raise BillingSetupRequiredException("Billing setup is required", href_url)
+
+            raise Exception("Could not add user to organization")
 
     def add_user_to_organization(self, organization: str, user_email: str):
         body = {
             "accessLevel": {
+                "licensingSource": "account",
                 "accountLicenseType": "express" #basic
             },
             "user": {
@@ -338,8 +365,11 @@ class AzureDevOpsClient:
         }
         
         response = self._request_with_refresh(self.oauth.post, f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0", json=body)
+        print(f"Add user to organization: {response}")
         if not response:
             raise Exception("Could not add user to organization: ", response.text)
+        
+        self._check_user_entitlements_result(response)
 
         group_name = "Project Collection Administrators"
         group_descriptor = self._get_group_descriptor_by_name(organization, group_name)        
@@ -349,6 +379,7 @@ class AzureDevOpsClient:
     def add_user_to_project(self, organization: str, user_email: str, project_id: str):
         body = {
             "accessLevel": {
+                "licensingSource": "account",
                 "accountLicenseType": "express" #basic
             },
             "user": {
@@ -371,6 +402,8 @@ class AzureDevOpsClient:
         print(f"Add user to project: {response}")
         if not response:
             raise Exception("Could not add user to repository: ", response.text)
+        
+        self._check_user_entitlements_result(response)
 
 
     def remove_user_from_organization(self, organization: str, user_email: str):    
@@ -390,7 +423,7 @@ class AzureDevOpsClient:
     def _get_user_id_by_email(self, organization: str, user_email: str):
         response = self._request_with_refresh(self.oauth.get, f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?$filter=name+eq+'{urllib.parse.quote(user_email)}'+and+licenseId+eq+'Account-Express'&api-version=7.0")
         if not response:
-            raise Exception("Could not find user in project: ", response.text)
+            raise Exception("Could not find user: ", response.text)
         
         members_json = response.json()["members"]
         for member_json in members_json:
