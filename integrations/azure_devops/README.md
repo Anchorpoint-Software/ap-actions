@@ -1,8 +1,4 @@
-# Integrations
-
-Package for integrations provided by Anchorpoint
-
-## Azure Devops Integration
+# Azure Devops Integration
 
 With this integration you can connect anchorpoint to your azure devops organisation.
 

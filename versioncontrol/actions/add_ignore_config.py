@@ -35,6 +35,10 @@ def _add_git_ignore(path: str, yaml_dir: str, dialog: ap.Dialog):
     dialog.close()
     ap.UI().show_success("Ignore File Created")
 
+icon_map = {"Godot":":icons/organizations-and-products/godotEngine.svg", 
+            "Unity":":icons/organizations-and-products/unityEngine.svg", 
+            "UnrealEngine":":icons/organizations-and-products/unrealEngine.svg"}
+
 def get_ignore_file_dropdown_entries(yaml_dir):
     ignore_files_dir = get_ignore_dir(yaml_dir)
 
@@ -45,23 +49,21 @@ def get_ignore_file_dropdown_entries(yaml_dir):
             base_name, ext = os.path.splitext(f)
             if ext == '.gitignore':
                 entry = ap.DropdownEntry()
-                icon_filename = base_name + '.svg'
                 entry.name = base_name
-                if icon_filename in os.listdir(ignore_files_dir):
-                    entry.icon = os.path.join(ignore_files_dir, icon_filename)
+                entry.icon = icon_map.get(base_name, ":icons/Misc/git.svg")
                 dropdown_values.append(entry)
 
     return dropdown_values
 
-def get_ignore_file_default(ignore_template_names, path: str):
+def get_ignore_file_default(ignore_file_dropdown_entries, path: str):
     def type_exists(type: str):
         try:
             return any(file.endswith(type) for file in os.listdir(path))
         except:
             return False
 
-    for ignore_template in ignore_template_names:
-        if "Unreal" in ignore_template.name and type_exists(".uproject"): return ignore_template.name
+    for ignore_file_Entry in ignore_file_dropdown_entries:
+        if "Unreal" in ignore_file_Entry.name and type_exists(".uproject"): return ignore_file_Entry.name
     return None    
 
 if __name__ == "__main__":
