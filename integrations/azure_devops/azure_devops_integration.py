@@ -303,9 +303,10 @@ class DevopsIntegration(ap.ApIntegration):
             return
         dialog.set_valid(True)
 
-    def apply_org_callback(self, dialog: ap.Dialog, value):
+    def apply_org_callback(self, dialog: ap.Dialog):
         org = dialog.get_value(settings_org_dropdown_entry)
         self.client.set_current_organization(org)
+        dialog.close()
 
     def show_settings_dialog(self, current_org: str, organizations):
         dialog = ap.Dialog()
