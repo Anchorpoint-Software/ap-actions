@@ -29,7 +29,7 @@ def on_load_integrations(integrations, ctx: ap.Context):
 #         self.priority = 101 + index
 #         self.tags = ['git']
 
-#         icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.png")
+#         icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.svg")
 #         self.dashboard_icon = icon_path
 #         self.preferences_icon = icon_path
 #         self.is_setup = False
@@ -172,7 +172,7 @@ class DevopsIntegration(ap.ApIntegration):
         self.tags = integration_tags
         self.repos_loaded = False
 
-        icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.png")
+        icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.svg")
         self.dashboard_icon = icon_path
         self.preferences_icon = icon_path
         self.is_setup = self.client.is_setup()
@@ -312,7 +312,7 @@ class DevopsIntegration(ap.ApIntegration):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
         dialog.title = "Azure DevOps Settings"
-        dialog.icon = os.path.join(self.ctx.yaml_dir, "azure_devops/azure.svg")
+        dialog.icon = os.path.join(self.ctx.yaml_dir, "azure_devops/logo.svg")
 
         dialog.add_text("<b>Organization</b>", var="orgtext")
         dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry)
