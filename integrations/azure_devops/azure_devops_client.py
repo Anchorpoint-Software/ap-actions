@@ -327,6 +327,7 @@ class AzureDevOpsClient:
                 if operation_status in ["cancelled, failed"]:
                     raise Exception("Could not create project", response.text)
                 if operation_status == "succeeded":
+                    time.sleep(3)
                     repos = self.get_repositories(organization)
                     for repo in repos:
                         if repo.display_name == name:

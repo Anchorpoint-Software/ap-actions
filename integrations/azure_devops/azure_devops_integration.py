@@ -65,7 +65,7 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please add manually.')
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please add manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
         return
 
     try:
@@ -74,7 +74,7 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     except BillingSetupRequiredException as bsre:
         ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'You need to setup <a href="{bsre.href_url}">billing</a> to invite more members.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually.')
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
 
 def on_remove_user_from_workspace(email, ctx: ap.Context):
     client = AzureDevOpsClient(ctx.workspace_id)
@@ -88,14 +88,14 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot remove user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please remove manually.')
+        ap.UI().show_error(title='Cannot remove user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please remove manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
         return
 
     try:
         client.remove_user_from_organization(current_org, email)
         ap.UI().show_success(title='User removed from Azure DevOps', duration=3000, description=f'User {email} removed from organization {current_org}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
 
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
@@ -335,11 +335,11 @@ class DevopsIntegration(ap.ApIntegration):
             new_repo = self.client.create_project_and_repository(current_org, project_name)
             progress.set_text("")
             if new_repo is None:
-                raise Exception("Failed to create project")
+                raise Exception("Created project not found")
             return new_repo.https_url
         except Exception as e:
             if "project already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again.')
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             raise e
