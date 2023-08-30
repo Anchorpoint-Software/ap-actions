@@ -122,10 +122,10 @@ try:
             from add_ignore_config import get_ignore_file_dropdown_entries, NO_IGNORE
             dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
 
-            self.dialog.add_text("<b>.gitignore Template</b>", var="gitignoretext")
+            self.dialog.add_text("<b>Template for .gitignore</b>", var="gitignoretext")
             no_entry = ap.DropdownEntry()
             no_entry.name = NO_IGNORE
-            no_entry.icon = ":icons/Misc/git.svg"
+            no_entry.icon = ":icons/none.svg"
             dropdown_values.insert(0, no_entry)
             self.dialog.add_dropdown(no_entry.name, dropdown_values, var="ignore_dropdown")
             self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
@@ -157,7 +157,7 @@ try:
             self.create_project_dropdown_entries.append(local_entry)
             self.dialogVarMap[local_entry.name] = []
 
-            self.dialog.add_dropdown(remote_entry.name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change, filterable = True)
+            self.dialog.add_dropdown(self.create_project_dropdown_entries[0].name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change)
 
             #create dialog entries for each dropdown entry
             for integration in self.git_integrations:
@@ -172,7 +172,7 @@ try:
             if repo_url != "":
                 self.dialog.set_value(remote_entry_url_input, repo_url)
             self.dialogVarMap[remote_entry.name] = [remote_entry_url_input]
-            self.toggle_row_visibility(self.dialog,remote_entry.name)
+            self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
 
         def on_dropdown_change(self, dialog, value):
             self.toggle_row_visibility(dialog,value)
