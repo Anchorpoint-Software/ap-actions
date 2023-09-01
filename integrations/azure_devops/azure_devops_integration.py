@@ -191,7 +191,7 @@ class DevopsIntegration(ap.ApIntegration):
 
     def _setup_not_connected_state(self):
         self.preferences_actions.clear()
-        connect = ap.IntegrationPreferenceAction()
+        connect = ap.IntegratioAction()
         connect.name = "Connect"
         connect.enabled = True
         connect.icon = aps.Icon(":/icons/plug.svg")
@@ -203,7 +203,7 @@ class DevopsIntegration(ap.ApIntegration):
 
     def _setup_connected_state(self):
         self.preferences_actions.clear()
-        disconnect = ap.IntegrationPreferenceAction()
+        disconnect = ap.IntegratioAction()
         disconnect.name = "Disconnect"
         disconnect.enabled = True
         disconnect.icon = aps.Icon(":/icons/unPlug.svg")
@@ -211,7 +211,7 @@ class DevopsIntegration(ap.ApIntegration):
         disconnect.tooltip = "Disconnect from Azure DevOps"
         self.preferences_actions.append(disconnect)
 
-        settings = ap.IntegrationPreferenceAction()
+        settings = ap.IntegrationAction()
         settings.name = "Settings"
         settings.enabled = True
         settings.icon = aps.Icon(":/icons/wheel.svg")
@@ -220,7 +220,7 @@ class DevopsIntegration(ap.ApIntegration):
         self.preferences_actions.append(settings)
 
         self.create_project_actions.clear()
-        createRepo = ap.IntegrationCreateProjectAction()
+        createRepo = ap.IntegrationAction()
         createRepo.name = "New Azure DevOps Repository"
         createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
@@ -231,7 +231,7 @@ class DevopsIntegration(ap.ApIntegration):
 
     def _setup_reconnect_state(self):
         self.preferences_actions.clear()
-        reconnect = ap.IntegrationPreferenceAction()
+        reconnect = ap.IntegrationAction()
         reconnect.name = "Reconnect"
         reconnect.enabled = True
         reconnect.icon = aps.Icon(":/icons/plug.svg")
