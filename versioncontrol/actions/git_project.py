@@ -140,7 +140,7 @@ try:
 
             #create dropdown entries
             for integration in self.git_integrations:
-                for action in integration.create_project_actions:
+                for action in integration.get_create_project_actions():
                     entry = ap.DropdownEntry()
                     entry.name = action.name
                     entry.icon = action.icon.path
@@ -163,7 +163,7 @@ try:
             for integration in self.git_integrations:
                 if not integration.is_setup or not integration.is_connected:
                     continue
-                for action in integration.create_project_actions:
+                for action in integration.get_create_project_actions():
                     self.dialogVarMap[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
 
             self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, callback=self.remote_changed, validate_callback=validate_url)
