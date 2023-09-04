@@ -3,7 +3,7 @@ import anchorpoint as ap
 import apsync as aps
 import sys, os
 
-NO_IGNORE = "No .gitingore"
+NO_IGNORE = "No .gitignore"
 
 def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
     try:
