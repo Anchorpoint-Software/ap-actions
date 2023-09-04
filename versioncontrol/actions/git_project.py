@@ -177,7 +177,7 @@ try:
         def on_dropdown_change(self, dialog, value):
             self.toggle_row_visibility(dialog,value)
             for integration in self.git_integrations:
-                for action in integration.create_project_actions:
+                for action in integration.get_create_project_actions():
                     if action.name == value:
                         integration.on_create_project_dialog_entry_selected(action.identifier, dialog)
                         break
@@ -239,7 +239,7 @@ try:
                 remote_enabled = False
             else:
                 for integration in self.git_integrations:
-                    for action in integration.create_project_actions:
+                    for action in integration.get_create_project_actions():
                         if action.name == action_id:
                             repo_url = integration.setup_project(action.identifier, self.dialog, self.project.name, progress)
                             integration_tags = integration.tags
