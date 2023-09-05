@@ -2,6 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 import os, re, sys
 from datetime import datetime
+from template_settings import get_workspace_template_dir, get_callback_location
 
 import template_utility
 
@@ -42,8 +43,8 @@ template_dir = os.path.join(ctx.yaml_dir, template)
 yaml_dir = ctx.yaml_dir
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
-template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
-callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
+template_dir = os.path.join(get_workspace_template_dir(settings, template_dir), template_subdir)
+callback_file = get_callback_location(settings, template_dir)
 
 if project:
     project_templates_location = template_utility.get_template_dir(project.path)
