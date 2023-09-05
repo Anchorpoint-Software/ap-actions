@@ -172,12 +172,13 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
 
         progress = ap.Progress("Restoring Files", show_loading_screen=True)
 
-        # Check if any file to revert is locked by an application
         relative_selected_paths = set()
+
         for path in files:
             relpath = os.path.relpath(path, repo_root)
             relative_selected_paths.add(relpath.replace("\\", "/"))
-            utility.make_file_writable(path)
+            if not keep_original:
+                utility.make_file_writable(path)
             if not keep_original and not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error):
