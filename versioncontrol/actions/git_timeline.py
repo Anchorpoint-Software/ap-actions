@@ -48,6 +48,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
+        from git_push import push_in_progress
 
         progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=2000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
@@ -69,7 +70,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 pull.type = ap.ActionButtonType.Primary
                 pull.tooltip = "Get all changed files from the remote Git repository"
                 info.actions.append(pull)
-            elif repo.is_push_required():
+            elif repo.is_push_required() and not push_in_progress(repo.get_git_dir()):
                 push = ap.TimelineChannelAction()
                 push.name = "Push"
                 push.icon = aps.Icon(":/icons/upload.svg")
@@ -77,14 +78,14 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
                 push.type = ap.ActionButtonType.Primary
                 push.tooltip = "Push all commits to the remote Git repository"
                 info.actions.append(push)
-            
+
         refresh = ap.TimelineChannelAction()
         refresh.name = "Refresh"
         refresh.icon = aps.Icon(":/icons/update.svg")
         refresh.identifier = "gitrefresh"
         refresh.tooltip = "Refresh the Git timeline"
         info.actions.append(refresh)
-    
+
         if has_conflicts:
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
@@ -439,6 +440,7 @@ def handle_git_autolock(repo, ctx, changes):
     import pickle
     lfsExtensions = LFSExtensionTracker(repo)
     paths_to_lock = set[str]()
+    all_paths = set[str]()
 
     path_mod_status = {}
     file_path = get_forced_unlocked_config_path()
@@ -452,6 +454,8 @@ def handle_git_autolock(repo, ctx, changes):
     
     for change in changes:
         if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
+            all_paths.add(change.path)
+
             # Do not lock files that are manually unlocked
             entry_exists = change.path in path_mod_status
             if os.path.exists(change.path):
@@ -474,7 +478,7 @@ def handle_git_autolock(repo, ctx, changes):
 
     paths_to_unlock = list[str]()
     for lock in locks:
-        if lock.owner_id == ctx.user_id and lock.path not in paths_to_lock and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
+        if lock.owner_id == ctx.user_id and lock.path not in all_paths and "type" in lock.metadata and lock.metadata["type"] == "git" and "gitbranch" not in lock.metadata:
             paths_to_unlock.append(lock.path)
 
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
@@ -487,6 +491,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
+        from git_push import push_in_progress
 
         from git_settings import GitAccountSettings
         git_settings = GitAccountSettings(ctx)
@@ -517,9 +522,10 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
 
         has_changes = len(info.changes)
 
+        is_push_in_progress = push_in_progress(repo.get_git_dir())
         is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
-        commit.name = "Commit" if not auto_push else "Push"
+        commit.name = "Commit" if not auto_push or is_push_in_progress else "Push"
         commit.identifier = "gitcommit"
         commit.icon = aps.Icon(":/icons/submit.svg")
         commit.type = ap.ActionButtonType.Primary
@@ -669,6 +675,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
     sys.path.insert(0, script_dir)
+    progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     lock_disabler = ap.LockDisabler()
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
@@ -690,8 +697,6 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                     ap.UI().show_info("Cannot switch branch", "Unreal Engine prevents the switching of branches. Please close Unreal Engine and try again", duration = 10000)
                     return
 
-        progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
-        
         try:
             repo.switch_branch(branch)
         except Exception as e:

@@ -5,15 +5,18 @@
 
 version: 1.0
 action:
-  name: Git Commands
+  name: Integrations
 
   version: 1
-  id: git::commands
-  category: git
-  type: python
+  id: ap::package::integrations
+  category: integrations
+  type: package
+  enable: true
   author: Anchorpoint Software GmbH
-  description: Shows useful Git commands
-  icon:
-    path: :/icons/versioncontrol.svg
+  description: Integrations for various tools and platforms
 
-  script: git_commands.py
+  icon:
+    path: "integrations.svg"
+
+  actions:
+    - ap::integrations::azure_devops

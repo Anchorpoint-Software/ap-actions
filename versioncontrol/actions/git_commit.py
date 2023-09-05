@@ -187,6 +187,8 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     ui = ap.UI()
     
     from git_settings import GitAccountSettings
+    from git_push import push_in_progress
+
     git_settings = GitAccountSettings(ctx)
 
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
@@ -220,7 +222,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         repo.commit(message)
         handle_git_autolock(repo, ctx, staged)
 
-        if auto_push:
+        if auto_push and not push_in_progress(repo.get_git_dir()):
             # Queue async to give Anchorpoint a chance to update the timeline
             ap.get_context().run_async(delay, commit_auto_push, progress, ctx, repo, channel_id)
         else:

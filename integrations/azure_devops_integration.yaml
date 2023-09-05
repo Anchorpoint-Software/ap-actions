@@ -5,15 +5,14 @@
 
 version: 1.0
 action:
-  name: Git Commands
+  name: Azure DevOps Integration
 
   version: 1
-  id: git::commands
-  category: git
+  id: ap::integrations::azure_devops
+  category: integrations
   type: python
+  enable: true
   author: Anchorpoint Software GmbH
-  description: Shows useful Git commands
-  icon:
-    path: :/icons/versioncontrol.svg
+  description: Integration for Azure DevOps
 
-  script: git_commands.py
+  script: azure_devops/azure_devops_integration.py

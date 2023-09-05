@@ -62,7 +62,7 @@ def project_settings():
         print("Skipped project settings example: No active Project")
         return 
 
-    # Create a Settings object and identify it with the current active workspace
+    # Create a Settings object and identify it with the project id
     settings = aps.Settings(identifier = project.id)
     set_settings(settings, "my project setting", 5)
 
