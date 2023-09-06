@@ -27,10 +27,7 @@ def _get_callback_location_impl(callback_dir, template_dir):
     if os.path.isabs(callback_dir):
         return os.path.join(callback_dir, "template_action_events.py")
     else:
-        callback_dir = os.path.join(template_dir, callback_dir, "template_action_events.py")
-        if os.path.exists(callback_dir):
-            return callback_dir
-        print(f"Callback file not found: {callback_dir}")
+        return os.path.join(template_dir, callback_dir, "template_action_events.py")
 
 def get_callback_location(settings, template_dir):
     callback_dir = settings.get("callback_dir", "")
@@ -49,7 +46,7 @@ def apply_callback(dialog : ap.Dialog):
     
     template_dir = _get_workspace_template_dir_impl(template_dir_win, template_dir_mac, template_dir_win)
     callback_file = _get_callback_location_impl(dir, template_dir)
-    if len(callback_file) > 0:
+    if callback_file and len(callback_file) > 0:
         if os.path.exists(callback_file) == False:
             callback_dir = os.path.dirname(callback_file)
             if os.path.exists(callback_dir) == False:
