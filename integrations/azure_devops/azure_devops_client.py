@@ -338,8 +338,8 @@ class AzureDevOpsClient:
         if not response:
             raise Exception("Could not check user entitlements: ", response.text)
         
+        print(f"Check user entitlements response: {response}")
         data = response.json()
-        print(data)
         if data.get('operationResult', {}).get('isSuccess', False) is False:
             errors = data.get('operationResult', {}).get('errors', [])
             
@@ -458,7 +458,7 @@ class AzureDevOpsClient:
     
     def _add_user_to_group(self, organization: str, user_descriptor: str, group_descriptor: str, group_name: str):
         membership_check_response = self._request_with_refresh(self.oauth.get,f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
-        print(membership_check_response)
+        print(f"User group membership response {membership_check_response}")
 
         if membership_check_response.status_code == 200:
             print(f"User is already a member of {group_name} group")

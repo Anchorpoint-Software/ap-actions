@@ -22,6 +22,12 @@ def validate_url(dialog: ap.Dialog, value):
     else:
         return
     
+def validate_dropdown(dialog: ap.Dialog, value, setup_integration_visible):
+    if setup_integration_visible:
+        return "Please setup integration"
+    else:
+        return
+    
 def get_repo_url(git, path):
     try:
         repo = git.GitRepository.load(path)
@@ -42,6 +48,7 @@ def path_changed(dialog: ap.Dialog, git, path, ctx):
     url = get_repo_url(git, path)
     if url and url != "":
         dialog.set_value("url", url)
+    
 
 def add_git_ignore(repo, context, project_path, ignore_value = None):
     script_dir = os.path.dirname(__file__)
@@ -102,7 +109,6 @@ try:
                 sys.exit(0)
 
             repo_url = None
-            remote_enabled = True
             try:
                 if self.git and os.path.exists(path) and path != "":
                     repo = self.git.GitRepository.load(path)
@@ -117,6 +123,7 @@ try:
                 path_placeholder = "/Projects/ACME_Commercial"            
 
 
+            self.setup_integration_visible = False
             self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: path_changed(d,self.git,v,ctx))
 
             from add_ignore_config import get_ignore_file_dropdown_entries, NO_IGNORE
@@ -139,48 +146,69 @@ try:
             self.dialogVarMap = {}
 
             #create dropdown entries
-            for integration in self.git_integrations:
-                for action in integration.get_create_project_actions():
-                    entry = ap.DropdownEntry()
-                    entry.name = action.name
-                    entry.icon = action.icon.path
-                    self.create_project_dropdown_entries.append(entry)
+            if repo_url == "":
+                for integration in self.git_integrations:
+                    for action in integration.get_create_project_actions():
+                        entry = ap.DropdownEntry()
+                        entry.name = action.name
+                        entry.icon = action.icon.path
+                        self.create_project_dropdown_entries.append(entry)
 
             remote_entry = ap.DropdownEntry()
             remote_entry.name = remote_dropdown_entry_name
             remote_entry.icon = ":icons/Misc/git.svg"
             self.create_project_dropdown_entries.append(remote_entry)
 
-            local_entry = ap.DropdownEntry()
-            local_entry.name = no_remote_dropdown_entry_name
-            local_entry.icon = ":icons/desktop.svg"
-            self.create_project_dropdown_entries.append(local_entry)
-            self.dialogVarMap[local_entry.name] = []
+            if repo_url == "":
+                local_entry = ap.DropdownEntry()
+                local_entry.name = no_remote_dropdown_entry_name
+                local_entry.icon = ":icons/desktop.svg"
+                self.create_project_dropdown_entries.append(local_entry)
+                self.dialogVarMap[local_entry.name] = []
 
-            self.dialog.add_dropdown(self.create_project_dropdown_entries[0].name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change)
+            self.setup_integration_visible = False
+            self.dialog.add_dropdown(self.create_project_dropdown_entries[0].name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change, validate_callback=lambda d,v: validate_dropdown(d,v,self.setup_integration_visible))
 
             #create dialog entries for each dropdown entry
-            for integration in self.git_integrations:
-                if not integration.is_setup or not integration.is_connected:
-                    continue
-                for action in integration.get_create_project_actions():
-                    self.dialogVarMap[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
+            if repo_url == "":
+                for integration in self.git_integrations:
+                    for action in integration.get_create_project_actions():
+                        self.dialogVarMap[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
 
-            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, callback=self.remote_changed, validate_callback=validate_url)
+            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url)
             self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=False)
+
             self.dialog.hide_row(setup_integration_btn,True)
-            if repo_url != "":
-                self.dialog.set_value(remote_entry_url_input, repo_url)
             self.dialogVarMap[remote_entry.name] = [remote_entry_url_input]
-            self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
+            if repo_url == "":
+                self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
+                self.dialog.set_value(create_project_dropdown, self.create_project_dropdown_entries[0].name)
+                self.on_dropdown_change(self.dialog, self.create_project_dropdown_entries[0].name)
+            else:
+                self.dialog.set_value(remote_entry_url_input, repo_url)
+                self.toggle_row_visibility(self.dialog,remote_dropdown_entry_name)
+                self.dialog.set_value(create_project_dropdown, remote_dropdown_entry_name)
 
         def on_dropdown_change(self, dialog, value):
+            self.setup_integration_visible = False
             self.toggle_row_visibility(dialog,value)
             for integration in self.git_integrations:
+                action_found = False
                 for action in integration.get_create_project_actions():
                     if action.name == value:
-                        integration.on_create_project_dialog_entry_selected(action.identifier, dialog)
+                        action_found = True
+                        if(not integration.is_setup or not integration.is_connected):
+                            dialog.set_value(setup_integration_btn, f"Setup {integration.name} Integration")
+                            self.setup_integration_name = integration.name
+                            dialog.hide_row(setup_integration_btn,False)
+                            self.setup_integration_visible = True
+                        else:
+                            integration.on_create_project_dialog_entry_selected(action.identifier, dialog)
                         break
+                if action_found:
+                    break
+            if not self.setup_integration_visible:
+                dialog.hide_row(setup_integration_btn,True)
 
         def toggle_row_visibility(self, dialog,value):
                 row_vars = self.dialogVarMap[value]
