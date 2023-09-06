@@ -189,9 +189,15 @@ class DevopsIntegration(ap.ApIntegration):
         else:
             self._setup_not_connected_state()
 
+        createRepo = ap.IntegrationAction()
+        createRepo.name = "New Azure DevOps Repository"
+        createRepo.identifier = create_repo_dialog_entry
+        createRepo.enabled = True
+        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOpsNew.svg")
+        self.add_create_project_action(createRepo)
+
     def _setup_not_connected_state(self):
         self.clear_preferences_actions()
-        self.clear_create_project_actions()
 
         connect = ap.IntegrationAction()
         connect.name = "Connect"
@@ -204,7 +210,6 @@ class DevopsIntegration(ap.ApIntegration):
 
     def _setup_connected_state(self):
         self.clear_preferences_actions()
-        self.clear_create_project_actions()
 
         disconnect = ap.IntegrationAction()
         disconnect.name = "Disconnect"
@@ -222,18 +227,10 @@ class DevopsIntegration(ap.ApIntegration):
         settings.tooltip = "Open settings for Azure DevOps integration"
         self.add_preferences_action(settings)
 
-        createRepo = ap.IntegrationAction()
-        createRepo.name = "New Azure DevOps Repository"
-        createRepo.identifier = create_repo_dialog_entry
-        createRepo.enabled = True
-        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOpsNew.svg")
-        self.add_create_project_action(createRepo)
-
         self.is_connected = True
 
     def _setup_reconnect_state(self):
         self.clear_preferences_actions()
-        self.clear_create_project_actions()
 
         reconnect = ap.IntegrationAction()
         reconnect.name = "Reconnect"
@@ -289,9 +286,6 @@ class DevopsIntegration(ap.ApIntegration):
         except Exception as e:
             ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
             return
-
-    def supports_create_project(self, remote):
-        return any(azure_remote in remote for azure_remote in ["dev.azure.com", "visualstudio.com"])
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
         if action_id == create_repo_dialog_entry:
