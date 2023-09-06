@@ -47,7 +47,7 @@ def apply_callback(dialog : ap.Dialog):
     template_dir_win = dialog.get_value("template_dir")
     template_dir_mac = dialog.get_value("template_dir_mac")
     
-    template_dir = _get_workspace_template_dir_impl(template_dir_win, template_dir_mac, template_dir)
+    template_dir = _get_workspace_template_dir_impl(template_dir_win, template_dir_mac, template_dir_win)
     callback_file = _get_callback_location_impl(dir, template_dir)
     if len(callback_file) > 0:
         if os.path.exists(callback_file) == False:
