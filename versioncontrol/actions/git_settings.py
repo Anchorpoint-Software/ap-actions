@@ -36,7 +36,6 @@ class GitAccountSettings(ap.AnchorpointSettings):
     
     def notifications_enabled(self):
         return self.get_settings().get("notifications", True)
-    
 
 def apply_git_url(dialog, ctx, repo_path):
     sys.path.insert(0, current_dir)
@@ -171,6 +170,10 @@ class GitProjectSettings(ap.AnchorpointSettings):
 
             self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False)
             self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
+            self.dialog.add_empty()
+
+            self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in empty folders", callback=lambda d,v: d.store_settings())
+            self.dialog.add_info("Git does not track empty folders. Anchorpoint will create a hidden <i>.gitkeep</i> file<br>in new folders to make sure they are tracked by Git.")
 
             self.dialog.load_settings(self.get_settings())
 
@@ -179,6 +182,9 @@ class GitProjectSettings(ap.AnchorpointSettings):
     
     def get_settings(self):
         return aps.Settings("GitProjectSettings", self.ctx.project_id)
+    
+    def gitkeep_enabled(self):
+        return self.get_settings().get("gitkeep", True)
 
 
 def on_show_account_preferences(settings_list, ctx: ap.Context):
