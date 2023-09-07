@@ -158,12 +158,13 @@ class GitProjectSettings(ap.AnchorpointSettings):
         if repo:
             url = repo.get_remote_url()
 
-            self.dialog.add_text("Repository URL")
+            self.dialog.add_text("<b>Repository URL</b>")
             self.dialog.add_input(url if url else "", var="url", width=400)
             self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
-            self.dialog.add_button("Apply", callback=lambda d: apply_git_url(d, self.ctx, path))
+            self.dialog.add_button("Apply URL", callback=lambda d: apply_git_url(d, self.ctx, path))
 
             self.dialog.add_empty()
+            self.dialog.add_text("<b>Git Commands</b>")
             self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
             self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
             self.dialog.add_empty()
@@ -172,8 +173,11 @@ class GitProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
             self.dialog.add_empty()
 
-            self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in empty folders", callback=lambda d,v: d.store_settings())
-            self.dialog.add_info("Git does not track empty folders. Anchorpoint will create a hidden <i>.gitkeep</i> file<br>in new folders to make sure they are tracked by Git.")
+            self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
+            self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")
+
+            self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: d.store_settings())
+            self.dialog.add_info("Disable this to manually configure Git LFS for files using a <i>.gitattributes</i> file.")
 
             self.dialog.load_settings(self.get_settings())
 
@@ -186,6 +190,8 @@ class GitProjectSettings(ap.AnchorpointSettings):
     def gitkeep_enabled(self):
         return self.get_settings().get("gitkeep", True)
 
+    def lfsautotrack_enabled(self):
+        return self.get_settings().get("autolfs", True)
 
 def on_show_account_preferences(settings_list, ctx: ap.Context):
     gitSettings = GitAccountSettings(ctx)

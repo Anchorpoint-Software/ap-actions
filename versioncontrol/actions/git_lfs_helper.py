@@ -11,7 +11,7 @@ def _file_bytes_binary(path: str):
     if not os.path.exists(path): return False
     return is_binary(path) and not _is_file_filtered(path)
 
-def _file_is_binary(path: str):
+def file_is_binary(path: str):
     mime_type = mimetypes.guess_type(path)
     if not mime_type: return _file_bytes_binary(path)
     if not isinstance(mime_type[0],str): return _file_bytes_binary(path)
@@ -44,7 +44,7 @@ def _collect_binaries(paths, repo, progress_callback = None):
         if extension in collected_extensions or path in collected_paths: 
             continue
 
-        if _file_is_binary(path):        
+        if file_is_binary(path):        
             if len(extension) == 0:     
                 collected_paths.add(path)
             else:
@@ -89,7 +89,12 @@ class LFSExtensionTracker:
     
     def is_file_tracked(self, path):
         try:
-            extension = os.path.splitext(path)[1]
-            return self.is_extension_tracked(extension[1:])
+            _, ext = os.path.splitext(path)
+            if ext and len(ext) > 1:
+                if self.is_extension_tracked(ext[1:]):
+                    return True
+            
+            filename = os.path.basename(path)
+            return filename in self.lfs_patterns
         except:
             return False

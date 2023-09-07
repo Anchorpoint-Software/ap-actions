@@ -14,7 +14,7 @@ from vc.apgit.utility import get_repo_path
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)
 
-def stage_files(changes, all_files_selected, repo, lfs, progress):
+def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_files = True):
     def lfs_progress_callback(current, max):
         if progress.canceled:
             return False
@@ -30,10 +30,11 @@ def stage_files(changes, all_files_selected, repo, lfs, progress):
     if len(to_stage) == 0:
         return
 
-    progress.set_text("Finding binary files")
-    lfs.lfs_track_binary_files(to_stage, repo, lfs_progress_callback)
-    if progress.canceled: 
-        return
+    if track_binary_files:
+        progress.set_text("Finding binary files")
+        lfs.lfs_track_binary_files(to_stage, repo, lfs_progress_callback)
+        if progress.canceled: 
+            return
 
     progress.stop_progress()
     progress.set_text("Preparing your files to be committed. This may take some time")
@@ -186,7 +187,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     if action_id != "gitcommit": return False
     ui = ap.UI()
     
-    from git_settings import GitAccountSettings
+    from git_settings import GitAccountSettings, GitProjectSettings
     from git_push import push_in_progress
 
     git_settings = GitAccountSettings(ctx)
@@ -198,8 +199,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         if not repo: return
 
         auto_push = git_settings.auto_push_enabled() and repo.has_remote()
+        auto_track_lfs = GitProjectSettings(ctx).lfsautotrack_enabled()
 
-        stage_files(changes, all_files_selected, repo, lfs, progress)
+        stage_files(changes, all_files_selected, repo, lfs, progress, auto_track_lfs)
         if progress.canceled:
             ui.show_success("commit canceled")
             return

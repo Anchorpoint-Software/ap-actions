@@ -883,6 +883,7 @@ def on_timeout(ctx):
 
 def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None
+    from git_lfs_helper import file_is_binary
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -893,24 +894,39 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
 
         info = ap.VCGetChangesInfo()
         rel_path = os.path.relpath(ctx.path, ctx.project_path).replace("\\", "/")
+
+        is_binary = file_is_binary(ctx.path)
         
         if entry_id:
             if entry_id == "vcStashedChanges":
                 stash = repo.get_branch_stash()
                 if not stash:
                     return None
-                info.modified_content = repo.get_stash_content(rel_path, stash).rstrip()
-                info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+                if not is_binary:
+                    try:
+                        info.modified_content = repo.get_stash_content(rel_path, stash).rstrip()
+                        info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+                    except:
+                        print("on_vc_get_changes_info exception: could not load stash content for changes info")
             else:
-                info.modified_content = repo.get_file_content(rel_path, entry_id).rstrip()
-                info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
+                if not is_binary:
+                    try:
+                        info.modified_content = repo.get_file_content(rel_path, entry_id).rstrip()
+                        info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
+                    except:
+                        print("on_vc_get_changes_info exception: could not load commit content for changes info")
             
         else:
-            info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+            if not is_binary:
+                try:
+                    info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+                except:
+                    print("on_vc_get_changes_info exception: could not load HEAD content for changes info")
             if os.path.exists(ctx.path):
-                with open(ctx.path, encoding="utf-8") as f:                
-                    info.modified_content = f.read().rstrip()
-                    info.modified_filepath = ctx.path
+                if not is_binary:
+                    with open(ctx.path, encoding="utf-8") as f:                
+                        info.modified_content = f.read().rstrip()
+                info.modified_filepath = ctx.path
             else:
                 info.modified_content = ""
                 info.modified_filepath = ctx.path
@@ -920,6 +936,6 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     except Exception as e:
         import git_errors
         git_errors.handle_error(e)
-        print("on_vc_get_changes_info exception: " + str(e))
+        print("on_vc_get_changes_info exception")
         return None
     
