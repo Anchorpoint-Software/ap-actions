@@ -174,7 +174,6 @@ class DevopsIntegration(ap.ApIntegration):
         self.description = "Create repositories, add participants and do it all directly in Anchorpoint.<br>Each participant will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/'>Learn more</a>"
         self.priority = 100
         self.tags = integration_tags
-        self.repos_loaded = False
 
         icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.svg")
         self.dashboard_icon = icon_path
@@ -252,6 +251,7 @@ class DevopsIntegration(ap.ApIntegration):
             self.start_update()
         elif action_id == reconnect_action_id:
             self.client.start_auth()
+            self.start_auth()
         elif action_id == settings_action_id:
             try:
                 user = self.client.get_user()
@@ -298,11 +298,6 @@ class DevopsIntegration(ap.ApIntegration):
     def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str, progress: ap.Progress):
         if action_id == create_repo_dialog_entry:
             return self.create_new_repo(project_name, progress)
-
-    def on_repository_selected(self, dialog: ap.Dialog, value):
-        if value == "Pick a Repository":
-            return
-        dialog.set_valid(True)
 
     def apply_org_callback(self, dialog: ap.Dialog):
         org = dialog.get_value(settings_org_dropdown_entry)
