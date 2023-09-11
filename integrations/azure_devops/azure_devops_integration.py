@@ -257,10 +257,11 @@ class DevopsIntegration(ap.ApIntegration):
                 user = self.client.get_user()
                 organizations = self.client.get_organizations(user)
                 current_org = self.client.get_current_organization()
+                display_name = self.client.get_user().display_name
                 if current_org is None:
                     current_org = organizations[0]
                     self.client.set_current_organization(current_org)
-                self.show_settings_dialog(current_org, organizations)
+                self.show_settings_dialog(current_org, display_name, organizations)
             except Exception as e:
                 ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
                 return
@@ -274,11 +275,11 @@ class DevopsIntegration(ap.ApIntegration):
                 raise Exception("No organizations found")
 
             current_org = self.client.get_current_organization()
+            display_name = self.client.get_user().display_name
             if current_org is None:
                 current_org = organizations[0]
                 self.client.set_current_organization(current_org)
-            if len(organizations) > 1:
-                self.show_settings_dialog(current_org, organizations)
+            self.show_settings_dialog(current_org, display_name, organizations)
             self._setup_connected_state()
             self.is_setup = True
             self.is_connected = True
@@ -302,19 +303,28 @@ class DevopsIntegration(ap.ApIntegration):
     def apply_org_callback(self, dialog: ap.Dialog):
         org = dialog.get_value(settings_org_dropdown_entry)
         self.client.set_current_organization(org)
+
+        import webbrowser
+        webbrowser.open(f"https://dev.azure.com/{org}/_settings/organizationPolicy")
         dialog.close()
 
-    def show_settings_dialog(self, current_org: str, organizations):
+    def show_settings_dialog(self, current_org: str, display_name: str, organizations):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
         dialog.title = "Azure DevOps Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "azure_devops/logo.svg")
+
+        dialog.add_text("<b>Account</b>", var="accounttext")
+        dialog.add_text(display_name, var="accountemail")
 
         dialog.add_text("<b>Organization</b>", var="orgtext")
         dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry)
 
         if len(organizations) > 1:
             dialog.add_info("It looks like you have multiple organizations on Azure DevOps.<br>Select the one you want to connect to this Anchorpoint workspace.")
+            dialog.add_empty()
+
+        dialog.add_info("Make sure that <b>Third-party application access via OAuth</b> is enabled for your organization.<br>Pressing <b>Apply</b> will try to open organization policies so you can check if it is enabled.")
 
         dialog.add_empty()
         dialog.add_button("Apply", var="apply", callback=self.apply_org_callback)
