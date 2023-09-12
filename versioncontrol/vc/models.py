@@ -88,6 +88,7 @@ class Branch:
     name: str
     id: Optional[str] = None
     last_changed: Optional[datetime] = None
+    author: Optional[str] = None
     is_local: bool = True
 
 @dataclass

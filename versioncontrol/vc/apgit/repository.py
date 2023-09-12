@@ -1111,8 +1111,9 @@ class GitRepository(VCRepository):
             commit = ref.commit
             model = Branch(ref.name)
             model.id = commit.hexsha
-            model.last_changed = commit.committed_datetime
+            model.last_changed = commit.authored_datetime
             model.is_local = ref.is_remote == False
+            model.author = commit.author.email
             return model
 
         branches = []

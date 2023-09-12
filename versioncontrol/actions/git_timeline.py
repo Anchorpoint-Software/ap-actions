@@ -108,6 +108,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         for b in branches:
             branch = ap.VCBranch()
             branch.name = b.name
+            branch.author = b.author
+            branch.moddate = b.last_changed
             info.branches.append(branch)
 
             if b.name == current_branch_name:
