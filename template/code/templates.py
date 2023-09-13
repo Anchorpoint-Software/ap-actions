@@ -24,6 +24,8 @@ folder_templates = {}
 # Stores available tokens per template
 template_available_tokens = {}
 
+username = ctx.username
+
 if "create_project" in ctx.inputs:
     create_project = ctx.inputs["create_project"]
 else:
@@ -161,6 +163,9 @@ def resolve_tokens(variable_list):
         elif variable == "ProjectFolder":
             projectFolder = os.path.basename(os.path.normpath(ctx.project_path))
             variables["ProjectFolder"] = str(projectFolder)
+        elif variable == "User":
+            username_underscore = username.replace(" ", "_").replace(".", "_").lower()
+            variables["User"] = str(username_underscore)
         elif variable not in variables:
             variables[variable] = ""
 
