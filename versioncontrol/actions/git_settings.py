@@ -136,6 +136,27 @@ def prune(project_path):
 def prune_pressed(ctx: ap.Context):
     ctx.run_async(prune, ctx.project_path)
 
+def clear_credentials_async(dialog, repo_path):
+    try:
+        dialog.set_processing("updatecreds", True, "Updating")
+        sys.path.insert(0, current_dir)
+        sys.path.insert(0, script_dir)
+        from vc.apgit.repository import GitRepository
+        if current_dir in sys.path: sys.path.remove(current_dir)
+        if script_dir in sys.path: sys.path.remove(script_dir)
+        
+        repo = GitRepository.load(repo_path)
+        if repo.clear_credentials():
+            repo.fetch()
+            ap.UI().show_success("Credentials updated")
+        else:
+            ap.UI().show_error("Could not clear credentials")
+    finally:
+        dialog.set_processing("updatecreds", False)
+
+def update_credentials_pressed(dialog, ctx: ap.Context, repo_path):
+    ctx.run_async(clear_credentials_async, dialog, repo_path)
+
 class GitProjectSettings(ap.AnchorpointSettings):
     def __init__(self, ctx: ap.Context):
         super().__init__()
@@ -157,21 +178,25 @@ class GitProjectSettings(ap.AnchorpointSettings):
         repo = GitRepository.load(path)
         if repo:
             url = repo.get_remote_url()
+            is_azure = "azure" in url
 
             self.dialog.add_text("<b>Repository URL</b>")
             self.dialog.add_input(url if url else "", var="url", width=400)
             self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
             self.dialog.add_button("Apply URL", callback=lambda d: apply_git_url(d, self.ctx, path))
-
             self.dialog.add_empty()
+
             self.dialog.add_text("<b>Git Commands</b>")
             self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
             self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
-            self.dialog.add_empty()
 
             self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False)
             self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
-            self.dialog.add_empty()
+
+            if not is_azure:
+                self.dialog.add_button("Update Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path), primary=False)
+                self.dialog.add_info("This will show you the login dialog again to update your credentials.")
+                self.dialog.add_empty()
 
             self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
             self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")

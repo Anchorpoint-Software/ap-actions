@@ -1462,3 +1462,46 @@ class GitRepository(VCRepository):
         except Exception as e:
             logging.info(f"Error getting file content for {path} at stash {stash_id}")
             return ""
+        
+    def clear_credentials(self):
+        def reject_git_credential(url):
+            from urllib.parse import urlparse
+            # Parse the URL to get the host
+            parsed_url = urlparse(url)
+            if not parsed_url.netloc:
+                raise ValueError("Invalid URL format")
+            
+            host = parsed_url.netloc.lower()  # Ensure host is lowercase
+            
+            # Construct the command to call git credential reject
+            cmd = ["git", "credential", "reject"]
+            
+            # Pass the host as stdin to the command
+            input_data = f"host={host}\nprotocol=https\n\n"
+            
+            try:
+                # Run the command and pass input_data as stdin
+                result = subprocess.run(
+                    cmd,
+                    input=input_data,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                # Check for errors
+                if result.returncode != 0:
+                    raise Exception(f"Error: {result.stderr}")
+                
+                return result.stdout
+            except Exception as e:
+                return str(e)
+            
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: remote = "origin"
+        remote_url = self._get_remote_url(remote)
+        result = reject_git_credential(remote_url)
+        if result == "": return True
+        print(result)
+        return False
