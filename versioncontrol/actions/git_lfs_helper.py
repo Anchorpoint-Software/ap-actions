@@ -80,7 +80,7 @@ class LFSExtensionTracker:
             for line in f.readlines():
                 if line.startswith('#'): continue
                 if 'filter=lfs' in line:
-                    self.lfs_patterns.append(line.split()[0])
+                    self.lfs_patterns.append(line.split()[0].lower())
     
     def is_extension_tracked(self, extension):
         for pattern in self.lfs_patterns:
@@ -95,7 +95,7 @@ class LFSExtensionTracker:
                 if self.is_extension_tracked(ext[1:]):
                     return True
             
-            relpath = os.path.relpath(path, self.root_path)
+            relpath = os.path.relpath(path, self.root_path).lower()
             return relpath in self.lfs_patterns
         except:
             return False
