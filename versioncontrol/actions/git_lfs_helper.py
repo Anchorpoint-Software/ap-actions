@@ -72,6 +72,7 @@ class LFSExtensionTracker:
     def __init__(self, repo) -> None:
         self.gitattributes_path = os.path.join(repo.get_root_path(), '.gitattributes')
         self.lfs_patterns = []
+        self.root_path = repo.get_root_path()
         if not os.path.exists(self.gitattributes_path):
             return
         
@@ -94,7 +95,7 @@ class LFSExtensionTracker:
                 if self.is_extension_tracked(ext[1:]):
                     return True
             
-            filename = os.path.basename(path)
-            return filename in self.lfs_patterns
+            relpath = os.path.relpath(path, self.root_path)
+            return relpath in self.lfs_patterns
         except:
             return False

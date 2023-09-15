@@ -11,7 +11,7 @@ from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-import logging
+import logging, re
 import gc, subprocess, platform
 from datetime import datetime
 import anchorpoint as ap
@@ -1274,7 +1274,7 @@ class GitRepository(VCRepository):
             if len(remote_branches) == 0:
                 type = HistoryType.LOCAL
             else:
-                type = HistoryType.SYNCED if self.branch_contains(entry_id) else HistoryType.REMOTE
+                type = HistoryType.SYNCED if not self.commit_not_pulled(entry_id) else HistoryType.REMOTE
             return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
         return None
 
@@ -1321,6 +1321,11 @@ class GitRepository(VCRepository):
 
         return changes
 
+    def commit_not_pulled(self, changelist_id: str):
+        # Don't use branch --contains as it becomes very slow for big repos
+        if not self.has_remote(): return False
+        commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        return changelist_id in commits
 
     def branch_contains(self, changelist_id: str):
         branch_name = self.get_current_branch_name()
@@ -1355,12 +1360,16 @@ class GitRepository(VCRepository):
 
         pass
 
-    def get_lfs_filehash(self, paths: list[str], ref: str = None):
-        import re
+    def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
+        if paths != None and len(paths) == 0:
+            return {}
+               
         args = ["ls-files"] 
         if ref:
             args.append(ref)
-        args.extend(["-l", "-I", *paths])
+        args.append("-l")
+        if paths != None and len(paths) < 31:
+            args.extend(["-I", ",".join(paths)])
         output = self.repo.git.lfs(*args)
         result = {}
         hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)

@@ -28,14 +28,13 @@ def get_lfs_cached_file(sha256, repo_dir):
         first_digits = sha256[:2]
         second_digits = sha256[2:4]
         lfs_cache_file = os.path.join(repo_dir, ".git", "lfs", "objects", first_digits, second_digits, sha256)
-        print(f"Checking for LFS cached file: {lfs_cache_file}")
         if not os.path.exists(lfs_cache_file):
             return None
         return lfs_cache_file
     except Exception as e:
         print(f"get_lfs_cached_file exception: {str(e)}")
         return None
-
+    
 def fetch_lfs_file(file, branch, repo, progress = None):
     repo.fetch_lfs_files([branch], [file], progress)
     pass

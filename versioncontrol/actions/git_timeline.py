@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import platform, re
+import platform, re, sys
 from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
@@ -19,16 +19,16 @@ def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool)
 def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool = False):
     for file in repo_changes.new_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
-        changes[change.path] = change
+        changes[file.path] = change
     for file in repo_changes.modified_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.Modified, selected)
-        changes[change.path] = change
+        changes[file.path] = change
     for file in repo_changes.deleted_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.Deleted, selected)
-        changes[change.path] = change
+        changes[file.path] = change
     for file in repo_changes.renamed_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.Renamed, selected)
-        changes[change.path] = change
+        changes[file.path] = change
 
 def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
     for conflict in conflicts:
@@ -395,7 +395,6 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         if git_settings.notifications_enabled():
             last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
             if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
-                print("New commits to pull")
                 if commits_to_pull == 1:
                     ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
                 else:
@@ -486,6 +485,42 @@ def handle_git_autolock(repo, ctx, changes):
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
 
+def get_cached_paths(ref, repo, changes):
+    sys.path.insert(0, current_dir)
+    from git_load_file import get_lfs_cached_file
+    from git_lfs_helper import LFSExtensionTracker
+    if current_dir in sys.path: sys.path.remove(current_dir)
+
+    lfsExtensions = LFSExtensionTracker(repo)
+
+    currentrefs = []
+    beforerefs = [] # ref^ for deleted files
+
+    repo_dir = repo.get_root_path()        
+
+    keys = changes.keys()
+    for change_path in keys:
+        change = changes[change_path]
+        if not lfsExtensions.is_file_tracked(change.path):
+            continue
+        if change.status == ap.VCFileStatus.Deleted:
+            beforerefs.append(change_path)
+        else:
+            currentrefs.append(change_path)
+    
+    hashes = repo.get_lfs_filehash(paths=currentrefs, ref=ref)
+    beforehashes = repo.get_lfs_filehash(paths=beforerefs, ref=ref + "^")
+    for change_path in keys:
+        if change_path in hashes:
+            file_hash = hashes[change_path]
+            changes[change_path].cached_path = get_lfs_cached_file(file_hash, repo_dir)
+            changes[change_path].cachable = True
+        elif change_path in beforehashes:
+            file_hash = beforehashes[change_path]
+            changes[change_path].cached_path = get_lfs_cached_file(file_hash, repo_dir)
+            changes[change_path].cachable = True
+
+
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
         import sys, os
@@ -512,6 +547,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
         parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
         parse_conflicts(repo_dir, repo.get_conflicts(), changes)
+
+        get_cached_paths("HEAD", repo, changes)
 
         info = ap.VCPendingChangesInfo()
         info.changes = ap.VCPendingChangeList(changes.values())
@@ -579,12 +616,12 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
 
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
+        get_cached_paths(entry_id, repo, changes)
 
         has_remote = repo.has_remote()
-
         current_commit = repo.get_current_change_id()
 
-        if repo.branch_contains(entry_id):
+        if not repo.commit_not_pulled(entry_id):
             revert = ap.TimelineChannelAction()
             revert.name = "Undo Commit"
             revert.icon = aps.Icon(":/icons/undo.svg")
