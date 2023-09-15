@@ -485,7 +485,7 @@ def handle_git_autolock(repo, ctx, changes):
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
 
-def get_cached_paths(ref, repo, changes):
+def get_cached_paths(ref, repo, changes, deleted_only = False):
     sys.path.insert(0, current_dir)
     from git_load_file import get_lfs_cached_file
     from git_lfs_helper import LFSExtensionTracker
@@ -501,6 +501,9 @@ def get_cached_paths(ref, repo, changes):
     keys = changes.keys()
     for change_path in keys:
         change = changes[change_path]
+        if deleted_only and change.status != ap.VCFileStatus.Deleted:
+            continue
+        
         if not lfsExtensions.is_file_tracked(change.path):
             continue
         if change.status == ap.VCFileStatus.Deleted:
@@ -548,7 +551,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
         parse_conflicts(repo_dir, repo.get_conflicts(), changes)
 
-        get_cached_paths("HEAD", repo, changes)
+        get_cached_paths("HEAD", repo, changes, deleted_only=True)
 
         info = ap.VCPendingChangesInfo()
         info.changes = ap.VCPendingChangeList(changes.values())
