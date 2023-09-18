@@ -185,7 +185,7 @@ def show_repository_not_found_error(message):
         d.icon = ":/icons/versioncontrol.svg"
         d.add_text(f"The URL {url}<br>cannot be found under your account.")
         d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
-        d.add_button("OK")
+        d.add_button("OK", callback=lambda d: d.close())
         d.show()
         return True
 
