@@ -503,7 +503,7 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
         change = changes[change_path]
         if deleted_only and change.status != ap.VCFileStatus.Deleted:
             continue
-        
+
         if not lfsExtensions.is_file_tracked(change.path):
             continue
         if change.status == ap.VCFileStatus.Deleted:
@@ -512,7 +512,11 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
             currentrefs.append(change_path)
     
     hashes = repo.get_lfs_filehash(paths=currentrefs, ref=ref)
-    beforehashes = repo.get_lfs_filehash(paths=beforerefs, ref=ref + "^")
+    try:
+        beforehashes = repo.get_lfs_filehash(paths=beforerefs, ref=ref + "^")
+    except:
+        beforehashes = []
+        pass
     for change_path in keys:
         if change_path in hashes:
             file_hash = hashes[change_path]
@@ -679,6 +683,7 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
         
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_stash_changes(stash), changes)
+        get_cached_paths(f"stash@{{{stash.id}}}", repo, changes)
 
         has_changes = repo.has_pending_changes(True)
 
