@@ -178,7 +178,6 @@ class GitProjectSettings(ap.AnchorpointSettings):
         repo = GitRepository.load(path)
         if repo:
             url = repo.get_remote_url()
-            is_azure = "azure" in url
 
             self.dialog.add_text("<b>Repository URL</b>")
             self.dialog.add_input(url if url else "", var="url", width=400)
@@ -193,10 +192,9 @@ class GitProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False)
             self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
-            if not is_azure:
-                self.dialog.add_button("Update Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path), primary=False)
-                self.dialog.add_info("This will show you the login dialog again to update your credentials.")
-                self.dialog.add_empty()
+            self.dialog.add_button("Update Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path), primary=False)
+            self.dialog.add_info("This will show you the login dialog again to update your credentials.")
+            self.dialog.add_empty()
 
             self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
             self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")

@@ -1481,13 +1481,14 @@ class GitRepository(VCRepository):
                 raise ValueError("Invalid URL format")
             
             host = parsed_url.netloc.lower()  # Ensure host is lowercase
+            path = parsed_url.path.lower()
             
             # Construct the command to call git credential reject
             cmd = ["git", "credential", "reject"]
             
             # Pass the host as stdin to the command
-            input_data = f"host={host}\nprotocol=https\n\n"
-            
+            input_data = f"host={host}\nprotocol=https\npath={path}\n"
+
             try:
                 # Run the command and pass input_data as stdin
                 result = subprocess.run(
