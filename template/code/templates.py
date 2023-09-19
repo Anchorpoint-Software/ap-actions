@@ -166,6 +166,12 @@ def resolve_tokens(variable_list):
         elif variable == "User":
             username_underscore = username.replace(" ", "_").replace(".", "_").lower()
             variables["User"] = str(username_underscore)
+        elif variable == "UserInitials":
+            username_split = username.split(" ")
+            initials = ""
+            for name in username_split:
+                initials += name[0].lower()
+            variables["UserInitials"] = str(initials)
         elif variable not in variables:
             variables[variable] = ""
 
