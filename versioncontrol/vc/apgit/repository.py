@@ -378,6 +378,9 @@ class GitRepository(VCRepository):
                         if "Unable to parse pointer at" in str(apply_filter_error):
                             # This is not an error, it just means that the file was not a LFS pointer
                             pass
+                        elif "Downloading" in str(apply_filter_error):
+                            # This is not an error, it just prints progress
+                            pass
                         else:
                             print(f"Error in smudge filter command: {apply_filter_error}")
                             raise Exception(apply_filter_error)

@@ -931,18 +931,21 @@ def on_timeout(ctx):
 def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None
     from git_lfs_helper import file_is_binary
+    from git_load_file import get_lfs_cached_file
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
+        from git_lfs_helper import LFSExtensionTracker
 
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return None
+        lfsExtensions = LFSExtensionTracker(repo)
 
         info = ap.VCGetChangesInfo()
         rel_path = os.path.relpath(ctx.path, ctx.project_path).replace("\\", "/")
 
-        is_binary = file_is_binary(ctx.path)
+        is_binary = lfsExtensions.is_file_tracked(ctx.path) or file_is_binary(ctx.path)
         
         if entry_id:
             if entry_id == "vcStashedChanges":
@@ -955,6 +958,13 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
                         info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
                     except:
                         print("on_vc_get_changes_info exception: could not load stash content for changes info")
+                else:
+                    try:
+                        # TODO: set info.original_filepath to allow an image diff view in the detail page
+                        hash = repo.get_lfs_filehash(paths=[rel_path], ref=f"stash@{{{stash.id}}}")[rel_path]
+                        info.modified_filepath = get_lfs_cached_file(hash, path)
+                    except:
+                        pass
             else:
                 if not is_binary:
                     try:
@@ -962,7 +972,21 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
                         info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
                     except:
                         print("on_vc_get_changes_info exception: could not load commit content for changes info")
-            
+                else:
+                    try:
+                        # TODO: set info.original_filepath to allow an image diff view in the detail page
+                        hash = None
+                        hashes = repo.get_lfs_filehash(paths=[rel_path], ref=entry_id)
+                        if rel_path in hashes:
+                            hash = hashes[rel_path]
+                        else:
+                            hashes = repo.get_lfs_filehash(paths=[rel_path], ref=entry_id + "^")
+                            if rel_path in hashes:
+                                hash = hashes[rel_path]
+                        if hash:
+                            info.modified_filepath = get_lfs_cached_file(hash, path)
+                    except:
+                        pass
         else:
             if not is_binary:
                 try:
