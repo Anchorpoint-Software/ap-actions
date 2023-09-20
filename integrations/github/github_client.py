@@ -96,6 +96,18 @@ class GitHubClient:
         settings.set("token", base64.b64encode(t.encode()).decode())
         settings.store()
 
+        import sys, os
+        script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+        sys.path.insert(0, script_dir)
+        from vc.apgit.repository import GitRepository
+        try:
+            GitRepository.store_credentials("github.com", "https", "Personal Access Token", token["access_token"])
+        except Exception as e:
+            print(f"Could not store credentials: {str(e)}")
+        finally:
+            if script_dir in sys.path:
+                sys.path.remove(script_dir)
+
     def is_setup(self) -> bool:
         settings = aps.Settings(f"{self.workspace_id}_github")
         token64 = settings.get("token", None)
@@ -131,6 +143,18 @@ class GitHubClient:
         settings = aps.Settings(f"{self.workspace_id}_github")
         settings.clear()
         settings.store()
+
+        import sys, os
+        script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+        sys.path.insert(0, script_dir)
+        from vc.apgit.repository import GitRepository
+        try:
+            GitRepository.erase_credentials("github.com", "https")
+        except Exception as e:
+            print(f"Could not erase credentials: {str(e)}")
+        finally:
+            if script_dir in sys.path:
+                sys.path.remove(script_dir)
 
     def setup_refresh_token(self):
         success = self.init()

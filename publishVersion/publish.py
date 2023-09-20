@@ -44,7 +44,23 @@ def copy():
             if(settings["publish_file_location"] != ""):
                 new_location=settings["publish_file_location"]
         except:
-            new_location = ctx.folder        
+            new_location = ctx.folder
+
+        #possibility to publish in parent folder and adding relative paths
+        location_split = new_location.split("../")
+        backsteps = len(location_split)
+        if(backsteps > 1):
+            new_location = ctx.folder
+            x = range(1, backsteps)
+            for i in x:
+                new_location = os.path.dirname(new_location)
+            appendix = location_split[-1]
+
+            new_location = new_location+"/"+appendix
+            # check if folder is correct
+            if(not os.path.isdir(new_location)):
+                ui.show_error(f"Folder not set correctly","Please check your output folder in the settings.")
+                return        
 
         new_path = os.path.join(new_location,new_name_appendix+"."+ctx.suffix)
 

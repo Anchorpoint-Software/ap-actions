@@ -1474,6 +1474,24 @@ class GitRepository(VCRepository):
         except Exception as e:
             logging.info(f"Error getting file content for {path} at stash {stash_id}")
             return ""
+
+    @staticmethod    
+    def store_credentials(host: str, protocol: str, username: str, password: str):
+        from subprocess import run
+        
+        cmd = [install_git.get_gcm_path(), "store"]
+        p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
+        if p.returncode != 0:
+            raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
+        
+    @staticmethod    
+    def erase_credentials(host: str, protocol: str):
+        from subprocess import run
+        
+        cmd = [install_git.get_gcm_path(), "erase"]
+        p = run(cmd, input=f"host={host}\nprotocol={protocol}", text=True)
+        if p.returncode != 0:
+            raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
     def clear_credentials(self):
         def reject_git_credential(url):
