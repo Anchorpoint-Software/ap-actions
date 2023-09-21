@@ -21,3 +21,4 @@ action:
   actions:
     - ap::integrations::azure_devops
     - ap::integrations::github
+    - ap::integrations::gitlab
