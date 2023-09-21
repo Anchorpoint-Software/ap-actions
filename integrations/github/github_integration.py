@@ -301,7 +301,6 @@ class GithubIntegration(ap.ApIntegration):
                 entry.icon = org.avatar_url
             else:
                 entry.icon = ":/icons/organizations-and-products/github.svg"
-            entry.icon = org.avatar_url
             entry.use_icon_color = True
             dropdown_entries.append(entry)
 
