@@ -174,7 +174,7 @@ class GitHubClient:
         data = response.json()
         return Organization(id=data["id"], 
                             login=data["login"],
-                            name=data["name"], 
+                            name=data["name"] if data["name"] is not None else data["login"],
                             avatar_url=data["avatar_url"],
                             is_user=True)
     
