@@ -201,6 +201,13 @@ class GitHubClient:
         orgs.append(user)
         orgs.extend(self._get_user_organizations())
         return orgs
+    
+    def generate_github_project_name(self, name):
+        import re
+        repo_name = name.replace(" ", "-")
+        repo_name = re.sub(r"[^a-zA-Z0-9-]", "-", repo_name).lower()
+        repo_name = repo_name[:100]
+        return repo_name.strip("-")
 
     def create_repository(self, organization: Organization, name: str):
         if organization.is_user:
@@ -259,7 +266,7 @@ class GitHubClient:
                 member_email = member.get('email', '')
                 member_login = member.get('login', '')
 
-                if member_email == user_email or user_email.split("@")[0] == member_login:
+                if member_email == user_email or self._email_matches_username(user_email, member_login):
                     remove_url = f"{github_api_url}/orgs/{organization.login}/members/{member_login}"
                     remove_response = self.oauth.delete(remove_url)
 

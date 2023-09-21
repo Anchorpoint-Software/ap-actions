@@ -93,12 +93,13 @@ def on_add_user_to_project(email, ctx: ap.Context):
         client.add_user_to_repository(current_org, email, project.name)
         ap.UI().show_success(title='User added to GitHub repository', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
+        repo_name = client.generate_github_project_name(project.name)
         if "Organization is required." in str(e):
-            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No organization found. Please add manually <a href="https://github.com/{current_org.login}/{project.name}/settings/access">here</a>.')
+            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No organization found. Please add manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
         elif "No matching member found." in str(e):
-            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No matching organisation member found. Please add manually <a href="https://github.com/{current_org.login}/{project.name}/settings/access">here</a>.')
+            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No matching organisation member found. Please add manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
         else:
-            ap.UI().show_error(title='Cannot add user to GitHub repository', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually <a href="https://github.com/{current_org.login}/{project.name}/settings/access">here</a>.')
+            ap.UI().show_error(title='Cannot add user to GitHub repository', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
@@ -130,12 +131,13 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         client.remove_user_from_repository(current_org, email, project.name)
         ap.UI().show_success(title='User removed from GitHub repository', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
+        repo_name = client.generate_github_project_name(project.name)
         if "Organization is required." in str(e):
-            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No organization found. Please remove manually <a href="https://github.com/{current_org.login}/{project.name}/settings/access">here</a>.')
+            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No organization found. Please remove manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
         elif "No matching member found." in str(e):
-            ap.UI().show_info(title='Cannot remove user from GitHub repository', duration=8000, description=f'No matching organisation member found. Please remove manually <a href="https://github.com/{current_org.login}/{project.name}/settings/access">here</a>.')
+            ap.UI().show_info(title='Cannot remove user from GitHub repository', duration=8000, description=f'No matching organisation member found. Please remove manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
         else:
-            ap.UI().show_error(title='Cannot remove user from GitHub repository', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please remove manually <a href="https://github.com/{current_org.login}/{project.name}/settings/access">here</a>.')
+            ap.UI().show_error(title='Cannot remove user from GitHub repository', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please remove manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
         return
 
 class GithubIntegration(ap.ApIntegration):
