@@ -1503,6 +1503,9 @@ class GitRepository(VCRepository):
             
             host = parsed_url.netloc.lower()  # Ensure host is lowercase
             path = parsed_url.path.lower()
+
+            if "@" in host:
+                host = host.split("@")[1]
             
             # Construct the command to call git credential reject
             cmd = ["git", "credential", "reject"]
