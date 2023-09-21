@@ -259,7 +259,7 @@ class GitHubClient:
                 member_email = member.get('email', '')
                 member_login = member.get('login', '')
 
-                if member_email == user_email or user_email.startswith(member_login):
+                if member_email == user_email or user_email.split("@")[0] == member_login:
                     remove_url = f"{github_api_url}/orgs/{organization.login}/members/{member_login}"
                     remove_response = self.oauth.delete(remove_url)
 
@@ -309,7 +309,7 @@ class GitHubClient:
                 member_email = member.get('email', '')
                 member_login = member.get('login', '')
 
-                if member_email == user_email or user_email.startswith(member_login):
+                if member_email == user_email or user_email.split("@")[0] == member_login:
                     invite_url = f"{github_api_url}/repos/{organization.login}/{name}/collaborators/{member_login}"
                     data = {
                         "permission": permission
@@ -341,7 +341,7 @@ class GitHubClient:
                 member_email = member.get('email', '')
                 member_login = member.get('login', '')
 
-                if member_email == user_email or user_email.startswith(member_login):
+                if member_email == user_email or user_email.split("@")[0] == member_login:
                     remove_url = f"{github_api_url}/repos/{organization.login}/{name}/collaborators/{member_login}"
                     remove_response = self.oauth.delete(remove_url)
 
