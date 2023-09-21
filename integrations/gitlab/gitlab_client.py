@@ -246,6 +246,11 @@ class GitlabClient:
             print(f"Invitation sent to {user_email} successfully.")
         else:
             raise Exception("Could not invite user to group: ", response.text)
+        
+
+    def _email_matches_username(self, email: str, username: str) -> bool:
+        email = email.replace('.', '-').replace(' ', '-')
+        return email.split("@")[0] == username
 
     def remove_user_from_group(self, group: Group, user_email: str):
         if group.is_user:
@@ -257,7 +262,7 @@ class GitlabClient:
         if response.status_code == 200:
             members = response.json()
             for member in members:
-                if user_email.split("@")[0] == member.get("username"):
+                if self._email_matches_username(user_email, member.get("username")):
                     # Found the user as a member, remove them
                     remove_url = f"{member_url}/{member['id']}"
                     remove_response = self.oauth.delete(remove_url)
@@ -336,7 +341,6 @@ class GitlabClient:
         if not response:
             raise Exception("Failed to remove user from project.")
         return True
-            
 
     def add_user_to_project(self, group: Group, user_email: str, name: str):
         project_id = self._get_project_id_by_name(name, group)
@@ -355,7 +359,7 @@ class GitlabClient:
         if response.status_code == 200:
             members = response.json()
             for member in members:
-                if user_email.split("@")[0] == member.get("username"):
+                if self._email_matches_username(user_email, member.get("username")):
                     # Found the user as a member, remove them
                     remove_url = f"{member_url}/{member['id']}"
                     remove_response = self.oauth.delete(remove_url)

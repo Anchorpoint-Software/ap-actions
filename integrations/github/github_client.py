@@ -294,6 +294,10 @@ class GitHubClient:
             raise Exception("Could not fetch organization invitations.")
 
         raise Exception("Could not remove user from organization: No matching member or invitation found.")
+    
+    def _email_matches_username(self, email: str, username: str) -> bool:
+        email = email.replace('.', '-').replace(' ', '-')
+        return email.split("@")[0] == username
 
     def add_user_to_repository(self, organization: Organization, user_email: str, name: str, permission: str = "maintain"):
         if organization.is_user:
@@ -309,7 +313,7 @@ class GitHubClient:
                 member_email = member.get('email', '')
                 member_login = member.get('login', '')
 
-                if member_email == user_email or user_email.split("@")[0] == member_login:
+                if member_email == user_email or self._email_matches_username(user_email, member_login):
                     invite_url = f"{github_api_url}/repos/{organization.login}/{name}/collaborators/{member_login}"
                     data = {
                         "permission": permission
@@ -341,7 +345,7 @@ class GitHubClient:
                 member_email = member.get('email', '')
                 member_login = member.get('login', '')
 
-                if member_email == user_email or user_email.split("@")[0] == member_login:
+                if member_email == user_email or self._email_matches_username(user_email, member_login):
                     remove_url = f"{github_api_url}/repos/{organization.login}/{name}/collaborators/{member_login}"
                     remove_response = self.oauth.delete(remove_url)
 
