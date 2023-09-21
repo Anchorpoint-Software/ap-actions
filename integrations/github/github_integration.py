@@ -24,7 +24,7 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot add user to GitHub', duration=6000, description=f'Failed to get current organization. Please add manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
+        ap.UI().show_error(title='Cannot add user to GitHub', duration=6000, description=f'Failed to get current organization. Please add manually.')
         return
     
     if current_org.is_user:
@@ -48,7 +48,7 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot remove user to GitHub', duration=6000, description=f'Failed to get current organization. Please remove manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
+        ap.UI().show_error(title='Cannot remove user to GitHub', duration=6000, description=f'Failed to get current organization. Please remove manually.')
         return
     
     if current_org.is_user:
@@ -297,6 +297,10 @@ class GithubIntegration(ap.ApIntegration):
         for org in organizations:
             entry = ap.DropdownEntry()
             entry.name = org.name
+            if org.avatar_url is not None:
+                entry.icon = org.avatar_url
+            else:
+                entry.icon = ":/icons/organizations-and-products/github.svg"
             entry.icon = org.avatar_url
             entry.use_icon_color = True
             dropdown_entries.append(entry)
