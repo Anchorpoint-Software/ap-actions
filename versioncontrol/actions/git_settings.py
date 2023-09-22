@@ -182,7 +182,14 @@ class GitProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_text("<b>Repository URL</b>")
             self.dialog.add_input(url if url else "", var="url", width=400)
             self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
-            self.dialog.add_button("Apply URL", callback=lambda d: apply_git_url(d, self.ctx, path))
+            self.dialog.add_button("Apply URL", callback=lambda d: apply_git_url(d, self.ctx, path), primary=False)
+            self.dialog.add_empty()
+
+            self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
+            self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")
+
+            self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: d.store_settings())
+            self.dialog.add_info("Disable this to manually configure Git LFS for files using a <i>.gitattributes</i> file.")
             self.dialog.add_empty()
 
             self.dialog.add_text("<b>Git Commands</b>")
@@ -194,13 +201,6 @@ class GitProjectSettings(ap.AnchorpointSettings):
 
             self.dialog.add_button("Update Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path), primary=False)
             self.dialog.add_info("This will show you the login dialog again to update your credentials.")
-            self.dialog.add_empty()
-
-            self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
-            self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")
-
-            self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: d.store_settings())
-            self.dialog.add_info("Disable this to manually configure Git LFS for files using a <i>.gitattributes</i> file.")
 
             self.dialog.load_settings(self.get_settings())
 
