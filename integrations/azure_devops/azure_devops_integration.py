@@ -11,6 +11,7 @@ settings_action_id = "azure_devops_settings"
 settings_org_dropdown_entry = "organization_dropdown"
 create_repo_dialog_entry = "azure_devops_create_repo"
 repo_dropdown_entry = "azure_devops_repository_dropdown"
+create_dialog_info_entry = "azure_devops_create_dialog_info"
 
 def on_load_integrations(integrations, ctx: ap.Context):
     # for i in range(15):
@@ -290,6 +291,9 @@ class DevopsIntegration(ap.ApIntegration):
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
         if action_id == create_repo_dialog_entry:
+            if self.is_setup:
+                dialog.add_text("You eventually need to <b>log into</b> Azure DevOps again after the final step", var=create_dialog_info_entry)
+                return [create_dialog_info_entry]
             return []
 
     def on_create_project_dialog_entry_selected(self, action_id: str, dialog: ap.Dialog):
