@@ -142,21 +142,51 @@ if __name__ == "__main__":
         if not value or len(value) == 0:
             return "Please add a Git repository URL"
         return
+    
+    def get_dialog_info(url: str, info_type: str):
+        services = {
+            "dev.azure": ("Azure DevOps", ":/icons/organizations-and-products/AzureDevOps.svg", "Azure DevOps"),
+            "visualstudio": ("Azure DevOps", ":/icons/organizations-and-products/AzureDevOps.svg", "Azure DevOps"),
+            "github": ("GitHub", ":/icons/organizations-and-products/github.svg", "GitHub"),
+            "gitlab": ("GitLab", ":/icons/organizations-and-products/gitlab.svg", "GitLab"),
+            "bitbucket": ("Bitbucket", ":/icons/organizations-and-products/bitbucket.svg", "Bitbucket")
+        }
+
+        service_name, service_icon, service_info = ("Git", ":/icons/versioncontrol.svg", "your Git Server")
+
+        for key in services.keys():
+            if key in url:
+                service_name, service_icon, service_info = services[key]
+                break
+
+        if info_type == "title":
+            return f"Join {service_name} Repository"
+        elif info_type == "icon":
+            return service_icon
+        elif info_type == "additional_info":
+            return f"You eventually need to <b>log into</b> {service_info}"
+        else:
+            return None  # Handle invalid info_type if needed
 
     def update_dialog(dialog: ap.Dialog, value):
         dialog.set_enabled("join", dialog.is_valid())
 
     dialog = ap.Dialog()
-    dialog.title = "Join Git Repository"
-    dialog.icon = ctx.icon
     
     path_placeholder = "Z:\\Projects\\ACME_Commercial"
     if platform.system() == "Darwin":
-        path_placeholder = "/Projects/ACME_Commercial"    
+        path_placeholder = "/Projects/ACME_Commercial"
+
+    additional_info = None
 
     try:
         remote_url = timeline_channel.metadata["gitRemoteUrl"]
+        dialog.title = get_dialog_info(remote_url, "title")
+        dialog.icon = get_dialog_info(remote_url, "icon")
+        additional_info = get_dialog_info(remote_url, "additional_info")
     except:
+        dialog.title = "Join Git Repository"
+        dialog.icon = ctx.icon
         remote_url = None
 
     dialog.add_text("<b>Project Folder</b>")
@@ -171,6 +201,9 @@ if __name__ == "__main__":
     browse_path = settings.get("browse_path")
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
+
+    if additional_info is not None:
+        dialog.add_text(additional_info)
     
     dialog.add_button("Join", var="join", callback=lambda d: join_repo(d, remote_url, project, timeline_channel, ctx), enabled=False)
     dialog.show()
