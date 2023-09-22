@@ -7,6 +7,7 @@ remote_dropdown_entry_name = "Connect via Https"
 no_remote_dropdown_entry_name = "No Remote"
 remote_entry_url_input = "remote_entry_url_input"
 setup_integration_btn = "setup_integration_btn"
+remote_entry_login_info_text= "remote_entry_login_info_text"
 
 def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
@@ -36,6 +37,21 @@ def get_repo_url(git, path):
         return None
     except:
         return None
+    
+def url_changed(dialog: ap.Dialog, value):
+    git_provider = "your Git Server"
+    if "dev.azure" in value:
+        git_provider = "Azure DevOps"
+    elif "visualstudio" in value:
+        git_provider = "Azure DevOps"
+    elif "github" in value:
+        git_provider = "GitHub"
+    elif "gitlab" in value:
+        git_provider = "GitLab"
+    elif "bitbucket" in value:
+        git_provider = "Bitbucket"
+        
+    dialog.set_value(remote_entry_login_info_text, f"You eventually need to <b>log into</b> {git_provider} after the final step")
 
 def path_changed(dialog: ap.Dialog, git, path, ctx):
     from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
@@ -175,11 +191,12 @@ try:
                     for action in integration.get_create_project_actions():
                         self.dialogVarMap[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
 
-            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url)
+            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url, callback=url_changed)
+            self.dialog.add_text("You eventually need to <b>log into</b> your Git server after the final step", var=remote_entry_login_info_text)
             self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=False)
 
             self.dialog.hide_row(setup_integration_btn,True)
-            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input]
+            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input, remote_entry_login_info_text]
             if repo_url == "":
                 self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
                 self.dialog.set_value(create_project_dropdown, self.create_project_dropdown_entries[0].name)
