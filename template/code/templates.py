@@ -135,9 +135,17 @@ def get_template_variables(dir):
 def resolve_tokens(variable_list):
     for variable in variable_list:
         # Increment logic is simple, we just check for the object count in the folder
+        increment = len(os.listdir(target_folder))+1
         if variable == "Increment":
-            increment = len(os.listdir(target_folder))+1
             variables["Increment"] = str(increment*10).zfill(4)
+        if variable == "Inc####":
+            variables["Inc####"] = str(increment).zfill(4)
+        if variable == "Inc###":
+            variables["Inc###"] = str(increment).zfill(3)
+        if variable == "Inc##":
+            variables["Inc##"] = str(increment).zfill(2)
+        if variable == "Inc#":
+            variables["Inc#"] = str(increment)
         
         # If the token is a date, add the value to the dict
         elif variable == "YYYY":
