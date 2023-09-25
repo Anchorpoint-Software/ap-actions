@@ -145,7 +145,7 @@ if __name__ == "__main__":
     
     def get_dialog_info(url: str, info_type: str):
         services = {
-            "dev.azure": ("Azure DevOps", ":/icons/organizations-and-products/AzureDevOps.svg", "Azure DevOps"),
+            "dev.azure": ("Azure DevOps", ":/icons/organizations-and-products/AzureDevOps.svg", "Azure DevOps (Visual Studio)"),
             "visualstudio": ("Azure DevOps", ":/icons/organizations-and-products/AzureDevOps.svg", "Azure DevOps"),
             "github": ("GitHub", ":/icons/organizations-and-products/github.svg", "GitHub"),
             "gitlab": ("GitLab", ":/icons/organizations-and-products/gitlab.svg", "GitLab"),
@@ -164,7 +164,7 @@ if __name__ == "__main__":
         elif info_type == "icon":
             return service_icon
         elif info_type == "additional_info":
-            return f"You eventually need to <b>log into</b> {service_info}"
+            return f"You eventually need to <b>log into</b> {service_info}."
         else:
             return None  # Handle invalid info_type if needed
 
