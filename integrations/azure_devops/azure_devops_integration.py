@@ -172,7 +172,7 @@ class DevopsIntegration(ap.ApIntegration):
         self.client = AzureDevOpsClient(ctx.workspace_id)
 
         self.name = 'Azure DevOps'
-        self.description = "Create repositories, add participants and do it all directly in Anchorpoint.<br>Each participant will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/'>Learn more</a>"
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/'>Learn more</a>"
         self.priority = 100
         self.tags = integration_tags
 

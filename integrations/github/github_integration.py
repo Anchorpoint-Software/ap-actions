@@ -24,21 +24,21 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot add user to GitHub', duration=6000, description=f'Failed to get current organization. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitHub', duration=6000, description=f'Failed to get current organization. Please add manually.')
         return
     
     if current_org.is_user:
         return
 
     if not client.init():
-        ap.UI().show_error(title='Cannot add user to GitHub', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitHub', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     try:
         client.add_user_to_organization(current_org, email)
-        ap.UI().show_success(title='User added to GitHub', duration=3000, description=f'User {email} added to organization {current_org.name}.')
+        ap.UI().show_success(title='Member added to GitHub', duration=3000, description=f'Member {email} added to organization {current_org.name}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot add user to GitHub', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
+        ap.UI().show_error(title='Cannot add member to GitHub', duration=10000, description=f'Failed to add member to organization, because "{str(e)}". Please add manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
 
 def on_remove_user_from_workspace(email, ctx: ap.Context):
     client = GitHubClient(ctx.workspace_id, ap.get_config().github_client_id, ap.get_config().github_client_key)
@@ -48,21 +48,21 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot remove user to GitHub', duration=6000, description=f'Failed to get current organization. Please remove manually.')
+        ap.UI().show_error(title='Cannot remove member to GitHub', duration=6000, description=f'Failed to get current organization. Please remove manually.')
         return
     
     if current_org.is_user:
         return
 
     if not client.init():
-        ap.UI().show_error(title='Cannot remove user to GitHub', duration=6000, description=f'Failed to connect integration. Please remove manually.')
+        ap.UI().show_error(title='Cannot remove member to GitHub', duration=6000, description=f'Failed to connect integration. Please remove manually.')
         return
     
     try:
         client.remove_user_from_organization(current_org, email)
-        ap.UI().show_success(title='User removed from GitHub', duration=3000, description=f'User {email} removed from organization {current_org.name}.')
+        ap.UI().show_success(title='Member removed from GitHub', duration=3000, description=f'Member {email} removed from organization {current_org.name}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot remove user from GitHub', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
+        ap.UI().show_error(title='Cannot remove member from GitHub', duration=10000, description=f'Failed to remove member from organization, because "{str(e)}". Please remove manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
 
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
@@ -74,32 +74,32 @@ def on_add_user_to_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot add user to GitHub repository', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitHub repository', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
         return
     
     client = GitHubClient(ctx.workspace_id, ap.get_config().github_client_id, ap.get_config().github_client_key)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot add user to GitHub repository', duration=6000, description=f'GitHub integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitHub repository', duration=6000, description=f'GitHub integration is not setup. Please add manually.')
         return
     
     if not client.init():
-        ap.UI().show_error(title='Cannot add user to GitHub repository', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitHub repository', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     current_org = client.get_current_organization()
 
     try:
         client.add_user_to_repository(current_org, email, project.name)
-        ap.UI().show_success(title='User added to GitHub repository', duration=3000, description=f'User {email} added to project {project.name}.')
+        ap.UI().show_success(title='Member added to GitHub repository', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_github_project_name(project.name)
         if "Organization is required." in str(e):
-            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No organization found. Please add manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
+            ap.UI().show_error(title='Cannot add member to GitHub repository', duration=8000, description=f'No organization found. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         elif "No matching member found." in str(e):
-            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No matching organisation member found. Please add manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
+            ap.UI().show_error(title='Cannot add member to GitHub repository', duration=8000, description=f'It appears that the GitHub username is different from the member\'s email address. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         else:
-            ap.UI().show_error(title='Cannot add user to GitHub repository', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
+            ap.UI().show_error(title='Cannot add member to GitHub repository', duration=10000, description=f'It appears that the GitHub username is different from the member\'s email address. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
@@ -112,32 +112,32 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot remove user from GitHub repository', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from GitHub repository', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
         return
     
     client = GitHubClient(ctx.workspace_id, ap.get_config().github_client_id, ap.get_config().github_client_key)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot remove user from GitHub repository', duration=6000, description=f'GitHub integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from GitHub repository', duration=6000, description=f'GitHub integration is not setup. Please add manually.')
         return
     
     if not client.init():
-        ap.UI().show_error(title='Cannot remove user from GitHub repository', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from GitHub repository', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     current_org = client.get_current_organization()
 
     try:
         client.remove_user_from_repository(current_org, email, project.name)
-        ap.UI().show_success(title='User removed from GitHub repository', duration=3000, description=f'User {email} removed from project {project.name}.')
+        ap.UI().show_success(title='Member removed from GitHub repository', duration=3000, description=f'Member {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_github_project_name(project.name)
         if "Organization is required." in str(e):
-            ap.UI().show_info(title='Cannot add user to GitHub repository', duration=8000, description=f'No organization found. Please remove manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
+            ap.UI().show_info(title='Cannot add member to GitHub repository', duration=8000, description=f'No organization found. You have to remove your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         elif "No matching member found." in str(e):
-            ap.UI().show_info(title='Cannot remove user from GitHub repository', duration=8000, description=f'No matching organisation member found. Please remove manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
+            ap.UI().show_info(title='Cannot remove member from GitHub repository', duration=8000, description=f'No matching organisation member found. You have to remove your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         else:
-            ap.UI().show_error(title='Cannot remove user from GitHub repository', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please remove manually <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">here</a>.')
+            ap.UI().show_error(title='Cannot remove member from GitHub repository', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         return
 
 class GithubIntegration(ap.ApIntegration):
@@ -148,7 +148,7 @@ class GithubIntegration(ap.ApIntegration):
         self.client = GitHubClient(ctx.workspace_id, config.github_client_id, config.github_client_key)
 
         self.name = 'GitHub'
-        self.description = "Create repositories, add participants and do it all directly in Anchorpoint.<br>Each participant will need an GitHub account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/github/'>Learn more</a>"
+        self.description = "Create GitHub repositories directly in Anchorpoint.<a href='https://docs.anchorpoint.app/docs/1-overview/integrations/github/'>Learn more</a>"
         self.priority = 99
         self.tags = integration_tags
 
@@ -311,7 +311,6 @@ class GithubIntegration(ap.ApIntegration):
         if len(organizations) > 1:
             dialog.add_info("It looks like you are member of organizations on GitHub.<br>Select the one you want to connect to this Anchorpoint workspace<br>or use your personal account.")
 
-        dialog.add_empty()
         dialog.add_button("Apply", var="apply", callback=lambda d: self.apply_org_callback(d, organizations))
         dialog.show()
 
