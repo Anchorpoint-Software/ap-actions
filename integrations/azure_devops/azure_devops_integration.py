@@ -364,8 +364,8 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_text("<b>2. Git Credentials</b>")
         dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/credentialManager.webp"),width=230)
         dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Azure DevOps login data to grant Anchorpoint<br>permission to upload and download files.")
-        dialog.add_button("Enter your Azure DevOps credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_org))
-        dialog.add_button("Enter your Azure DevOps credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_org), primary=False)
+        dialog.add_button("Enter your Azure DevOps Credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_org))
+        dialog.add_button("Enter your Azure DevOps Credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_org), primary=False)
         dialog.hide_row(settings_credential_btn_entry, True)
         dialog.add_empty()
 
