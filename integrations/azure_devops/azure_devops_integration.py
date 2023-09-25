@@ -176,7 +176,7 @@ def setup_credentials_async(org: str):
     sys.path.insert(0, script_dir)
     from vc.apgit.repository import GitRepository
     try:
-        result = GitRepository.get_credentials(devops_root, org, "https")
+        result = GitRepository.get_credentials(devops_root, "https", org)
         if (result is None or result.get("host") is None or result["host"] != devops_root 
             or result.get("path") is None or result["path"] != org 
             or result.get("username") is None or result.get("password") is None):
@@ -336,7 +336,6 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.hide_row(settings_policies_btn_highlight_entry, False)
 
     def credential_btn_callback(self, dialog: ap.Dialog, org: str):
-        print("credential_btn_callback")
         dialog.hide_row(settings_credential_btn_entry, False)
         dialog.hide_row(settings_credential_btn_highlight_entry, True)
         ctx = ap.get_context()

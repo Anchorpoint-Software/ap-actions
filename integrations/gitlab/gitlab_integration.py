@@ -4,11 +4,14 @@ from gitlab_client import *
 import os
 
 integration_tags = ["git", "gitlab"]
+gitlab_root = "gitlab.com"
 connect_action_id = "gitlab_connect"
 disconnect_action_id = "gitlab_disconnect"
 reconnect_action_id = "gitlab_reconnect"
 settings_action_id = "gitlab_settings"
 settings_group_dropdown_entry = "group_dropdown"
+settings_credential_btn_entry = "credential_btn"
+settings_credential_btn_highlight_entry = "credential_btn_highlight"
 create_repo_dialog_entry = "gitlab_create_repo"
 repo_dropdown_entry = "gitlab_repository_dropdown"
 create_dialog_info_entry = "gitlab_create_dialog_info"
@@ -133,6 +136,24 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         repo_name = client.generate_gitlab_repo_name(project.name)
         ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
         return
+    
+def setup_credentials_async():
+    import sys, os
+    script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    try:
+        result = GitRepository.get_credentials(gitlab_root, "https")
+        if (result is None or result.get("host") is None or result["host"] != gitlab_root 
+            or result.get("username") is None or result.get("password") is None):
+            raise Exception("Login failed")
+        GitRepository.store_credentials(gitlab_root, "https", result["username"], result["password"])
+        ap.UI().show_success(title='Gitlab credentials stored', duration=3000, description=f'Gitlab credentials stored successfully.')
+    except Exception as e:
+        ap.UI().show_error(title='Cannot store Gitlab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+    finally:
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
 
 class GitlabIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
@@ -272,13 +293,17 @@ class GitlabIntegration(ap.ApIntegration):
         if action_id == create_repo_dialog_entry:
             return self.create_new_repo(project_name, progress)
 
-    def apply_group_callback(self, dialog: ap.Dialog, groups):
-        group_name = dialog.get_value(settings_group_dropdown_entry)
-        group = next((x for x in groups if x.name == group_name), None)
+    def change_group_callback(self, dialog: ap.Dialog, value: str, groups):
+        group = next((x for x in groups if x.name == value), None)
         if group is None:
             return
         self.client.set_current_group(group)
-        dialog.close()
+
+    def credential_btn_callback(self, dialog: ap.Dialog, org: str):
+        dialog.hide_row(settings_credential_btn_entry, False)
+        dialog.hide_row(settings_credential_btn_highlight_entry, True)
+        ctx = ap.get_context()
+        ctx.run_async(setup_credentials_async)
 
     def show_settings_dialog(self, current_group, groups):
         dialog = ap.Dialog()
@@ -286,13 +311,12 @@ class GitlabIntegration(ap.ApIntegration):
         dialog.title = "Gitlab Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitlab/logo.svg")
 
-        dialog.add_text("<b>Account</b>", var="accounttext")
+        dialog.add_text("<b>1. Account</b>", var="accounttext")
         dialog.add_text(groups[0].name)
 
-        dialog.add_text("<b>Group</b>", var="grouptext")
+        dialog.add_text("<b>2. Group</b>", var="grouptext")
 
         dropdown_entries = []
-
         for group in groups:
             entry = ap.DropdownEntry()
             entry.name = group.name
@@ -303,13 +327,17 @@ class GitlabIntegration(ap.ApIntegration):
             entry.use_icon_color = True
             dropdown_entries.append(entry)
 
-        dialog.add_dropdown(current_group.name, dropdown_entries, var=settings_group_dropdown_entry)
-
-        if len(groups) > 1:
-            dialog.add_info("It looks like you are member of groups on Gitlab.<br>Select the one you want to connect to this Anchorpoint workspace<br>or use your personal account.")
-
+        dialog.add_dropdown(current_group.name, dropdown_entries, var=settings_group_dropdown_entry, callback=lambda d, v: self.change_group_callback(d,v, groups))
+        dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated group")
         dialog.add_empty()
-        dialog.add_button("Apply", var="apply", callback=lambda d: self.apply_group_callback(d, groups))
+
+        dialog.add_text("<b>2. Git Credentials</b>")
+        dialog.add_image(os.path.join(self.ctx.yaml_dir, "gitlab/gitLabCredentials.webp"),width=230)
+        dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Gitlab login data to grant Anchorpoint<br>permission to upload and download files.")
+        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_group))
+        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_group), primary=False)
+        dialog.hide_row(settings_credential_btn_entry, True)
+
         dialog.show()
 
     def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:

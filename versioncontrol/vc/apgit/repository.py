@@ -1487,11 +1487,14 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
-    def get_credentials(host: str, path: str, protocol: str):
+    def get_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
         
         cmd = [install_git.get_gcm_path(), "get"]
-        p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True)
+        if path:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True)
+        else:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}", text=True, capture_output=True)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
