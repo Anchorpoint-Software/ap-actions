@@ -292,7 +292,7 @@ class DevopsIntegration(ap.ApIntegration):
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
         if action_id == create_repo_dialog_entry:
             if self.is_setup:
-                dialog.add_text("You eventually need to <b>log into</b> Azure DevOps again after the final step", var=create_dialog_info_entry)
+                dialog.add_info("You eventually need to <b>log into</b> Azure DevOps (Visual Studio) again after the final step", var=create_dialog_info_entry)
                 return [create_dialog_info_entry]
             return []
 
@@ -325,12 +325,12 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry)
 
         if len(organizations) > 1:
-            dialog.add_info("It looks like you have multiple organizations on Azure DevOps.<br>Select the one you want to connect to this Anchorpoint workspace.")
-            dialog.add_empty()
+            dialog.add_info("It looks like you have multiple organizations on Azure DevOps.<br>Select the one you want to connect to this Anchorpoint workspace.")            
 
-        dialog.add_info("Make sure that <b>Third-party application access via OAuth</b> is enabled for your organization.<br>Pressing <b>Apply</b> will try to open organization policies so you can check if it is enabled.")
+        dialog.add_text("<b>Important</b>")
+        dialog.add_info("Make sure that <b>Third-party application access via OAuth</b> <br>is enabled for your organization")
+        #dialog.add_image(path/lallal,300,300)
 
-        dialog.add_empty()
         dialog.add_button("Apply", var="apply", callback=self.apply_org_callback)
         dialog.show()
 
