@@ -905,6 +905,7 @@ def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
 
 def on_add_logging_data(channel_id: str, ctx):
+    log = ""
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -923,7 +924,7 @@ def on_add_logging_data(channel_id: str, ctx):
         return log
     except Exception as e:
         print("on_add_logging_data exception: " + str(e))
-        return ""
+        return log
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
