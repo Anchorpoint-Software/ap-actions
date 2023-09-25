@@ -362,9 +362,7 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_empty()
 
         dialog.add_text("<b>2. Git Credentials</b>")
-        credential_img = os.path.join(self.ctx.yaml_dir, "azure_devops/credentialManager.png")
-        print(credential_img)
-        dialog.add_image(credential_img,width=230)
+        dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/credentialManager.webp"),width=230)
         dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Azure DevOps login data to grant Anchorpoint<br>permission to upload and download files.")
         dialog.add_button("Enter your Azure DevOps credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_org))
         dialog.add_button("Enter your Azure DevOps credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_org), primary=False)
@@ -372,7 +370,7 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_empty()
 
         dialog.add_text("<b>3. Permissions</b>")
-        dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/devopsImage.png"),width=330)
+        dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/devopsImage.webp"),width=330)
         dialog.add_info("In Organization Settings/Policies, enable “Third-party<br>application access via OAuth” to make the integration work.")
         dialog.add_button("Check OAuth Policies", var=settings_policies_btn_highlight_entry, callback=lambda d: self.policies_btn_callback(d, current_org))
         dialog.add_button("Check OAuth Policies", var=settings_policies_btn_entry, callback=lambda d: self.policies_btn_callback(d, current_org), primary=False)
