@@ -25,21 +25,22 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     
     current_group = client.get_current_group()
     if current_group is None:
-        ap.UI().show_error(title='Cannot add user to Gitlab', duration=6000, description=f'Failed to get current group. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to Gitlab', duration=6000, description=f'Failed to get current group. You have to add your member directly on GitLab.')
         return
     
     if current_group.is_user:
         return
 
     if not client.init():
-        ap.UI().show_error(title='Cannot add user to Gitlab', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to Gitlab', duration=6000, description=f'Failed to connect integration. You have to add your member directly on GitLab.')
         return
     
     try:
         client.add_user_to_group(current_group, email)
-        ap.UI().show_success(title='User added to Gitlab', duration=3000, description=f'User {email} added to group {current_group.name}.')
+        ap.UI().show_success(title='Member added to Gitlab', duration=3000, description=f'User {email} added to group {current_group.name}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot add user to Gitlab', duration=10000, description=f'Failed to add user to group, because "{str(e)}". Please add manually <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">here</a>.')
+        print(str(e))
+        ap.UI().show_error(title='Cannot add member to Gitlab', duration=10000, description=f'Cannot to add the member to the group. You have to add your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
 
 def on_remove_user_from_workspace(email, ctx: ap.Context):
     client = GitlabClient(ctx.workspace_id, ap.get_config().gitlab_client_id, ap.get_config().gitlab_client_key)
@@ -49,21 +50,22 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     
     current_group = client.get_current_group()
     if current_group is None:
-        ap.UI().show_error(title='Cannot remove user to Gitlab', duration=6000, description=f'Failed to get current group. Please remove manually.')
+        ap.UI().show_error(title='Cannot remove member to Gitlab', duration=6000, description=f'Cannot get current group. You have to remove your member directly on GitLab.')
         return
     
     if current_group.is_user:
         return
 
     if not client.init():
-        ap.UI().show_error(title='Cannot remove user to Gitlab', duration=6000, description=f'Failed to connect integration. Please remove manually.')
+        ap.UI().show_error(title='Cannot remove member to Gitlab', duration=6000, description=f'Failed to connect integration. You have to remove your member directly on GitLab.')
         return
     
     try:
         client.remove_user_from_group(current_group, email)
-        ap.UI().show_success(title='User removed from Gitlab', duration=3000, description=f'User {email} removed from group {current_group.name}.')
+        ap.UI().show_success(title='Member removed from Gitlab', duration=3000, description=f'User {email} removed from group {current_group.name}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot remove user from Gitlab', duration=10000, description=f'Failed to remove user from group, because "{str(e)}". Please remove manually <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">here</a>.')
+        print(str(e))
+        ap.UI().show_error(title='Cannot remove member from Gitlab', duration=10000, description=f'Failed to remove member from group. You have to remove your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
 
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
@@ -75,27 +77,28 @@ def on_add_user_to_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot add user to Gitlab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
         return
     
     client = GitlabClient(ctx.workspace_id, ap.get_config().gitlab_client_id, ap.get_config().gitlab_client_key)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot add user to Gitlab project', duration=6000, description=f'Gitlab integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=6000, description=f'Gitlab integration is not setup. Please add manually.')
         return
     
     if not client.init():
-        ap.UI().show_error(title='Cannot add user to Gitlab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     current_group = client.get_current_group()
 
     try:
         client.add_user_to_project(current_group, email, project.name)
-        ap.UI().show_success(title='User added to Gitlab project', duration=3000, description=f'User {email} added to project {project.name}.')
+        ap.UI().show_success(title='Member added to Gitlab project', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
-        ap.UI().show_error(title='Cannot add user to Gitlab project', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">here</a>.')
+        print(str(e))
+        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=10000, description=f'You have to add your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
@@ -108,27 +111,27 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot remove user from Gitlab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
         return
     
     client = GitlabClient(ctx.workspace_id, ap.get_config().gitlab_client_id, ap.get_config().gitlab_client_key)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot remove user from Gitlab project', duration=6000, description=f'Gitlab integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=6000, description=f'Gitlab integration is not setup. Please add manually.')
         return
     
     if not client.init():
-        ap.UI().show_error(title='Cannot remove user from Gitlab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     current_group = client.get_current_group()
 
     try:
         client.remove_user_from_project(current_group, email, project.name)
-        ap.UI().show_success(title='User removed from Gitlab project', duration=3000, description=f'User {email} removed from project {project.name}.')
+        ap.UI().show_success(title='Member removed from Gitlab project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
-        ap.UI().show_error(title='Cannot remove user from Gitlab project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please remove manually <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">here</a>.')
+        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
         return
 
 class GitlabIntegration(ap.ApIntegration):
@@ -138,8 +141,8 @@ class GitlabIntegration(ap.ApIntegration):
         config = ap.get_config()
         self.client = GitlabClient(ctx.workspace_id, config.gitlab_client_id, config.gitlab_client_key)
 
-        self.name = 'Gitlab'
-        self.description = "Create repositories, add participants and do it all directly in Anchorpoint.<br>Each participant will need an Gitlab account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
+        self.name = 'Gitlab (Saas)'
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Gitlab (SaaS) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
         self.priority = 98
         self.tags = integration_tags
 
