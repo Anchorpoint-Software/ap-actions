@@ -1476,13 +1476,32 @@ class GitRepository(VCRepository):
             return ""
 
     @staticmethod    
-    def store_credentials(host: str, protocol: str, username: str, password: str):
+    def store_credentials(host: str, protocol: str, username: str, password: str, path: str = None):
         from subprocess import run
         
         cmd = [install_git.get_gcm_path(), "store"]
-        p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
+        if path:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}\nusername={username}\npassword={password}", text=True)
+        else:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
+        
+    def get_credentials(host: str, path: str, protocol: str):
+        from subprocess import run
+        
+        cmd = [install_git.get_gcm_path(), "get"]
+        p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True)
+        if p.returncode != 0:
+            raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
+        
+        result = {}
+        for line in p.stdout.splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                result[key] = value
+        return result
+
         
     @staticmethod    
     def erase_credentials(host: str, protocol: str):

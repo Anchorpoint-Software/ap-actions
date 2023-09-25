@@ -4,11 +4,16 @@ from azure_devops_client import *
 import os
 
 integration_tags = ["git", "azure_devops"]
+devops_root = "dev.azure.com"
 connect_action_id = "azure_devops_connect"
 disconnect_action_id = "azure_devops_disconnect"
 reconnect_action_id = "azure_devops_reconnect"
 settings_action_id = "azure_devops_settings"
 settings_org_dropdown_entry = "organization_dropdown"
+settings_credential_btn_entry = "credential_btn"
+settings_credential_btn_highlight_entry = "credential_btn_highlight"
+settings_policies_btn_entry = "policies_btn"
+settings_policies_btn_highlight_entry = "policies_btn_highlight"
 create_repo_dialog_entry = "azure_devops_create_repo"
 repo_dropdown_entry = "azure_devops_repository_dropdown"
 create_dialog_info_entry = "azure_devops_create_dialog_info"
@@ -66,7 +71,7 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please add manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please add manually <a href="https://{devops_root}/{current_org}/_settings/users">here</a>.')
         return
 
     try:
@@ -75,7 +80,7 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     except BillingSetupRequiredException as bsre:
         ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'You need to setup <a href="{bsre.href_url}">billing</a> to invite more members.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
+        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'Failed to add user to organization, because "{str(e)}". Please add manually <a href="https://{devops_root}/{current_org}/_settings/users">here</a>.')
 
 def on_remove_user_from_workspace(email, ctx: ap.Context):
     client = AzureDevOpsClient(ctx.workspace_id)
@@ -89,14 +94,14 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     
     current_org = client.get_current_organization()
     if current_org is None:
-        ap.UI().show_error(title='Cannot remove user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please remove manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
+        ap.UI().show_error(title='Cannot remove user to Azure DevOps', duration=6000, description=f'Failed to get current organization. Please remove manually <a href="https://{devops_root}/{current_org}/_settings/users">here</a>.')
         return
 
     try:
         client.remove_user_from_organization(current_org, email)
         ap.UI().show_success(title='User removed from Azure DevOps', duration=3000, description=f'User {email} removed from organization {current_org}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually <a href="https://dev.azure.com/{current_org}/_settings/users">here</a>.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually <a href="https://{devops_root}/{current_org}/_settings/users">here</a>.')
 
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
@@ -164,6 +169,25 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     except Exception as e:
         ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
         return
+
+def setup_credentials_async(org: str):
+    import sys, os
+    script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    try:
+        result = GitRepository.get_credentials(devops_root, org, "https")
+        if (result is None or result.get("host") is None or result["host"] != devops_root 
+            or result.get("path") is None or result["path"] != org 
+            or result.get("username") is None or result.get("password") is None):
+            raise Exception("Login failed")
+        GitRepository.store_credentials(devops_root, "https", result["username"], result["password"], org)
+        ap.UI().show_success(title='Azure DevOps credentials stored', duration=3000, description=f'Azure DevOps credentials stored successfully.')
+    except Exception as e:
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+    finally:
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
 
 class DevopsIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
@@ -304,13 +328,27 @@ class DevopsIntegration(ap.ApIntegration):
         if action_id == create_repo_dialog_entry:
             return self.create_new_repo(project_name, progress)
 
-    def apply_org_callback(self, dialog: ap.Dialog):
-        org = dialog.get_value(settings_org_dropdown_entry)
-        self.client.set_current_organization(org)
+    def change_org_callback(self, dialog: ap.Dialog, value: str):
+        self.client.set_current_organization(value)
+        dialog.hide_row(settings_credential_btn_entry, True)
+        dialog.hide_row(settings_credential_btn_highlight_entry, False)
+        dialog.hide_row(settings_policies_btn_entry, True)
+        dialog.hide_row(settings_policies_btn_highlight_entry, False)
 
+    def credential_btn_callback(self, dialog: ap.Dialog, org: str):
+        print("credential_btn_callback")
+        dialog.hide_row(settings_credential_btn_entry, False)
+        dialog.hide_row(settings_credential_btn_highlight_entry, True)
+        ctx = ap.get_context()
+        ctx.run_async(setup_credentials_async, org)
+         
+
+    def policies_btn_callback(self, dialog: ap.Dialog, org: str):
         import webbrowser
-        webbrowser.open(f"https://dev.azure.com/{org}/_settings/organizationPolicy")
-        dialog.close()
+        webbrowser.open(f"https://{devops_root}/{org}/_settings/organizationPolicy")
+        dialog.hide_row(settings_policies_btn_entry, False)
+        dialog.hide_row(settings_policies_btn_highlight_entry, True)
+        
 
     def show_settings_dialog(self, current_org: str, display_name: str, organizations):
         dialog = ap.Dialog()
@@ -318,20 +356,28 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.title = "Azure DevOps Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "azure_devops/logo.svg")
 
-        dialog.add_text("<b>Account</b>", var="accounttext")
-        dialog.add_text(display_name, var="accountemail")
+        dialog.add_text("<b>1. Organization</b>", var="orgtext")
+        dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry, callback=self.change_org_callback)
+        dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated organization")
+        dialog.add_empty()
 
-        dialog.add_text("<b>Organization</b>", var="orgtext")
-        dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry)
+        dialog.add_text("<b>2. Git Credentials</b>")
+        credential_img = os.path.join(self.ctx.yaml_dir, "azure_devops/credentialManager.png")
+        print(credential_img)
+        dialog.add_image(credential_img,width=230)
+        dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Azure DevOps login data to grant Anchorpoint<br>permission to upload and download files.")
+        dialog.add_button("Enter your Azure DevOps credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_org))
+        dialog.add_button("Enter your Azure DevOps credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_org), primary=False)
+        dialog.hide_row(settings_credential_btn_entry, True)
+        dialog.add_empty()
 
-        if len(organizations) > 1:
-            dialog.add_info("It looks like you have multiple organizations on Azure DevOps.<br>Select the one you want to connect to this Anchorpoint workspace.")            
+        dialog.add_text("<b>3. Permissions</b>")
+        dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/devopsImage.png"),width=330)
+        dialog.add_info("In Organization Settings/Policies, enable “Third-party<br>application access via OAuth” to make the integration work.")
+        dialog.add_button("Check OAuth Policies", var=settings_policies_btn_highlight_entry, callback=lambda d: self.policies_btn_callback(d, current_org))
+        dialog.add_button("Check OAuth Policies", var=settings_policies_btn_entry, callback=lambda d: self.policies_btn_callback(d, current_org), primary=False)
+        dialog.hide_row(settings_policies_btn_entry, True)
 
-        dialog.add_text("<b>Important</b>")
-        dialog.add_info("Make sure that <b>Third-party application access via OAuth</b> <br>is enabled for your organization")
-        #dialog.add_image(path/lallal,300,300)
-
-        dialog.add_button("Apply", var="apply", callback=self.apply_org_callback)
         dialog.show()
 
     def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:
