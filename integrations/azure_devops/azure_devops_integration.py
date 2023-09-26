@@ -357,7 +357,7 @@ class DevopsIntegration(ap.ApIntegration):
 
         dialog.add_text("<b>1. Organization</b>", var="orgtext")
         dialog.add_dropdown(current_org, organizations, var=settings_org_dropdown_entry, callback=self.change_org_callback)
-        dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated organization")
+        dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated organization.")
         dialog.add_empty()
 
         dialog.add_text("<b>2. Git Credentials</b>")

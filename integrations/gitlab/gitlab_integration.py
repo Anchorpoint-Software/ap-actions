@@ -328,7 +328,7 @@ class GitlabIntegration(ap.ApIntegration):
             dropdown_entries.append(entry)
 
         dialog.add_dropdown(current_group.name, dropdown_entries, var=settings_group_dropdown_entry, callback=lambda d, v: self.change_group_callback(d,v, groups))
-        dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated group")
+        dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated group.")
         dialog.add_empty()
 
         dialog.add_text("<b>2. Git Credentials</b>")
