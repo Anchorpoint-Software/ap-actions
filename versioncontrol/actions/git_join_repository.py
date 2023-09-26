@@ -164,7 +164,7 @@ if __name__ == "__main__":
         elif info_type == "icon":
             return service_icon
         elif info_type == "additional_info":
-            return f"You eventually need to <b>log into</b> {service_info}."
+            return f"You may need to <b>log into</b> {service_info}."
         else:
             return None  # Handle invalid info_type if needed
 

@@ -191,7 +191,7 @@ try:
                     for action in integration.get_create_project_actions():
                         self.dialogVarMap[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
 
-            self.dialog.add_info("You eventually need to <b>log into</b> your Git server after the final step", var=remote_entry_login_info_text)
+            self.dialog.add_info("You may need to <b>log into</b> your Git server after the final step", var=remote_entry_login_info_text)
             self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url, callback=url_changed)
             self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=True)
 
