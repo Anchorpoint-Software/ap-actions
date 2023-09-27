@@ -170,12 +170,14 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
         return
 
-def setup_credentials_async(org: str):
+def setup_credentials_async(dialog, org: str):
     import sys, os
     script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
     sys.path.insert(0, script_dir)
     from vc.apgit.repository import GitRepository
     try:
+        dialog.set_processing(settings_credential_btn_highlight_entry, True, "Updating")
+        dialog.set_processing(settings_credential_btn_entry, True, "Updating")
         result = GitRepository.get_credentials(devops_root, "https", org)
         if (result is None or result.get("host") is None or result["host"] != devops_root 
             or result.get("path") is None or result["path"] != org 
@@ -186,6 +188,8 @@ def setup_credentials_async(org: str):
     except Exception as e:
         ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
     finally:
+        dialog.set_processing(settings_credential_btn_highlight_entry, False)
+        dialog.set_processing(settings_credential_btn_entry, False)
         if script_dir in sys.path:
             sys.path.remove(script_dir)
 
@@ -335,15 +339,16 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.hide_row(settings_policies_btn_entry, True)
         dialog.hide_row(settings_policies_btn_highlight_entry, False)
 
-    def credential_btn_callback(self, dialog: ap.Dialog, org: str):
+    def credential_btn_callback(self, dialog: ap.Dialog):
         dialog.hide_row(settings_credential_btn_entry, False)
         dialog.hide_row(settings_credential_btn_highlight_entry, True)
         ctx = ap.get_context()
-        ctx.run_async(setup_credentials_async, org)
+        org = self.client.get_current_organization()
+        ctx.run_async(setup_credentials_async, dialog, org)
          
-
-    def policies_btn_callback(self, dialog: ap.Dialog, org: str):
+    def policies_btn_callback(self, dialog: ap.Dialog):
         import webbrowser
+        org = self.client.get_current_organization()
         webbrowser.open(f"https://{devops_root}/{org}/_settings/organizationPolicy")
         dialog.hide_row(settings_policies_btn_entry, False)
         dialog.hide_row(settings_policies_btn_highlight_entry, True)
@@ -363,16 +368,16 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_text("<b>2. Git Credentials</b>")
         dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/credentialManager.webp"),width=230)
         dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Azure DevOps login data to grant Anchorpoint<br>permission to upload and download files.")
-        dialog.add_button("Enter your Azure DevOps Credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_org))
-        dialog.add_button("Enter your Azure DevOps Credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_org), primary=False)
+        dialog.add_button("Enter your Azure DevOps Credentials", var=settings_credential_btn_highlight_entry, callback=self.credential_btn_callback)
+        dialog.add_button("Enter your Azure DevOps Credentials", var=settings_credential_btn_entry, callback=self.credential_btn_callback, primary=False)
         dialog.hide_row(settings_credential_btn_entry, True)
         dialog.add_empty()
 
         dialog.add_text("<b>3. Permissions</b>")
         dialog.add_image(os.path.join(self.ctx.yaml_dir, "azure_devops/devopsImage.webp"),width=330)
         dialog.add_info("In Organization Settings/Policies, enable “Third-party<br>application access via OAuth” to make the integration work.")
-        dialog.add_button("Check OAuth Policies", var=settings_policies_btn_highlight_entry, callback=lambda d: self.policies_btn_callback(d, current_org))
-        dialog.add_button("Check OAuth Policies", var=settings_policies_btn_entry, callback=lambda d: self.policies_btn_callback(d, current_org), primary=False)
+        dialog.add_button("Check OAuth Policies", var=settings_policies_btn_highlight_entry, callback=self.policies_btn_callback)
+        dialog.add_button("Check OAuth Policies", var=settings_policies_btn_entry, callback=self.policies_btn_callback, primary=False)
         dialog.hide_row(settings_policies_btn_entry, True)
 
         dialog.show()

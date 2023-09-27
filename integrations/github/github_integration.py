@@ -289,10 +289,11 @@ class GithubIntegration(ap.ApIntegration):
         dialog.title = "GitHub Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "github/logo.svg")
 
-        dialog.add_text("<b>Account</b>", var="accounttext")
+        dialog.add_text("<b>1.Account</b>", var="accounttext")
         dialog.add_text(organizations[0].name)
+        dialog.add_empty()
 
-        dialog.add_text("<b>Organization</b>", var="orgtext")
+        dialog.add_text("<b>2.Organization</b>", var="orgtext")
 
         dropdown_entries = []
 

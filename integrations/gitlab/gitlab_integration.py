@@ -136,13 +136,15 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         repo_name = client.generate_gitlab_repo_name(project.name)
         ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
         return
-    
-def setup_credentials_async():
+
+def setup_credentials_async(dialog):
     import sys, os
     script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
     sys.path.insert(0, script_dir)
     from vc.apgit.repository import GitRepository
     try:
+        dialog.set_processing(settings_credential_btn_highlight_entry, True, "Updating")
+        dialog.set_processing(settings_credential_btn_entry, True, "Updating")
         result = GitRepository.get_credentials(gitlab_root, "https")
         if (result is None or result.get("host") is None or result["host"] != gitlab_root 
             or result.get("username") is None or result.get("password") is None):
@@ -152,6 +154,8 @@ def setup_credentials_async():
     except Exception as e:
         ap.UI().show_error(title='Cannot store Gitlab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
     finally:
+        dialog.set_processing(settings_credential_btn_highlight_entry, False)
+        dialog.set_processing(settings_credential_btn_entry, False)
         if script_dir in sys.path:
             sys.path.remove(script_dir)
 
@@ -162,8 +166,8 @@ class GitlabIntegration(ap.ApIntegration):
         config = ap.get_config()
         self.client = GitlabClient(ctx.workspace_id, config.gitlab_client_id, config.gitlab_client_key)
 
-        self.name = 'Gitlab (Saas)'
-        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Gitlab (SaaS) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
+        self.name = 'Gitlab (gitlab.com)'
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Gitlab (gitlab.com) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
         self.priority = 98
         self.tags = integration_tags
 
@@ -299,11 +303,11 @@ class GitlabIntegration(ap.ApIntegration):
             return
         self.client.set_current_group(group)
 
-    def credential_btn_callback(self, dialog: ap.Dialog, org: str):
+    def credential_btn_callback(self, dialog: ap.Dialog):
         dialog.hide_row(settings_credential_btn_entry, False)
         dialog.hide_row(settings_credential_btn_highlight_entry, True)
         ctx = ap.get_context()
-        ctx.run_async(setup_credentials_async)
+        ctx.run_async(setup_credentials_async, dialog)
 
     def show_settings_dialog(self, current_group, groups):
         dialog = ap.Dialog()
@@ -313,6 +317,7 @@ class GitlabIntegration(ap.ApIntegration):
 
         dialog.add_text("<b>1. Account</b>", var="accounttext")
         dialog.add_text(groups[0].name)
+        dialog.add_empty()
 
         dialog.add_text("<b>2. Group</b>", var="grouptext")
 
@@ -331,11 +336,11 @@ class GitlabIntegration(ap.ApIntegration):
         dialog.add_info("Allow Anchorpoint to create repositories and add<br>members in a dedicated group.")
         dialog.add_empty()
 
-        dialog.add_text("<b>2. Git Credentials</b>")
+        dialog.add_text("<b>3. Git Credentials</b>")
         dialog.add_image(os.path.join(self.ctx.yaml_dir, "gitlab/gitLabCredentials.webp"),width=230)
         dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Gitlab login data to grant Anchorpoint<br>permission to upload and download files.")
-        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_highlight_entry, callback=lambda d: self.credential_btn_callback(d, current_group))
-        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_entry, callback=lambda d: self.credential_btn_callback(d, current_group), primary=False)
+        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_highlight_entry, callback=self.credential_btn_callback)
+        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_entry, callback=self.credential_btn_callback, primary=False)
         dialog.hide_row(settings_credential_btn_entry, True)
 
         dialog.show()
