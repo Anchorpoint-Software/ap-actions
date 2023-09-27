@@ -180,6 +180,7 @@ def resolve_tokens(variable_list):
             for name in username_split:
                 initials += name[0].lower()
             variables["UserInitials"] = str(initials)
+
         elif variable not in variables:
             variables[variable] = ""
 
