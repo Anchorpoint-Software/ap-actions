@@ -95,7 +95,7 @@ class LFSExtensionTracker:
                 if self.is_extension_tracked(ext[1:]):
                     return True
             
-            relpath = os.path.relpath(path, self.root_path).lower()
+            relpath = os.path.relpath(path, self.root_path).lower().replace("\\", "/")
             return relpath in self.lfs_patterns
         except:
             return False
