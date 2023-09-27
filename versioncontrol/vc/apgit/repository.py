@@ -1522,57 +1522,46 @@ class GitRepository(VCRepository):
         return result
         
     @staticmethod    
-    def erase_credentials(host: str, protocol: str):
+    def erase_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment())
+
+        kwargs = {}
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+            kwargs["creationflags"] = CREATE_NO_WINDOW
         
         cmd = [install_git.get_gcm_path(), "erase"]
-        p = run(cmd, input=f"host={host}\nprotocol={protocol}", text=True)
+        
+        if path:
+            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, **kwargs)
+        else:
+            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}", text=True, **kwargs)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
     def clear_credentials(self):
-        def reject_git_credential(url):
-            from urllib.parse import urlparse
-            # Parse the URL to get the host
-            parsed_url = urlparse(url)
-            if not parsed_url.netloc:
-                raise ValueError("Invalid URL format")
-            
-            host = parsed_url.netloc.lower()  # Ensure host is lowercase
-            path = parsed_url.path.lower()
-
-            if "@" in host:
-                host = host.split("@")[1]
-            
-            # Construct the command to call git credential reject
-            cmd = ["git", "credential", "reject"]
-            
-            # Pass the host as stdin to the command
-            input_data = f"host={host}\nprotocol=https\npath={path}\n"
-
-            try:
-                # Run the command and pass input_data as stdin
-                result = subprocess.run(
-                    cmd,
-                    input=input_data,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    text=True
-                )
-                
-                # Check for errors
-                if result.returncode != 0:
-                    raise Exception(f"Error: {result.stderr}")
-                
-                return result.stdout
-            except Exception as e:
-                return str(e)
-            
+        from urllib.parse import urlparse
+              
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: remote = "origin"
         remote_url = self._get_remote_url(remote)
-        result = reject_git_credential(remote_url)
-        if result == "": return True
-        print(result)
-        return False
+
+        # Parse the URL to get the host
+        parsed_url = urlparse(remote_url)
+        if not parsed_url.netloc:
+            raise ValueError("Invalid URL format")
+        
+        host = parsed_url.netloc.lower()  # Ensure host is lowercase
+        path = parsed_url.path.lower()
+
+        if "@" in host:
+            host = host.split("@")[1]
+
+        try:
+            GitRepository.erase_credentials(host, "https", path)
+        except:
+            return False
+        return True
