@@ -19,9 +19,9 @@ action:
 
   author: "Anchorpoint Software GmbH"
   icon:
-    path: "../icons/git.svg"  
+    path: "../icons/git.svg"
 
-  dependencies: 
+  dependencies:
     - ../vc
     - is_git_repo.py
     - git_lfs_helper.py
@@ -41,6 +41,5 @@ action:
     - git::project
     - git::stash
     - git::settings
-
-
-    
+    - git::loadfile
+    - git::keep

@@ -3,6 +3,7 @@ import apsync as aps
 import os
 
 import template_utility
+from template_settings import get_workspace_template_dir, get_callback_location
 
 ctx = ap.get_context()
 ui = ap.UI()
@@ -13,8 +14,8 @@ is_file_template = ctx.type == ap.Type.File or ctx.type == ap.Type.NewFile
 source = ctx.path
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
-template_dir = settings.get("template_dir", template_dir)
-callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
+template_dir = get_workspace_template_dir(settings, template_dir)
+callback_file = get_callback_location(settings, template_dir)
 
 project = aps.get_project(source)
 if project:

@@ -11,7 +11,7 @@ from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-import logging
+import logging, re
 import gc, subprocess, platform
 from datetime import datetime
 import anchorpoint as ap
@@ -377,6 +377,9 @@ class GitRepository(VCRepository):
                     if apply_filter_error:
                         if "Unable to parse pointer at" in str(apply_filter_error):
                             # This is not an error, it just means that the file was not a LFS pointer
+                            pass
+                        elif "Downloading" in str(apply_filter_error):
+                            # This is not an error, it just prints progress
                             pass
                         else:
                             print(f"Error in smudge filter command: {apply_filter_error}")
@@ -1111,8 +1114,9 @@ class GitRepository(VCRepository):
             commit = ref.commit
             model = Branch(ref.name)
             model.id = commit.hexsha
-            model.last_changed = commit.committed_datetime
+            model.last_changed = commit.authored_datetime
             model.is_local = ref.is_remote == False
+            model.author = commit.author.email
             return model
 
         branches = []
@@ -1273,7 +1277,7 @@ class GitRepository(VCRepository):
             if len(remote_branches) == 0:
                 type = HistoryType.LOCAL
             else:
-                type = HistoryType.SYNCED if self.branch_contains(entry_id) else HistoryType.REMOTE
+                type = HistoryType.SYNCED if not self.commit_not_pulled(entry_id) else HistoryType.REMOTE
             return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
         return None
 
@@ -1320,6 +1324,11 @@ class GitRepository(VCRepository):
 
         return changes
 
+    def commit_not_pulled(self, changelist_id: str):
+        # Don't use branch --contains as it becomes very slow for big repos
+        if not self.has_remote(): return False
+        commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        return changelist_id in commits
 
     def branch_contains(self, changelist_id: str):
         branch_name = self.get_current_branch_name()
@@ -1354,12 +1363,16 @@ class GitRepository(VCRepository):
 
         pass
 
-    def get_lfs_filehash(self, paths: list[str], ref: str = None):
-        import re
+    def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
+        if paths != None and len(paths) == 0:
+            return {}
+               
         args = ["ls-files"] 
         if ref:
             args.append(ref)
-        args.extend(["-l", "-I", *paths])
+        args.append("-l")
+        if paths != None and len(paths) < 31:
+            args.extend(["-I", ",".join(paths)])
         output = self.repo.git.lfs(*args)
         result = {}
         hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)
@@ -1461,3 +1474,90 @@ class GitRepository(VCRepository):
         except Exception as e:
             logging.info(f"Error getting file content for {path} at stash {stash_id}")
             return ""
+
+    @staticmethod    
+    def store_credentials(host: str, protocol: str, username: str, password: str, path: str = None):
+        from subprocess import run
+        
+        cmd = [install_git.get_gcm_path(), "store"]
+        if path:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}\nusername={username}\npassword={password}", text=True)
+        else:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
+        if p.returncode != 0:
+            raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
+        
+    def get_credentials(host: str, protocol: str, path: str = None):
+        from subprocess import run
+        
+        cmd = [install_git.get_gcm_path(), "get"]
+        if path:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True)
+        else:
+            p = run(cmd, input=f"host={host}\nprotocol={protocol}", text=True, capture_output=True)
+        if p.returncode != 0:
+            raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
+        
+        result = {}
+        for line in p.stdout.splitlines():
+            if "=" in line:
+                key, value = line.split("=", 1)
+                result[key] = value
+        return result
+
+        
+    @staticmethod    
+    def erase_credentials(host: str, protocol: str):
+        from subprocess import run
+        
+        cmd = [install_git.get_gcm_path(), "erase"]
+        p = run(cmd, input=f"host={host}\nprotocol={protocol}", text=True)
+        if p.returncode != 0:
+            raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
+        
+    def clear_credentials(self):
+        def reject_git_credential(url):
+            from urllib.parse import urlparse
+            # Parse the URL to get the host
+            parsed_url = urlparse(url)
+            if not parsed_url.netloc:
+                raise ValueError("Invalid URL format")
+            
+            host = parsed_url.netloc.lower()  # Ensure host is lowercase
+            path = parsed_url.path.lower()
+
+            if "@" in host:
+                host = host.split("@")[1]
+            
+            # Construct the command to call git credential reject
+            cmd = ["git", "credential", "reject"]
+            
+            # Pass the host as stdin to the command
+            input_data = f"host={host}\nprotocol=https\npath={path}\n"
+
+            try:
+                # Run the command and pass input_data as stdin
+                result = subprocess.run(
+                    cmd,
+                    input=input_data,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                # Check for errors
+                if result.returncode != 0:
+                    raise Exception(f"Error: {result.stderr}")
+                
+                return result.stdout
+            except Exception as e:
+                return str(e)
+            
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: remote = "origin"
+        remote_url = self._get_remote_url(remote)
+        result = reject_git_credential(remote_url)
+        if result == "": return True
+        print(result)
+        return False

@@ -5,20 +5,14 @@
 
 version: 1.0
 action:
-  name: Integrations
+  name: GitHub Integration
 
   version: 1
-  id: ap::package::integrations
+  id: ap::integrations::github
   category: integrations
-  type: package
+  type: python
   enable: true
   author: Anchorpoint Software GmbH
-  description: Integrations for various tools and platforms
+  description: Integration for GitHub
 
-  icon:
-    path: "integrations.svg"
-
-  actions:
-    - ap::integrations::azure_devops
-    - ap::integrations::github
-    - ap::integrations::gitlab
+  script: github/github_integration.py

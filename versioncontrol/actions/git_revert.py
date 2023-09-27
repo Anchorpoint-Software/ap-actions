@@ -172,12 +172,13 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
 
         progress = ap.Progress("Restoring Files", show_loading_screen=True)
 
-        # Check if any file to revert is locked by an application
         relative_selected_paths = set()
+
         for path in files:
             relpath = os.path.relpath(path, repo_root)
             relative_selected_paths.add(relpath.replace("\\", "/"))
-            utility.make_file_writable(path)
+            if not keep_original:
+                utility.make_file_writable(path)
             if not keep_original and not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error):
@@ -220,12 +221,12 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
             logging.info(str(e))
             ui.show_error("Restore Failed", str(e))
 
-def reset_commit(path, commit: HistoryEntry, channel_id):
+def reset_commit(path, commit: HistoryEntry, channel_id, force):
     ui = ap.UI()
     try:
         progress = ap.Progress("Resetting Project", show_loading_screen=True)
         repo = GitRepository.load(path)
-        if repo.has_pending_changes(True):
+        if not force and repo.has_pending_changes(False):
             ui.show_error("Cannot reset project", "You have changed files. Commit them and try again")
             return 
         
@@ -276,12 +277,15 @@ def cancel_restore_project(dialog, channel_id: str):
     ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
     dialog.close()
 
-def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str):
+def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str, has_changes: bool):
+    continue_button = "Continue" if not has_changes else "Continue and discard your changes"
     dialog = ap.Dialog()
     dialog.title = "Reset Project"
     dialog.icon = ":/icons/restoreproject.svg"
+    if has_changes:
+        dialog.add_text("<b>Caution</b>: All your changed files will be lost")
     dialog.add_text("This command will set all files in your project to this commit. You can <br>go back to the latest state by pulling from the remote repository.")
-    dialog.add_button("Continue", callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id)).add_button("Cancel", callback=lambda d: cancel_restore_project(d, channel_id), primary=False)
+    dialog.add_button(continue_button, callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id, has_changes)).add_button("Cancel", callback=lambda d: cancel_restore_project(d, channel_id), primary=False)
     dialog.show()
 
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
@@ -320,28 +324,25 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             repo = GitRepository.load(path)
             if not repo: return
 
-            if repo.has_pending_changes(True):
-                ui.show_info("Cannot reset project", "You have changed files. Commit them and try again")
-                return True
-            else:    
-                if platform.system() == "Windows":
-                    from vc.apgit.utility import is_executable_running
-                    from git_lfs_helper import LFSExtensionTracker
-                    if is_executable_running(["unrealeditor.exe"]):
-                        lfsExtensions = LFSExtensionTracker(repo)
-                        if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
-                            ap.UI().show_info("Cannot reset project", "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again", duration = 10000)
-                            return True
+            has_changes = repo.has_pending_changes(False)
+            if platform.system() == "Windows":
+                from vc.apgit.utility import is_executable_running
+                from git_lfs_helper import LFSExtensionTracker
+                if is_executable_running(["unrealeditor.exe"]):
+                    lfsExtensions = LFSExtensionTracker(repo)
+                    if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
+                        ap.UI().show_info("Cannot reset project", "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again", duration = 10000)
+                        return True
 
-                commit = repo.get_history_entry(entry_id)
-                show_restore_project_dialog(path, commit, channel_id)
+            commit = repo.get_history_entry(entry_id)
+            show_restore_project_dialog(path, commit, channel_id, has_changes)
 
         except Exception as e:
-            ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
             if not git_errors.handle_error(e):
                 logging.info(str(e))
                 ui.show_error("Reset Failed", str(e))
         finally:    
+            ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
             return True
 
     

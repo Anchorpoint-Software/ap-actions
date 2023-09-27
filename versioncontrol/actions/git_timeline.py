@@ -2,7 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 import os, logging
-import platform, re
+import platform, re, sys
 from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
@@ -19,16 +19,16 @@ def parse_change(repo_dir: str, change, status: ap.VCFileStatus, selected: bool)
 def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingChange], selected: bool = False):
     for file in repo_changes.new_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.New, selected)
-        changes[change.path] = change
+        changes[file.path] = change
     for file in repo_changes.modified_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.Modified, selected)
-        changes[change.path] = change
+        changes[file.path] = change
     for file in repo_changes.deleted_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.Deleted, selected)
-        changes[change.path] = change
+        changes[file.path] = change
     for file in repo_changes.renamed_files:
         change = parse_change(repo_dir, file, ap.VCFileStatus.Renamed, selected)
-        changes[change.path] = change
+        changes[file.path] = change
 
 def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
     for conflict in conflicts:
@@ -108,6 +108,8 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         for b in branches:
             branch = ap.VCBranch()
             branch.name = b.name
+            branch.author = b.author
+            branch.moddate = b.last_changed
             info.branches.append(branch)
 
             if b.name == current_branch_name:
@@ -393,7 +395,6 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         if git_settings.notifications_enabled():
             last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
             if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
-                print("New commits to pull")
                 if commits_to_pull == 1:
                     ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
                 else:
@@ -484,6 +485,49 @@ def handle_git_autolock(repo, ctx, changes):
     ap.lock(ctx.workspace_id, ctx.project_id, list(paths_to_lock), metadata={"type": "git"})
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
 
+def get_cached_paths(ref, repo, changes, deleted_only = False):
+    sys.path.insert(0, current_dir)
+    from git_load_file import get_lfs_cached_file
+    from git_lfs_helper import LFSExtensionTracker
+    if current_dir in sys.path: sys.path.remove(current_dir)
+
+    lfsExtensions = LFSExtensionTracker(repo)
+
+    currentrefs = []
+    beforerefs = [] # ref^ for deleted files
+
+    repo_dir = repo.get_root_path()        
+
+    keys = changes.keys()
+    for change_path in keys:
+        change = changes[change_path]
+        if deleted_only and change.status != ap.VCFileStatus.Deleted:
+            continue
+
+        if not lfsExtensions.is_file_tracked(change.path):
+            continue
+        if change.status == ap.VCFileStatus.Deleted:
+            beforerefs.append(change_path)
+        else:
+            currentrefs.append(change_path)
+    
+    hashes = repo.get_lfs_filehash(paths=currentrefs, ref=ref)
+    try:
+        beforehashes = repo.get_lfs_filehash(paths=beforerefs, ref=ref + "^")
+    except:
+        beforehashes = []
+        pass
+    for change_path in keys:
+        if change_path in hashes:
+            file_hash = hashes[change_path]
+            changes[change_path].cached_path = get_lfs_cached_file(file_hash, repo_dir)
+            changes[change_path].cachable = True
+        elif change_path in beforehashes:
+            file_hash = beforehashes[change_path]
+            changes[change_path].cached_path = get_lfs_cached_file(file_hash, repo_dir)
+            changes[change_path].cachable = True
+
+
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     try:
         import sys, os
@@ -510,6 +554,8 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
         parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
         parse_conflicts(repo_dir, repo.get_conflicts(), changes)
+
+        get_cached_paths("HEAD", repo, changes, deleted_only=True)
 
         info = ap.VCPendingChangesInfo()
         info.changes = ap.VCPendingChangeList(changes.values())
@@ -577,12 +623,12 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
 
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_changes_for_changelist(entry_id), changes)
+        get_cached_paths(entry_id, repo, changes)
 
         has_remote = repo.has_remote()
-
         current_commit = repo.get_current_change_id()
 
-        if repo.branch_contains(entry_id):
+        if not repo.commit_not_pulled(entry_id):
             revert = ap.TimelineChannelAction()
             revert.name = "Undo Commit"
             revert.icon = aps.Icon(":/icons/undo.svg")
@@ -637,6 +683,7 @@ def on_load_timeline_channel_stash_details(channel_id: str, ctx):
         
         changes = dict[str,ap.VCPendingChange]()
         parse_changes(repo.get_root_path(), repo.get_stash_changes(stash), changes)
+        get_cached_paths(f"stash@{{{stash.id}}}", repo, changes)
 
         has_changes = repo.has_pending_changes(True)
 
@@ -858,6 +905,7 @@ def on_project_directory_changed(ctx):
     ap.vc_load_pending_changes("Git")
 
 def on_add_logging_data(channel_id: str, ctx):
+    log = ""
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -876,41 +924,81 @@ def on_add_logging_data(channel_id: str, ctx):
         return log
     except Exception as e:
         print("on_add_logging_data exception: " + str(e))
-        return ""
+        return log
 
 def on_timeout(ctx):
     ctx.run_async(refresh_async, "Git", ctx.project_path)
 
 def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None
+    from git_lfs_helper import file_is_binary
+    from git_load_file import get_lfs_cached_file
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
+        from git_lfs_helper import LFSExtensionTracker
 
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return None
+        lfsExtensions = LFSExtensionTracker(repo)
 
         info = ap.VCGetChangesInfo()
         rel_path = os.path.relpath(ctx.path, ctx.project_path).replace("\\", "/")
+
+        is_binary = lfsExtensions.is_file_tracked(ctx.path) or file_is_binary(ctx.path)
         
         if entry_id:
             if entry_id == "vcStashedChanges":
                 stash = repo.get_branch_stash()
                 if not stash:
                     return None
-                info.modified_content = repo.get_stash_content(rel_path, stash).rstrip()
-                info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+                if not is_binary:
+                    try:
+                        info.modified_content = repo.get_stash_content(rel_path, stash).rstrip()
+                        info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+                    except:
+                        print("on_vc_get_changes_info exception: could not load stash content for changes info")
+                else:
+                    try:
+                        # TODO: set info.original_filepath to allow an image diff view in the detail page
+                        hash = repo.get_lfs_filehash(paths=[rel_path], ref=f"stash@{{{stash.id}}}")[rel_path]
+                        info.modified_filepath = get_lfs_cached_file(hash, path)
+                    except:
+                        pass
             else:
-                info.modified_content = repo.get_file_content(rel_path, entry_id).rstrip()
-                info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
-            
+                if not is_binary:
+                    try:
+                        info.modified_content = repo.get_file_content(rel_path, entry_id).rstrip()
+                        info.original_content = repo.get_file_content(rel_path, entry_id + "~").rstrip()
+                    except:
+                        print("on_vc_get_changes_info exception: could not load commit content for changes info")
+                else:
+                    try:
+                        # TODO: set info.original_filepath to allow an image diff view in the detail page
+                        hash = None
+                        hashes = repo.get_lfs_filehash(paths=[rel_path], ref=entry_id)
+                        if rel_path in hashes:
+                            hash = hashes[rel_path]
+                        else:
+                            hashes = repo.get_lfs_filehash(paths=[rel_path], ref=entry_id + "^")
+                            if rel_path in hashes:
+                                hash = hashes[rel_path]
+                        if hash:
+                            info.modified_filepath = get_lfs_cached_file(hash, path)
+                    except:
+                        pass
         else:
-            info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+            if not is_binary:
+                try:
+                    info.original_content = repo.get_file_content(rel_path, "HEAD").rstrip()
+                except:
+                    print("on_vc_get_changes_info exception: could not load HEAD content for changes info")
             if os.path.exists(ctx.path):
-                with open(ctx.path, encoding="utf-8") as f:                
-                    info.modified_content = f.read().rstrip()
-                    info.modified_filepath = ctx.path
+                if not is_binary:
+                    with open(ctx.path, encoding="utf-8") as f:                
+                        info.modified_content = f.read().rstrip()
+                info.modified_filepath = ctx.path
             else:
                 info.modified_content = ""
                 info.modified_filepath = ctx.path
@@ -920,6 +1008,6 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     except Exception as e:
         import git_errors
         git_errors.handle_error(e)
-        print("on_vc_get_changes_info exception: " + str(e))
+        print("on_vc_get_changes_info exception")
         return None
     

@@ -2,6 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 import os, re, sys
 from datetime import datetime
+from template_settings import get_workspace_template_dir, get_callback_location
 
 import template_utility
 
@@ -44,8 +45,9 @@ template_dir = os.path.join(ctx.yaml_dir, template)
 yaml_dir = ctx.yaml_dir
 
 settings = aps.SharedSettings(ctx.workspace_id, "AnchorpointTemplateSettings")
-template_dir = os.path.join(settings.get("template_dir", template_dir), template_subdir)
-callback_file = os.path.join(settings.get("callback_dir"), "template_action_events.py")
+template_root_dir = get_workspace_template_dir(settings, template_dir)
+template_dir = os.path.join(template_root_dir, template_subdir)
+callback_file = get_callback_location(settings, template_root_dir)
 
 if project:
     project_templates_location = template_utility.get_template_dir(project.path)
@@ -133,9 +135,17 @@ def get_template_variables(dir):
 def resolve_tokens(variable_list):
     for variable in variable_list:
         # Increment logic is simple, we just check for the object count in the folder
+        increment = len(os.listdir(target_folder))+1
         if variable == "Increment":
-            increment = len(os.listdir(target_folder))+1
             variables["Increment"] = str(increment*10).zfill(4)
+        if variable == "Inc####":
+            variables["Inc####"] = str(increment).zfill(4)
+        if variable == "Inc###":
+            variables["Inc###"] = str(increment).zfill(3)
+        if variable == "Inc##":
+            variables["Inc##"] = str(increment).zfill(2)
+        if variable == "Inc#":
+            variables["Inc#"] = str(increment)
         
         # If the token is a date, add the value to the dict
         elif variable == "YYYY":
@@ -164,6 +174,13 @@ def resolve_tokens(variable_list):
         elif variable == "User":
             username_underscore = username.replace(" ", "_").replace(".", "_").lower()
             variables["User"] = str(username_underscore)
+        elif variable == "UserInitials":
+            username_split = username.split(" ")
+            initials = ""
+            for name in username_split:
+                initials += name[0].lower()
+            variables["UserInitials"] = str(initials)
+
         elif variable not in variables:
             variables[variable] = ""
 
