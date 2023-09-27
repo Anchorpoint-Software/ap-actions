@@ -80,7 +80,7 @@ class LFSExtensionTracker:
             for line in f.readlines():
                 if line.startswith('#'): continue
                 if 'filter=lfs' in line:
-                    self.lfs_patterns.append(line.split()[0].lower())
+                    self.lfs_patterns.append(line.split()[0].lower().replace('[[:space:]]', ' '))
     
     def is_extension_tracked(self, extension):
         for pattern in self.lfs_patterns:
