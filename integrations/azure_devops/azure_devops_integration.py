@@ -316,7 +316,7 @@ class DevopsIntegration(ap.ApIntegration):
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
         if action_id == create_repo_dialog_entry:
             if self.is_setup:
-                dialog.add_info("You may need to <b>log into</b> Azure DevOps (Visual Studio) again after the final step", var=create_dialog_info_entry)
+                dialog.add_info("You may need to <b>log into</b> Azure DevOps (Visual Studio) again after the final step.", var=create_dialog_info_entry)
                 return [create_dialog_info_entry]
             return []
 
