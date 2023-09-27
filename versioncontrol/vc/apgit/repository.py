@@ -1566,12 +1566,15 @@ class GitRepository(VCRepository):
         
         host = parsed_url.netloc.lower()  # Ensure host is lowercase
         path = parsed_url.path.lower()
+        if path.startswith("/"):
+            path = path[1:]
 
         if "@" in host:
             host = host.split("@")[1]
 
         try:
-            GitRepository.erase_credentials(host, "https", path)
-        except:
+            GitRepository.erase_credentials(host, "https", path if "azure" in host else None)
+        except Exception as e:
+            print(e)
             return False
         return True
