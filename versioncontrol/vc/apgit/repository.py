@@ -1478,23 +1478,39 @@ class GitRepository(VCRepository):
     @staticmethod    
     def store_credentials(host: str, protocol: str, username: str, password: str, path: str = None):
         from subprocess import run
+        import platform
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment())
+
+        kwargs = {}
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+            kwargs["creationflags"] = CREATE_NO_WINDOW
         
         cmd = [install_git.get_gcm_path(), "store"]
         if path:
-            p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}\nusername={username}\npassword={password}", text=True)
+            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\npath={path}\nusername={username}\npassword={password}", text=True, **kwargs)
         else:
-            p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
+            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True, **kwargs)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
     def get_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
-        
+        import platform
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment())
+
+        kwargs = {}
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+
         cmd = [install_git.get_gcm_path(), "get"]
         if path:
-            p = run(cmd, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True)
+            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True, **kwargs)
         else:
-            p = run(cmd, input=f"host={host}\nprotocol={protocol}", text=True, capture_output=True)
+            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}", text=True, capture_output=True, **kwargs)
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
@@ -1504,7 +1520,6 @@ class GitRepository(VCRepository):
                 key, value = line.split("=", 1)
                 result[key] = value
         return result
-
         
     @staticmethod    
     def erase_credentials(host: str, protocol: str):
