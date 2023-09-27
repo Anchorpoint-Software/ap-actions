@@ -1481,6 +1481,9 @@ class GitRepository(VCRepository):
         import platform
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
+        git_path = install_git.get_git_cmd_path()
+        if git_path:
+            current_env["PATH"] += os.pathsep + os.path.dirname(install_git.get_git_cmd_path())
 
         kwargs = {}
         if platform.system() == "Windows":
@@ -1495,11 +1498,15 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
+    @staticmethod
     def get_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
         import platform
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
+        git_path = install_git.get_git_cmd_path()
+        if git_path:
+            current_env["PATH"] += os.pathsep + os.path.dirname(install_git.get_git_cmd_path())
 
         kwargs = {}
         if platform.system() == "Windows":
@@ -1526,6 +1533,9 @@ class GitRepository(VCRepository):
         from subprocess import run
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
+        git_path = install_git.get_git_cmd_path()
+        if git_path:
+            current_env["PATH"] += os.pathsep + os.path.dirname(install_git.get_git_cmd_path())
 
         kwargs = {}
         if platform.system() == "Windows":
@@ -1543,7 +1553,7 @@ class GitRepository(VCRepository):
         
     def clear_credentials(self):
         from urllib.parse import urlparse
-              
+
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: remote = "origin"
