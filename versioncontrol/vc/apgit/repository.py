@@ -1327,7 +1327,10 @@ class GitRepository(VCRepository):
     def commit_not_pulled(self, changelist_id: str):
         # Don't use branch --contains as it becomes very slow for big repos
         if not self.has_remote(): return False
-        commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        try:
+            commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        except:
+            return False
         return changelist_id in commits
 
     def branch_contains(self, changelist_id: str):
