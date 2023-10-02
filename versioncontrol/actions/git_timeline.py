@@ -921,6 +921,10 @@ def on_add_logging_data(channel_id: str, ctx):
         log = log + "=========\n"
         log = log + repo.git_log()
 
+        log = log + "\n\nConfig:\n"
+        log = log + "=========\n"
+        log = log + repo.git_list_config()
+
         return log
     except Exception as e:
         print("on_add_logging_data exception: " + str(e))

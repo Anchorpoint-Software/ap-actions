@@ -696,6 +696,9 @@ class GitRepository(VCRepository):
             return self.repo.git(no_pager=True).log("-10", "@{u}")
         else:
             return self.repo.git(no_pager=True).log("-10")
+        
+    def git_list_config(self):
+        return self.repo.git.config("--list", "--show-origin")
 
     def _run_git_status(self):
         try:
@@ -1327,7 +1330,10 @@ class GitRepository(VCRepository):
     def commit_not_pulled(self, changelist_id: str):
         # Don't use branch --contains as it becomes very slow for big repos
         if not self.has_remote(): return False
-        commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        try:
+            commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        except:
+            return False
         return changelist_id in commits
 
     def branch_contains(self, changelist_id: str):
