@@ -696,6 +696,9 @@ class GitRepository(VCRepository):
             return self.repo.git(no_pager=True).log("-10", "@{u}")
         else:
             return self.repo.git(no_pager=True).log("-10")
+        
+    def git_list_config(self):
+        return self.repo.git.config("--list", "--show-origin")
 
     def _run_git_status(self):
         try:
