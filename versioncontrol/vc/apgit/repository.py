@@ -696,6 +696,9 @@ class GitRepository(VCRepository):
             return self.repo.git(no_pager=True).log("-10", "@{u}")
         else:
             return self.repo.git(no_pager=True).log("-10")
+        
+    def git_list_config(self):
+        return self.repo.git.config("--list", "--show-origin")
 
     def _run_git_status(self):
         try:
@@ -1327,7 +1330,10 @@ class GitRepository(VCRepository):
     def commit_not_pulled(self, changelist_id: str):
         # Don't use branch --contains as it becomes very slow for big repos
         if not self.has_remote(): return False
-        commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        try:
+            commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
+        except:
+            return False
         return changelist_id in commits
 
     def branch_contains(self, changelist_id: str):
@@ -1551,16 +1557,11 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
-    def clear_credentials(self):
+    @staticmethod
+    def get_git_url_info(url):
         from urllib.parse import urlparse
-
-        branch = self._get_current_branch()
-        remote = self._get_default_remote(branch)
-        if remote is None: remote = "origin"
-        remote_url = self._get_remote_url(remote)
-
         # Parse the URL to get the host
-        parsed_url = urlparse(remote_url)
+        parsed_url = urlparse(url)
         if not parsed_url.netloc:
             raise ValueError("Invalid URL format")
         
@@ -1571,6 +1572,18 @@ class GitRepository(VCRepository):
 
         if "@" in host:
             host = host.split("@")[1]
+        
+        return host, path
+
+    def clear_credentials(self):
+        from urllib.parse import urlparse
+
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: remote = "origin"
+        remote_url = self._get_remote_url(remote)
+
+        host, path = GitRepository.get_git_url_info(remote_url)
 
         try:
             GitRepository.erase_credentials(host, "https", path if "azure" in host else None)

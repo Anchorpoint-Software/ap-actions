@@ -145,6 +145,7 @@ def setup_credentials_async(dialog):
     try:
         dialog.set_processing(settings_credential_btn_highlight_entry, True, "Updating")
         dialog.set_processing(settings_credential_btn_entry, True, "Updating")
+        GitRepository.erase_credentials(gitlab_root, "https")
         result = GitRepository.get_credentials(gitlab_root, "https")
         if (result is None or result.get("host") is None or result["host"] != gitlab_root 
             or result.get("username") is None or result.get("password") is None):

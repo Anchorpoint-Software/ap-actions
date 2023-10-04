@@ -913,13 +913,29 @@ def on_add_logging_data(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo: return ""
         
-        log = "\nStatus:\n"
-        log = log + "=========\n"
-        log = log + repo.git_status()
+        try:
+            status = repo.git_status()
+            log = "\nStatus:\n"
+            log = log + "=========\n"
+            log = log + status
+        except Exception as e:
+            print("on_add_logging_data status exception: " + str(e))
 
-        log = log + "\n\nLog:\n"
-        log = log + "=========\n"
-        log = log + repo.git_log()
+        try:
+            git_log = repo.git_log()
+            log = log + "\n\nLog:\n"
+            log = log + "=========\n"
+            log = log + git_log
+        except Exception as e:
+            print("on_add_logging_data log exception: " + str(e))
+
+        try:
+            git_config = repo.git_list_config()
+            log = log + "\n\nConfig:\n"
+            log = log + "=========\n"
+            log = log + git_config
+        except Exception as e:
+            print("on_add_logging_data config exception: " + str(e))
 
         return log
     except Exception as e:
