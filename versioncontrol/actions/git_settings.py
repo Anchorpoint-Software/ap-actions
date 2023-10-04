@@ -164,7 +164,7 @@ def clear_credentials_async(dialog, repo_path, url):
             else:
                 host, path = GitRepository.get_git_url_info(url)
                 GitRepository.erase_credentials(host, "https", path if "azure" in host else None)
-                ap.UI().show_success("Credentials updated")
+                ap.UI().show_success("Credentials cleared")
         except Exception as e:
             print(e)
             ap.UI().show_error("Could not clear credentials")
@@ -254,7 +254,7 @@ def on_show_project_preferences(settings_list, ctx: ap.Context):
     if not project: return
     channel = aps.get_timeline_channel(project, "Git")
     if not channel: return
-    
+
     gitSettings = GitProjectSettings(ctx)
     gitSettings.name = 'Git'
     gitSettings.priority = 100
