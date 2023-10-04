@@ -1557,16 +1557,11 @@ class GitRepository(VCRepository):
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
         
-    def clear_credentials(self):
+    @staticmethod
+    def get_git_url_info(url):
         from urllib.parse import urlparse
-
-        branch = self._get_current_branch()
-        remote = self._get_default_remote(branch)
-        if remote is None: remote = "origin"
-        remote_url = self._get_remote_url(remote)
-
         # Parse the URL to get the host
-        parsed_url = urlparse(remote_url)
+        parsed_url = urlparse(url)
         if not parsed_url.netloc:
             raise ValueError("Invalid URL format")
         
@@ -1577,6 +1572,18 @@ class GitRepository(VCRepository):
 
         if "@" in host:
             host = host.split("@")[1]
+        
+        return host, path
+
+    def clear_credentials(self):
+        from urllib.parse import urlparse
+
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: remote = "origin"
+        remote_url = self._get_remote_url(remote)
+
+        host, path = GitRepository.get_git_url_info(remote_url)
 
         try:
             GitRepository.erase_credentials(host, "https", path if "azure" in host else None)

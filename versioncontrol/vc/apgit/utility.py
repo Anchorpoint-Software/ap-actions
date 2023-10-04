@@ -108,3 +108,11 @@ def get_repo_path(channel_id: str, project_path: str):
         return project_path
     if not folder: return project_path
     return folder
+
+def get_repo_url_from_channel(channel_id: str, workspace_id: str, project_id: str):
+    project = aps.get_project_by_id(project_id, workspace_id)
+    if not project: return None
+    channel = aps.get_timeline_channel(project, channel_id)
+    if not channel: return None
+    if not "gitRemoteUrl" in channel.metadata: return None
+    return channel.metadata["gitRemoteUrl"]
