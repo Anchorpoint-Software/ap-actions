@@ -114,7 +114,10 @@ def open_terminal_pressed(dialog):
     elif platform.system() == "Windows":
         path = os.environ["PATH"]
         os.putenv("PATH", f"{os.path.dirname(get_git_cmd_path())};{path}")
-        os.system(f"start cmd /k \"{pathlib.Path(ctx.project_path).drive} & cd {ctx.project_path}\"")
+        if os.path.exists(ctx.project_path):
+            os.system(f"start cmd /k \"{pathlib.Path(ctx.project_path).drive} & cd {ctx.project_path}\"")
+        else:
+            os.system(f"start cmd /k")
 
 def prune(project_path):
     sys.path.insert(0, script_dir)
