@@ -178,7 +178,7 @@ def setup_credentials_async(dialog, org: str):
     try:
         dialog.set_processing(settings_credential_btn_highlight_entry, True, "Updating")
         dialog.set_processing(settings_credential_btn_entry, True, "Updating")
-        GitRepository.clear_credentials(devops_root, "https", org)
+        GitRepository.erase_credentials(devops_root, "https", org)
         result = GitRepository.get_credentials(devops_root, "https", org)
         if (result is None or result.get("host") is None or result["host"] != devops_root 
             or result.get("path") is None or result["path"] != org 
