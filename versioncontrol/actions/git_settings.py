@@ -250,6 +250,11 @@ def on_show_account_preferences(settings_list, ctx: ap.Context):
     settings_list.add(gitSettings)
 
 def on_show_project_preferences(settings_list, ctx: ap.Context):
+    project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
+    if not project: return
+    channel = aps.get_timeline_channel(project, "Git")
+    if not channel: return
+    
     gitSettings = GitProjectSettings(ctx)
     gitSettings.name = 'Git'
     gitSettings.priority = 100
