@@ -127,6 +127,17 @@ class AzureDevOpsClient:
         settings.clear()
         settings.store()
 
+    def _token_post_with_retry(self, token_url, headers, body, max_retries=3, retry_delay=1):
+            for _ in range(max_retries):
+                try:
+                    response = requests.post(token_url, headers=headers, data=body)
+                    return response
+                except ConnectionResetError as cre:
+                    print(f"Connection reset error received: {str(cre)}. Retrying...")
+                    time.sleep(retry_delay)
+
+            raise Exception(f"Reached max retries ({max_retries}). Giving up.")
+
     def setup_refresh_token(self):
         self.init()
         body = {
@@ -141,7 +152,12 @@ class AzureDevOpsClient:
             "Content-Type": "application/x-www-form-urlencoded"
         }
 
-        response = requests.post(token_url, headers=headers, data=body)
+        try:
+            response = self._token_post_with_retry(token_url=token_url, headers=headers, body=body)
+        except Exception as e:
+            print(f"Could not refresh token: {str(e)}")
+            return False
+        
         if not response:
             if response.status_code == 401:
                 return False
@@ -178,7 +194,11 @@ class AzureDevOpsClient:
                 "Content-Type": "application/x-www-form-urlencoded"
             }
 
-            response = requests.post(token_url, headers=headers, data=body)
+            try:
+                response = self._token_post_with_retry(token_url=token_url, headers=headers, body=body)
+            except Exception as e:
+                print(f"Could not refresh token: {str(e)}")
+                raise TokenExpiredError
             
             if not response:
                 if response.status_code == 401:
@@ -227,37 +247,6 @@ class AzureDevOpsClient:
         json = response.json()
         
         return UserProfile(json["displayName"], json["publicAlias"], json["emailAddress"])
-
-    # def can_create_projects(self, organization:str, user: UserProfile):
-    #     response = self._request_with_refresh("GET", f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?scopeDescriptor={project_descriptor}&api-version=7.0-preview.1")
-          
-    #     if not response:
-    #         raise Exception("Could not get groups of project: ", response.text)
-
-    #     group_descriptor = None
-    #     for group_json in response.json()["value"]:
-    #         if group_json["principalName"] == f"[{project_name}]\\Contributors":
-    #             group_descriptor = group_json["descriptor"]
-
-    #     if not group_descriptor:
-    #         raise Exception("No group descriptor found")
-        
-    #     user_id = self._get_user_id_by_email(organization, user_email)
-    #     user_descriptor = self._get_graph_descriptor(user_id)
-
-    #     response = self._request_with_refresh("DELETE", f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
-
-    #     if not response:
-    #         raise Exception("Could not remove user from project: ", response.text)
-
-
-    #     response = self._request_with_refresh("GET", f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements/{user.user_id}?api-version=7.0")
-    #     if not response:
-    #         raise Exception("Could not check if user is admin: ", response.text)
-    #     json = response.json()
-    #     accessLevel = json["accessLevel"]
-
-
 
     def get_organizations(self, user: UserProfile):
         response = self._request_with_refresh("GET", f"https://app.vssps.visualstudio.com/_apis/accounts?memberId={user.user_id}&api-version=7.0")
