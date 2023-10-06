@@ -1537,7 +1537,7 @@ class GitRepository(VCRepository):
                 result[key] = value
         return result
         
-    @staticmethod    
+    @staticmethod
     def erase_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
         current_env = os.environ.copy()

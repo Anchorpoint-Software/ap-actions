@@ -347,7 +347,7 @@ class GitlabClient:
         if not self._is_user_invited_to_project(project_id, user_email):
             self._invite_user_to_project(project_id, user_email)
 
-    def remove_user_from_project(self, group: str, user_email: str, name: str):
+    def remove_user_from_project(self, group: Group, user_email: str, name: str):
         project_id = self._get_project_id_by_name(name, group)
         if self._is_user_invited_to_project(project_id, user_email):
             self._remove_invited_user_from_project(project_id, user_email)
