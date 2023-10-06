@@ -65,6 +65,7 @@ def apply_git_url(dialog, ctx, repo_path):
 
         repo = GitRepository.load(repo_path)
         repo.update_remote_url(url)
+        ap.reload_timeline_entries()
 
         ap.UI().show_success("Url changed")
         print(f"Git repository URL was changed by user from {old_url} to {url}")
@@ -73,6 +74,12 @@ def apply_git_url(dialog, ctx, repo_path):
         channel.metadata = metadata
         aps.update_timeline_channel(project, channel)
         ap.UI().show_error("Could not change URL", "The URL could not be changed")
+    finally:
+        dialog.set_processing("applyurl", False)
+
+def apply_git_url_async(dialog, ctx, repo_path):
+    dialog.set_processing("applyurl", True, "Changing URL")
+    ctx.run_async(apply_git_url, dialog, ctx, repo_path)
 
 def open_terminal_pressed(dialog): 
     sys.path.insert(0, script_dir)
@@ -204,7 +211,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_text("<b>Repository URL</b>")
         self.dialog.add_input(url if url != None else "", var="url", width=400)
         self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
-        self.dialog.add_button("Apply URL", callback=lambda d: apply_git_url(d, self.ctx, path), primary=False)
+        self.dialog.add_button("Apply URL", var="applyurl", callback=lambda d: apply_git_url_async(d, self.ctx, path), primary=False)
         self.dialog.add_empty()
 
         self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())

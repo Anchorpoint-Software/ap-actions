@@ -569,6 +569,9 @@ class GitRepository(VCRepository):
             raise "No remote"
         
         self.repo.git.remote("set-url", "origin", url)
+
+        # Make a prune fetch to remove outdated refs from the old remote
+        self.repo.git.fetch("--all", "-p")
         
     
     def is_unborn(self):
