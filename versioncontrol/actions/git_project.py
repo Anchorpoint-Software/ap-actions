@@ -312,7 +312,8 @@ try:
 
             if self._is_path_equal(git_parent_dir, project_path):
                 # Case 3: Folder Contains Git in root -> Open Repo
-                self._open_repo(project_path, self.project, git_ignore)
+                url = repo_url if remote_enabled else None
+                self._open_repo(project_path, self.project, git_ignore, url)
                 return
 
             if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
@@ -362,11 +363,18 @@ try:
             self._add_git_ignore(repo, git_ignore, project_path)
             return repo
         
-        def _open_repo(self, project_path, project, git_ignore):
+        def _open_repo(self, project_path, project, git_ignore, user_url):
             repo = self.git.GitRepository.load(project_path)
 
             url = repo.get_remote_url()
             if url == "": url = None
+
+            if url == None and user_url != None:
+                url = user_url
+
+            if user_url != None and user_url != url:
+                ap.UI().show_error("Could not setup project", f"You have selected an existing Git repository but the remote URL does not match {url}", duration=10000)
+                sys.exit(0)
 
             repo.set_username(self.context.username, self.context.email, project_path)
             self.githelper.update_project(project_path, url, False, None, project)
