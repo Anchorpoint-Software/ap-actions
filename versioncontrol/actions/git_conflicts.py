@@ -194,6 +194,8 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
             stash = repo.get_branch_stash()
             if stash:
                 stash_id = f"stash@{{{stash.id}}}"
+                if status_current == ap.VCFileStatus.Deleted:
+                    stash_id = stash_id + "^"
                 hash_current = repo.get_lfs_filehash([rel_filepath], stash_id)
             else:
                 hash_current = []
