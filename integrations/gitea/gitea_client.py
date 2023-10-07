@@ -195,7 +195,7 @@ class GiteaClient:
         data = response.json()
         return Organization(id=data["id"], 
                             email=data["email"],
-                            name=data["login_name"] if data["login_name"] is not None and data["login_name"] is not '' else data["login"],
+                            name=data["login_name"] if data["login_name"] is not None and data["login_name"] != '' else data["login"],
                             avatar_url=data["avatar_url"],
                             is_user=True)
     

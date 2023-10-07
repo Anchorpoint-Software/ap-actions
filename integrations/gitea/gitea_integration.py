@@ -164,7 +164,7 @@ def setup_credentials_async(dialog, host_url: str):
         parsed_url = urlparse(host_url)
         scheme = parsed_url.scheme
         netloc = parsed_url.netloc
-        path = parsed_url.path if parsed_url.path is not '' else None
+        path = parsed_url.path if parsed_url.path != '' else None
 
         GitRepository.erase_credentials(netloc, scheme, path)
         result = GitRepository.get_credentials(netloc, scheme, path)
@@ -476,14 +476,14 @@ class GiteaIntegration(ap.ApIntegration):
         dialog.title = "Disconnect Gitea"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitea/logo.svg")
 
-        dialog.add_text("Do you also want to remove the gitea server url and clientId for all workspace members?")
-        dialog.add_switch("Delete gitea server url and clientId", var=remove_data_entry, enabled=False)
+        dialog.add_text("Do you also want to remove the gitea server infos (url,<br>client id and client secret) for all workspace members?")
+        dialog.add_switch(text="Delete gitea server infos from workspace", var=remove_data_entry, default=False)
         dialog.add_empty()
 
-        dialog.add_button("Disconnect", var="disconnect", callback=lambda d: self.clear_integration(d, self.ctx), enabled=True)
+        dialog.add_button("Disconnect", var="disconnect", callback=self.clear_integration)
         dialog.show()
 
-    def clear_integration(self, dialog: ap.Dialog, ctx: ap.Context):
+    def clear_integration(self, dialog: ap.Dialog, value):
         remove_data = dialog.get_value(remove_data_entry)
         self.client.clear_integration(remove_data)
         self.is_setup = False
