@@ -175,7 +175,9 @@ class GiteaClient:
         if clear_workspace_settings:
             sharedSettings = aps.SharedSettings(self.workspace_id, gitea_shared_settings_key)
             sharedSettings.clear()
-            sharedSettings.store()
+            self.host_url = None
+            self.client_id = None
+            self.client_secret = None
 
     def setup_refresh_token(self):
         success = self.init()
