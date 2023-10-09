@@ -483,7 +483,7 @@ class GiteaIntegration(ap.ApIntegration):
         dialog.add_button("Disconnect", var="disconnect", callback=self.clear_integration)
         dialog.show()
 
-    def clear_integration(self, dialog: ap.Dialog, value):
+    def clear_integration(self, dialog: ap.Dialog):
         remove_data = dialog.get_value(remove_data_entry)
         self.client.clear_integration(remove_data)
         self.is_setup = False
