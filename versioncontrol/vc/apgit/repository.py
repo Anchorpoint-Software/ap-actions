@@ -566,12 +566,24 @@ class GitRepository(VCRepository):
     
     def update_remote_url(self, url):
         if not self.has_remote():
-            raise "No remote"
-        
-        self.repo.git.remote("set-url", "origin", url)
+            self.add_remote(url)
+            self.repo.git.fetch("--all")
+            if not self.has_pending_changes(False):
+                branches = self.get_branches()
+                for branch in branches:
+                    if "origin/main" in branch.name:
+                        self.repo.git.checkout("-b", "main", "origin/main")
+                        break
+                    if "origin/master" in branch.name:
+                        self.repo.git.checkout("-b", "master", "origin/master")
+                        break
+            else:
+                raise Exception("Cannot change remote URL because there are pending changes")
+        else:
+            self.repo.git.remote("set-url", "origin", url)
 
-        # Make a prune fetch to remove outdated refs from the old remote
-        self.repo.git.fetch("--all", "-p")
+            # Make a prune fetch to remove outdated refs from the old remote
+            self.repo.git.fetch("--all", "-p")
         
     
     def is_unborn(self):

@@ -56,24 +56,26 @@ def apply_git_url(dialog, ctx, repo_path):
         return
 
     metadata = channel.metadata
-    old_url = metadata["gitRemoteUrl"]
+    if "gitRemoteUrl" in metadata:
+        old_url = metadata["gitRemoteUrl"]
+    else: 
+        old_url = None
     metadata["gitRemoteUrl"] = url
     channel.metadata = metadata
 
     try:
         aps.update_timeline_channel(project, channel)
-
         repo = GitRepository.load(repo_path)
         repo.update_remote_url(url)
         ap.reload_timeline_entries()
 
         ap.UI().show_success("Url changed")
         print(f"Git repository URL was changed by user from {old_url} to {url}")
-    except:
+    except Exception as e:
         metadata["gitRemoteUrl"] = old_url
         channel.metadata = metadata
         aps.update_timeline_channel(project, channel)
-        ap.UI().show_error("Could not change URL", "The URL could not be changed")
+        ap.UI().show_error("Could not change URL", str(e))
     finally:
         dialog.set_processing("applyurl", False)
 
