@@ -14,4 +14,4 @@ def on_folder_created(folder_path: str, ctx):
         f.write("")
     
     if platform.system() == "Windows":
-        os.system(f'attrib -h "{gitkeep_path}"')
+        os.system(f'attrib +h "{gitkeep_path}"')
