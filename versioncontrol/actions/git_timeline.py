@@ -145,9 +145,9 @@ def cleanup_orphan_locks(ctx, repo):
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_delete)
 
-def handle_files_to_pull(repo):
-    from git_lfs_helper import LFSExtensionTracker
-    lfsExtensions = LFSExtensionTracker(repo)
+def handle_files_to_pull(repo, ctx):
+    from git_lock import GitFileLocker
+    locker = GitFileLocker(repo, ctx)
 
     changes = repo.get_files_to_pull(include_added=False)
     if not changes:
@@ -159,7 +159,7 @@ def handle_files_to_pull(repo):
             if not os.path.exists(path):
                 continue
 
-            if not lfsExtensions.is_file_tracked(path):
+            if not locker.is_file_lockable(path):
                 continue
 
             try:
@@ -406,7 +406,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
 
         workspace_settings = aps.SharedSettings(ctx.workspace_id, "remoteWorkspaceSettings")
         if git_settings.auto_lock_enabled() and repo.has_remote() and workspace_settings.get("readonlyLocksEnabled", True):
-            handle_files_to_pull(repo)
+            handle_files_to_pull(repo, ctx)
 
         return history_list, has_more_commits
     except Exception as e:
@@ -437,9 +437,9 @@ def on_locks_removed(locks, ctx):
         pickle.dump(path_mod_status, file)
 
 def handle_git_autolock(repo, ctx, changes):
-    from git_lfs_helper import LFSExtensionTracker
+    from git_lock import GitFileLocker
     import pickle
-    lfsExtensions = LFSExtensionTracker(repo)
+    locker = GitFileLocker(repo, ctx)
     paths_to_lock = set[str]()
     all_paths = set[str]()
 
@@ -454,7 +454,7 @@ def handle_git_autolock(repo, ctx, changes):
             clear_forced_unlocked_config()
     
     for change in changes:
-        if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and lfsExtensions.is_file_tracked(change.path):
+        if change.status != ap.VCFileStatus.New and change.status != ap.VCFileStatus.Unknown and locker.is_file_lockable(change.path):
             all_paths.add(change.path)
 
             # Do not lock files that are manually unlocked

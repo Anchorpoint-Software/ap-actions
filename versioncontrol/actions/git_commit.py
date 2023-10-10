@@ -105,12 +105,12 @@ def push_changes(ctx, repo: GitRepository, channel_id: str):
         if git_dir:
             delete_push_lockfiles(git_dir)
 
-def pull_changes(repo: GitRepository, channel_id: str):
+def pull_changes(repo: GitRepository, channel_id: str, ctx):
     rebase = False
     if rebase: raise NotImplementedError()
 
     try:
-        if not pull(repo, channel_id):
+        if not pull(repo, channel_id, ctx):
             raise Exception("Pull Failed")
         
         ap.vc_load_pending_changes(channel_id, True)
@@ -149,7 +149,7 @@ def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
         ap.get_context().run_async(delay, push_changes, None, ctx, repo, channel_id)
     else:
         try:
-            pull_changes(repo, channel_id)
+            pull_changes(repo, channel_id, ctx)
         except Exception as e:
             print(f"Auto-Push: Could not pull {str(e)}")
             ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 8000)

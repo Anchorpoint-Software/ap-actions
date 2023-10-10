@@ -181,6 +181,10 @@ def clear_credentials_async(dialog, repo_path, url):
 def update_credentials_pressed(dialog, ctx: ap.Context, repo_path, url):
     ctx.run_async(clear_credentials_async, dialog, repo_path, url)
 
+def store_shared_setting(key, value, settings):
+    settings.set(key, value)
+    settings.store()
+
 class GitProjectSettings(ap.AnchorpointSettings):
     def __init__(self, ctx: ap.Context):
         super().__init__()
@@ -217,8 +221,12 @@ class GitProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
         self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")
 
-        self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: d.store_settings())
+        self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: store_shared_setting("autolfs", v, self.get_shared_settings()))
         self.dialog.add_info("Disable this to manually configure Git LFS for files using a <i>.gitattributes</i> file.")
+
+        self.dialog.add_text("<b>Auto Lock Files</b>")
+        self.dialog.add_tag_input(["unity"], "pdf", var="lockextensions", width=400, callback=lambda d,v: store_shared_setting("lockextensions", v, self.get_shared_settings()))
+        self.dialog.add_info("Anchorpoint automatically locks changed binary files. Add other files here.")
         self.dialog.add_empty()
 
         self.dialog.add_text("<b>Git Commands</b>")
@@ -236,6 +244,10 @@ class GitProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_info("This will clear your credentials for your configured Git remote (e.g. Azure DevOps).")
 
         self.dialog.load_settings(self.get_settings())
+        shared_settings = self.get_shared_settings()
+        self.dialog.set_value("lockextensions", shared_settings.get("lockextensions", ["unity"]))
+        self.dialog.set_value("autolfs", shared_settings.get("autolfs", True))
+
 
     def get_dialog(self):         
         return self.dialog
@@ -243,11 +255,17 @@ class GitProjectSettings(ap.AnchorpointSettings):
     def get_settings(self):
         return aps.Settings("GitProjectSettings", self.ctx.project_id)
     
+    def get_shared_settings(self):
+        return aps.SharedSettings(self.ctx.project_id, self.ctx.workspace_id, "GitProjectSettings")
+    
     def gitkeep_enabled(self):
         return self.get_settings().get("gitkeep", True)
 
     def lfsautotrack_enabled(self):
-        return self.get_settings().get("autolfs", True)
+        return self.get_shared_settings().get("autolfs", True)
+    
+    def get_lock_extensions(self):
+        return self.get_shared_settings().get("lockextensions", [])
 
 def on_show_account_preferences(settings_list, ctx: ap.Context):
     gitSettings = GitAccountSettings(ctx)
