@@ -205,11 +205,11 @@ class GitProjectSettings(ap.AnchorpointSettings):
         path = get_repo_path("Git", ctx.project_path)
         try:
             repo = GitRepository.load(path)
-            repo_available = True
+            self.repo_available = True
             url = repo.get_remote_url() if repo else None
         except:
             repo = None
-            repo_available = False
+            self.repo_available = False
             url = get_repo_url_from_channel("Git", ctx.workspace_id, ctx.project_id)
 
         self.dialog.add_text("<b>Repository URL</b>")
@@ -234,7 +234,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
         self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
 
-        self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False, enabled=repo_available)
+        self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False, enabled=self.repo_available)
         self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
         self.dialog.add_button("Update Credentials" if repo else "Clear Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path, url), primary=False)
@@ -259,6 +259,8 @@ class GitProjectSettings(ap.AnchorpointSettings):
         return aps.SharedSettings(self.ctx.project_id, self.ctx.workspace_id, "GitProjectSettings")
     
     def gitkeep_enabled(self):
+        if not self.repo_available:
+            return False
         return self.get_settings().get("gitkeep", True)
 
     def lfsautotrack_enabled(self):
