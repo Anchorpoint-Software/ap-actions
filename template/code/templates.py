@@ -243,7 +243,7 @@ def create_dialog():
     set_variable_availability(dialog,dialog.get_value("dropdown"))
 
     if file_mode == False and allow_project_creation:
-        dialog.add_checkbox(var="create_project").add_text("This is a project")
+        dialog.add_checkbox(var="create_project", text="This is a project")
         dialog.add_info("Select this option if it is a project template. <br> Anchorpoint will create a project in the project list.")
 
     # Add a button to create the project, register a callback when the button is clicked.
