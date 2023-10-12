@@ -188,7 +188,7 @@ class GiteaIntegration(ap.ApIntegration):
         self.client = GiteaClient(ctx.workspace_id)
 
         self.name = 'Gitea (self-hosted)'
-        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an account on the self hosted Gitea server. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitea/'>Learn more</a>"
+        self.description = "A self-hosted Git repository for local or cloud servers. Create repositories <br> and add members directly from Anchorpoint. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitea/'>Learn more</a>"
         self.priority = 97
         self.tags = integration_tags
 
@@ -300,9 +300,8 @@ class GiteaIntegration(ap.ApIntegration):
             current_org = self.client.get_current_organization()
             if current_org is None:
                 current_org = orgs[0]
-                self.client.set_current_organization(current_org)
-            if len(orgs) > 1:
-                self.show_settings_dialog(current_org, orgs)
+                self.client.set_current_organization(current_org)            
+            self.show_settings_dialog(current_org, orgs)
             self._setup_connected_state()
             self.is_setup = True
             self.is_connected = True
@@ -342,7 +341,7 @@ class GiteaIntegration(ap.ApIntegration):
             dialog.set_value(client_values_info_entry, "Please insert your valid Gitea url first.")
             return "Please insert a valid url"
         extracted_url = self.extract_server_url(value)
-        dialog.set_value(client_values_info_entry, f"Create a gitea oauth app with following settings <a href='{extracted_url}/admin/applications'>here</a>:<br><br><b>Application Name: Anchorpoint</b><br><b>Redirect URI: https://www.anchorpoint.app/app/integration/auth</b><br><b>Check Confidential Client checkbox</b>")
+        dialog.set_value(client_values_info_entry, f"Create a <a href='{extracted_url}/admin/applications'>Gitea OAuth app</a> with following settings:<br><br>1. Application Name: <b>Anchorpoint</b><br>2. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>3. Check <b>Confidential Client</b> checkbox <br> 4. Press <b> Create Application</b> and enter the client keys below")
         return
         
     def extract_server_url(self, url: str):
@@ -404,19 +403,17 @@ class GiteaIntegration(ap.ApIntegration):
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitea/logo.svg")
         dialog.callback_validate_finsihed = self.update_dialog_after_validate
 
-        dialog.add_text("<b>1. Gitea url</b>", var="remoteurltext")
+        dialog.add_text("<b>1. Gitea URL</b>", var="remoteurltext")
         dialog.add_info("Enter your Gitea server url with port if needed")
-        dialog.add_input(placeholder='https://mygitea.com:3030', var=server_url_entry, width=400, validate_callback=self.validate_url)
-        dialog.add_empty()
+        dialog.add_input(placeholder='https://mygiteaserver.com:3030', var=server_url_entry, width=400, validate_callback=self.validate_url)
 
         dialog.add_text("<b>2. Gitea OAuth Application</b>", var="oauthapp")
-        dialog.add_info("Please insert your valid Gitea url first.", var=client_values_info_entry)
-        dialog.add_text("Client ID:")
+        dialog.add_info("Insert your valid Gitea url first", var=client_values_info_entry)
+        dialog.add_text("Client ID")
         dialog.add_input(placeholder='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', var=client_id_entry, width=400, validate_callback=self.validate_client_id)
-        dialog.add_text("Client Secret:")
-        dialog.add_input(placeholder='gto_{52 chararacters}', var=client_secret_entry, width=400, validate_callback=self.validate_client_secret)
-        
-        dialog.add_empty()
+        dialog.add_text("Client Secret")
+        dialog.add_info("This key must have 52 characters")
+        dialog.add_input(placeholder='gto_876s8df768768768769sfg68f76g8...', var=client_secret_entry, width=400, validate_callback=self.validate_client_secret)
 
         dialog.add_button("Connect to Gitea", var=connect_to_server_btn_entry, callback=lambda d: self.connect_to_server(d), enabled=False)
 
@@ -477,8 +474,7 @@ class GiteaIntegration(ap.ApIntegration):
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitea/logo.svg")
 
         dialog.add_text("Do you also want to remove the gitea server infos (url,<br>client id and client secret) for all workspace members?")
-        dialog.add_switch(text="Delete gitea server infos from workspace", var=remove_data_entry, default=False)
-        dialog.add_empty()
+        dialog.add_checkbox(text="Delete gitea server infos from workspace",var=remove_data_entry, default=False)
 
         dialog.add_button("Disconnect", var="disconnect", callback=self.clear_integration)
         dialog.show()

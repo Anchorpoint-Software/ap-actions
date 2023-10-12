@@ -241,7 +241,7 @@ class GiteaClient:
             "name": self.generate_gitea_repo_name(name),
             "description": "Project created from Anchorpoint",
             "private": True,
-            "auto_init": True,
+            "auto_init": False,
             "readme": "",
             "issue_labels": "",
         }
