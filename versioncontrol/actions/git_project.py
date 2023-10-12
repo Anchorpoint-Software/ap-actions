@@ -56,11 +56,14 @@ def url_changed(dialog: ap.Dialog, value):
 def path_changed(dialog: ap.Dialog, git, path, ctx):
     from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
     dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
-    ignore_default = get_ignore_file_default(dropdown_values, path)
-    if not ignore_default:
-        dialog.set_value("ignore_dropdown", NO_IGNORE)
-    else:
-        dialog.set_value("ignore_dropdown", ignore_default)
+
+    git_ignore = dialog.get_value("ignore_dropdown")
+    if git_ignore == NO_IGNORE:
+        ignore_default = get_ignore_file_default(dropdown_values, path)
+        if not ignore_default:
+            dialog.set_value("ignore_dropdown", NO_IGNORE)
+        else:
+            dialog.set_value("ignore_dropdown", ignore_default)
     url = get_repo_url(git, path)
     if url and url != "":
         dialog.set_value("url", url)
