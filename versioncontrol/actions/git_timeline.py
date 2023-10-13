@@ -626,7 +626,6 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         get_cached_paths(entry_id, repo, changes)
 
         has_remote = repo.has_remote()
-        current_commit = repo.get_current_change_id()
 
         if not repo.commit_not_pulled(entry_id):
             revert = ap.TimelineChannelAction()
@@ -637,7 +636,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
             details.actions.append(revert)
 
-            if has_remote and current_commit != entry_id:
+            if has_remote:
                 reset = ap.TimelineChannelAction()
                 reset.name = "Reset Project"
                 reset.icon = aps.Icon(":/icons/restoreproject.svg")
