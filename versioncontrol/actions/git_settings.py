@@ -225,10 +225,11 @@ class GitProjectSettings(ap.AnchorpointSettings):
 
         self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: store_shared_setting("autolfs", v, self.get_shared_settings()))
         self.dialog.add_info("Disable this to manually configure Git LFS for files using a <i>.gitattributes</i> file.")
+        self.dialog.add_empty()
 
         self.dialog.add_text("<b>Auto Lock Files</b>")
-        self.dialog.add_tag_input(["unity"], "pdf", var="lockextensions", width=400, callback=lambda d,v: store_shared_setting("lockextensions", v, self.get_shared_settings()))
-        self.dialog.add_info("Anchorpoint automatically locks changed binary files. Add other files here.")
+        self.dialog.add_tag_input(["unity"], "txt", var="lockextensions", width=400, callback=lambda d,v: store_shared_setting("lockextensions", v, self.get_shared_settings()))
+        self.dialog.add_info("Anchorpoint automatically locks binary files. Add text files for automatic locking.")
         self.dialog.add_empty()
 
         self.dialog.add_text("<b>Git Commands</b>")
