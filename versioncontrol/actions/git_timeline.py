@@ -845,6 +845,7 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
     except Exception as e:
         raise e
     finally:
+        ap.reload_timeline_entries()
         if script_dir in sys.path : sys.path.remove(script_dir)
         
 def delete_lockfiles(repo_git_dir):
