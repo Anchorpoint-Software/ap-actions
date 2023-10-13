@@ -434,7 +434,7 @@ class GitRepository(VCRepository):
 
         
     def create_branch(self, branch_name: str):
-        self.repo.git.switch("-c", branch_name)
+        self.repo.git.switch("-c", branch_name.replace(" ", "-"))
 
     def _get_stash_message(self):
         branch = self.get_current_branch_name()
