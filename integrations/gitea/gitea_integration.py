@@ -412,7 +412,7 @@ class GiteaIntegration(ap.ApIntegration):
         dialog.add_text("Client ID")
         dialog.add_input(placeholder='xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', var=client_id_entry, width=400, validate_callback=self.validate_client_id)
         dialog.add_text("Client Secret")
-        dialog.add_info("This key must have 52 characters")
+        dialog.add_info("This key must have 56 characters")
         dialog.add_input(placeholder='gto_876s8df768768768769sfg68f76g8...', var=client_secret_entry, width=400, validate_callback=self.validate_client_secret)
 
         dialog.add_button("Connect to Gitea", var=connect_to_server_btn_entry, callback=lambda d: self.connect_to_server(d), enabled=False)
