@@ -261,7 +261,7 @@ class GiteaClient:
         )
     
     def _get_username_from_email(self, email: str) -> str:
-        email = email.replace('.', '-').replace(' ', '-')
+        email = email.replace(' ', '-')
         return email.split("@")[0]
     
     def _email_matches_username(self, email: str, username: str) -> bool:
