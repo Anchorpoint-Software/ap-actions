@@ -143,6 +143,14 @@ if __name__ == "__main__":
             return "Please add a Git repository URL"
         return
     
+    def update_dialog_after_validate(dialog: ap.Dialog, isValid: bool):
+        dialog.set_enabled("join", isValid)
+
+    def update_dialog(dialog: ap.Dialog, value):
+        info = get_dialog_info(value, "additional_info")
+        dialog.set_value("additional_info", info)
+
+    
     def get_dialog_info(url: str, info_type: str):
         services = {
             "dev.azure": ("Azure DevOps", ":/icons/organizations-and-products/AzureDevOps.svg", "Azure DevOps (Visual Studio)"),
@@ -168,9 +176,6 @@ if __name__ == "__main__":
         else:
             return None  # Handle invalid info_type if needed
 
-    def update_dialog(dialog: ap.Dialog, value):
-        dialog.set_enabled("join", dialog.is_valid())
-
     dialog = ap.Dialog()
     
     path_placeholder = "Z:\\Projects\\ACME_Commercial"
@@ -191,19 +196,19 @@ if __name__ == "__main__":
 
     dialog.add_text("<b>Project Folder</b>")
     dialog.add_info("Pick an empty folder to download the project files or tell Anchorpoint where your<br> repository is located")
-    dialog.add_input(placeholder=path_placeholder, var="location", width=400, browse=ap.BrowseType.Folder, validate_callback=lambda d,v: validate_path(d,v,remote_url), callback=update_dialog)
+    dialog.add_input(placeholder=path_placeholder, var="location", width=400, browse=ap.BrowseType.Folder, validate_callback=lambda d,v: validate_path(d,v,remote_url))
     
     if not remote_url:
         dialog.add_text("<b>Repository URL</b>")
         dialog.add_input(placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var="url", width=400, validate_callback=validate_url, callback=update_dialog)
-        dialog.set_valid(False)
 
     browse_path = settings.get("browse_path")
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
 
     if additional_info is not None:
-        dialog.add_text(additional_info)
+        dialog.add_text(additional_info, var="additional_info")
     
     dialog.add_button("Join", var="join", callback=lambda d: join_repo(d, remote_url, project, timeline_channel, ctx), enabled=False)
+    dialog.callback_validate_finsihed = update_dialog_after_validate
     dialog.show()

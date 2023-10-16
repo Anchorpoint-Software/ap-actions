@@ -56,23 +56,32 @@ def apply_git_url(dialog, ctx, repo_path):
         return
 
     metadata = channel.metadata
-    old_url = metadata["gitRemoteUrl"]
+    if "gitRemoteUrl" in metadata:
+        old_url = metadata["gitRemoteUrl"]
+    else: 
+        old_url = None
     metadata["gitRemoteUrl"] = url
     channel.metadata = metadata
 
     try:
         aps.update_timeline_channel(project, channel)
-
         repo = GitRepository.load(repo_path)
         repo.update_remote_url(url)
+        ap.reload_timeline_entries()
 
         ap.UI().show_success("Url changed")
         print(f"Git repository URL was changed by user from {old_url} to {url}")
-    except:
+    except Exception as e:
         metadata["gitRemoteUrl"] = old_url
         channel.metadata = metadata
         aps.update_timeline_channel(project, channel)
-        ap.UI().show_error("Could not change URL", "The URL could not be changed")
+        ap.UI().show_error("Could not change URL", str(e))
+    finally:
+        dialog.set_processing("applyurl", False)
+
+def apply_git_url_async(dialog, ctx, repo_path):
+    dialog.set_processing("applyurl", True, "Changing URL")
+    ctx.run_async(apply_git_url, dialog, ctx, repo_path)
 
 def open_terminal_pressed(dialog): 
     sys.path.insert(0, script_dir)
@@ -174,6 +183,10 @@ def clear_credentials_async(dialog, repo_path, url):
 def update_credentials_pressed(dialog, ctx: ap.Context, repo_path, url):
     ctx.run_async(clear_credentials_async, dialog, repo_path, url)
 
+def store_shared_setting(key, value, settings):
+    settings.set(key, value)
+    settings.store()
+
 class GitProjectSettings(ap.AnchorpointSettings):
     def __init__(self, ctx: ap.Context):
         super().__init__()
@@ -194,24 +207,29 @@ class GitProjectSettings(ap.AnchorpointSettings):
         path = get_repo_path("Git", ctx.project_path)
         try:
             repo = GitRepository.load(path)
-            repo_available = True
+            self.repo_available = True
             url = repo.get_remote_url() if repo else None
         except:
             repo = None
-            repo_available = False
+            self.repo_available = False
             url = get_repo_url_from_channel("Git", ctx.workspace_id, ctx.project_id)
 
         self.dialog.add_text("<b>Repository URL</b>")
         self.dialog.add_input(url if url != None else "", var="url", width=400)
         self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
-        self.dialog.add_button("Apply URL", callback=lambda d: apply_git_url(d, self.ctx, path), primary=False)
+        self.dialog.add_button("Apply URL", var="applyurl", callback=lambda d: apply_git_url_async(d, self.ctx, path), primary=False)
         self.dialog.add_empty()
 
         self.dialog.add_switch(True, var="gitkeep", text="Create .gitkeep files in new folders", callback=lambda d,v: d.store_settings())
         self.dialog.add_info("Anchorpoint adds <i>.gitkeep</i> files to support empty folders in Git.")
 
-        self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: d.store_settings())
+        self.dialog.add_switch(True, var="autolfs", text="Automatically track all binary files as LFS files", callback=lambda d,v: store_shared_setting("autolfs", v, self.get_shared_settings()))
         self.dialog.add_info("Disable this to manually configure Git LFS for files using a <i>.gitattributes</i> file.")
+        self.dialog.add_empty()
+
+        self.dialog.add_text("<b>Auto Lock Files</b>")
+        self.dialog.add_tag_input(["unity"], "txt", var="lockextensions", width=400, callback=lambda d,v: store_shared_setting("lockextensions", v, self.get_shared_settings()))
+        self.dialog.add_info("Anchorpoint automatically locks binary files. Add text files for automatic locking.")
         self.dialog.add_empty()
 
         self.dialog.add_text("<b>Git Commands</b>")
@@ -219,7 +237,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
         self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
 
-        self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False, enabled=repo_available)
+        self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False, enabled=self.repo_available)
         self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
         self.dialog.add_button("Update Credentials" if repo else "Clear Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path, url), primary=False)
@@ -229,6 +247,10 @@ class GitProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_info("This will clear your credentials for your configured Git remote (e.g. Azure DevOps).")
 
         self.dialog.load_settings(self.get_settings())
+        shared_settings = self.get_shared_settings()
+        self.dialog.set_value("lockextensions", shared_settings.get("lockextensions", ["unity"]))
+        self.dialog.set_value("autolfs", shared_settings.get("autolfs", True))
+
 
     def get_dialog(self):         
         return self.dialog
@@ -236,11 +258,19 @@ class GitProjectSettings(ap.AnchorpointSettings):
     def get_settings(self):
         return aps.Settings("GitProjectSettings", self.ctx.project_id)
     
+    def get_shared_settings(self):
+        return aps.SharedSettings(self.ctx.project_id, self.ctx.workspace_id, "GitProjectSettings")
+    
     def gitkeep_enabled(self):
+        if not self.repo_available:
+            return False
         return self.get_settings().get("gitkeep", True)
 
     def lfsautotrack_enabled(self):
-        return self.get_settings().get("autolfs", True)
+        return self.get_shared_settings().get("autolfs", True)
+    
+    def get_lock_extensions(self):
+        return self.get_shared_settings().get("lockextensions", [])
 
 def on_show_account_preferences(settings_list, ctx: ap.Context):
     gitSettings = GitAccountSettings(ctx)

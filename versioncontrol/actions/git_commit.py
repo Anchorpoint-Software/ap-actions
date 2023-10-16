@@ -75,20 +75,26 @@ def push_changes(ctx, repo: GitRepository, channel_id: str):
     import sys
     script_dir = os.path.dirname(__file__)
     sys.path.insert(0, script_dir)
-    from git_push import handle_git_autolock as push_handle_git_autolock
+    from git_push import handle_git_autolock as push_handle_git_autolock, push_in_progress, get_push_lockfile, delete_push_lockfiles
     if script_dir in sys.path:
         sys.path.remove(script_dir)
 
+    git_dir = repo.get_git_dir()
+    if push_in_progress(git_dir):
+        return
+    
     try:
-        progress = ap.Progress("Pushing Git Changes", cancelable=True)
-        state = repo.push(progress=PushProgress(progress))
-        if state == UpdateState.CANCEL:
-            ap.UI().show_info("Push Canceled")
-        elif state != UpdateState.OK:
-            show_push_failed("", channel_id, repo.get_root_path())    
-        else:
-            push_handle_git_autolock(ctx, repo)
-            ap.UI().show_success("Push Successful")
+        lockfile = get_push_lockfile(git_dir)
+        with open(lockfile, "w") as f:
+            progress = ap.Progress("Pushing Git Changes", cancelable=True)
+            state = repo.push(progress=PushProgress(progress))
+            if state == UpdateState.CANCEL:
+                ap.UI().show_info("Push Canceled")
+            elif state != UpdateState.OK:
+                show_push_failed("", channel_id, repo.get_root_path())    
+            else:
+                push_handle_git_autolock(ctx, repo)
+                ap.UI().show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):
             show_push_failed(str(e), channel_id, repo.get_root_path())
@@ -96,13 +102,15 @@ def push_changes(ctx, repo: GitRepository, channel_id: str):
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
         ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
         ap.refresh_timeline_channel(channel_id)
+        if git_dir:
+            delete_push_lockfiles(git_dir)
 
-def pull_changes(repo: GitRepository, channel_id: str):
+def pull_changes(repo: GitRepository, channel_id: str, ctx):
     rebase = False
     if rebase: raise NotImplementedError()
 
     try:
-        if not pull(repo, channel_id):
+        if not pull(repo, channel_id, ctx):
             raise Exception("Pull Failed")
         
         ap.vc_load_pending_changes(channel_id, True)
@@ -141,7 +149,7 @@ def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
         ap.get_context().run_async(delay, push_changes, None, ctx, repo, channel_id)
     else:
         try:
-            pull_changes(repo, channel_id)
+            pull_changes(repo, channel_id, ctx)
         except Exception as e:
             print(f"Auto-Push: Could not pull {str(e)}")
             ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 8000)

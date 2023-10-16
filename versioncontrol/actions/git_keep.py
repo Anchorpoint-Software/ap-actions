@@ -14,5 +14,4 @@ def on_folder_created(folder_path: str, ctx):
         f.write("")
     
     if platform.system() == "Windows":
-        import win32con, win32api
-        win32api.SetFileAttributes(gitkeep_path, win32con.FILE_ATTRIBUTE_HIDDEN)
+        os.system(f'attrib +h "{gitkeep_path}"')

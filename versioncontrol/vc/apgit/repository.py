@@ -434,7 +434,7 @@ class GitRepository(VCRepository):
 
         
     def create_branch(self, branch_name: str):
-        self.repo.git.switch("-c", branch_name)
+        self.repo.git.switch("-c", branch_name.replace(" ", "-"))
 
     def _get_stash_message(self):
         branch = self.get_current_branch_name()
@@ -566,9 +566,24 @@ class GitRepository(VCRepository):
     
     def update_remote_url(self, url):
         if not self.has_remote():
-            raise "No remote"
-        
-        self.repo.git.remote("set-url", "origin", url)
+            self.add_remote(url)
+            self.repo.git.fetch("--all")
+            if not self.has_pending_changes(False):
+                branches = self.get_branches()
+                for branch in branches:
+                    if "origin/main" in branch.name:
+                        self.repo.git.checkout("-b", "main", "origin/main")
+                        break
+                    if "origin/master" in branch.name:
+                        self.repo.git.checkout("-b", "master", "origin/master")
+                        break
+            else:
+                raise Exception("Cannot change remote URL because there are pending changes")
+        else:
+            self.repo.git.remote("set-url", "origin", url)
+
+            # Make a prune fetch to remove outdated refs from the old remote
+            self.repo.git.fetch("--all", "-p")
         
     
     def is_unborn(self):
@@ -712,9 +727,12 @@ class GitRepository(VCRepository):
             logging.info("Calling git add (no progress)")
             self.repo.git.add(*args, **kwargs)
         except Exception as e:
-            print(f"Failed to call git add (no progress): {str(e)}")
-            if "fsync error on '.git/objects/" in str(e):
-                import anchorpoint
+            import anchorpoint
+            exception_string = str(e)
+            print(f"Failed to call git add (no progress): {exception_string}")
+            if "no space left on device" in exception_string:
+                anchorpoint.UI().show_error("Could not Commit", "No space left on device", duration=10000)
+            if "fsync error on '.git/objects/" in exception_string:
                 anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
             raise e
 
@@ -1534,7 +1552,7 @@ class GitRepository(VCRepository):
                 result[key] = value
         return result
         
-    @staticmethod    
+    @staticmethod
     def erase_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
         current_env = os.environ.copy()

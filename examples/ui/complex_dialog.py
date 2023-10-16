@@ -107,13 +107,13 @@ def showDialog():
     dialog.add_separator()
 
     dialog.start_section("Advanced", folded=True)
-    dialog.add_checkbox(var=folder_cap_var).add_text("Capitalize")
+    dialog.add_checkbox(var=folder_cap_var, text="Capitalize")
     dialog.add_info("This will <b>capitalize</b> all folders")
     dialog.add_empty()
 
     dialog.start_section("Attributes", foldable=False)
-    dialog.add_checkbox(True, var=attr_wip_var).add_text("Set WIP")
-    dialog.add_checkbox(False, var=attr_link_var).add_text("Set Link")
+    dialog.add_checkbox(True, var=attr_wip_var, text="Set WIP")
+    dialog.add_checkbox(False, var=attr_link_var, text="Set Link")
     dialog.add_info("Enable the checkboxes to set attributes on the folders")
     dialog.end_section()
 

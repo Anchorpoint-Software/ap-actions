@@ -47,9 +47,10 @@ def check_changes_writable(repo, changes):
             return False
     return True
 
-def handle_files_to_pull(repo):
-    from git_lfs_helper import LFSExtensionTracker
-    lfsExtensions = LFSExtensionTracker(repo)
+def handle_files_to_pull(repo, ctx):
+    from git_lock import GitFileLocker
+    locker = GitFileLocker(repo, ctx)
+
 
     changes = repo.get_files_to_pull(include_added=False)
     if not changes:
@@ -61,7 +62,7 @@ def handle_files_to_pull(repo):
             if not os.path.exists(path):
                 continue
 
-            if not lfsExtensions.is_file_tracked(path):
+            if not locker.is_file_lockable(path):
                 continue
 
             utility.make_file_writable(path)
@@ -71,11 +72,11 @@ def handle_files_to_pull(repo):
     make_readwrite(changes.new_files)
 
 
-def pull(repo: GitRepository, channel_id: str):
+def pull(repo: GitRepository, channel_id: str, ctx):
     lock_disabler = ap.LockDisabler()
     ui = ap.UI()
     progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=False)
-    handle_files_to_pull(repo)
+    handle_files_to_pull(repo, ctx)
     changes = repo.get_pending_changes(False)
     staged_changes = repo.get_pending_changes(True)
     
@@ -141,14 +142,14 @@ def pull(repo: GitRepository, channel_id: str):
     return True
 
 
-def pull_async(channel_id: str, project_path):
+def pull_async(channel_id: str, project_path, ctx):
     ui = ap.UI()
     try:
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
 
-        if pull(repo, channel_id):
+        if pull(repo, channel_id, ctx):
             ui.show_success("Update Successful")
         
     except Exception as e:
@@ -170,7 +171,7 @@ def resolve_conflicts(channel_id):
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id == "gitpull":
-        ctx.run_async(pull_async, channel_id, ctx.project_path)
+        ctx.run_async(pull_async, channel_id, ctx.project_path, ctx)
     if action_id == "gitcancelmerge":
         from git_conflicts import cancel_merge
         ctx.run_async(cancel_merge, channel_id, ctx.project_path)

@@ -1,0 +1,18 @@
+# Anchorpoint Markup Languageintegrations
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Gitea Integration
+
+  version: 1
+  id: ap::integrations::gitea
+  category: integrations
+  type: python
+  enable: true
+  author: Anchorpoint Software GmbH
+  description: Integration for Gitea
+
+  script: gitea/gitea_integration.py

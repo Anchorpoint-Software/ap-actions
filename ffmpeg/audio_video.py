@@ -136,7 +136,7 @@ def create_dialog():
     dialog.add_info("Remove the audio channels from the video, or replace the existing audio with new tunes")
     dialog.add_text("New Audio", var="newaudiotext").add_input(browse=ap.BrowseType.File, var="newaudioinput", browse_path=input_folder).hide_row(hide=remove_audio)
     dialog.add_info("Select an audio file (e.g. wav) that will become the new audio of the video file", var="newaudioinfo").hide_row(hide=remove_audio)
-    dialog.add_checkbox(var="longest", default=True, callback=update_dialog).add_text("Take longest length").hide_row(hide=remove_audio)
+    dialog.add_checkbox(var="longest", default=True, callback=update_dialog, text="Take longest length").hide_row(hide=remove_audio)
     dialog.add_info("Fits the final result to the longer file (video or audio). Otherwise it cuts off the rest", var="longestinfo").hide_row(hide=remove_audio)
 
     dialog.add_button("Convert", callback=convert)

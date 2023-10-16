@@ -56,11 +56,14 @@ def url_changed(dialog: ap.Dialog, value):
 def path_changed(dialog: ap.Dialog, git, path, ctx):
     from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
     dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
-    ignore_default = get_ignore_file_default(dropdown_values, path)
-    if not ignore_default:
-        dialog.set_value("ignore_dropdown", NO_IGNORE)
-    else:
-        dialog.set_value("ignore_dropdown", ignore_default)
+
+    git_ignore = dialog.get_value("ignore_dropdown")
+    if git_ignore == NO_IGNORE:
+        ignore_default = get_ignore_file_default(dropdown_values, path)
+        if not ignore_default:
+            dialog.set_value("ignore_dropdown", NO_IGNORE)
+        else:
+            dialog.set_value("ignore_dropdown", ignore_default)
     url = get_repo_url(git, path)
     if url and url != "":
         dialog.set_value("url", url)
@@ -312,7 +315,8 @@ try:
 
             if self._is_path_equal(git_parent_dir, project_path):
                 # Case 3: Folder Contains Git in root -> Open Repo
-                self._open_repo(project_path, self.project, git_ignore)
+                url = repo_url if remote_enabled else None
+                self._open_repo(project_path, self.project, git_ignore, url)
                 return
 
             if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
@@ -362,11 +366,18 @@ try:
             self._add_git_ignore(repo, git_ignore, project_path)
             return repo
         
-        def _open_repo(self, project_path, project, git_ignore):
+        def _open_repo(self, project_path, project, git_ignore, user_url):
             repo = self.git.GitRepository.load(project_path)
 
             url = repo.get_remote_url()
             if url == "": url = None
+
+            if url == None and user_url != None:
+                url = user_url
+
+            if user_url != None and user_url != url:
+                ap.UI().show_error("Could not setup project", f"You have selected an existing Git repository but the remote URL does not match {url}", duration=10000)
+                sys.exit(0)
 
             repo.set_username(self.context.username, self.context.email, project_path)
             self.githelper.update_project(project_path, url, False, None, project)
@@ -460,7 +471,7 @@ def on_folder_opened(ctx: ap.Context):
     dialog.icon = ctx.icon
 
     dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/4-Collaboration/5-Workflow-Git/\">Git.</a>")
-    dialog.add_checkbox(callback=lambda d,v: update_open_settings(d,v,path), var="neveraskagain").add_text("Never ask again")
+    dialog.add_checkbox(callback=lambda d,v: update_open_settings(d,v,path), var="neveraskagain", text="Never ask again")
     dialog.add_button("Continue", var="yes", callback=lambda d: connect_repo(d,path)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
     
     dialog.show()

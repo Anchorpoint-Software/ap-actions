@@ -103,7 +103,7 @@ dialog.add_info("Your template will appear in a <b>new tab.</b> <br> Templates a
 if project:
     dialog.add_separator()
     project_dir = os.path.split(project.path)[1]
-    dialog.add_checkbox(True, var="project", callback=project_check_changed).add_text("Save in Project")
+    dialog.add_checkbox(True, var="project", callback=project_check_changed, text="Save in Project")
     dialog.add_info(f"Project templates are stored here:<br><b>{project_dir}</b>/anchorpoint/templates")    
 
 dialog.add_button("Create Template", callback=create_template, enabled=False, var="button")
