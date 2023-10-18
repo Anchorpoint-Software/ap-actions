@@ -43,3 +43,4 @@ action:
     - git::settings
     - git::loadfile
     - git::keep
+    - git::deeplink

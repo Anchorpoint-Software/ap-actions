@@ -94,11 +94,12 @@ def install_git_async(dialog, ctx, path, git_helper):
 
 try:
     class GitProjectType(ap.ProjectType):
-        def __init__(self, path: str, ctx: ap.Context, integrations: ap.IntegrationList):
+        def __init__(self, path: str, remote: str, tags, ctx: ap.Context, integrations: ap.IntegrationList):
             super().__init__()
             self.context = ctx
             self.path = path
             self.git_integrations = integrations.get_all_for_tags(["git"])
+            self.pre_selected = False
 
             script_dir = os.path.join(os.path.dirname(__file__), "..")
             sys.path.insert(0, script_dir)
@@ -132,6 +133,11 @@ try:
                 if self.git and os.path.exists(path) and path != "":
                     repo = self.git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
+                if remote != "":
+                    print("remote", remote)
+                    self.pre_selected = True
+                    repo_url = remote
+                    self.tags = tags
             except:
                 pass
             
@@ -420,19 +426,19 @@ try:
             norm2 = os.path.normpath(os.path.normcase(path2))
             return norm1 == norm2
 
-    def on_show_create_project(project_types, integrations, path: str, ctx: ap.Context):
+    def on_show_create_project(project_types, integrations, path: str, remote:str, tags, ctx: ap.Context):
         import os
         iconPath = os.path.join(ctx.yaml_dir, "icons/project_type_git.svg")
-        gitProjectType = GitProjectType(path, ctx, integrations)
+        gitProjectType = GitProjectType(path, remote, tags, ctx, integrations)
         gitProjectType.name = 'Git Repository'
         gitProjectType.description = 'Open or create a Git repository for your <font color=#FFFFFF>Unreal</font> or <font color=#FFFFFF>Unity</font> project. Connect it to Git providers such as GitHub, Azure Devops or self-hosted Git servers.'
         gitProjectType.priority = 100
-        gitProjectType.pre_selected = False
         if path:
             git_path = os.path.join(path, ".git")
             gitProjectType.pre_selected = os.path.exists(git_path)
         
         gitProjectType.icon = iconPath
+        print("Adding Git Project Type")
         project_types.add(gitProjectType)
 
     
