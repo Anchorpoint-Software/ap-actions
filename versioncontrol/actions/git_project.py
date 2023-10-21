@@ -321,7 +321,7 @@ try:
 
             if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
                 # Case 4: Folder Contains Git in Subdir -> Error
-                ap.UI().show_error("Could not setup project", "Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
+                ap.UI().show_error("Could not setup project", f"Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
                 sys.exit(0)
 
             print(f"project_path {project_path}")
