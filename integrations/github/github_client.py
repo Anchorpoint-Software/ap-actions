@@ -6,6 +6,7 @@ from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import TokenExpiredError, AccessDeniedError
 import random
 import base64
+import re
 
 import apsync as aps
 
@@ -203,11 +204,21 @@ class GitHubClient:
         return orgs
     
     def generate_github_project_name(self, name):
-        import re
         repo_name = name.replace(" ", "-")
         repo_name = re.sub(r"[^a-zA-Z0-9-]", "-", repo_name).lower()
         repo_name = repo_name[:100]
         return repo_name.strip("-")
+    
+    def _get_auto_adjusted_repository_name(self, name: str):
+        pattern = re.compile(r"_(\d{2})$")
+        match = pattern.search(name)
+        if match:
+            if match.group(1):
+                number = int(match.group(1))
+                new_number = number + 1
+                return name[:match.start()] + str(new_number)
+            return name + "_01"
+        return name + "_01"
 
     def create_repository(self, organization: Organization, name: str):
         if organization.is_user:
@@ -222,6 +233,8 @@ class GitHubClient:
 
         response = self.oauth.post(url, json=data)
         if not response:
+            if "already exists" in response.text:
+                return self.create_repository(organization, self._get_auto_adjusted_repository_name(name))
             raise Exception("Could not create repository: ", response.text)
         data = response.json()
         return RemoteRepository(full_name=data["full_name"],

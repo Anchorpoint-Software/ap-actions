@@ -360,7 +360,7 @@ class DevopsIntegration(ap.ApIntegration):
         try:
             progress.set_text("Creating Azure DevOps Project")
             new_repo = self.client.create_project_and_repository(current_org, project_name)
-            settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
+            settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
             settings.set(integration_project_name_key, new_repo.display_name)
             settings.store()
 
