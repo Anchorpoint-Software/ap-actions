@@ -17,47 +17,11 @@ settings_policies_btn_highlight_entry = "policies_btn_highlight"
 create_repo_dialog_entry = "azure_devops_create_repo"
 repo_dropdown_entry = "azure_devops_repository_dropdown"
 create_dialog_info_entry = "azure_devops_create_dialog_info"
+integration_project_name_key = "project_name"
 
 def on_load_integrations(integrations, ctx: ap.Context):
-    # for i in range(15):
-    #     integration = DummyIntegration(ctx, i)
-    #     integrations.add(integration)
-
     integration = DevopsIntegration(ctx)
     integrations.add(integration)
-
-# class DummyIntegration(ap.ApIntegration):
-#     def __init__(self, ctx: ap.Context, index: int):
-#         super().__init__()
-#         self.ctx = ctx
-#         self.name = 'Dummy Integration'
-#         self.description = "Some dummy integration for testing purposes"
-#         self.priority = 101 + index
-#         self.tags = ['git']
-
-#         icon_path = os.path.join(ctx.yaml_dir, "azure_devops/logo.svg")
-#         self.dashboard_icon = icon_path
-#         self.preferences_icon = icon_path
-#         self.is_setup = False
-#         self.is_connected = False
-
-#     def execute_preferences_action(self, action_id: str):
-#         print(f"execute_preferences_action {action_id}")
-
-#     def on_auth_deeplink_received(self, url: str):
-#         print(f"on_auth_deeplink_received {url}")
-
-#     def supports_create_project(self, remote):
-#         return False
-
-#     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
-#         print(f"setup_create_project_dialog_entries {action_id}")
-
-#     def on_create_project_dialog_entry_selected(self, action_id: str, dialog: ap.Dialog):
-#         print(f"on_create_project_dialog_entry_selected {action_id}")
-
-#     def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str):
-#         print(f"setup_project {action_id}")
 
 def on_add_user_to_workspace(email, ctx: ap.Context):
     client = AzureDevOpsClient(ctx.workspace_id)
@@ -129,7 +93,11 @@ def on_add_user_to_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        azureProject = client.get_project_by_name(current_org, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        azureProject = client.get_project_by_name(current_org, project_name)
         client.add_user_to_project(current_org, email, azureProject.project_id)
         ap.UI().show_success(title='User added to Azure DevOps project', duration=3000, description=f'User {email} added to project {project.name}.')
     except BillingSetupRequiredException as bsre:
@@ -137,7 +105,7 @@ def on_add_user_to_project(email, ctx: ap.Context):
     except Exception as e:
         ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually.')
         return
-    
+
 def on_remove_user_from_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
@@ -164,7 +132,11 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        client.remove_user_from_project(current_org, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.remove_user_from_project(current_org, email, project_name)
         ap.UI().show_success(title='User removed from Azure DevOps project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
         ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
@@ -329,9 +301,9 @@ class DevopsIntegration(ap.ApIntegration):
         #stub
         return
 
-    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str, progress: ap.Progress):
+    def setup_project(self, action_id: str, dialog: ap.Dialog, project_id: str, project_name: str, progress: ap.Progress):
         if action_id == create_repo_dialog_entry:
-            return self.create_new_repo(project_name, progress)
+            return self.create_new_repo(project_id, project_name, progress)
 
     def change_org_callback(self, dialog: ap.Dialog, value: str):
         self.client.set_current_organization(value)
@@ -383,11 +355,15 @@ class DevopsIntegration(ap.ApIntegration):
 
         dialog.show()
 
-    def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:
+    def create_new_repo(self, project_id:str, project_name: str, progress: ap.Progress) -> str:
         current_org = self.client.get_current_organization()
         try:
             progress.set_text("Creating Azure DevOps Project")
             new_repo = self.client.create_project_and_repository(current_org, project_name)
+            settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
+            settings.set(integration_project_name_key, new_repo.display_name)
+            settings.store()
+
             progress.set_text("")
             if new_repo is None:
                 raise Exception("Created project not found")

@@ -8,6 +8,7 @@ import requests
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 import base64
+import re
 
 import apsync as aps
 import urllib
@@ -292,6 +293,17 @@ class AzureDevOpsClient:
                 return repo
 
         raise Exception("Project could not be found")
+    
+    def _get_auto_adjusted_project_name(self, name: str):
+        pattern = re.compile(r"_(\d{2})$")
+        match = pattern.search(name)
+        if match:
+            if match.group(1):
+                number = int(match.group(1))
+                new_number = number + 1
+                return name[:match.start()] + str(new_number)
+            return name + "_01"
+        return name + "_01"
 
     def create_project_and_repository(self, organization: str, name: str):
         body = {
@@ -309,6 +321,8 @@ class AzureDevOpsClient:
 
         response = self._request_with_refresh("POST", f"https://dev.azure.com/{organization}/_apis/projects?api-version=7.0", json=body)
         if not response:
+            if "project already exists" in response.text:
+                return self.create_project_and_repository(organization, self._get_auto_adjusted_project_name(name))
             raise Exception("Could not create project: ", response.text)
 
         operations_json = response.json()
@@ -479,7 +493,7 @@ class AzureDevOpsClient:
         project_descriptor = self._get_graph_descriptor(organization, project.project_id)
         
         response = self._request_with_refresh("GET", f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?scopeDescriptor={project_descriptor}&api-version=7.0-preview.1")
-          
+
         if not response:
             raise Exception("Could not get groups of project: ", response.text)
 
