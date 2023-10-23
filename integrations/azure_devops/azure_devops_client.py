@@ -301,7 +301,7 @@ class AzureDevOpsClient:
             if match.group(1):
                 number = int(match.group(1))
                 new_number = number + 1
-                return name[:match.start()] + str(new_number)
+                return name[:match.start()] + "_" + "{:02d}".format(new_number)
             return name + "_01"
         return name + "_01"
 

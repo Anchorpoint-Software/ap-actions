@@ -330,7 +330,7 @@ class GithubIntegration(ap.ApIntegration):
             progress.set_text("Creating GitHub Repository")
             new_repo = self.client.create_repository(current_org, project_name)
             settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
-            settings.set(integration_project_name_key, new_repo.full_name)
+            settings.set(integration_project_name_key, new_repo.name)
             settings.store()
             progress.set_text("")
             if new_repo is None:

@@ -369,7 +369,7 @@ class GitlabIntegration(ap.ApIntegration):
                 raise Exception("Created project not found")
             return new_repo.http_url_to_repo
         except Exception as e:
-            if "already exists" in str(e):
+            if "has already been taken" in str(e):
                 ap.UI().show_error(title='Cannot create Gitlab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
                 ap.UI().show_error(title='Cannot create Gitlab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab">troubleshooting</a>.')

@@ -30,7 +30,7 @@ class Organization:
 @dataclass
 class RemoteRepository:
     """Represents a repository on GitHub"""
-    full_name: str
+    name: str
     clone_url: str
     ssh_url: str
     repository_id: str
@@ -216,7 +216,7 @@ class GitHubClient:
             if match.group(1):
                 number = int(match.group(1))
                 new_number = number + 1
-                return name[:match.start()] + str(new_number)
+                return name[:match.start()] + "_" + "{:02d}".format(new_number)
             return name + "_01"
         return name + "_01"
 
@@ -237,7 +237,7 @@ class GitHubClient:
                 return self.create_repository(organization, self._get_auto_adjusted_repository_name(name))
             raise Exception("Could not create repository: ", response.text)
         data = response.json()
-        return RemoteRepository(full_name=data["full_name"],
+        return RemoteRepository(name=data["name"],
                                 clone_url=data["clone_url"],
                                 ssh_url=data["ssh_url"],
                                 repository_id=data["id"])

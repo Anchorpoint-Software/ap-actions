@@ -199,7 +199,7 @@ class GitlabClient:
             if match.group(1):
                 number = int(match.group(1))
                 new_number = number + 1
-                return name[:match.start()] + str(new_number)
+                return name[:match.start()] + "_" + "{:02d}".format(new_number)
             return name + "_01"
         return name + "_01"
 
@@ -218,7 +218,7 @@ class GitlabClient:
 
         response = self.oauth.post(url, json=data)
         if not response:
-            if "already exists" in response.text:
+            if "has already been taken" in response.text:
                 return self.create_project(group, self._get_auto_adjusted_project_name(name))
             raise Exception("Could not create repository: ", response.text)
 
