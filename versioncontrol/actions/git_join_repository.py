@@ -122,6 +122,8 @@ if __name__ == "__main__":
             repo.set_username(ctx.username, ctx.email, location)
             helper.update_project(location, url, True, timeline_channel, project)
             add_git_ignore(repo, ctx, location)
+            ap.reload_timeline_entries()
+            ap.refresh_timeline_channel(timeline_channel.id)
         else:
             ctx.run_async(clone_repo_async, location, url, True, project, timeline_channel, ctx.workspace_id, patch_channel)
 
