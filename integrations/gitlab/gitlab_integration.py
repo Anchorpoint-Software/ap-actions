@@ -361,7 +361,7 @@ class GitlabIntegration(ap.ApIntegration):
             progress.set_text("Creating Gitlab Project")
             new_repo = self.client.create_project(current_group, project_name)
             settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
-            settings.set(integration_project_name_key, new_repo.display_name)
+            settings.set(integration_project_name_key, new_repo.name)
             settings.store()
             
             progress.set_text("")
