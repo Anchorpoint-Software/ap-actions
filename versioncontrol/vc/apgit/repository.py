@@ -1397,12 +1397,16 @@ class GitRepository(VCRepository):
         args.append("-l")
         if paths != None and len(paths) < 31:
             args.extend(["-I", ",".join(paths)])
-        output = self.repo.git.lfs(*args)
-        result = {}
-        hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)
-        for hash_value, file_path in hashes_and_files:
-            result[file_path] = hash_value
-        return result
+        try:
+            output = self.repo.git.lfs(*args)
+            result = {}
+            hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)
+            for hash_value, file_path in hashes_and_files:
+                result[file_path] = hash_value
+            return result
+        except Exception as e:
+            print(f"error in get_lfs_filehash: {str(e)}")
+            return {}
         
 
     def prune_lfs(self):
