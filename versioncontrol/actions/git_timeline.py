@@ -259,6 +259,9 @@ def map_commit(repo, commit):
     sys.path.insert(0, script_dir)
     from vc.models import HistoryType
 
+    if commit is None:
+        return None
+
     entry = ap.TimelineChannelEntry()
     entry.id = commit.id
     entry.user_email = commit.author
