@@ -609,13 +609,14 @@ class GitRepository(VCRepository):
         diff = self.repo.index.diff(None) 
         return len(diff) > 0 or self.get_pending_changes(True).size() > 0
 
-    def _get_untracked_files(self, *args, **kwargs):
+    def _get_pending_changes(self, staged: bool, *args, **kwargs):
         from git.util import finalize_process
         import sys
         defenc = sys.getfilesystemencoding()
 
         self._check_index_lock()
 
+        changes = Changes()
         root = self.get_root_path()
 
         # make sure we get all files, not only untracked directories
@@ -624,23 +625,41 @@ class GitRepository(VCRepository):
                                untracked_files=True,
                                as_process=True,
                                **kwargs)
-        # Untracked files prefix in porcelain mode
-        prefix = "?? "
-        untracked_files = []
+        
         for output in proc.stdout:
             line_decoded = output.decode(defenc)
             lines_decoded = line_decoded.split('\x00')
             for line in lines_decoded:
-                if not line.startswith(prefix):
+                statii = line[:2]
+                if len(statii) != 2:
                     continue
-                filename = line[len(prefix):].rstrip('\x00')
+                filename = line[3:].rstrip('\x00')
                 
                 if filename.endswith("/") and os.path.exists(os.path.join(root,filename,".git")):
                     raise Exception(f"Another Git repository found in {filename}. Please remove it and try again.")
+                
+                if staged:
+                    status = statii[0]
+                else:
+                    status = statii[1]
+                
+                if status == " ":
+                    continue
 
-                untracked_files.append(filename)
+                if status == "M":
+                    changes.modified_files.append(Change(path = filename))
+
+                elif status == "A" or status == "?":
+                    changes.new_files.append(Change(path = filename))
+
+                elif status == "R":
+                    changes.renamed_files.append(Change(path = filename))
+
+                elif status == "D":
+                    changes.deleted_files.append(Change(path = filename))
+                
         finalize_process(proc)
-        return untracked_files
+        return changes
 
     def get_all_pending_changes(self):
         changes = self.get_pending_changes()
@@ -654,20 +673,10 @@ class GitRepository(VCRepository):
     def get_pending_changes(self, staged: bool = False) -> Changes:
         self._check_index_lock()
         changes = Changes()
+        
         try:
-            if staged:
-                if not self.is_unborn():
-                    diff = self.repo.head.commit.diff()
-                else:
-                    diff = self.repo.index.diff(self._get_empty_tree_id(), R=True)
-            else:
-                diff = self.repo.index.diff(None) 
-            
-            self._get_file_changes(diff, changes)
-            
-            if not staged:
-                for untracked_file in self._get_untracked_files("-uall"):
-                    changes.new_files.append(Change(path = untracked_file)) 
+            changes = self._get_pending_changes(staged, "-uall")
+           
         except ValueError as e:
             print(e)
             pass
