@@ -165,7 +165,10 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     
     if branch_current:
         conflict_model.current_entry = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_current))
-    conflict_model.incoming_entry = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
+    
+    incoming_commit = map_commit(repo, repo.get_last_history_entry_for_file(rel_filepath, branch_incoming))
+    if incoming_commit:
+        conflict_model.incoming_entry = incoming_commit
 
     if is_conflict_from_stash: 
         status_incoming, status_current = repo.get_file_conflict_status(rel_filepath)
@@ -183,10 +186,10 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     if lfsExtensions.is_file_tracked(file_path):
         # Ref where the file still existed
         lfs_ref_current = conflict_model.current_entry.id if not is_conflict_from_stash else None
-        lfs_ref_incoming = conflict_model.incoming_entry.id
+        lfs_ref_incoming = conflict_model.incoming_entry.id if incoming_commit else None
         if status_current == ap.VCFileStatus.Deleted and not is_conflict_from_stash:
             lfs_ref_current = lfs_ref_current + "^"
-        if status_incoming == ap.VCFileStatus.Deleted:
+        if lfs_ref_incoming and status_incoming == ap.VCFileStatus.Deleted:
             lfs_ref_incoming = lfs_ref_incoming + "^"
 
         conflict_model.is_text = False
@@ -202,9 +205,12 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
         else:
             hash_current = repo.get_lfs_filehash([rel_filepath], lfs_ref_current)
 
-        hash_incoming = repo.get_lfs_filehash([rel_filepath], lfs_ref_incoming)
-        conflict_model.current_change.cached_path = None if len(hash_current) == 0 else get_lfs_cached_file(hash_current[rel_filepath], path)
-        conflict_model.incoming_change.cached_path = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
+        try:
+            hash_incoming = repo.get_lfs_filehash([rel_filepath], lfs_ref_incoming)
+            conflict_model.current_change.cached_path = None if len(hash_current) == 0 else get_lfs_cached_file(hash_current[rel_filepath], path)
+            conflict_model.incoming_change.cached_path = None if len(hash_incoming) == 0 else get_lfs_cached_file(hash_incoming[rel_filepath], path)
+        except Exception as e:
+            print(f"get_lfs_filehash exception: {str(e)}")
     else:
         conflict_model.is_text = True
     
