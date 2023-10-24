@@ -843,7 +843,9 @@ class GitRepository(VCRepository):
     def track_lfs_files(self, paths: list[str]):
         repo_dir = self.get_root_path()
         rel_paths = [os.path.relpath(path, repo_dir) for path in paths]
-        self.repo.git.lfs("track", rel_paths)
+        # take slices of up to 20 paths and call track
+        for i in range(0, len(rel_paths), 20):
+            self.repo.git.lfs("track", rel_paths[i:i+20])
 
     def get_deleted_files(self):
         self._check_index_lock()
