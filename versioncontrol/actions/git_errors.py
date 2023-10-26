@@ -259,5 +259,10 @@ def handle_error(e: Exception):
     if "no space left on device" in message:
         ap.UI().show_error("No space left on device", message, duration=10000)
         return True
-
+    
+    if "LFS object not found" in message:
+        print(message)
+        ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
+        return True
+    
     return False
