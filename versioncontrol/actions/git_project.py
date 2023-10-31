@@ -68,6 +68,17 @@ def path_changed(dialog: ap.Dialog, git, path, ctx):
     if url and url != "":
         dialog.set_value("url", url)
     
+def add_additional_scripts(yaml_dir, project_path, ignore_value):
+    import shutil
+    if ignore_value.lower() == "unity":
+        assets_path = os.path.join(project_path, "Assets")
+        if os.path.exists(assets_path):
+            file = os.path.join(yaml_dir, "inscripts", "Unity", "RespectReadOnly.cs")
+            if os.path.exists(file):
+                target_dir = os.path.join(assets_path, "Anchorpoint")
+                if not os.path.exists(target_dir):
+                    os.mkdir(target_dir)
+                shutil.copy(file, target_dir)
 
 def add_git_ignore(repo, context, project_path, ignore_value = None):
     script_dir = os.path.dirname(__file__)
@@ -80,6 +91,7 @@ def add_git_ignore(repo, context, project_path, ignore_value = None):
         repo.ignore(".DS_Store", local_only=True)
     if ignore_value and ignore_value != add_ignore_config.NO_IGNORE:
         add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
+        add_additional_scripts(context.yaml_dir, project_path, ignore_value)
 
 def _install_git_async(dialog, git_helper):
     try:
@@ -450,8 +462,7 @@ except AttributeError as e:
 
 def connect_repo(dialog: ap.Dialog, path):
     dialog.close()
-    if "show_create_project_dialog" in dir(ap):
-        ap.show_create_project_dialog(path)
+    ap.show_create_project_dialog(path)
 
 def update_open_settings(dialog: ap.Dialog, value, path):
     settings = aps.Settings("connect_git_repo")
