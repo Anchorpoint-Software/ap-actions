@@ -738,7 +738,7 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         try:
             logging.info("Calling git add (no progress)")
-            self.repo.git.add(*args, **kwargs)
+            self.repo.git.add("--sparse", *args, **kwargs)
         except Exception as e:
             import anchorpoint
             exception_string = str(e)
@@ -754,7 +754,7 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         proc = None
         try:
-            proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", **kwargs, as_process=True)
+            proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", "--sparse", **kwargs, as_process=True)
             proc.stderr.close()
             if progress_callback:
                 i = 0
@@ -787,7 +787,7 @@ class GitRepository(VCRepository):
 
     def stage_all_files(self):
         self._check_index_lock()
-        self.repo.git.add(".")
+        self.repo.git.add("--sparse", ".")
 
     def unstage_all_files(self):
         self._check_index_lock()
@@ -1212,7 +1212,7 @@ class GitRepository(VCRepository):
                 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if remote is None: return UpdateState.NO_REMOTE
+        if len(remote) == 0 or remote is None: return True
         remote_url = self._get_remote_url(remote)
 
         try:
@@ -1259,7 +1259,7 @@ class GitRepository(VCRepository):
 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if remote is None: return UpdateState.NO_REMOTE
+        if len(remote) == 0 or remote is None: return True
         remote_url = self._get_remote_url(remote)
 
         try:
