@@ -1180,6 +1180,8 @@ class GitRepository(VCRepository):
         return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
     
     def get_sparse_checkout_folder_set(self):
+        if not self.has_remote():
+            return set()
         try:
             return set(self.repo.git.sparse_checkout("list").split("\n"))
         except Exception as e:
@@ -1192,6 +1194,8 @@ class GitRepository(VCRepository):
             raise e
     
     def sparse_checkout_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
+        if not self.has_remote():
+            return False
         folderSet = self.get_sparse_checkout_folder_set()
         if relative_folder_path in folderSet:
             return False;
@@ -1212,7 +1216,6 @@ class GitRepository(VCRepository):
                 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if len(remote) == 0 or remote is None: return True
         remote_url = self._get_remote_url(remote)
 
         try:
@@ -1225,6 +1228,8 @@ class GitRepository(VCRepository):
         return True
         
     def sparse_unload_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
+        if not self.has_remote():
+            return False
         changes = self.get_all_pending_changes()
         for change in changes.new_files + changes.modified_files + changes.renamed_files + changes.deleted_files:
             if change.path.startswith(relative_folder_path):
