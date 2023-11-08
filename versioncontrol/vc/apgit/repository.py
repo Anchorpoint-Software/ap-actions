@@ -14,6 +14,7 @@ import vc.apgit.lfs as lfs
 import logging, re
 import gc, subprocess, platform
 from datetime import datetime
+from io import BytesIO
 import anchorpoint as ap
 
 def _map_op_code(op_code: int) -> str:
@@ -144,13 +145,16 @@ class GitRepository(VCRepository):
         return repo
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None):
+    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None, sparse = False):
         env = GitRepository.get_git_environment(remote_url)
         try:
+            multi_options = []
+            if sparse:
+                multi_options.append("--sparse")
             if progress is not None:
-                git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env)
+                git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env, multi_options=multi_options)
             else:
-                git.Repo.clone_from(remote_url, local_path, env=env)
+                git.Repo.clone_from(remote_url, local_path, env=env, multi_options=multi_options)
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
@@ -1171,6 +1175,101 @@ class GitRepository(VCRepository):
                 branches.append(model)
 
         return branches
+    
+    def get_folders_from_tree(self) -> list[str]:
+        return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
+    
+    def get_sparse_checkout_folder_set(self):
+        try:
+            return set(self.repo.git.sparse_checkout("list").split("\n"))
+        except Exception as e:
+            try:
+                message = e.stderr
+            except:
+                message = str(e)
+            if "this worktree is not sparse" in message:
+                raise Exception("This worktree is not sparse")
+            raise e
+    
+    def sparse_checkout_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
+        folderSet = self.get_sparse_checkout_folder_set()
+        if relative_folder_path in folderSet:
+            return False;
+        folderSet.add(relative_folder_path)
+        self._check_index_lock()
+        
+        try:
+            proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
+            bytes_data = "\n".join(folderSet).encode('utf-8')
+            proc.stdin.write(bytes_data)
+            proc.stdin.close()
+            proc.wait()
+            if proc.returncode != 0:
+                raise Exception(f"Failed to call git sparse checkout: {proc.returncode}")
+            
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"Failed to call git sparse checkout: {e.cmd} {e.output}")
+                
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: return UpdateState.NO_REMOTE
+        remote_url = self._get_remote_url(remote)
+
+        try:
+            current_env = os.environ.copy()
+            current_env.update(GitRepository.get_git_environment(remote_url))
+            progress_wrapper = None if not progress else _InternalProgress(progress)
+            lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
+        except Exception as e:
+            raise e
+        return True
+        
+    def sparse_unload_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
+        changes = self.get_all_pending_changes()
+        for change in changes.new_files + changes.modified_files + changes.renamed_files + changes.deleted_files:
+            if change.path.startswith(relative_folder_path):
+                raise Exception(f"Cannot unload folder {relative_folder_path} because it contains uncommitted changes")
+        try:
+            folderSet = self.get_sparse_checkout_folder_set()
+        except Exception as e:
+            if("is not sparse" in str(e)):
+                folderSet = set()
+            else:
+                raise e
+        if relative_folder_path and not relative_folder_path in folderSet:
+            return False;
+        if relative_folder_path:
+            folderSet.remove(relative_folder_path)
+        self._check_index_lock()
+
+        try:
+            if relative_folder_path:
+                proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
+                bytes_data = "\n".join(folderSet).encode('utf-8')
+                proc.stdin.write(bytes_data)
+                proc.stdin.close()
+            else:
+                proc = self.repo.git.sparse_checkout("set", "--sparse-index", as_process=True)
+            proc.wait()
+            if proc.returncode != 0:
+                raise Exception(f"Failed to call git sparse checkout: {proc.returncode}")
+            
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"Failed to call git sparse checkout: {e.cmd} {e.output}")
+
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None: return UpdateState.NO_REMOTE
+        remote_url = self._get_remote_url(remote)
+
+        try:
+            current_env = os.environ.copy()
+            current_env.update(GitRepository.get_git_environment(remote_url))
+            progress_wrapper = None if not progress else _InternalProgress(progress)
+            lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
+        except Exception as e:
+            raise e
+        return True
 
     def get_current_change_id(self) -> str:
         return self.repo.git.rev_parse("HEAD")
