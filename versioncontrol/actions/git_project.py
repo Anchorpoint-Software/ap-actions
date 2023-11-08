@@ -6,6 +6,7 @@ create_project_dropdown = "create_project_dropdown"
 remote_dropdown_entry_name = "Connect via Https"
 no_remote_dropdown_entry_name = "No Remote"
 remote_entry_url_input = "remote_entry_url_input"
+remote_entry_download_all_checkbox = "download_all"
 setup_integration_btn = "setup_integration_btn"
 remote_entry_login_info_text= "remote_entry_login_info_text"
 
@@ -214,10 +215,11 @@ try:
 
             self.dialog.add_info("You may need to <b>log into</b> your Git server after the final step.", var=remote_entry_login_info_text)
             self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url, callback=url_changed)
+            self.dialog.add_checkbox(True, text="Download Everything", var=remote_entry_download_all_checkbox)
             self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=True)
-
+            
             self.dialog.hide_row(setup_integration_btn,True)
-            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input, remote_entry_login_info_text]
+            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input, remote_entry_download_all_checkbox, remote_entry_login_info_text]
             if repo_url == "":
                 self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
                 self.dialog.set_value(create_project_dropdown, self.create_project_dropdown_entries[0].name)
@@ -290,6 +292,7 @@ try:
 
             project_path = self.dialog.get_value("project_path")
             git_ignore = self.dialog.get_value("ignore_dropdown")
+            download_all = self.dialog.get_value(remote_entry_download_all_checkbox)
             self.path = project_path
 
             action_id = self.dialog.get_value("create_project_dropdown")
@@ -322,7 +325,7 @@ try:
 
             if folder_is_empty and remote_enabled:
                 # Case 1: Empty Folder & Remote URL -> Clone
-                self._clone(repo_url, project_path, self.project, git_ignore, progress)
+                self._clone(repo_url, project_path, self.project, git_ignore, progress, download_all)
                 return
 
             if not git_parent_dir:
@@ -409,9 +412,9 @@ try:
                     pass
                 
 
-        def _clone(self, url, project_path, project, git_ignore, progress):
+        def _clone(self, url, project_path, project, git_ignore, progress, download_all):
             try:
-                repo = self.git.GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=self.githelper.CloneProgress(progress))
+                repo = self.git.GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=self.githelper.CloneProgress(progress), sparse = not download_all)
                 progress.finish()
             
                 self.githelper.update_project(project_path, url, False, None, project, True)

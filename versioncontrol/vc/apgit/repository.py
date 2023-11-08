@@ -145,13 +145,16 @@ class GitRepository(VCRepository):
         return repo
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None):
+    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None, sparse = False):
         env = GitRepository.get_git_environment(remote_url)
         try:
+            multi_options = []
+            if sparse:
+                multi_options.append("--sparse")
             if progress is not None:
-                git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env)
+                git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env, multi_options=multi_options)
             else:
-                git.Repo.clone_from(remote_url, local_path, env=env)
+                git.Repo.clone_from(remote_url, local_path, env=env, multi_options=multi_options)
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
