@@ -151,8 +151,9 @@ def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
         try:
             pull_changes(repo, channel_id, ctx)
         except Exception as e:
+            git_errors.handle_error(e)
             print(f"Auto-Push: Could not pull {str(e)}")
-            ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 8000)
+            ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 20000)
             return
 
         # Queue async to give Anchorpoint a chance to update the timeline
