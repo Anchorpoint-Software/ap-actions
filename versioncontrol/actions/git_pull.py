@@ -96,7 +96,19 @@ def pull(repo: GitRepository, channel_id: str, ctx):
 
     commits_to_pull = repo.get_history(remote_only=True)
 
-    state = repo.update(progress=PullProgress(progress), rebase=False)
+    try:
+        state = repo.update(progress=PullProgress(progress), rebase=False)
+    except Exception as e:
+        if "unable to unlink" in str(e):
+            print("Could not unlink files on pull, resetting project")
+            repo.reset(commit_id=None, hard=True)
+            repo.clean(directories=False)
+            
+            if stashed_changes:
+                print("Restoring stash")
+                repo.pop_stash()
+        raise e
+    
     progress.set_cancelable(False)
 
     def update_pulled_commits():
