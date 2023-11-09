@@ -70,8 +70,11 @@ def on_load_remote_folders(ctx):
                 entry.is_download_root = True
                 tree_entries.append(entry)
 
+        ignored_folders = [".ap"]
 
         for folder_path in tree_entry_path_list:
+            if "/.ap" in folder_path or folder_path.startswith(".ap"):
+                continue
             entry = ap.RemoteFolderEntry()
             entry.path = folder_path
             entry.is_remote = is_remote_path(folder_path, sparse_checkout_set)
