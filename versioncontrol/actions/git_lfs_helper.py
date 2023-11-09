@@ -11,6 +11,9 @@ def _file_bytes_binary(path: str):
     if not os.path.exists(path): return False
     return is_binary(path) and not _is_file_filtered(path)
 
+def lfs_include_list(extension: str):
+    return extension in [".obj"]
+
 def file_is_binary(path: str):
     mime_type = mimetypes.guess_type(path)
     if not mime_type: return _file_bytes_binary(path)
@@ -44,7 +47,7 @@ def _collect_binaries(paths, repo, progress_callback = None):
         if extension in collected_extensions or path in collected_paths: 
             continue
 
-        if file_is_binary(path):        
+        if file_is_binary(path) or lfs_include_list(extension):        
             if len(extension) == 0:     
                 collected_paths.add(path)
             else:
