@@ -155,6 +155,8 @@ class GitRepository(VCRepository):
                 git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env, multi_options=multi_options)
             else:
                 git.Repo.clone_from(remote_url, local_path, env=env, multi_options=multi_options)
+            if sparse:
+                git.sparse_checkout("set", "--sparse-index", ".ap")
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
@@ -1183,7 +1185,9 @@ class GitRepository(VCRepository):
         if not self.has_remote():
             return set()
         try:
-            return set(self.repo.git.sparse_checkout("list").split("\n"))
+            sparse_folder_set = set(self.repo.git.sparse_checkout("list").split("\n"))
+            sparse_folder_set.add('.ap')
+            return sparse_folder_set
         except Exception as e:
             try:
                 message = e.stderr
