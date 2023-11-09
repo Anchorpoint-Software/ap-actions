@@ -50,7 +50,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         from vc.apgit.repository import GitRepository
         from git_push import push_in_progress
 
-        progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=2000)
+        progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=5000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
         info = ap.TimelineChannelVCInfo()
 
