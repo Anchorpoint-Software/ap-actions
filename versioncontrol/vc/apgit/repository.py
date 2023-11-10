@@ -397,8 +397,11 @@ class GitRepository(VCRepository):
             pass
             
 
-    def clean(self):
-        self.repo.git.clean("-fd")
+    def clean(self, directories: bool = True):
+        if directories:
+            self.repo.git.clean("-fd")
+        else:
+            self.repo.git.clean("-f")
 
     def restore_all_files(self):
         self._check_index_lock()
