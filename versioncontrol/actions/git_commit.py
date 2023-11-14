@@ -190,7 +190,6 @@ def handle_git_autolock(repo, ctx, changes):
     
     ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
 
-
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     import git_lfs_helper as lfs
     if action_id != "gitcommit": return False
@@ -231,6 +230,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             return True
 
         repo.commit(message)
+        repo.handle_sparse_checkout_after_commit(staged)
         handle_git_autolock(repo, ctx, staged)
 
         if auto_push and not push_in_progress(repo.get_git_dir()):
@@ -248,4 +248,5 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     finally:
         ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
+        ap.UI().reload_tree()
         return True

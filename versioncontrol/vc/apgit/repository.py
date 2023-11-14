@@ -1184,6 +1184,45 @@ class GitRepository(VCRepository):
     def get_folders_from_tree(self) -> list[str]:
         return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
     
+    def handle_sparse_checkout_after_commit(self, changes):
+        if not self.has_remote():
+            return
+        try:
+            sparse_checkout_folders = self.get_sparse_checkout_folder_set()
+            sparse_checkout_folders = {folder + '/' if not folder.endswith('/') else folder for folder in sparse_checkout_folders}
+        except Exception as e:
+            if("is not sparse" in str(e)):
+                return
+            raise e
+        potential_sparse_checkout_folders = set()
+
+
+        def process_changes(changes):
+            for change in changes:
+                change_path = change.path
+
+                if any(change_path.startswith(sparse_folder) for sparse_folder in sparse_checkout_folders):
+                    continue 
+
+                folder = '/'.join(change_path.split('/')[:-1]) + '/'
+                if any(sparse_folder == folder for sparse_folder in sparse_checkout_folders):
+                    continue;
+                potential_sparse_checkout_folders.add(folder)
+
+        process_changes(changes.new_files)
+        process_changes(changes.modified_files)
+        process_changes(changes.deleted_files)
+        process_changes(changes.renamed_files)
+
+        new_sparse_checkout_folders = set()
+        for folder in potential_sparse_checkout_folders:
+            if any(folder.startswith(other) for other in potential_sparse_checkout_folders if other != folder):
+                continue
+            new_sparse_checkout_folders.add(folder)
+
+        sparse_checkout_folders = sparse_checkout_folders.union(new_sparse_checkout_folders)
+        self._sparse_checkout_folders(sparse_checkout_folders)
+    
     def get_sparse_checkout_folder_set(self):
         if not self.has_remote():
             return set()
@@ -1199,7 +1238,21 @@ class GitRepository(VCRepository):
             if "this worktree is not sparse" in message:
                 raise Exception("This worktree is not sparse")
             raise e
-    
+        
+    def _sparse_checkout_folders(self, folderSet):
+        try:
+            proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
+            bytes_data = "\n".join(folderSet).encode('utf-8')
+            proc.stdin.write(bytes_data)
+            proc.stdin.close()
+            proc.wait()
+            if proc.returncode != 0:
+                raise Exception(f"Failed to call git sparse checkout: {proc.returncode}")
+
+        except subprocess.CalledProcessError as e:
+            raise Exception(f"Failed to call git sparse checkout: {e.cmd} {e.output}")
+        
+
     def sparse_checkout_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
         if not self.has_remote():
             return False
@@ -1218,17 +1271,7 @@ class GitRepository(VCRepository):
                 return False;
             folderSet.add(relative_folder_path)
             
-            try:
-                proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
-                bytes_data = "\n".join(folderSet).encode('utf-8')
-                proc.stdin.write(bytes_data)
-                proc.stdin.close()
-                proc.wait()
-                if proc.returncode != 0:
-                    raise Exception(f"Failed to call git sparse checkout: {proc.returncode}")
-
-            except subprocess.CalledProcessError as e:
-                raise Exception(f"Failed to call git sparse checkout: {e.cmd} {e.output}")
+            self._sparse_checkout_folders(folderSet)
 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
