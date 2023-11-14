@@ -147,6 +147,6 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
         message = str(e)
         if "it contains uncommitted changes" in message:
             ui = ap.UI()
-            ui.show_error(title="Failed to make folder online only", duration=6000, description="The folder contains changed files, please commit or discard these changes before unloading")
+            ui.show_info(title="Cannot unload folder", duration=6000, description="This folder contains changed files. Commit them first.")
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
