@@ -58,6 +58,7 @@ def on_load_remote_folders(ctx):
 
         tree_entries = []
         tree_entry_path_list = repo.get_folders_from_tree()
+        has_root_added = False
         try:
             sparse_checkout_set = repo.get_sparse_checkout_folder_set()
         except Exception as e:
@@ -69,8 +70,11 @@ def on_load_remote_folders(ctx):
                 entry.is_remote = False
                 entry.is_download_root = True
                 tree_entries.append(entry)
+                has_root_added = True
 
         ignored_folders = [".ap"]
+
+        has_any_remote_folders = False
 
         for folder_path in tree_entry_path_list:
             if "/.ap" in folder_path or folder_path.startswith(".ap"):
@@ -78,7 +82,16 @@ def on_load_remote_folders(ctx):
             entry = ap.RemoteFolderEntry()
             entry.path = folder_path
             entry.is_remote = is_remote_path(folder_path, sparse_checkout_set)
+            if entry.is_remote:
+                has_any_remote_folders = True
             entry.is_download_root = is_download_root(folder_path, sparse_checkout_set)
+            tree_entries.append(entry)
+
+        if not has_root_added:
+            entry = ap.RemoteFolderEntry()
+            entry.path = ""
+            entry.is_remote = has_any_remote_folders
+            entry.is_download_root = True
             tree_entries.append(entry)
         return tree_entries
 
