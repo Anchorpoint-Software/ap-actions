@@ -72,8 +72,6 @@ def on_load_remote_folders(ctx):
                 tree_entries.append(entry)
                 has_root_added = True
 
-        ignored_folders = [".ap"]
-
         has_any_remote_folders = False
 
         for folder_path in tree_entry_path_list:
@@ -159,7 +157,9 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
             raise e
         message = str(e)
         if "it contains uncommitted changes" in message:
+            print("Failed to unload folder because it contains uncommitted changes")
             ui = ap.UI()
             ui.show_error(title="Failed to make folder online only", duration=6000, description="The folder contains changed files, please commit or discard these changes before unloading")
+            ui.navigate_to_channel_detail("Git", "vcPendingChanges")
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
