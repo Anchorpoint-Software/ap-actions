@@ -162,6 +162,7 @@ def pull_async(channel_id: str, project_path, ctx):
         if not repo: return
 
         if pull(repo, channel_id, ctx):
+            ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui.show_success("Update Successful")
         
     except Exception as e:

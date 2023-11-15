@@ -415,6 +415,7 @@ try:
         def _clone(self, url, project_path, project, git_ignore, progress, download_all):
             try:
                 repo = self.git.GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=self.githelper.CloneProgress(progress), sparse = not download_all)
+                ap.evaluate_locks(project.workspace_id, project.id)
                 progress.finish()
             
                 self.githelper.update_project(project_path, url, False, None, project, True)

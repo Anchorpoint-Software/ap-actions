@@ -52,6 +52,7 @@ if __name__ == "__main__":
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
             repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress), sparse= not download_all)
+            ap.evaluate_locks(workspace_id, project.id)
             progress.finish()
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             add_git_ignore(repo, ctx, repo_path)
