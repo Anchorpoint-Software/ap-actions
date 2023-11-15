@@ -155,8 +155,6 @@ class GitRepository(VCRepository):
                 git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env, multi_options=multi_options)
             else:
                 git.Repo.clone_from(remote_url, local_path, env=env, multi_options=multi_options)
-            if sparse:
-                git.sparse_checkout("set", "--sparse-index", ".ap")
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
@@ -166,6 +164,15 @@ class GitRepository(VCRepository):
 
         repo = GitRepository.load(local_path)
         repo.set_username(username, email, local_path)
+        if sparse:
+            try:
+                repo.git.sparse_checkout("set", "--sparse-index", ".ap")
+            except GitCommandError as e:
+                print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
+                raise e
+            except Exception as e:
+                print(str(e))
+                raise e
         return repo
 
     @classmethod
