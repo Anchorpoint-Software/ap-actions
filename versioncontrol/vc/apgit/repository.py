@@ -166,7 +166,7 @@ class GitRepository(VCRepository):
         repo.set_username(username, email, local_path)
         if sparse:
             try:
-                repo.git.sparse_checkout("set", "--sparse-index", ".ap")
+                repo.repo.git.sparse_checkout("set", "--sparse-index", ".ap")
             except GitCommandError as e:
                 print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
                 raise e
