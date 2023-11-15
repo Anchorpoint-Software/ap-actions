@@ -114,6 +114,7 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
         repo = GitRepository.load(ctx.project_path)
         needed_download = repo.sparse_checkout_folder(relative_folder_path, progress=SparseProgress(progress))
         if needed_download:
+            ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui = ap.UI()
             ui.reload_tree()
             time.sleep(2)
