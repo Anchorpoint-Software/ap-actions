@@ -104,7 +104,7 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     dialog.add_info("Learn more about <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/4-Resolving-conflicts/#shelved-files'>Shelved Files</a>")
                     dialog.add_button("Continue", callback=lambda d: d.close())
                     dialog.show()
-
+            repo.sparse_reapply()
         except Exception as e:
             if repo.has_conflicts() and repo.is_rebasing():
                 # When rebasing, the next commit to rebase can conflict again. This is not an error but OK

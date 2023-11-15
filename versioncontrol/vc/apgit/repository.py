@@ -1350,6 +1350,15 @@ class GitRepository(VCRepository):
         except Exception as e:
             raise e
         return True
+    
+    def sparse_reapply(self):
+        try:
+            self.repo.git.sparse_checkout("reapply")
+        except Exception as e:
+            if("must be in a sparse-checkout" in str(e)):
+                return
+            print(str(e))
+            raise e
 
     def get_current_change_id(self) -> str:
         return self.repo.git.rev_parse("HEAD")
