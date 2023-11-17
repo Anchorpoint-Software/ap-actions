@@ -215,11 +215,15 @@ try:
 
             self.dialog.add_info("You may need to <b>log into</b> your Git server after the final step.", var=remote_entry_login_info_text)
             self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url, callback=url_changed)
-            self.dialog.add_checkbox(True, text="Download Everything", var=remote_entry_download_all_checkbox)
+            
+            if self.context.has_team_features():
+                self.dialog.add_checkbox(True, text="Download Everything", var=remote_entry_download_all_checkbox)
             self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=True)
             
             self.dialog.hide_row(setup_integration_btn,True)
-            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input, remote_entry_download_all_checkbox, remote_entry_login_info_text]
+            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input, remote_entry_login_info_text]
+            if self.context.has_team_features():
+                self.dialogVarMap[remote_entry.name].append(remote_entry_download_all_checkbox)
             if repo_url == "":
                 self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
                 self.dialog.set_value(create_project_dropdown, self.create_project_dropdown_entries[0].name)
@@ -292,7 +296,10 @@ try:
 
             project_path = self.dialog.get_value("project_path")
             git_ignore = self.dialog.get_value("ignore_dropdown")
-            download_all = self.dialog.get_value(remote_entry_download_all_checkbox)
+            if self.context.has_team_features():
+                download_all = self.dialog.get_value(remote_entry_download_all_checkbox)
+            else:
+                download_all = True
             self.path = project_path
 
             action_id = self.dialog.get_value("create_project_dropdown")

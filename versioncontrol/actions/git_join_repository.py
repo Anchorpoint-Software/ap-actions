@@ -110,7 +110,10 @@ if __name__ == "__main__":
 
     def join_repo(dialog: ap.Dialog, url, project, timeline_channel, ctx):
         location = dialog.get_value("location")
-        download_all = dialog.get_value("download_all")
+        if ctx.has_team_features():
+            download_all = dialog.get_value("download_all")
+        else:
+            download_all = True
         if not url:
             url = dialog.get_value("url")
             patch_channel = True
@@ -210,7 +213,8 @@ if __name__ == "__main__":
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
 
-    dialog.add_checkbox(True, text="Download Everything", var="download_all")
+    if ctx.has_team_features():
+        dialog.add_checkbox(True, text="Download Everything", var="download_all")
 
     if additional_info is not None:
         dialog.add_text(additional_info, var="additional_info")
