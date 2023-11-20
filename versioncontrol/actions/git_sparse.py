@@ -3,6 +3,7 @@ import apsync as aps
 from vc.apgit.repository import * 
 import os
 import time
+import webbrowser
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -28,6 +29,33 @@ class SparseProgress(Progress):
 
     def canceled(self):
         return self.ap_progress.canceled
+
+def disable_sparse_checkout(dialog, ctx):
+    settings = aps.Settings("sparse_checkout_dialog_seen")
+    settings.set(ctx.project_id, True)
+    settings.store()
+    dialog.close()
+    on_download_remote_folder("", ctx)
+
+def navigate_to_pricing(dialog, ctx):
+    settings = aps.Settings("sparse_checkout_dialog_seen")
+    settings.set(ctx.project_id, True)
+    settings.store()
+    webbrowser.open("https://www.anchorpoint.app/pricing")
+    dialog.close()
+
+def show_sparse_checkout_feature_dialog(ctx):
+    settings = aps.Settings("sparse_checkout_dialog_seen")
+    already_seen = settings.get(ctx.project_id, False)
+    if already_seen: 
+        return
+
+    dialog = ap.Dialog()
+    dialog.title = "Download feature required"
+    dialog.icon = ctx.icon
+    dialog.add_info("You are using partial folder download in this project.<br>This feature is only available in the Team plan of Anchorpoint.<br>Please upgrade your plan or disable the feature.")
+    dialog.add_button("Disable", callback=lambda d: disable_sparse_checkout(d, ctx)).add_button("Upgrade", callback=lambda d: navigate_to_pricing(d, ctx))
+    dialog.show()
 
 def on_load_remote_folders(ctx):
     try:
@@ -73,6 +101,9 @@ def on_load_remote_folders(ctx):
                 has_root_added = True
 
         has_any_remote_folders = False
+
+        if len(sparse_checkout_set) > 0 and not ctx.has_team_features():
+            show_sparse_checkout_feature_dialog(ctx)
 
         for folder_path in tree_entry_path_list:
             if "/.ap" in folder_path or folder_path.startswith(".ap"):
