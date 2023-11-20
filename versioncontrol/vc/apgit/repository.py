@@ -1293,6 +1293,42 @@ class GitRepository(VCRepository):
             raise e
         return True
         
+    def _get_root_folder_set(self, folders):
+        root_folder_set = set()
+        for folder in folders:
+            if len(folder.split('/')) == 1:
+                root_folder_set.add(folder)
+        return root_folder_set
+
+    def _filter_sparse_roots(self, sparse_root_set):
+            filtered_sparse_root_set = set()
+
+            for root in sparse_root_set:
+                if not any(compare != root and root.startswith(compare) for compare in sparse_root_set):
+                    filtered_sparse_root_set.add(root)
+
+            return filtered_sparse_root_set
+
+    def _generate_sparse_root_set(self, folders, sparse_root_set, relative_folder_path):
+        if len(sparse_root_set) == 0:
+            filtered_sparse_roots = self._get_root_folder_set(folders)
+        else:
+            filtered_sparse_roots = self._filter_sparse_roots(sparse_root_set)
+        parent_folder = '/'.join(relative_folder_path.split('/')[:-1])
+        while parent_folder:
+            is_sparse_root = parent_folder in filtered_sparse_roots
+            if is_sparse_root:
+                filtered_sparse_roots.remove(parent_folder)
+            for folder in folders:
+                if (folder.startswith(parent_folder) and 
+                    not folder == relative_folder_path and not relative_folder_path.startswith(folder) and
+                    len(folder.split('/')) == len(parent_folder.split('/')) + 1):
+                    filtered_sparse_roots.add(folder)
+            if is_sparse_root:
+                break
+            parent_folder = '/'.join(parent_folder.split('/')[:-1])
+        return filtered_sparse_roots
+
     def sparse_unload_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
         if not self.has_remote():
             return False
@@ -1311,21 +1347,22 @@ class GitRepository(VCRepository):
         else:
             self._check_index_lock()
             try:
-                folderSet = self.get_sparse_checkout_folder_set()
+                sparse_root_set = self.get_sparse_checkout_folder_set()
             except Exception as e:
                 if("is not sparse" in str(e)):
-                    folderSet = set()
+                    sparse_root_set = set()
                 else:
                     raise e
-            if relative_folder_path and not relative_folder_path in folderSet:
-                return False;
-            if relative_folder_path:
-                folderSet.remove(relative_folder_path)
 
+            if relative_folder_path and not relative_folder_path in sparse_root_set:
+                folders = self.get_folders_from_tree()
+                sparse_root_set = self._generate_sparse_root_set(folders, sparse_root_set, relative_folder_path)
+            elif relative_folder_path:
+                sparse_root_set.remove(relative_folder_path)
             try:
                 if relative_folder_path:
                     proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
-                    bytes_data = "\n".join(folderSet).encode('utf-8')
+                    bytes_data = "\n".join(sparse_root_set).encode('utf-8')
                     proc.stdin.write(bytes_data)
                     proc.stdin.close()
                 else:
