@@ -1018,7 +1018,7 @@ class GitRepository(VCRepository):
             if ".gitattributes" in file:
                 attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
                 self._merge_gitattributes(attributes_file)
-                self.repo.git.add(attributes_file)
+                self.repo.git.add("--sparse", attributes_file)
 
             # UU: Both the file in the index (staging area) and the working directory are updated, indicating a conflict in the file's content.
             if status == "UU":
