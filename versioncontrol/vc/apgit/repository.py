@@ -1018,7 +1018,7 @@ class GitRepository(VCRepository):
             if ".gitattributes" in file:
                 attributes_file = os.path.join(self.repo.working_dir, ".gitattributes")
                 self._merge_gitattributes(attributes_file)
-                self.repo.git.add(attributes_file)
+                self.repo.git.add("--sparse", attributes_file)
 
             # UU: Both the file in the index (staging area) and the working directory are updated, indicating a conflict in the file's content.
             if status == "UU":
@@ -1082,19 +1082,19 @@ class GitRepository(VCRepository):
             run_with_pathspec(checkout_ours,
                                 lambda pathspec: self.repo.git.checkout("--ours", pathspec_from_file=pathspec))
             run_with_pathspec(checkout_ours,
-                                lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
+                                lambda pathspec: self.repo.git.add("--sparse", pathspec_from_file=pathspec))
 
         if len(checkout_theirs) > 0:
             make_writable(checkout_theirs)
             run_with_pathspec(checkout_theirs,
                                 lambda pathspec: self.repo.git.checkout("--theirs", pathspec_from_file=pathspec))
             run_with_pathspec(checkout_theirs,
-                                lambda pathspec: self.repo.git.add(pathspec_from_file=pathspec))
+                                lambda pathspec: self.repo.git.add("--sparse", pathspec_from_file=pathspec))
 
         if len(remove) > 0:
             make_writable(remove)
             run_with_pathspec(remove,
-                                lambda pathspec: self.repo.git.rm(pathspec_from_file=pathspec))
+                                lambda pathspec: self.repo.git.rm("--sparse", pathspec_from_file=pathspec))
             
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
