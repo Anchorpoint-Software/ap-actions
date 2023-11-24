@@ -900,6 +900,7 @@ def refresh_async(channel_id: str, project_path):
             with open(lockfile, "w") as f:
                 repo.fetch()
         finally:
+            ap.vc_load_pending_changes(channel_id)
             ap.refresh_timeline_channel(channel_id)
             delete_lockfiles(git_dir)
 
