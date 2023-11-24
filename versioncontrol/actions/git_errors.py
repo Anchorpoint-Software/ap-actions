@@ -245,7 +245,7 @@ def handle_error(e: Exception):
         # azure fails to work with ipv6 in some cases: https://stackoverflow.com/questions/67230241/fatal-unable-to-access-https-dev-azure-com-xxx-openssl-ssl-connect-connec
         return _handle_azure_ipv6()
     
-    if "index file corrupt" in message or "unknown index entry format" in message:
+    if "index file corrupt" in message or "unknown index entry format" in message or "cache entry out of order" in message:
         restore_corrupted_index()
         return True
     
