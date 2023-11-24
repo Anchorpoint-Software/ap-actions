@@ -90,7 +90,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
-            conflicts.type = ap.ActionButtonType.Danger
+            conflicts.type = ap.ActionButtonType.Primary
             conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your shelved files"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
