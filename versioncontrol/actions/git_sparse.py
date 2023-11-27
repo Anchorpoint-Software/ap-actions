@@ -137,7 +137,7 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
 
-        progress = ap.Progress("Downloading", show_loading_screen=True, cancelable=False)
+        progress = ap.Progress("Downloading", show_loading_screen=True, cancelable=True)
 
         if ctx.project_path is None:
             raise Exception("project_path is None")
@@ -151,6 +151,9 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
             time.sleep(2)
             ui.reload()
         progress.finish()
+        if not needed_download:
+            ui = ap.UI()
+            ui.show_info(title="No remote repository available", duration=3000, description="Selective download / unload only works in combination with a remote repository.")
 
         return True
 
@@ -173,13 +176,16 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
             raise Exception("project_path is None")
 
         repo = GitRepository.load(ctx.project_path)
-        needed_unload = repo.sparse_unload_folder(relative_folder_path, progress=SparseProgress(progress))
+        needed_unload = repo.sparse_unload_folder(relative_folder_path)
         if needed_unload:
             ui = ap.UI()
             ui.reload_tree()
             time.sleep(2)
             ui.reload()
         progress.finish()
+        if not needed_unload:
+            ui = ap.UI()
+            ui.show_info(title="No remote repository available", duration=3000, description="Selective download / unload only works in combination with a remote repository.")
 
         return True
 
