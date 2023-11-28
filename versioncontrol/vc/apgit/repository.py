@@ -1192,6 +1192,17 @@ class GitRepository(VCRepository):
     def get_folders_from_tree(self) -> list[str]:
         return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
     
+    def is_file_in_tree(self, file_path):
+        try:
+            relative_path = os.path.relpath(file_path, self.repo.working_tree_dir).replace("\\","/")
+            head_commit = self.repo.head.commit
+            tree = head_commit.tree
+            blob = tree[relative_path]
+            is_blob = blob is not None and blob.type == 'blob'
+            return is_blob
+        except Exception as e:
+            return False
+    
     def handle_sparse_checkout_after_commit(self, changes):
         if not self.has_remote():
             return
