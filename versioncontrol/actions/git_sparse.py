@@ -137,7 +137,7 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
 
-        progress = ap.Progress("Downloading", show_loading_screen=True, cancelable=True)
+        progress = ap.Progress("Downloading", show_loading_screen=True, cancelable=False)
 
         if ctx.project_path is None:
             raise Exception("project_path is None")
