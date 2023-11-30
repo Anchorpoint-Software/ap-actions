@@ -1679,7 +1679,7 @@ class GitRepository(VCRepository):
         
 
     def prune_lfs(self):
-        output = self.repo.git.lfs("prune")
+        output = self.repo.git.lfs("prune", "--force", "--verify-remote")
 
         if "Deleting objects: 100%" not in output: return 0
 

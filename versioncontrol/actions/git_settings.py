@@ -128,7 +128,7 @@ def open_terminal_pressed(dialog):
         else:
             os.system(f"start cmd /k")
 
-def prune(project_path):
+def prune(dialog, project_path):
     sys.path.insert(0, script_dir)
     from vc.apgit.repository import GitRepository
     from vc.apgit.utility import get_repo_path
@@ -140,14 +140,16 @@ def prune(project_path):
     if not repo: return
 
     progress = ap.Progress("Clearing Cache")
+    dialog.set_processing("prune_lfs", True, "Clearing Cache")
     count = repo.prune_lfs()
+    dialog.set_processing("prune_lfs", False)
     if count == 0: 
         ui.show_info("Cache is already cleared")
     else:
         ui.show_info(f"Cleared {count} objects")
 
-def prune_pressed(ctx: ap.Context):
-    ctx.run_async(prune, ctx.project_path)
+def prune_pressed(dialog, ctx: ap.Context):
+    ctx.run_async(prune, dialog, ctx.project_path)
 
 def clear_credentials_async(dialog, repo_path, url):
     if not url:
@@ -237,7 +239,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
         self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
 
-        self.dialog.add_button("Clear Cache", callback=lambda d: prune_pressed(ctx), primary=False, enabled=self.repo_available)
+        self.dialog.add_button("Clear Cache", var="prune_lfs", callback=lambda d: prune_pressed(d, ctx), primary=False, enabled=self.repo_available)
         self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
 
         self.dialog.add_button("Update Credentials" if repo else "Clear Credentials", var="updatecreds", callback=lambda d: update_credentials_pressed(d, ctx, path, url), primary=False)
