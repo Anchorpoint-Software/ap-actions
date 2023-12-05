@@ -809,7 +809,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
-            if not repo.merge_branch(branch):
+            if not repo.merge_branch(branch, progress=helper.MergeProgress(progress)):
                 ui.show_info("Merge not needed", "Branch is already up to date.")
             else:
                 lock_disabler.enable_locking()
