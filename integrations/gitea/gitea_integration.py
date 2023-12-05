@@ -267,6 +267,15 @@ class GiteaIntegration(ap.ApIntegration):
         reconnect.identifier = reconnect_action_id
         reconnect.tooltip = "Reconnect to Gitea"
         self.add_preferences_action(reconnect)
+
+        disconnect = ap.IntegrationAction()
+        disconnect.name = "Clear"
+        disconnect.enabled = True
+        disconnect.icon = aps.Icon(":/icons/unPlug.svg")
+        disconnect.identifier = disconnect_action_id
+        disconnect.tooltip = "Disconnect from Gitea"
+        self.add_preferences_action(disconnect)
+
         self.is_connected = False
     
     def execute_preferences_action(self, action_id: str):
