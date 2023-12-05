@@ -205,8 +205,7 @@ class GiteaIntegration(ap.ApIntegration):
         self.dashboard_icon = icon_path
         self.preferences_icon = icon_path
         self.is_setup = self.client.is_setup()
-
-        # self.client.clear_integration(True)
+        self.is_setup_for_workspace = self.client.is_setup_for_workspace()
 
         if self.is_setup:
             self.client.setup_workspace_settings()
@@ -235,13 +234,14 @@ class GiteaIntegration(ap.ApIntegration):
         connect.tooltip = "Connect to Gitea"
         self.add_preferences_action(connect)
 
-        disconnect = ap.IntegrationAction()
-        disconnect.name = "Disconnect"
-        disconnect.enabled = True
-        disconnect.icon = aps.Icon(":/icons/unPlug.svg")
-        disconnect.identifier = disconnect_action_id
-        disconnect.tooltip = "Clear Gitea configuration"
-        self.add_preferences_action(disconnect)
+        if(self.is_setup_for_workspace):
+            disconnect = ap.IntegrationAction()
+            disconnect.name = "Clear"
+            disconnect.enabled = True
+            disconnect.icon = aps.Icon(":/icons/clearCache.svg")
+            disconnect.identifier = disconnect_action_id
+            disconnect.tooltip = "Clear Gitea configuration"
+            self.add_preferences_action(disconnect)
         self.is_connected = False
 
     def _setup_connected_state(self):
@@ -276,13 +276,14 @@ class GiteaIntegration(ap.ApIntegration):
         reconnect.tooltip = "Reconnect to Gitea"
         self.add_preferences_action(reconnect)
 
-        disconnect = ap.IntegrationAction()
-        disconnect.name = "Clear"
-        disconnect.enabled = True
-        disconnect.icon = aps.Icon(":/icons/unPlug.svg")
-        disconnect.identifier = disconnect_action_id
-        disconnect.tooltip = "Disconnect from Gitea"
-        self.add_preferences_action(disconnect)
+        if(self.is_setup_for_workspace):
+            disconnect = ap.IntegrationAction()
+            disconnect.name = "Clear"
+            disconnect.enabled = True
+            disconnect.icon = aps.Icon(":/icons/clearCache.svg")
+            disconnect.identifier = disconnect_action_id
+            disconnect.tooltip = "Clear Gitea configuration"
+            self.add_preferences_action(disconnect)
 
         self.is_connected = False
     
@@ -330,6 +331,7 @@ class GiteaIntegration(ap.ApIntegration):
             self.show_settings_dialog(current_org, orgs)
             self._setup_connected_state()
             self.is_setup = True
+            self.is_setup_for_workspace = True
             self.is_connected = True
             self.start_update()
         except Exception as e:
@@ -509,6 +511,7 @@ class GiteaIntegration(ap.ApIntegration):
         remove_data = dialog.get_value(remove_data_entry)
         self.client.clear_integration(remove_data)
         self.is_setup = False
+        self.is_setup_for_workspace = False
         self._setup_not_connected_state()
         self.start_update()
         dialog.close()
