@@ -151,6 +151,9 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
             time.sleep(2)
             ui.reload()
         progress.finish()
+        if not needed_download:
+            ui = ap.UI()
+            ui.show_info(title="No remote repository available", duration=5000, description="Selective download / unload only works in combination with a remote repository.")
 
         return True
 
@@ -173,13 +176,16 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
             raise Exception("project_path is None")
 
         repo = GitRepository.load(ctx.project_path)
-        needed_unload = repo.sparse_unload_folder(relative_folder_path, progress=SparseProgress(progress))
+        needed_unload = repo.sparse_unload_folder(relative_folder_path)
         if needed_unload:
             ui = ap.UI()
             ui.reload_tree()
             time.sleep(2)
             ui.reload()
         progress.finish()
+        if not needed_unload:
+            ui = ap.UI()
+            ui.show_info(title="No remote repository available", duration=5000, description="Selective download / unload only works in combination with a remote repository.")
 
         return True
 
@@ -191,7 +197,10 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
         if "it contains uncommitted changes" in message:
             print("Failed to unload folder because it contains uncommitted changes")
             ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=6000, description="This folder contains changed files. Commit them first.")
+            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder contains changed files. Commit them first.")
             ui.navigate_to_channel_detail("Git", "vcPendingChanges")
+        elif "Cannot unload root when it is the only sparse root" in message:
+            ui = ap.UI()
+            ui.show_info(title="Cannot unload folder", duration=5000, description="The root folder is already unloaded.")
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)

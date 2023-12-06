@@ -2,6 +2,8 @@ import anchorpoint as ap
 import apsync as aps
 import os, sys, platform
 
+import is_git_repo as is_git
+
 create_project_dropdown = "create_project_dropdown"
 remote_dropdown_entry_name = "Connect via Https"
 no_remote_dropdown_entry_name = "No Remote"
@@ -68,6 +70,13 @@ def path_changed(dialog: ap.Dialog, git, path, ctx):
     url = get_repo_url(git, path)
     if url and url != "":
         dialog.set_value("url", url)
+
+    is_repo = is_git.is_git_repo(path)
+    if(is_repo):
+        dialog.hide_row(remote_entry_download_all_checkbox, True)
+        dialog.set_value(remote_entry_download_all_checkbox, True)
+    else:
+        dialog.hide_row(remote_entry_download_all_checkbox, False)
     
 def add_additional_scripts(yaml_dir, project_path, ignore_value):
     import shutil
