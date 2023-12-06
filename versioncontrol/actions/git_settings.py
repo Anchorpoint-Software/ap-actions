@@ -83,6 +83,22 @@ def apply_git_url_async(dialog, ctx, repo_path):
     dialog.set_processing("applyurl", True, "Changing URL")
     ctx.run_async(apply_git_url, dialog, ctx, repo_path)
 
+def reapply_sparse_checkout(dialog, ctx: ap.Context, repo_path):
+    from vc.apgit.repository import GitRepository
+    try:
+        repo = GitRepository.load(repo_path)
+        repo.sparse_reapply()
+
+        ap.UI().show_success("Sparse Checkout refreshed")
+    except Exception as e:
+        ap.UI().show_error("Could not refresh sparse checkout", str(e))
+    finally:
+        dialog.set_processing("reapplysparse", False)
+
+def reapply_sparse_checkout_async(dialog, ctx: ap.Context, repo_path):
+    dialog.set_processing("reapplysparse", True, "Refreshing Sparse Checkout")
+    ctx.run_async(reapply_sparse_checkout, dialog, ctx, repo_path)
+
 def open_terminal_pressed(dialog): 
     sys.path.insert(0, script_dir)
     from vc.apgit.repository import GitRepository
@@ -252,6 +268,12 @@ class GitProjectSettings(ap.AnchorpointSettings):
         shared_settings = self.get_shared_settings()
         self.dialog.set_value("lockextensions", shared_settings.get("lockextensions", ["unity"]))
         self.dialog.set_value("autolfs", shared_settings.get("autolfs", True))
+
+        if self.repo_available and repo.is_sparse_checkout_enabled():
+            self.dialog.add_empty()
+            self.dialog.add_text("<b>Fix Issues</b>")
+            self.dialog.add_button("Refresh Sparse Checkout", var="reapplysparse", callback=lambda d: reapply_sparse_checkout_async(d, self.ctx, path), primary=False)
+            self.dialog.add_info("Repairs the state of Unloaded/Downloaded folders if they don't show<br>the correct content. This may have happened after resolving conflicts.")
 
 
     def get_dialog(self):         
