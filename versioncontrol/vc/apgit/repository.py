@@ -1142,6 +1142,11 @@ class GitRepository(VCRepository):
         except Exception as e:
             return None
 
+    def get_upstream_branch(self, branch: str) -> str:
+        if not self.has_remote():
+            return branch
+        return self.repo.git.rev_parse("--abbrev-ref", branch + "@{u}")
+
     def get_branch_name_from_id(self, id: str) -> str:
         try:
             if id == None:

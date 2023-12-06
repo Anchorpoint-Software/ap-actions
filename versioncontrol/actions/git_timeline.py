@@ -781,6 +781,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         if repo.get_current_branch_name() == branch:
             return
         
+        branch = repo.get_upstream_branch(branch)
         ui = ap.UI()
 
         # if platform.system() == "Windows":
