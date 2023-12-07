@@ -1,12 +1,19 @@
 import anchorpoint as ap
 import apsync as aps
-from vc.apgit.repository import * 
 import os
 import time
 import webbrowser
+import sys
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
+
+sys.path.insert(0, script_dir)
+
+from vc.apgit.repository import * 
+
+if script_dir in sys.path:
+    sys.path.remove(script_dir)
 
 class SparseProgress(Progress):
     def __init__(self, progress: ap.Progress) -> None:
