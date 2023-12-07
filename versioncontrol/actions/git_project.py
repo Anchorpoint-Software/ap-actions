@@ -75,8 +75,6 @@ def path_changed(dialog: ap.Dialog, git, path, ctx):
     if(is_repo):
         dialog.hide_row(remote_entry_download_all_checkbox, True)
         dialog.set_value(remote_entry_download_all_checkbox, True)
-    else:
-        dialog.hide_row(remote_entry_download_all_checkbox, False)
     
 def add_additional_scripts(yaml_dir, project_path, ignore_value):
     import shutil
@@ -190,7 +188,7 @@ try:
 
         def create_dropdown_entries(self, repo_url: str):
             self.create_project_dropdown_entries = []
-            self.dialogVarMap = {}
+            self.dialog_var_map = {}
 
             #create dropdown entries
             if repo_url == "":
@@ -211,7 +209,7 @@ try:
                 local_entry.name = no_remote_dropdown_entry_name
                 local_entry.icon = ":icons/desktop.svg"
                 self.create_project_dropdown_entries.append(local_entry)
-                self.dialogVarMap[local_entry.name] = []
+                self.dialog_var_map[local_entry.name] = []
 
             self.setup_integration_visible = False
             self.dialog.add_dropdown(self.create_project_dropdown_entries[0].name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change, validate_callback=lambda d,v: validate_dropdown(d,v,self.setup_integration_visible))
@@ -220,7 +218,7 @@ try:
             if repo_url == "":
                 for integration in self.git_integrations:
                     for action in integration.get_create_project_actions():
-                        self.dialogVarMap[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
+                        self.dialog_var_map[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
 
             self.dialog.add_info("You may need to <b>log into</b> your Git server after the final step.", var=remote_entry_login_info_text)
             self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url, callback=url_changed)
@@ -230,9 +228,9 @@ try:
             self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=True)
             
             self.dialog.hide_row(setup_integration_btn,True)
-            self.dialogVarMap[remote_entry.name] = [remote_entry_url_input, remote_entry_login_info_text]
+            self.dialog_var_map[remote_entry.name] = [remote_entry_url_input, remote_entry_login_info_text]
             if self.context.has_team_features():
-                self.dialogVarMap[remote_entry.name].append(remote_entry_download_all_checkbox)
+                self.dialog_var_map[remote_entry.name].append(remote_entry_download_all_checkbox)
             if repo_url == "":
                 self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
                 self.dialog.set_value(create_project_dropdown, self.create_project_dropdown_entries[0].name)
@@ -245,6 +243,8 @@ try:
         def on_dropdown_change(self, dialog, value):
             self.setup_integration_visible = False
             self.toggle_row_visibility(dialog,value)
+            if value != remote_dropdown_entry_name:
+                dialog.set_value(remote_entry_download_all_checkbox,True)
             for integration in self.git_integrations:
                 action_found = False
                 for action in integration.get_create_project_actions():
@@ -264,14 +264,16 @@ try:
                 dialog.hide_row(setup_integration_btn,True)
 
         def toggle_row_visibility(self, dialog,value):
-                row_vars = self.dialogVarMap[value]
+                row_vars = self.dialog_var_map[value]
                 #show all rows of the selected integration action
                 for row_var in row_vars:
+                    print(f"display row: {row_var}")
                     dialog.hide_row(row_var,False)
                 #hide all other rows
-                for key, row_vars in self.dialogVarMap.items():
+                for key, row_vars in self.dialog_var_map.items():
                     if key != value:
                         for row_var in row_vars:
+                            print(f"hide row: {row_var}")
                             dialog.hide_row(row_var,True)
 
         def remote_changed(self, dialog: ap.Dialog, value):
