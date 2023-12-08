@@ -1352,6 +1352,7 @@ class GitRepository(VCRepository):
 
                 if progress.canceled():
                     if platform.system() == "Windows":
+                        from subprocess import CREATE_NO_WINDOW
                         subprocess.call(['taskkill', '/F', '/T', '/PID', str(proc.pid)],
                                         stdout=subprocess.DEVNULL,
                                         stderr=subprocess.DEVNULL,
@@ -1380,7 +1381,6 @@ class GitRepository(VCRepository):
 
             with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
                 temp_progress_path = temp_file.name
-                print(f"Temp progress path: {temp_progress_path}")
                 git_env["GIT_LFS_PROGRESS"] = temp_progress_path
                 current_env.update(git_env)
 
@@ -1436,7 +1436,7 @@ class GitRepository(VCRepository):
                                             env=current_env,
                                             **kwargs)
                     
-                    self._handle_sparse_checkout_progress(proc, temp_progress_path, progress)
+                    self._handle_sparse_checkout_progress(proc, temp_progress_path, progress_wrapper)
 
             except Exception as e:
                 print(str(e))
@@ -1474,13 +1474,15 @@ class GitRepository(VCRepository):
         else:
             filtered_sparse_roots = self._filter_sparse_roots(sparse_root_set)
         parent_folder = '/'.join(relative_folder_path.split('/')[:-1])
+        initial_parent_folder = parent_folder
         while parent_folder:
             is_sparse_root = parent_folder in filtered_sparse_roots
             if is_sparse_root:
                 filtered_sparse_roots.remove(parent_folder)
             for folder in folders:
                 if (folder.startswith(parent_folder) and 
-                    not folder == relative_folder_path and not relative_folder_path.startswith(folder) and
+                    not folder == relative_folder_path and 
+                    not initial_parent_folder.startswith(folder) and
                     len(folder.split('/')) == len(parent_folder.split('/')) + 1):
                     filtered_sparse_roots.add(folder)
             if is_sparse_root:
