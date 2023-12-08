@@ -197,16 +197,18 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
 
     except Exception as e:
         import git_errors
-        if git_errors.handle_error(e):
-            raise e
-        message = str(e)
-        if "it contains uncommitted changes" in message:
-            print("Failed to unload folder because it contains uncommitted changes")
-            ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder contains changed files. Commit them first.")
-            ui.navigate_to_channel_detail("Git", "vcPendingChanges")
-        elif "Cannot unload root when it is the only sparse root" in message:
-            ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=5000, description="The root folder is already unloaded.")
+        if not git_errors.handle_error(e):
+            message = str(e)
+            if "it contains uncommitted changes" in message:
+                print("Failed to unload folder because it contains uncommitted changes")
+                ui = ap.UI()
+                ui.show_info(title="Cannot unload folder", duration=5000, description="This folder contains changed files. Commit them first.")
+                ui.navigate_to_channel_detail("Git", "vcPendingChanges")
+            elif "Cannot unload root when it is the only sparse root" in message:
+                ui = ap.UI()
+                ui.show_info(title="Cannot unload folder", duration=5000, description="The root folder is already unloaded.")
+            else:
+                raise e
+        return False
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
