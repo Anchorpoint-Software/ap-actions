@@ -1878,7 +1878,6 @@ class GitRepository(VCRepository):
                 logging.info(f"removed index.lock: {index_lock}")
             except Exception as e:
                 logging.info(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
-                raise e
     
     def get_file_content(self, path: str, entry_id: Optional[str] = None):
         try:
