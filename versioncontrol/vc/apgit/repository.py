@@ -1340,7 +1340,7 @@ class GitRepository(VCRepository):
         offset = 0
 
         while proc.poll() is None:
-            with open(temp_progress_path, 'r') as progress_file:
+            with open(temp_progress_path, 'r', encoding="utf-8") as progress_file:
                 progress_file.seek(offset)
                 new_lines = progress_file.readlines()
                 offset = progress_file.tell()
