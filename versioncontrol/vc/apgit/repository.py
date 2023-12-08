@@ -1479,6 +1479,8 @@ class GitRepository(VCRepository):
         if not parent_folder:
             if relative_folder_path in filtered_sparse_roots:
                 filtered_sparse_roots.remove(relative_folder_path)
+                if not ".ap" in filtered_sparse_roots:
+                    filtered_sparse_roots.add(".ap")
                 return filtered_sparse_roots
 
         while parent_folder:
