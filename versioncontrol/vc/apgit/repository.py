@@ -1475,6 +1475,12 @@ class GitRepository(VCRepository):
             filtered_sparse_roots = self._filter_sparse_roots(sparse_root_set)
         parent_folder = '/'.join(relative_folder_path.split('/')[:-1])
         initial_parent_folder = parent_folder
+
+        if not parent_folder:
+            if relative_folder_path in filtered_sparse_roots:
+                filtered_sparse_roots.remove(relative_folder_path)
+                return filtered_sparse_roots
+
         while parent_folder:
             is_sparse_root = parent_folder in filtered_sparse_roots
             if is_sparse_root:
@@ -1494,8 +1500,9 @@ class GitRepository(VCRepository):
         if not self.has_remote():
             return False
         changes = self.get_all_pending_changes()
+        relative_folder_path_slash = relative_folder_path + "/"
         for change in changes.new_files + changes.modified_files + changes.renamed_files + changes.deleted_files:
-            if change.path.startswith(relative_folder_path):
+            if change.path.startswith(relative_folder_path_slash):
                 raise Exception(f"Cannot unload folder {relative_folder_path} because it contains uncommitted changes")
 
         self._check_index_lock()

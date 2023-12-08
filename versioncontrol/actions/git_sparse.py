@@ -99,7 +99,6 @@ def on_load_remote_folders(ctx):
         except Exception as e:
             sparse_checkout_set = set()
             if("is not sparse" in str(e)):
-                print("Sparse checkout is not enabled in this repository")
                 entry = ap.RemoteFolderEntry()
                 entry.path = ""
                 entry.is_remote = False
