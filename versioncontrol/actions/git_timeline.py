@@ -826,6 +826,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                     ap.vc_load_pending_changes(channel_id, True)  
                 else:
                     ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+                    print(str(e))
             return
 
         ap.vc_load_pending_changes(channel_id, True)  
