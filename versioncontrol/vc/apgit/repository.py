@@ -479,12 +479,59 @@ class GitRepository(VCRepository):
 
     def merge_branch(self, branch_name: str, progress: Optional[Progress] = None) -> bool:
         self._check_index_lock()
-        
+
+        current_env = os.environ.copy()
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        remote_url = self._get_remote_url(remote) if remote else None
+        current_env.update(GitRepository.get_git_environment(remote_url))
+
         progress_wrapper = None if not progress else _InternalProgress(progress)
-        status = self.repo.git.merge(branch_name, "--no-ff", progress=progress_wrapper)
-        if "Already up to date." in status:
-            return False
-        return True
+        git_path = install_git.get_git_cmd_path()
+
+        args = [git_path, "merge", branch_name, "--no-ff", "--progress"]
+
+        kwargs = {}
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+
+        process = subprocess.Popen(
+                                args, 
+                                env=current_env,
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.STDOUT,
+                                universal_newlines=True,
+                                bufsize=1, 
+                                cwd=self.get_root_path(),
+                                **kwargs)
+
+        already_merged = False
+        has_conflict = False
+        
+        for line in process.stdout:
+            if line is None:
+                break
+
+            print(line)
+
+            if "Already up to date." in line:
+                already_merged = True
+
+            if "conflict" in line:
+                has_conflict = True
+
+            if progress_wrapper:
+                progress_wrapper.line_dropped(line)
+
+        process.wait()
+        if has_conflict:
+            raise Exception("Merge conflict")
+
+        if process.returncode != 0:
+            raise RuntimeError("Git Merge error: " + str(process.returncode))
+
+        return not already_merged
 
         
     def create_branch(self, branch_name: str):
@@ -1183,7 +1230,10 @@ class GitRepository(VCRepository):
     def get_upstream_branch(self, branch: str) -> str:
         if not self.has_remote():
             return branch
-        return self.repo.git.rev_parse("--abbrev-ref", branch + "@{u}")
+        try:
+            return self.repo.git.rev_parse("--abbrev-ref", branch + "@{u}")
+        except:
+            return branch
 
     def get_branch_name_from_id(self, id: str) -> str:
         try:
@@ -1383,8 +1433,9 @@ class GitRepository(VCRepository):
                 temp_progress_path = temp_file.name
                 git_env["GIT_LFS_PROGRESS"] = temp_progress_path
                 current_env.update(git_env)
+                git_path = install_git.get_git_cmd_path()
 
-                cmd = ["git", "sparse-checkout", "set", "--sparse-index", "--stdin"]
+                cmd = [git_path, "sparse-checkout", "set", "--sparse-index", "--stdin"]
                 proc = subprocess.Popen(cmd,
                                         env=current_env,
                                         stdin=subprocess.PIPE,
@@ -1419,16 +1470,22 @@ class GitRepository(VCRepository):
                     from subprocess import CREATE_NO_WINDOW
                     kwargs["creationflags"] = CREATE_NO_WINDOW
 
+                branch = self._get_current_branch()
+                remote = self._get_default_remote(branch)
+                if remote is None:
+                    raise Exception("No remote found")
+                remote_url = self._get_remote_url(remote)
+
                 current_env = os.environ.copy()
-                git_env = GitRepository.get_git_environment()
+                git_env = GitRepository.get_git_environment(remote_url)
 
                 with tempfile.NamedTemporaryFile(mode='w+', delete=False) as temp_file:
                     temp_progress_path = temp_file.name
-                    print(f"Temp progress path: {temp_progress_path}")
                     git_env["GIT_LFS_PROGRESS"] = temp_progress_path
                     current_env.update(git_env)
+                    git_path = install_git.get_git_cmd_path()
 
-                    cmd = ["git", "sparse-checkout", "disable"]
+                    cmd = [git_path, "sparse-checkout", "disable"]
                     proc = subprocess.Popen(cmd, 
                                             stdout=subprocess.PIPE, 
                                             stderr=subprocess.STDOUT, 
