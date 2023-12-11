@@ -295,11 +295,11 @@ class GitRepository(VCRepository):
 
         state = UpdateState.OK
         if progress is not None:
-            for info in self.repo.remote(remote).fetch(progress = _InternalProgress(progress)):
+            for info in self.repo.remote(remote).fetch(progress = _InternalProgress(progress), prune = True):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
         else: 
-            for info in self.repo.remote(remote).fetch():
+            for info in self.repo.remote(remote).fetch(prune = True):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
 
