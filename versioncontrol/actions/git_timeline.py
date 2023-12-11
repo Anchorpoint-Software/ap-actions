@@ -554,7 +554,10 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
 
-        parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
+        is_rebasing = repo.is_rebasing() or repo.is_merging()
+
+        if not is_rebasing:
+            parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
         parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
         parse_conflicts(repo_dir, repo.get_conflicts(), changes)
 
@@ -572,7 +575,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         has_changes = len(info.changes)
 
         is_push_in_progress = push_in_progress(repo.get_git_dir())
-        is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
         commit.name = "Commit" if not auto_push or is_push_in_progress else "Push"
         commit.identifier = "gitcommit"
