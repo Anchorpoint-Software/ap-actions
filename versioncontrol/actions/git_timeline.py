@@ -752,6 +752,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
             repo.switch_branch(branch)
             lock_disabler.enable_locking()
             ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
+            ap.UI().reload_tree()
         except Exception as e:
             import git_errors
             if not git_errors.handle_error(e):
