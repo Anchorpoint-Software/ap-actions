@@ -513,8 +513,6 @@ class GitRepository(VCRepository):
             if line is None:
                 break
 
-            print(line)
-
             if "Already up to date." in line:
                 already_merged = True
 
