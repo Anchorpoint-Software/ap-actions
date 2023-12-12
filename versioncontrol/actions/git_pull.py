@@ -91,8 +91,6 @@ def pull(repo: GitRepository, channel_id: str, ctx):
         repo.stash(True)
         stashed_changes = True
 
-    if not repo.is_sparse_checkout_enabled():
-        progress.set_cancelable(True)
     progress.set_text("Talking to Server")
 
     commits_to_pull = repo.get_history(remote_only=True)
