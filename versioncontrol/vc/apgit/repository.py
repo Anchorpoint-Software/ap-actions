@@ -1315,7 +1315,7 @@ class GitRepository(VCRepository):
                 logging.info(f"failed to remove sparse-checkout.lock: {sparse_checkout_lock}. Error: {str(e)}")    
                 raise e
     
-    def handle_sparse_checkout_after_commit(self, changes):
+    def handle_sparse_checkout_after_commit(self, changes, progress: Optional[Progress] = None):
         if not self.has_remote():
             return
         self._check_sparse_checkout_lock()
@@ -1353,7 +1353,8 @@ class GitRepository(VCRepository):
             new_sparse_checkout_folders.add(folder)
 
         sparse_checkout_folders = sparse_checkout_folders.union(new_sparse_checkout_folders)
-        self._sparse_checkout_folders(sparse_checkout_folders, progress=None)
+        progress_wrapper = None if not progress else _InternalProgressFromFile(progress)
+        self._sparse_checkout_folders(sparse_checkout_folders, progress=progress_wrapper)
     
     def get_sparse_checkout_folder_set(self):
         if not self.has_remote():

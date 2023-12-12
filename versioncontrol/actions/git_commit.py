@@ -11,6 +11,7 @@ from git_push import PushProgress, show_push_failed
 import git_errors
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+import git_repository_helper as helper
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)
 
@@ -230,7 +231,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             return True
 
         repo.commit(message)
-        repo.handle_sparse_checkout_after_commit(staged)
+        repo.handle_sparse_checkout_after_commit(staged, progress=helper.SparseProgress(progress))
         handle_git_autolock(repo, ctx, staged)
 
         if auto_push and not push_in_progress(repo.get_git_dir()):

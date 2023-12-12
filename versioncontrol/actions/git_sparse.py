@@ -4,6 +4,7 @@ import os
 import time
 import webbrowser
 import sys
+import git_repository_helper as helper
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -14,28 +15,6 @@ from vc.apgit.repository import *
 
 if script_dir in sys.path:
     sys.path.remove(script_dir)
-
-class SparseProgress(Progress):
-    def __init__(self, progress: ap.Progress) -> None:
-        super().__init__()
-        self.ap_progress = progress
-
-    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
-        if operation_code == "downloading":
-            if info_text:
-                self.ap_progress.set_text(f"Downloading Files: {info_text}")
-            else:
-                self.ap_progress.set_text("Downloading Files")
-            self.ap_progress.report_progress(current_count / max_count)
-        elif operation_code == "updating":
-            self.ap_progress.set_text("Updating Files")
-            self.ap_progress.report_progress(current_count / max_count)
-        else:
-            self.ap_progress.set_text("Talking to Server")
-            self.ap_progress.stop_progress()
-
-    def canceled(self):
-        return self.ap_progress.canceled
 
 def disable_sparse_checkout(dialog, ctx):
     settings = aps.Settings("sparse_checkout_dialog_seen")
@@ -149,7 +128,7 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
             raise Exception("project_path is None")
 
         repo = GitRepository.load(ctx.project_path)
-        needed_download = repo.sparse_checkout_folder(relative_folder_path, progress=SparseProgress(progress))
+        needed_download = repo.sparse_checkout_folder(relative_folder_path, progress=helper.SparseProgress(progress))
         if needed_download:
             ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui = ap.UI()
