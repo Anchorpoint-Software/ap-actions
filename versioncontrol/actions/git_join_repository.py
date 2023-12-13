@@ -58,6 +58,8 @@ if __name__ == "__main__":
             add_git_ignore(repo, ctx, repo_path)
             if patch_channel:
                 patch_timeline_channel(project, timeline_channel, workspace_id, url)
+            ap.reload_timeline_entries()
+            ap.refresh_timeline_channel(timeline_channel.id)
 
         except Exception as e:
             print(e)
