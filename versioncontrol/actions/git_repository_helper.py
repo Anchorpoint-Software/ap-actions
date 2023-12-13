@@ -97,7 +97,7 @@ class FetchProgress(vc.Progress):
     def canceled(self):
         return self.ap_progress.canceled
     
-class MergeProgress(vc.Progress):
+class BranchProgress(vc.Progress):
     def __init__(self, progress: ap.Progress) -> None:
         super().__init__()
         self.ap_progress = progress
