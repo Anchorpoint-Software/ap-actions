@@ -267,13 +267,11 @@ try:
                 row_vars = self.dialog_var_map[value]
                 #show all rows of the selected integration action
                 for row_var in row_vars:
-                    print(f"display row: {row_var}")
                     dialog.hide_row(row_var,False)
                 #hide all other rows
                 for key, row_vars in self.dialog_var_map.items():
                     if key != value:
                         for row_var in row_vars:
-                            print(f"hide row: {row_var}")
                             dialog.hide_row(row_var,True)
 
         def remote_changed(self, dialog: ap.Dialog, value):
