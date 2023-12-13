@@ -1795,6 +1795,12 @@ class GitRepository(VCRepository):
 
         result = self.repo.git.branch(branch_name, "--contains", changelist_id)
         return result != ""
+    
+    def is_ignored(self, path: str) -> bool:
+        try:
+            return self.repo.git.check_ignore(path) != ""
+        except:
+            return False
 
     def ignore(self, pattern: str, local_only = False):
         if local_only == False: 

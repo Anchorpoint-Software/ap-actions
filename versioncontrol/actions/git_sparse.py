@@ -161,6 +161,16 @@ def on_unload_remote_folder(relative_folder_path: str, ctx):
             raise Exception("project_path is None")
 
         repo = GitRepository.load(ctx.project_path)
+
+        ignore_check_path = relative_folder_path
+        if not ignore_check_path.endswith('/'):
+            ignore_check_path += '/'
+        if repo.is_ignored(ignore_check_path):
+            progress.finish()
+            ui = ap.UI()
+            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder is excluded from Version control.")
+            return True
+
         needed_unload = repo.sparse_unload_folder(relative_folder_path)
         if needed_unload:
             ui = ap.UI()
