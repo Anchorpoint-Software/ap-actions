@@ -53,6 +53,7 @@ def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], 
         return
     
     files = dict[str,Optional[str]]()
+    files_to_fetch = []
     for filepath in filepaths:
         rel_filepath = os.path.relpath(filepath, path).replace("\\", "/")
         hash_result = repo.get_lfs_filehash([rel_filepath], ref)
@@ -75,11 +76,16 @@ def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], 
         if cached_file:
             files[filepath] = cached_file
         else:
-            repo.fetch_lfs_files([ref] if ref else None, [rel_filepath], None)
+            files_to_fetch.append(rel_filepath)
+            
+    if files_to_fetch:
+        repo.fetch_lfs_files([ref] if ref else None, files_to_fetch, None)
+        for rel_filepath in files_to_fetch:
+            file_hash = hash_result[rel_filepath]
             cached_file = get_lfs_cached_file(file_hash, path)
             if cached_file:
                 files[filepath] = cached_file
             else:
                 files[filepath] = None
-            
+
     return files
