@@ -32,15 +32,16 @@ def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingCha
 
 def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
     for conflict in conflicts:
+        conflict = conflict.replace(os.sep, "/")
         conflict_path = os.path.join(repo_dir, conflict).replace(os.sep, "/")
         
         if conflict_path in changes:
-            changes[conflict_path].status = ap.VCFileStatus.Conflicted
+            changes[conflict].status = ap.VCFileStatus.Conflicted
         else:
             conflict_change = ap.VCPendingChange()
             conflict_change.status = ap.VCFileStatus.Conflicted
             conflict_change.path = conflict_path
-            changes[conflict_path] = conflict_change
+            changes[conflict] = conflict_change
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
     try:
@@ -504,7 +505,7 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
     keys = changes.keys()
     for change_path in keys:
         change = changes[change_path]
-        if deleted_only and change.status != ap.VCFileStatus.Deleted:
+        if deleted_only and change.status != ap.VCFileStatus.Deleted and change.status != ap.VCFileStatus.Conflicted:
             continue
 
         if not lfsExtensions.is_file_tracked(change.path):
