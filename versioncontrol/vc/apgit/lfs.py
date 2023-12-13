@@ -51,7 +51,7 @@ def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: 
         batch = []
         batch_size = 0
         for file in files:
-            if batch_size + len(file) + 1 > 4096:
+            if batch_size + len(file) + 1 > 6000:
                 file_batches.append(batch)
                 batch = []
                 batch_size = 0
