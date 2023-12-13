@@ -726,6 +726,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
 
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
+    import git_repository_helper as helper
     sys.path.insert(0, script_dir)
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     lock_disabler = ap.LockDisabler()
@@ -750,7 +751,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                     return
 
         try:
-            repo.switch_branch(branch)
+            repo.switch_branch(branch, progress=helper.BranchProgress(progress))
             lock_disabler.enable_locking()
             ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ap.UI().reload_tree()
@@ -813,7 +814,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
-            if not repo.merge_branch(branch, progress=helper.MergeProgress(progress)):
+            if not repo.merge_branch(branch, progress=helper.BranchProgress(progress)):
                 ui.show_info("Merge not needed", "Branch is already up to date.")
             else:
                 lock_disabler.enable_locking()

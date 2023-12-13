@@ -457,8 +457,9 @@ class GitRepository(VCRepository):
             args.append(commit_id)
         self.repo.git.reset(*args)
         
-    def switch_branch(self, branch_name: str):
+    def switch_branch(self, branch_name: str, progress: Optional[Progress] = None):
         self._check_index_lock()
+
         split = branch_name.split("/")
         if len(split) > 1:
             try:
@@ -471,8 +472,45 @@ class GitRepository(VCRepository):
         
         if self.has_pending_changes(True):
             self.stash(True)
+
+        current_env = os.environ.copy()
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        remote_url = self._get_remote_url(remote) if remote else None
+        current_env.update(GitRepository.get_git_environment(remote_url))
+
+        progress_wrapper = None if not progress else _InternalProgress(progress)
+        git_path = install_git.get_git_cmd_path()
+
+        args = [git_path, "switch", branch_name, "--progress"]
+
+        kwargs = {}
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+
+        process = subprocess.Popen(
+                                args, 
+                                env=current_env,
+                                stdout=subprocess.PIPE, 
+                                stderr=subprocess.STDOUT,
+                                universal_newlines=True,
+                                bufsize=1, 
+                                cwd=self.get_root_path(),
+                                **kwargs)
+
         
-        self.repo.git.switch(branch_name)
+        for line in process.stdout:
+            if line is None:
+                break
+
+            if progress_wrapper:
+                progress_wrapper.line_dropped(line)
+
+        process.wait()
+
+        if process.returncode != 0:
+            raise RuntimeError("Git Switch error: " + str(process.returncode))
 
     def merge_branch(self, branch_name: str, progress: Optional[Progress] = None) -> bool:
         self._check_index_lock()
