@@ -1317,9 +1317,14 @@ class GitRepository(VCRepository):
 
         return branches
     
-    def get_folders_from_tree(self) -> list[str]:
+    def get_folders_from_tree(self, recursive: bool = True) -> list[str]:
+        if self.is_unborn():
+            return []
         try:
-            return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
+            if recursive:
+                return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
+            else:
+                return self.repo.git.ls_tree("-d", "--name-only", "HEAD").split("\n")
         except Exception as e:
             if("Not a valid object name HEAD" in str(e)):
                 return []
@@ -1455,8 +1460,7 @@ class GitRepository(VCRepository):
         
         progress_wrapper = None if not progress else _InternalProgressFromFile(progress)
 
-        if relative_folder_path == "":
-            self._check_index_lock()
+        def disable_sparse():
             self._check_sparse_checkout_lock()
             try:
                 branch = self._get_current_branch()
@@ -1475,6 +1479,11 @@ class GitRepository(VCRepository):
             except Exception as e:
                 print(str(e))
                 raise e
+
+        if relative_folder_path == "":
+            self._check_index_lock()
+            self._check_sparse_checkout_lock()
+            disable_sparse()
         else:
             self._check_index_lock()
             folder_set = self.get_sparse_checkout_folder_set()
@@ -1483,8 +1492,18 @@ class GitRepository(VCRepository):
             folder_set.add(relative_folder_path)
             new_sparse_checkout_folders = set()
             new_sparse_checkout_folders.add(relative_folder_path)
-            
-            self._sparse_checkout_folders(folder_set, new_sparse_checkout_folders, progress_wrapper)
+
+            all_root_folders_sparse_roots = True
+            root_folders = self.get_folders_from_tree(recursive=False)
+            for root_folder in root_folders:
+                if not root_folder in folder_set:
+                    all_root_folders_sparse_roots = False
+                    break
+
+            if all_root_folders_sparse_roots:
+                disable_sparse()
+            else:
+                self._sparse_checkout_folders(folder_set, new_sparse_checkout_folders, progress_wrapper)
 
         return True
         
