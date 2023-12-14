@@ -806,6 +806,18 @@ class GitRepository(VCRepository):
         changes.modified_files.extend(staged_changes.modified_files)
         changes.renamed_files.extend(staged_changes.renamed_files)
         return changes
+    
+    def get_ignored_files(self, paths: list[str] = []):
+        ignored_files = []
+        status_lines = self.repo.git(no_pager=True).status(*paths, porcelain=True, untracked_files=True, ignored=True).splitlines()
+        for status in status_lines:
+            split = status.split()
+            if len(split) > 1:
+                marker = split[0]
+                if marker == "!!":
+                    file = " ".join(split[1:]).replace("\"", "")
+                    ignored_files.append(file)
+        return ignored_files
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         self._check_index_lock()
