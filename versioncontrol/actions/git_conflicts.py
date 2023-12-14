@@ -105,6 +105,8 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     dialog.add_button("Continue", callback=lambda d: d.close())
                     dialog.show()
             repo.sparse_reapply()
+            ap.reload_timeline_entries()
+            
         except Exception as e:
             if repo.has_conflicts() and repo.is_rebasing():
                 # When rebasing, the next commit to rebase can conflict again. This is not an error but OK
