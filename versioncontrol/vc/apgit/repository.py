@@ -1432,7 +1432,8 @@ class GitRepository(VCRepository):
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
             
-            lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=list(new_sparse_checkout_folders))
+            if len(new_sparse_checkout_folders) != 0:
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=list(new_sparse_checkout_folders))
             if progress_wrapper and progress_wrapper.canceled(): return True
             proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
             bytes_data = "\n".join(folder_set).encode('utf-8')

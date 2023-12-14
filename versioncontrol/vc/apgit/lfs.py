@@ -3,6 +3,8 @@ from vc.apgit_utility.install_git import get_git_cmd_path
 import subprocess, platform
 
 def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
+    if progress.canceled():
+        return
     kwargs = {}
     if platform.system() == "Windows":
         from subprocess import CREATE_NO_WINDOW
