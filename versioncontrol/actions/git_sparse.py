@@ -156,15 +156,12 @@ def continue_unload(dialog, ctx, relative_folder_path):
 def show_unload_warning_dialog(relative_folder_path, ignored_files_in_folder, ctx):
     dialog = ap.Dialog()
 
-    dialog.title = "Warning: Ignored Files Detected"
+    dialog.title = "Ignored Files"
     dialog.icon = ctx.icon
 
-    dialog.add_text("The folder you are trying to unload contains ignored files.<br>If you continue, these files will be <b>permamently deleted</b><br>from your computer.")
-    dialog.add_empty()
-    dialog.add_text(f"Ignored files count: {len(ignored_files_in_folder)}")
-    dialog.add_text(f"Example: {ignored_files_in_folder[0]}")
-    dialog.add_empty()
-    dialog.add_button("Cancel", var="cancel", callback=lambda d: d.close(), primary=False).add_button("Delete Ignored Files", var="continue", callback=lambda d: continue_unload(d, ctx, relative_folder_path), primary=True)
+    dialog.add_text("The folder you are unloading contains ignored files.<br>If you continue, these files will be <b>permamently deleted</b>.")
+    dialog.add_info(f"Example: <b>{ignored_files_in_folder[0]}</b>")
+    dialog.add_button("Unload and Delete", var="continue", callback=lambda d: continue_unload(d, ctx, relative_folder_path), primary=False).add_button("Cancel", var="cancel", callback=lambda d: d.close(), primary=False)
     
     dialog.show()
 
@@ -187,7 +184,7 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
         if repo.is_ignored(ignore_check_path):
             progress.finish()
             ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder is excluded from Version control.")
+            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder is not yet pushed or excluded from Version control.")
             return True
         
         if not forced:
