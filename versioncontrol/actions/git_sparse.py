@@ -21,7 +21,7 @@ def disable_sparse_checkout(dialog, ctx):
     settings.set(ctx.project_id, True)
     settings.store()
     dialog.close()
-    on_download_remote_folder("", ctx)
+    ctx.run_async(on_download_remote_folder, "", ctx)
 
 def navigate_to_pricing(dialog, ctx):
     settings = aps.Settings("sparse_checkout_dialog_seen")
