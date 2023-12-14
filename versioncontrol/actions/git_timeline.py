@@ -806,7 +806,8 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                 state = repo.fetch(progress=helper.FetchProgress(progress))
                 if state != UpdateState.OK:
                     print("failed to fetch in merge")
-                
+                if not repo.is_sparse_checkout_enabled():
+                    repo.fetch_lfs_files([branch], progress=helper.FetchProgress(progress))
             except Exception as e:
                 print("failed to fetch in merge", str(e))
                 raise e

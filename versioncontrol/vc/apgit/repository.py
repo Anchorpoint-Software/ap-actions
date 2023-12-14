@@ -324,6 +324,9 @@ class GitRepository(VCRepository):
             current_env = os.environ.copy()
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
+            if not self.is_sparse_checkout_enabled():
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
+                if progress_wrapper.canceled(): return UpdateState.CANCEL
             for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
