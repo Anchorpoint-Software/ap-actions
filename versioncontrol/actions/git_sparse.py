@@ -184,7 +184,7 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
         if repo.is_ignored(ignore_check_path):
             progress.finish()
             ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder is not yet pushed or excluded from Version control.")
+            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder is excluded from Version control.")
             return True
         
         if not forced:
