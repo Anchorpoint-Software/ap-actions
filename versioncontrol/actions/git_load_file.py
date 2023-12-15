@@ -39,7 +39,7 @@ def fetch_lfs_file(file, branch, repo, progress = None):
     repo.fetch_lfs_files([branch], [file], progress)
     pass
 
-def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], ctx):
+def load_files(channel_id: str, filepaths: list[str], ref: Optional[str], callback, ctx):
     import sys
     sys.path.insert(0, script_dir)
     from vc.apgit.repository import GitRepository
@@ -81,5 +81,8 @@ def on_vc_load_files(channel_id: str, filepaths: list[str], ref: Optional[str], 
                 files[filepath] = cached_file
             else:
                 files[filepath] = None
-            
-    return files
+
+    callback(files)
+
+def on_vc_load_files_async(channel_id: str, filepaths: list[str], ref: Optional[str], callback, ctx):
+    ctx.run_async(load_files, channel_id, filepaths, ref, callback, ctx)
