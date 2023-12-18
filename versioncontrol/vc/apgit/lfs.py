@@ -3,6 +3,9 @@ from vc.apgit_utility.install_git import get_git_cmd_path
 import subprocess, platform
 
 def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
+    if progress and progress.canceled():
+        return
+    
     kwargs = {}
     if platform.system() == "Windows":
         from subprocess import CREATE_NO_WINDOW
@@ -45,11 +48,28 @@ def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: 
         args.append("@{u}")
     else:
         args.extend(branches)
-    if files:
-        args.append("-I")
-        args.extend(files)
 
-    _run_lfs_command(path, args, progress, env)
+    if files:
+        file_batches = []
+        batch = []
+        batch_size = 0
+        for file in files:
+            if batch_size + len(file) + 1 > 6000:
+                file_batches.append(batch)
+                batch = []
+                batch_size = 0
+            batch.append(file)
+            batch_size += len(file) + 1
+        if batch:
+            file_batches.append(batch)
+
+        for file_batch in file_batches:
+            batch_args = args.copy()
+            batch_args.append("-I")
+            batch_args.append(",".join(file_batch))
+            _run_lfs_command(path, batch_args, progress, env)
+    else:
+        _run_lfs_command(path, args, progress, env)
 
 def lfs_push(path: str, remote: str, branch: str, progress: RemoteProgress, env):
     args = [get_git_cmd_path(), "lfs", "push", remote, branch]

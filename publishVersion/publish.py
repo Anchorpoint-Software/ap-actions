@@ -5,6 +5,7 @@ import os, sys
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.project_path)
 ui = ap.UI()
+api = ap.get_api()
 
 if project is None:
     ui.show_info("Action only works with projects")
@@ -65,7 +66,7 @@ def copy():
         new_path = os.path.join(new_location,new_name_appendix+"."+ctx.suffix)
 
         aps.copy_file(ctx.path,new_path,overwrite=True)
-        aps.set_attribute_text(new_path,"Source File",ctx.filename)
+        api.attributes.set_attribute_value(new_path,"Source File",ctx.filename,True)
         
         ui.show_success(f"Published {new_name_appendix}",f"Published in {new_location}")
         progress.finish()

@@ -32,15 +32,16 @@ def parse_changes(repo_dir: str, repo_changes, changes: dict[str,ap.VCPendingCha
 
 def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChange]):
     for conflict in conflicts:
+        conflict = conflict.replace(os.sep, "/")
         conflict_path = os.path.join(repo_dir, conflict).replace(os.sep, "/")
         
         if conflict_path in changes:
-            changes[conflict_path].status = ap.VCFileStatus.Conflicted
+            changes[conflict].status = ap.VCFileStatus.Conflicted
         else:
             conflict_change = ap.VCPendingChange()
             conflict_change.status = ap.VCFileStatus.Conflicted
             conflict_change.path = conflict_path
-            changes[conflict_path] = conflict_change
+            changes[conflict] = conflict_change
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
     try:
@@ -90,7 +91,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts = ap.TimelineChannelAction()
             conflicts.name = "Resolve Conflicts"
             conflicts.identifier = "gitresolveconflicts"
-            conflicts.type = ap.ActionButtonType.Danger
+            conflicts.type = ap.ActionButtonType.Primary
             conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your shelved files"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
             info.actions.append(conflicts)
@@ -504,7 +505,7 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
     keys = changes.keys()
     for change_path in keys:
         change = changes[change_path]
-        if deleted_only and change.status != ap.VCFileStatus.Deleted:
+        if deleted_only and change.status != ap.VCFileStatus.Deleted and change.status != ap.VCFileStatus.Conflicted:
             continue
 
         if not lfsExtensions.is_file_tracked(change.path):
@@ -554,7 +555,10 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
 
-        parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
+        is_rebasing = repo.is_rebasing() or repo.is_merging()
+
+        if not is_rebasing:
+            parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
         parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
         parse_conflicts(repo_dir, repo.get_conflicts(), changes)
 
@@ -572,7 +576,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         has_changes = len(info.changes)
 
         is_push_in_progress = push_in_progress(repo.get_git_dir())
-        is_rebasing = repo.is_rebasing() or repo.is_merging()
         commit = ap.TimelineChannelAction()
         commit.name = "Commit" if not auto_push or is_push_in_progress else "Push"
         commit.identifier = "gitcommit"
@@ -723,6 +726,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
 
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     import sys, os
+    import git_repository_helper as helper
     sys.path.insert(0, script_dir)
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     lock_disabler = ap.LockDisabler()
@@ -747,7 +751,10 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
                     return
 
         try:
-            repo.switch_branch(branch)
+            repo.switch_branch(branch, progress=helper.BranchProgress(progress))
+            lock_disabler.enable_locking()
+            ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
+            ap.UI().reload_tree()
         except Exception as e:
             import git_errors
             if not git_errors.handle_error(e):
@@ -779,6 +786,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         if repo.get_current_branch_name() == branch:
             return
         
+        branch = repo.get_upstream_branch(branch)
         ui = ap.UI()
 
         # if platform.system() == "Windows":
@@ -798,7 +806,8 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                 state = repo.fetch(progress=helper.FetchProgress(progress))
                 if state != UpdateState.OK:
                     print("failed to fetch in merge")
-                repo.fetch_lfs_files([branch], progress=helper.FetchProgress(progress))
+                if not repo.is_sparse_checkout_enabled():
+                    repo.fetch_lfs_files([branch], progress=helper.FetchProgress(progress))
             except Exception as e:
                 print("failed to fetch in merge", str(e))
                 raise e
@@ -806,8 +815,12 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
-            if not repo.merge_branch(branch):
+            if not repo.merge_branch(branch, progress=helper.BranchProgress(progress)):
                 ui.show_info("Merge not needed", "Branch is already up to date.")
+            else:
+                lock_disabler.enable_locking()
+                ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
+
         except Exception as e:
             import git_errors
             if not git_errors.handle_error(e):
@@ -816,6 +829,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                     ap.vc_load_pending_changes(channel_id, True)  
                 else:
                     ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
+                    print(str(e))
             return
 
         ap.vc_load_pending_changes(channel_id, True)  
@@ -894,6 +908,7 @@ def refresh_async(channel_id: str, project_path):
             with open(lockfile, "w") as f:
                 repo.fetch()
         finally:
+            ap.vc_load_pending_changes(channel_id)
             ap.refresh_timeline_channel(channel_id)
             delete_lockfiles(git_dir)
 

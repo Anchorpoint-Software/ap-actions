@@ -15,6 +15,7 @@ settings_credential_btn_highlight_entry = "credential_btn_highlight"
 create_repo_dialog_entry = "gitlab_create_repo"
 repo_dropdown_entry = "gitlab_repository_dropdown"
 create_dialog_info_entry = "gitlab_create_dialog_info"
+integration_project_name_key = "project_name"
 
 def on_load_integrations(integrations, ctx: ap.Context):
     integration = GitlabIntegration(ctx)
@@ -96,7 +97,11 @@ def on_add_user_to_project(email, ctx: ap.Context):
     current_group = client.get_current_group()
 
     try:
-        client.add_user_to_project(current_group, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.add_user_to_project(current_group, email, project_name)
         ap.UI().show_success(title='Member added to Gitlab project', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
@@ -130,7 +135,11 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     current_group = client.get_current_group()
 
     try:
-        client.remove_user_from_project(current_group, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.remove_user_from_project(current_group, email, project_name)
         ap.UI().show_success(title='Member removed from Gitlab project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
@@ -294,9 +303,9 @@ class GitlabIntegration(ap.ApIntegration):
         #stub
         return
 
-    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str, progress: ap.Progress):
+    def setup_project(self, action_id: str, dialog: ap.Dialog, project_id: str, project_name: str, progress: ap.Progress):
         if action_id == create_repo_dialog_entry:
-            return self.create_new_repo(project_name, progress)
+            return self.create_new_repo(project_id, project_name, progress)
 
     def change_group_callback(self, dialog: ap.Dialog, value: str, groups):
         group = next((x for x in groups if x.name == value), None)
@@ -346,17 +355,21 @@ class GitlabIntegration(ap.ApIntegration):
 
         dialog.show()
 
-    def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:
+    def create_new_repo(self, project_id: str, project_name: str, progress: ap.Progress) -> str:
         current_group = self.client.get_current_group()
         try:
             progress.set_text("Creating Gitlab Project")
             new_repo = self.client.create_project(current_group, project_name)
+            settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
+            settings.set(integration_project_name_key, new_repo.name)
+            settings.store()
+            
             progress.set_text("")
             if new_repo is None:
                 raise Exception("Created project not found")
             return new_repo.http_url_to_repo
         except Exception as e:
-            if "already exists" in str(e):
+            if "has already been taken" in str(e):
                 ap.UI().show_error(title='Cannot create Gitlab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
                 ap.UI().show_error(title='Cannot create Gitlab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab">troubleshooting</a>.')

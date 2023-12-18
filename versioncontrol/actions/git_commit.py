@@ -11,6 +11,7 @@ from git_push import PushProgress, show_push_failed
 import git_errors
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+import git_repository_helper as helper
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)
 
@@ -151,8 +152,9 @@ def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
         try:
             pull_changes(repo, channel_id, ctx)
         except Exception as e:
+            git_errors.handle_error(e)
             print(f"Auto-Push: Could not pull {str(e)}")
-            ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 8000)
+            ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 20000)
             return
 
         # Queue async to give Anchorpoint a chance to update the timeline
@@ -188,7 +190,6 @@ def handle_git_autolock(repo, ctx, changes):
     process_changes(changes.renamed_files)
     
     ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
-
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     import git_lfs_helper as lfs
@@ -230,6 +231,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             return True
 
         repo.commit(message)
+        repo.handle_sparse_checkout_after_commit(staged, progress=helper.SparseProgress(progress))
         handle_git_autolock(repo, ctx, staged)
 
         if auto_push and not push_in_progress(repo.get_git_dir()):
@@ -247,4 +249,5 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     finally:
         ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
+        ap.UI().reload_tree()
         return True

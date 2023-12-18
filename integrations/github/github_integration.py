@@ -11,6 +11,7 @@ settings_action_id = "github_settings"
 settings_org_dropdown_entry = "organization_dropdown"
 create_repo_dialog_entry = "github_create_repo"
 repo_dropdown_entry = "github_repository_dropdown"
+integration_project_name_key = "project_name"
 
 def on_load_integrations(integrations, ctx: ap.Context):
     integration = GithubIntegration(ctx)
@@ -90,7 +91,11 @@ def on_add_user_to_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        client.add_user_to_repository(current_org, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.add_user_to_repository(current_org, email, project_name)
         ap.UI().show_success(title='Member added to GitHub repository', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_github_project_name(project.name)
@@ -128,7 +133,11 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        client.remove_user_from_repository(current_org, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.remove_user_from_repository(current_org, email, project_name)
         ap.UI().show_success(title='Member removed from GitHub repository', duration=3000, description=f'Member {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_github_project_name(project.name)
@@ -271,9 +280,9 @@ class GithubIntegration(ap.ApIntegration):
         #stub
         return
 
-    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str, progress: ap.Progress):
+    def setup_project(self, action_id: str, dialog: ap.Dialog, project_id:str, project_name: str, progress: ap.Progress):
         if action_id == create_repo_dialog_entry:
-            return self.create_new_repo(project_name, progress)
+            return self.create_new_repo(project_id, project_name, progress)
 
     def apply_org_callback(self, dialog: ap.Dialog, organizations):
         org_name = dialog.get_value(settings_org_dropdown_entry)
@@ -315,11 +324,14 @@ class GithubIntegration(ap.ApIntegration):
         dialog.add_button("Apply", var="apply", callback=lambda d: self.apply_org_callback(d, organizations))
         dialog.show()
 
-    def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:
+    def create_new_repo(self, project_id:str, project_name: str, progress: ap.Progress) -> str:
         current_org = self.client.get_current_organization()
         try:
             progress.set_text("Creating GitHub Repository")
             new_repo = self.client.create_repository(current_org, project_name)
+            settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
+            settings.set(integration_project_name_key, new_repo.name)
+            settings.store()
             progress.set_text("")
             if new_repo is None:
                 raise Exception("Created repository not found")

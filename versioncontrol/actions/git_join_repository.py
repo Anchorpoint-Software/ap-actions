@@ -43,7 +43,7 @@ if __name__ == "__main__":
     timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
     settings = aps.Settings("git_repository")               
 
-    def clone_repo_async(repo_path: str, url: str, join_project_files, project, timeline_channel, workspace_id, patch_channel):
+    def clone_repo_async(repo_path: str, url: str, join_project_files, project, timeline_channel, workspace_id, patch_channel, download_all):
         with os.scandir(repo_path) as it:
             if any(it):
                 ap.UI().show_info("Cannot Clone Git repository", "Folder must be empty")
@@ -51,12 +51,15 @@ if __name__ == "__main__":
             
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
-            repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress))
+            repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress), sparse= not download_all)
+            ap.evaluate_locks(workspace_id, project.id)
             progress.finish()
             helper.update_project(repo_path, url, join_project_files, timeline_channel, project, True)
             add_git_ignore(repo, ctx, repo_path)
             if patch_channel:
                 patch_timeline_channel(project, timeline_channel, workspace_id, url)
+            ap.reload_timeline_entries()
+            ap.refresh_timeline_channel(timeline_channel.id)
 
         except Exception as e:
             print(e)
@@ -109,6 +112,10 @@ if __name__ == "__main__":
 
     def join_repo(dialog: ap.Dialog, url, project, timeline_channel, ctx):
         location = dialog.get_value("location")
+        if ctx.has_team_features():
+            download_all = dialog.get_value("download_all")
+        else:
+            download_all = True
         if not url:
             url = dialog.get_value("url")
             patch_channel = True
@@ -122,8 +129,10 @@ if __name__ == "__main__":
             repo.set_username(ctx.username, ctx.email, location)
             helper.update_project(location, url, True, timeline_channel, project)
             add_git_ignore(repo, ctx, location)
+            ap.reload_timeline_entries()
+            ap.refresh_timeline_channel(timeline_channel.id)
         else:
-            ctx.run_async(clone_repo_async, location, url, True, project, timeline_channel, ctx.workspace_id, patch_channel)
+            ctx.run_async(clone_repo_async, location, url, True, project, timeline_channel, ctx.workspace_id, patch_channel, download_all)
 
     def validate_path(dialog: ap.Dialog, value: str, url: str):
         if not value or len(value) == 0:
@@ -205,6 +214,9 @@ if __name__ == "__main__":
     browse_path = settings.get("browse_path")
     if browse_path is not None:
         dialog.set_browse_path(var="location", path=browse_path)
+
+    if ctx.has_team_features():
+        dialog.add_checkbox(True, text="Download Everything", var="download_all")
 
     if additional_info is not None:
         dialog.add_text(additional_info, var="additional_info")

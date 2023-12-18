@@ -6,6 +6,7 @@ from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import TokenExpiredError, AccessDeniedError
 import random
 import base64
+import re
 
 import apsync as aps
 
@@ -186,11 +187,21 @@ class GitlabClient:
         return groups
     
     def generate_gitlab_repo_name(self, name):
-        import re
         repo_name = name.lower().replace(" ", "-")
         repo_name = re.sub(r"^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$", "", repo_name)
         repo_name = re.sub(r"[^a-zA-Z0-9]+", "-", repo_name)
         return repo_name
+    
+    def _get_auto_adjusted_project_name(self, name: str):
+        pattern = re.compile(r"_(\d{2})$")  # Match any number at the end of the name
+        match = pattern.search(name)
+        if match:
+            if match.group(1):
+                number = int(match.group(1))
+                new_number = number + 1
+                return name[:match.start()] + "_" + "{:02d}".format(new_number)
+            return name + "_01"
+        return name + "_01"
 
     def create_project(self, group: Group, name: str):
         url = f"{gitlab_api_url}/projects"
@@ -207,6 +218,8 @@ class GitlabClient:
 
         response = self.oauth.post(url, json=data)
         if not response:
+            if "has already been taken" in response.text:
+                return self.create_project(group, self._get_auto_adjusted_project_name(name))
             raise Exception("Could not create repository: ", response.text)
 
         project_data = response.json()

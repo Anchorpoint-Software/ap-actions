@@ -91,12 +91,25 @@ def pull(repo: GitRepository, channel_id: str, ctx):
         repo.stash(True)
         stashed_changes = True
 
-    progress.set_cancelable(True)
+    if not repo.is_sparse_checkout_enabled():
+        progress.set_cancelable(True)
     progress.set_text("Talking to Server")
 
     commits_to_pull = repo.get_history(remote_only=True)
 
-    state = repo.update(progress=PullProgress(progress), rebase=False)
+    try:
+        state = repo.update(progress=PullProgress(progress), rebase=False)
+    except Exception as e:
+        if "unable to unlink" in str(e):
+            print("Could not unlink files on pull, resetting project")
+            repo.reset(commit_id=None, hard=True)
+            repo.clean(directories=False)
+            
+            if stashed_changes:
+                print("Restoring stash")
+                repo.pop_stash()
+        raise e
+    
     progress.set_cancelable(False)
 
     def update_pulled_commits():
@@ -150,6 +163,7 @@ def pull_async(channel_id: str, project_path, ctx):
         if not repo: return
 
         if pull(repo, channel_id, ctx):
+            ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui.show_success("Update Successful")
         
     except Exception as e:

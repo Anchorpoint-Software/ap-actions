@@ -17,6 +17,7 @@ settings_credential_btn_highlight_entry = "credential_btn_highlight"
 create_repo_dialog_entry = "gitea_create_repo"
 repo_dropdown_entry = "gitea_repository_dropdown"
 create_dialog_info_entry = "gitea_create_dialog_info"
+integration_project_name_key = "project_name"
 
 server_url_entry = "server_url"
 client_id_entry = "client_id"
@@ -109,7 +110,11 @@ def on_add_user_to_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        client.add_user_to_repository(current_org, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.add_user_to_repository(current_org, email, project_name)
         ap.UI().show_success(title='Member added to Gitea repository', duration=3000, description=f'User {email} added to repository {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitea_repo_name(project.name)
@@ -145,7 +150,11 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     current_org = client.get_current_organization()
 
     try:
-        client.remove_user_from_repository(current_org, email, project.name)
+        project_name = project.name
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            project_name = integration_project_name
+        client.remove_user_from_repository(current_org, email, project_name)
         ap.UI().show_success(title='Member removed from Gitea repository', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitea_repo_name(project.name)
@@ -196,8 +205,7 @@ class GiteaIntegration(ap.ApIntegration):
         self.dashboard_icon = icon_path
         self.preferences_icon = icon_path
         self.is_setup = self.client.is_setup()
-
-        # self.client.clear_integration(True)
+        self.is_setup_for_workspace = self.client.is_setup_for_workspace()
 
         if self.is_setup:
             self.client.setup_workspace_settings()
@@ -225,6 +233,15 @@ class GiteaIntegration(ap.ApIntegration):
         connect.identifier = connect_action_id
         connect.tooltip = "Connect to Gitea"
         self.add_preferences_action(connect)
+
+        if(self.is_setup_for_workspace):
+            disconnect = ap.IntegrationAction()
+            disconnect.name = "Clear"
+            disconnect.enabled = True
+            disconnect.icon = aps.Icon(":/icons/clearCache.svg")
+            disconnect.identifier = disconnect_action_id
+            disconnect.tooltip = "Clear Gitea configuration"
+            self.add_preferences_action(disconnect)
         self.is_connected = False
 
     def _setup_connected_state(self):
@@ -235,7 +252,7 @@ class GiteaIntegration(ap.ApIntegration):
         disconnect.enabled = True
         disconnect.icon = aps.Icon(":/icons/unPlug.svg")
         disconnect.identifier = disconnect_action_id
-        disconnect.tooltip = "Disconnect from Gitea"
+        disconnect.tooltip = "Clear Gitea configuration"
         self.add_preferences_action(disconnect)
 
         settings = ap.IntegrationAction()
@@ -258,6 +275,16 @@ class GiteaIntegration(ap.ApIntegration):
         reconnect.identifier = reconnect_action_id
         reconnect.tooltip = "Reconnect to Gitea"
         self.add_preferences_action(reconnect)
+
+        if(self.is_setup_for_workspace):
+            disconnect = ap.IntegrationAction()
+            disconnect.name = "Clear"
+            disconnect.enabled = True
+            disconnect.icon = aps.Icon(":/icons/clearCache.svg")
+            disconnect.identifier = disconnect_action_id
+            disconnect.tooltip = "Clear Gitea configuration"
+            self.add_preferences_action(disconnect)
+
         self.is_connected = False
     
     def execute_preferences_action(self, action_id: str):
@@ -304,6 +331,7 @@ class GiteaIntegration(ap.ApIntegration):
             self.show_settings_dialog(current_org, orgs)
             self._setup_connected_state()
             self.is_setup = True
+            self.is_setup_for_workspace = True
             self.is_connected = True
             self.start_update()
         except Exception as e:
@@ -321,9 +349,9 @@ class GiteaIntegration(ap.ApIntegration):
         #stub
         return
 
-    def setup_project(self, action_id: str, dialog: ap.Dialog, project_name: str, progress: ap.Progress):
+    def setup_project(self, action_id: str, dialog: ap.Dialog, project_id: str, project_name: str, progress: ap.Progress):
         if action_id == create_repo_dialog_entry:
-            return self.create_new_repo(project_name, progress)
+            return self.create_new_repo(project_id, project_name, progress)
         
     def validate_url(self, dialog: ap.Dialog, value: str):
         if not value or len(value) == 0:
@@ -483,15 +511,20 @@ class GiteaIntegration(ap.ApIntegration):
         remove_data = dialog.get_value(remove_data_entry)
         self.client.clear_integration(remove_data)
         self.is_setup = False
+        self.is_setup_for_workspace = False
         self._setup_not_connected_state()
         self.start_update()
         dialog.close()
 
-    def create_new_repo(self, project_name: str, progress: ap.Progress) -> str:
+    def create_new_repo(self, project_id: str,  project_name: str, progress: ap.Progress) -> str:
         current_org = self.client.get_current_organization()
         try:
             progress.set_text("Creating Gitea Project")
             new_repo = self.client.create_project(current_org, project_name)
+            settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
+            settings.set(integration_project_name_key, new_repo.name)
+            settings.store()
+
             progress.set_text("")
             if new_repo is None:
                 raise Exception("Created project not found")

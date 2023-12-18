@@ -245,7 +245,7 @@ def handle_error(e: Exception):
         # azure fails to work with ipv6 in some cases: https://stackoverflow.com/questions/67230241/fatal-unable-to-access-https-dev-azure-com-xxx-openssl-ssl-connect-connec
         return _handle_azure_ipv6()
     
-    if "index file corrupt" in message or "unknown index entry format" in message:
+    if "index file corrupt" in message or "unknown index entry format" in message or "cache entry out of order" in message:
         restore_corrupted_index()
         return True
     
@@ -259,5 +259,10 @@ def handle_error(e: Exception):
     if "no space left on device" in message:
         ap.UI().show_error("No space left on device", message, duration=10000)
         return True
-
+    
+    if "LFS object not found" in message:
+        print(message)
+        ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
+        return True
+    
     return False
