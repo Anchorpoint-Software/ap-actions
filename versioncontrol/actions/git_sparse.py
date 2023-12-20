@@ -151,7 +151,7 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
 
 def continue_unload(dialog, ctx, relative_folder_path):
     dialog.close()
-    unload_remote_folder(relative_folder_path, forced=True, ctx=ctx)
+    ctx.run_async(unload_remote_folder, relative_folder_path, True, ctx)
 
 def show_unload_warning_dialog(relative_folder_path, ignored_files_in_folder, ctx):
     dialog = ap.Dialog()
@@ -178,13 +178,10 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
 
         repo = GitRepository.load(ctx.project_path)
 
-        ignore_check_path = relative_folder_path
-        if not ignore_check_path.endswith('/'):
-            ignore_check_path += '/'
-        if repo.is_ignored(ignore_check_path):
+        if repo.is_unborn():
             progress.finish()
             ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=5000, description="This folder is excluded from Version control.")
+            ui.show_info(title="Cannot unload folder", duration=5000, description="This repository is not initialized.")
             return True
         
         if not forced:
