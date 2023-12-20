@@ -185,7 +185,10 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
             return True
         
         if not forced:
-            ignored_files_in_folder = repo.get_ignored_files([relative_folder_path])
+            ignore_check_path = relative_folder_path
+            if ignore_check_path == "":
+                ignore_check_path = "."
+            ignored_files_in_folder = repo.get_ignored_files([ignore_check_path])
             if len(ignored_files_in_folder) > 0:
                 progress.finish()
                 show_unload_warning_dialog(relative_folder_path, ignored_files_in_folder, ctx)
