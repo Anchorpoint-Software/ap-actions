@@ -142,7 +142,6 @@ def cleanup_orphan_locks(ctx, repo):
     for lock in locks:
         if lock.owner_id == ctx.user_id and "gitbranch" in lock.metadata and lock.metadata["gitbranch"] == branch:
             paths_to_delete.append(lock.path)
-            print("Cleaning up orphan lock: " + lock.path)
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_delete)
 
