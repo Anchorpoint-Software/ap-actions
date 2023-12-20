@@ -1,6 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys, pathlib, platform
+import os, sys, pathlib, platform, webbrowser
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -205,6 +205,10 @@ def store_shared_setting(key, value, settings):
     settings.set(key, value)
     settings.store()
 
+def open_repository_on_web(dialog: ap.Dialog):
+        url = dialog.get_value("url")
+        webbrowser.open(url, new=0, autoraise=True)
+
 class GitProjectSettings(ap.AnchorpointSettings):
     def __init__(self, ctx: ap.Context):
         super().__init__()
@@ -233,7 +237,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
             url = get_repo_url_from_channel("Git", ctx.workspace_id, ctx.project_id)
 
         self.dialog.add_text("<b>Repository URL</b>")
-        self.dialog.add_input(url if url != None else "", var="url", width=400)
+        self.dialog.add_input(url if url != None else "", var="url", width=400).add_button("Visit",var="visit",callback = open_repository_on_web, primary=False)
         self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
         self.dialog.add_button("Apply URL", var="applyurl", callback=lambda d: apply_git_url_async(d, self.ctx, path), primary=False)
         self.dialog.add_empty()
