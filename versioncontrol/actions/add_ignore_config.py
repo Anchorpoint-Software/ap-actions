@@ -61,9 +61,14 @@ def get_ignore_file_default(ignore_file_dropdown_entries, path: str):
             return any(file.endswith(type) for file in os.listdir(path))
         except:
             return False
+        
+    def dir_exists(dir: str):
+        return os.path.isdir(os.path.join(path, dir))
 
     for ignore_file_Entry in ignore_file_dropdown_entries:
         if "Unreal" in ignore_file_Entry.name and type_exists(".uproject"): return ignore_file_Entry.name
+        elif "Unity" in ignore_file_Entry.name and dir_exists("Assets/Scenes"): 
+                return ignore_file_Entry.name
     return None    
 
 if __name__ == "__main__":
