@@ -1,7 +1,10 @@
 # This .gitignore file should be placed at the root of your Unity project directory
-#
-# Get latest from https://github.com/github/gitignore/blob/main/Unity.gitignore
-#
+# The original version comes from https://github.com/github/gitignore/blob/main/Unity.gitignore
+# It has been modified to allow Unity projects to be placed in subfolders of your Git repository.
+
+# If you have folders named "obj", "library" or "temp", they will always be ignored wherever they are in the project.
+# If you want to avoid this, remove the "**" and replace it with the real folder name.
+
 **/[Ll]ibrary/
 **/[Tt]emp/
 **/[Oo]bj/

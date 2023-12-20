@@ -87,10 +87,8 @@ class GitlabClient:
                            state=self.state, scope=scope)
         
         response_url = response_url.replace(internal_redirect_uri, redirect_uri)
-        print("adjusted response url: ", response_url)
         token = self.oauth.fetch_token(token_url, client_secret=self.client_secret,
                                 authorization_response=response_url)
-        print("token: ", token)
         self._store_token(token)
         self.init()
 
