@@ -786,7 +786,7 @@ class GitRepository(VCRepository):
                 if status == "M":
                     changes.modified_files.append(Change(path = filename))
 
-                elif status == "A" or status == "?":
+                elif status == "A" or (status == "?" and not staged):
                     changes.new_files.append(Change(path = filename))
 
                 elif status == "R":
