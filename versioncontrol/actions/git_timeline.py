@@ -500,6 +500,7 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
     beforerefs = [] # ref^ for deleted files
 
     repo_dir = repo.get_root_path()        
+    has_remote = repo.has_remote()
 
     keys = changes.keys()
     for change_path in keys:
@@ -524,11 +525,11 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
         if change_path in hashes:
             file_hash = hashes[change_path]
             changes[change_path].cached_path = get_lfs_cached_file(file_hash, repo_dir)
-            changes[change_path].cachable = True
+            changes[change_path].cachable = has_remote
         elif change_path in beforehashes:
             file_hash = beforehashes[change_path]
             changes[change_path].cached_path = get_lfs_cached_file(file_hash, repo_dir)
-            changes[change_path].cachable = True
+            changes[change_path].cachable = has_remote
 
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
