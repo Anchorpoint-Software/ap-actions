@@ -920,15 +920,21 @@ class GitRepository(VCRepository):
             if proc.returncode != 0:
                 print(f"Failed to call git add: {proc.returncode}")
                 self._run_git_status()
-                self._add_files_no_progress(*args, **kwargs)
+                try:
+                    self._add_files_no_progress(*args, **kwargs)
+                except Exception as e:
+                    raise e
                 proc = None
 
-        except subprocess.CalledProcessError as e:
-            raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
+        except Exception as e:
+            raise e
             
         finally:
             if proc:
-                finalize_process(proc)
+                try:
+                    finalize_process(proc)
+                except:
+                    pass
 
     def stage_all_files(self):
         self._check_index_lock()

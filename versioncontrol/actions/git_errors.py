@@ -199,6 +199,9 @@ def handle_error(e: Exception):
 
     if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
         print(message)
+        isread = "error: unable to index file" in message
+        permission = "read" if isread else "write"
+        operation = "read" if isread else "changed"
         file = _get_file_from_error(message)
         application = _guess_application(file)
         # This is too slow on Windows, unfortunately
@@ -208,15 +211,15 @@ def handle_error(e: Exception):
         file = _shorten_filepath(file)
                 
         d = ap.Dialog()
-        d.title = "Git: Could not Change Files"
+        d.title = "Git: Could not Save Files" if isread else "Git: Could not Change Files"
         d.icon = ":/icons/versioncontrol.svg"
 
         if not file:
-            user_error = f"Some file could not be changed because it is opened by an application,<br>or you don't have permissions to write the file."
+            user_error = f"Some file could not be {operation} because it is opened by an application,<br>or you don't have permissions to {permission} the file."
         elif application:
-            user_error = f"The file <b>{file}</b> could not<br>be changed because it is opened by an application (probably <i>{application}</i>).<br>Please close {application} and try again."
+            user_error = f"The file <b>{file}</b> could not<br>be {operation} because it is opened by an application (probably <i>{application}</i>).<br>Please close {application} and try again."
         else:
-            user_error = f"The file <b>{file}</b><br> could not be changed because it is opened by an application,<br>or you don't have permissions to write the file."
+            user_error = f"The file <b>{file}</b><br> could not be {operation} because it is opened by an application,<br>or you don't have permissions to {permission} the file."
 
         d.add_text(user_error)
         if platform.system() == "Darwin":
