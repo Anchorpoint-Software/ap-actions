@@ -1397,7 +1397,7 @@ class GitRepository(VCRepository):
 
                 folder = '/'.join(change_path.split('/')[:-1]) + '/'
                 if any(sparse_folder == folder for sparse_folder in sparse_checkout_folders):
-                    continue;
+                    continue
                 potential_sparse_checkout_folders.add(folder)
 
         process_changes(changes.new_files)
@@ -1507,7 +1507,7 @@ class GitRepository(VCRepository):
             self._check_index_lock()
             folder_set = self.get_sparse_checkout_folder_set()
             if relative_folder_path in folder_set:
-                return False;
+                return False
             folder_set.add(relative_folder_path)
             new_sparse_checkout_folders = set()
             new_sparse_checkout_folders.add(relative_folder_path)
@@ -1593,7 +1593,7 @@ class GitRepository(VCRepository):
                     raise e
             try:
                 if len(sparse_root_set) == 1 and ".ap" in sparse_root_set:
-                    raise(Exception("Cannot unload root when it is the only sparse root"));
+                    raise(Exception("Cannot unload root when it is the only sparse root"))
                 self.repo.git.sparse_checkout("set", "--sparse-index", ".ap")
             except Exception as e:
                 raise e
