@@ -189,7 +189,10 @@ def handle_git_autolock(repo, ctx, changes):
     process_changes(changes.deleted_files)
     process_changes(changes.renamed_files)
     
-    ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
+    try:
+        ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
+    except Exception as e:
+        print(f"Failed to update locks: {str(e)}")
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     import git_lfs_helper as lfs
