@@ -170,8 +170,13 @@ class GitRepository(VCRepository):
             _set_username()
 
     def set_safe_directory(self, path):
+        path = path.replace(os.sep, '/')
+        if platform.system() == 'Windows' and path.startswith('//'):
+            # git needs prefix for UNC paths and uppercase resolve on windows
+            from pathlib import Path
+            path = '%(prefix)/' + str(Path(path).resolve()).replace(os.sep, '/')
         # set safe.directory to allow git on 'unsafe' paths such as FAT32 drives
-        self.repo.git.config("--global", "--add", "safe.directory", path.replace(os.sep, '/'))
+        self.repo.git.config("--global", "--add", "safe.directory", path)
         print("Added Safe Directory")
 
     @classmethod
