@@ -1,4 +1,5 @@
 from subprocess import call
+from typing import Optional
 import anchorpoint as ap
 import platform, sys, os
 
@@ -191,7 +192,7 @@ def show_repository_not_found_error(message):
 
     return False
 
-def handle_error(e: Exception):
+def handle_error(e: Exception, repo_path: Optional[str] = None):
     try:
         message = e.stderr
     except:
@@ -268,4 +269,13 @@ def handle_error(e: Exception):
         ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
         return True
     
+    if "detected dubious ownership in repository" in message:
+        if repo_path:
+            repo = GitRepository.load(repo_path)
+            if repo:
+                repo.set_safe_directory()
+        else:
+            ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
+        return True
+
     return False

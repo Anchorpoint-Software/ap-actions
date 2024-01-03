@@ -166,12 +166,13 @@ class GitRepository(VCRepository):
         try:
             _set_username()
         except Exception as e:
-            self._set_safe_directory(path)
+            self.set_safe_directory(path)
             _set_username()
 
-    def _set_safe_directory(self, path):
+    def set_safe_directory(self, path):
         # set safe.directory to allow git on 'unsafe' paths such as FAT32 drives
         self.repo.git.config("--global", "--add", "safe.directory", path.replace(os.sep, '/'))
+        print("Added Safe Directory")
 
     @classmethod
     def create(cls, path: str, username: str, email: str):

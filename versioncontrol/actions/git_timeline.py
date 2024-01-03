@@ -44,6 +44,7 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
             changes[conflict] = conflict_change
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
+    path = None
     try:
         import sys
         sys.path.insert(0, script_dir)
@@ -125,7 +126,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         return info
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
@@ -306,6 +307,7 @@ def map_commit(repo, commit):
 
 def on_load_first_timeline_channel_entry(channel_id: str, ctx):
     import sys
+    path = None
     try:
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
@@ -329,7 +331,7 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print (f"on_load_first_timeline_channel_entry exception: {str(e)}")
         return None
     finally:
@@ -533,6 +535,7 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
 
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
+    path = None
     try:
         import sys, os
         sys.path.insert(0, current_dir)
@@ -599,7 +602,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         return info
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
@@ -730,6 +733,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     sys.path.insert(0, script_dir)
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     lock_disabler = ap.LockDisabler()
+    path = None
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
@@ -757,7 +761,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
             ap.UI().reload_tree()
         except Exception as e:
             import git_errors
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
 
@@ -772,6 +776,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
     import git_repository_helper as helper
     sys.path.insert(0, script_dir)
     lock_disabler = ap.LockDisabler()
+    path = None
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
@@ -823,7 +828,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
 
         except Exception as e:
             import git_errors
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 if "conflict" in str(e):
                     ui.show_info("Conflicts detected", "Please resolve your conflicts.")  
                     ap.vc_load_pending_changes(channel_id, True)  
@@ -891,6 +896,7 @@ def refresh_async(channel_id: str, project_path):
 
     import sys, os
     sys.path.insert(0, script_dir)
+    git_dir = None
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -913,6 +919,8 @@ def refresh_async(channel_id: str, project_path):
             delete_lockfiles(git_dir)
 
     except Exception as e:
+        import git_errors
+        git_errors.handle_error(e, git_dir)
         if "didn't exist" not in str(e):
             print("refresh_async exception: " + str(e))
         pass
@@ -967,6 +975,7 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None
     from git_lfs_helper import file_is_binary
     from git_load_file import get_lfs_cached_file
+    path = None
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -1041,7 +1050,7 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print("on_vc_get_changes_info exception")
         return None
     
