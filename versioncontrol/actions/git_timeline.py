@@ -116,12 +116,18 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
             if b.name == current_branch_name:
                 info.current_branch = branch
-
+                
         if "has_stash" in dir(info):
             stash = repo.get_branch_stash()
             info.has_stash = stash is not None
             if info.has_stash:
-                info.stashed_file_count = repo.get_stash_change_count(stash)
+                try:
+                    info.stashed_file_count = repo.get_stash_change_count(stash)
+                except Exception as e:
+                    print(f"Could not get stash change count: {e}")
+                    print(f"Git Status {repo.git_status()}")
+                    info.stashed_file_count = 0
+
         
         return info
     except Exception as e:
