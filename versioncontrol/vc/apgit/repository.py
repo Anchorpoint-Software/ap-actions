@@ -894,7 +894,7 @@ class GitRepository(VCRepository):
             import anchorpoint
             exception_string = str(e)
             print(f"Failed to call git add (no progress): {exception_string}")
-            if "no space left on device" in exception_string:
+            if "no space left on device" in exception_string or "not enough space" in exception_string:
                 anchorpoint.UI().show_error("Could not Commit", "No space left on device", duration=10000)
             if "fsync error on '.git/objects/" in exception_string:
                 anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
