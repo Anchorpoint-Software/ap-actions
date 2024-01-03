@@ -175,7 +175,7 @@ def pull_async(channel_id: str, project_path, ctx):
                 else:
                     ui.show_info("Conflicts detected", "Please resolve your conflicts")    
             else:
-                ui.show_error("Failed to update Git Repository", "Please try again")    
+                ui.show_info("Failed to update Git Repository", "Please try again")    
                    
     ap.vc_load_pending_changes(channel_id, True)
     ap.refresh_timeline_channel(channel_id)
