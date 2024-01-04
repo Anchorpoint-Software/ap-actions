@@ -15,6 +15,35 @@ import git_repository_helper as helper
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)
 
+def update_gitignore_settings(dialog: ap.Dialog, value, path):
+    settings = aps.Settings("gitignore_check")
+    settings.set(path, value) 
+    settings.store()
+
+def check_missing_gitignore(repo, is_game_project, has_gitignore):
+    if has_gitignore or not is_game_project: return True
+
+    path = repo.get_root_path()
+    settings = aps.Settings("gitignore_check")
+    if settings.get(path, False):
+        return True
+    
+    all_files = repo.get_all_files()
+    for file in all_files:
+        if file.endswith(".gitignore"):
+            return True
+
+    d = ap.Dialog()
+    d.title = "Missing .gitignore file"
+    d.icon = ":/icons/versioncontrol.svg"
+    d.add_text("Anchorpoint could not find a <b>.gitignore</b> file in your project.<br>Because of this, too many files would be committed")
+    d.add_info("Add a <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/1-Git-basics/?highlight#gitignore'>.gitignore</a> file and commit again.")
+    d.add_checkbox(callback=lambda d,v: update_gitignore_settings(d,v,path), var="neveraskagain", text="Disable this check")
+    d.add_button("Close", callback=lambda d: d.close())
+    d.show()
+
+    return False
+
 def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_files = True):
     def lfs_progress_callback(current, max):
         if progress.canceled:
@@ -23,12 +52,29 @@ def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_f
             progress.report_progress(current / max)
         return True
 
+    has_gitignore = False
+    is_game_project = False
+    gameextensions_to_check = {".umap", ".uasset", ".uproject", ".unity", ".unityproj"}
+
     to_stage = []
     for change in changes:
+        if ".gitignore" in change.path:
+            has_gitignore = True
+        
+        split = os.path.splitext(change.path)
+        if len(split) > 1:
+            ext = split[1].lower()
+            if ext in gameextensions_to_check:
+                is_game_project = True
+
         if change.selected:
             to_stage.append(change.path)
 
     if len(to_stage) == 0:
+        return
+
+    if not check_missing_gitignore(repo, is_game_project, has_gitignore):
+        print("missing gitignore")
         return
 
     if track_binary_files:

@@ -1876,6 +1876,13 @@ class GitRepository(VCRepository):
 
         pass
 
+    def get_all_files(self, ref: str = None) -> list[str]:
+        try:
+            return self.repo.git.ls_files("-z", ref).split('\x00')
+        except Exception as e:
+            print(f"error in get_all_files: {str(e)}")
+            return []
+
     def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
         if paths != None and len(paths) == 0:
             return {}
