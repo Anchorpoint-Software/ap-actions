@@ -43,7 +43,7 @@ if __name__ == "__main__":
     timeline_channel = aps.get_timeline_channel(project, helper.CHANNEL_ID)
     settings = aps.Settings("git_repository")               
 
-    def clone_repo_async(repo_path: str, url: str, join_project_files, project, timeline_channel, workspace_id, patch_channel, download_all):
+    def clone_repo_async(repo_path: str, url: str, join_project_files, project, timeline_channel, workspace_id, patch_channel, download_all, clearCredentials=False):
         with os.scandir(repo_path) as it:
             if any(it):
                 ap.UI().show_info("Cannot Clone Git repository", "Folder must be empty")
@@ -51,6 +51,10 @@ if __name__ == "__main__":
             
         try:
             progress = ap.Progress("Cloning Git Repository", show_loading_screen = True)
+            if clearCredentials:
+                host, path = GitRepository.get_git_url_info(url)
+                GitRepository.erase_credentials(host, "https", path if "azure" or "visualstudio" in host else None)
+
             repo = GitRepository.clone(url, repo_path, ctx.username, ctx.email, progress=helper.CloneProgress(progress), sparse= not download_all)
             ap.evaluate_locks(workspace_id, project.id)
             progress.finish()
@@ -79,13 +83,19 @@ if __name__ == "__main__":
             else:
                 remote_name = "remote"
 
-            d.add_info(f"You might have entered a wrong username / password, or you don't <br>have access to the <span style='color:white'>{remote_name} </span> repository. <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting'>Read more</a>")
+            if remote_name == "Azure DevOps":
+                d.add_info(f"You might have entered a wrong username / password, or you don't have access to the <span style='color:white'>{remote_name}</span> repository.<br>You can try the following:<br><br>1. Check to see if you can view the repository on <a href=\"{url}\">Azure DevOps</a>. If not, contact your project owner to get access.<br>2. Click \"Retry with relogin\" to input your username and password for Azure DevOps again.<br>3. Your project owner must grant you the <span color = \"white\">Basic Access Level</span> in the Organization Settings/Users in Azure DevOps.<br><br>If none of these suggestions have helped, please <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting'>read the documentation</a> or contact our support.")
+            else:
+                d.add_info(f"You might have entered a wrong username / password, or you don't<br>have access to the <span style='color:white'>{remote_name} </span> repository. <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting'>Read more</a>")
 
-            def retry():
-                ctx.run_async(clone_repo_async, repo_path, url, join_project_files, project, timeline_channel, workspace_id, patch_channel)
+            def retry(clearCredentials= False):
+                ctx.run_async(clone_repo_async, repo_path, url, join_project_files, project, timeline_channel, workspace_id, patch_channel, download_all, clearCredentials)
                 d.close()
 
-            d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
+            row = d.add_button("Retry", callback=lambda d: retry())
+            if remote_name == "Azure DevOps":
+                row = row.add_button("Retry with relogin", callback=lambda d: retry(clearCredentials=True), primary=False)
+            row.add_button("Close", callback=lambda d: d.close(), primary=False)
             d.show()
             raise e
 
