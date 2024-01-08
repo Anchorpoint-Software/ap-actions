@@ -58,6 +58,16 @@ def show_push_failed(error: str, channel_id, ctx):
     d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
     d.show()
 
+def handle_git_autoprune(ctx, repo):
+    from git_settings import GitAccountSettings
+
+    git_settings = GitAccountSettings(ctx)
+    if not git_settings.auto_prune_enabled():
+        return
+    
+    count = repo.prune_lfs()
+    print(f"Automatically pruned {count} LFS objects")
+
 def handle_git_autolock(ctx, repo):
     branch = repo.get_current_branch_name()
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
@@ -122,6 +132,9 @@ def push_async(channel_id: str, ctx):
                 show_push_failed("", channel_id, ctx)    
             else:
                 handle_git_autolock(ctx, repo)
+
+                progress.set_text("Clearing Cache")
+                handle_git_autoprune(ctx, repo)
                 ui.show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):

@@ -5,7 +5,9 @@ import vc.apgit_utility.install_git as install_git
 import os, platform
 
 def _get_git_version():
-    return install_git.run_git_command([install_git.get_git_cmd_path(), "--version"])
+    git = install_git.run_git_command([install_git.get_git_cmd_path(), "--version"])
+    git_lfs = install_git.run_git_command([install_git.get_git_cmd_path(), "lfs", "--version"])
+    return git + " " + git_lfs
 
 def _install_git(dialog: ap.Dialog):
     ap.get_context().run_async(install_git.install_git)
@@ -25,6 +27,7 @@ def _check_update_available():
     else: update_available = version != constants.GIT_VERSION_MAC
 
     if update_available:
+        print(f"version = {version}")
         dialog = ap.Dialog()
         dialog.title = "Git Update Available"
         dialog.add_text("A new version of Git is available.")
