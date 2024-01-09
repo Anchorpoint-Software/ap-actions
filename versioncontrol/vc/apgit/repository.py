@@ -337,9 +337,16 @@ class GitRepository(VCRepository):
                 if len(sparse_roots) > 0:
                     fetch_kwargs["-I"] = ",".join(sparse_roots)
 
-            if not self.is_sparse_checkout_enabled():
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches=["@{u}",f"^{branch}"], **fetch_kwargs)
-                if progress_wrapper.canceled(): return UpdateState.CANCEL
+            lfs_version = self.get_lfs_version()
+            if lfs_version.startswith("ap_"):
+                fetch_kwargs["branches", ["@{u}",f"^{branch}"]] # Fetch upstream but not files currently checked out at branch
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, **fetch_kwargs)
+            else:
+                print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, **fetch_kwargs)
+            
+            if progress_wrapper.canceled(): return UpdateState.CANCEL
+            
             for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
@@ -1909,6 +1916,12 @@ class GitRepository(VCRepository):
             print(f"error in get_lfs_filehash: {str(e)}")
             return {}
         
+    def get_lfs_version(self):
+        try:
+            return self.repo.git.lfs("version")
+        except Exception as e:
+            print(f"error in get_lfs_version: {str(e)}")
+            return ""
 
     def prune_lfs(self, force: bool = False):
         args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]

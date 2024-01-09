@@ -16,6 +16,7 @@ def _install_git(dialog: ap.Dialog):
 def _check_update_available():
     try:
         version = _get_git_version()
+        print(f"Git Version: {version}")
     except Exception as e:
         # Fix an invalid certificate causing issues on macOS git installation
         if platform.system() == "Darwin":

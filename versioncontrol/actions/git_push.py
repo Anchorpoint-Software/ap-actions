@@ -65,8 +65,15 @@ def handle_git_autoprune(ctx, repo):
     if not git_settings.auto_prune_enabled():
         return
     
-    count = repo.prune_lfs()
-    print(f"Automatically pruned {count} LFS objects")
+    try:
+        lfs_version = repo.get_lfs_version()
+        if not lfs_version.startswith("ap_"):
+            print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
+            return
+        count = repo.prune_lfs()
+        print(f"Automatically pruned {count} LFS objects")
+    except Exception as e:
+        print(f"An error occurred while pruning LFS objects: {e}")
 
 def handle_git_autolock(ctx, repo):
     branch = repo.get_current_branch_name()
