@@ -28,7 +28,6 @@ def _check_update_available():
     else: update_available = version != constants.GIT_VERSION_MAC
 
     if update_available:
-        print(f"version = {version}")
         dialog = ap.Dialog()
         dialog.title = "Git Update Available"
         dialog.add_text("A new version of Git is available.")
