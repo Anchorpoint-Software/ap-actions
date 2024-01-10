@@ -331,7 +331,6 @@ class GitRepository(VCRepository):
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
 
-            fetch_kwargs = {}
             folders_to_fetch = None
             if self.is_sparse_checkout_enabled():
                 non_sparse_folders = self.get_sparse_checkout_folder_set()
@@ -340,11 +339,11 @@ class GitRepository(VCRepository):
 
             lfs_version = self.get_lfs_version()
             if lfs_version.startswith("ap_"):
-                fetch_kwargs["branches", ["@{u}",f"^{branch}"]] # Fetch upstream but not files currently checked out at branch
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, **fetch_kwargs)
+                branches = ["@{u}",f"^{branch}"]
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, branches=branches)
             else:
                 print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, **fetch_kwargs)
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch)
             
             if progress_wrapper.canceled(): return UpdateState.CANCEL
             
