@@ -19,8 +19,10 @@ class GitAccountSettings(ap.AnchorpointSettings):
         self.dialog.add_info("Anchorpoint will lock all binaries that have been modified. Locks will be released when the commits are pushed to the remote Git repository. <br><a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/projects/5-File-locking/#git-projects'>Learn about File Locking</a>.")
         self.dialog.add_switch(True, var="notifications", text="Show notifications for new commits")
         self.dialog.add_info("Show a system notification when new commits are available on the remote Git repository.")
-        self.dialog.add_switch(True, var="autoprune", text="Automatically clear Git LFS cache")
+        
+        self.dialog.add_text("Clear Git file cache after push:\t").add_dropdown("Files older than one week", ["Always", "Files older than one week", "Never"], var="autoprune")
         self.dialog.add_info("Clears the git LFS cache after each push to save disk space. This will never delete any data on the server or data that is not pushed to a Git remote.")
+        
         self.dialog.load_settings(self.get_settings())
 
 
@@ -39,8 +41,14 @@ class GitAccountSettings(ap.AnchorpointSettings):
     def notifications_enabled(self):
         return self.get_settings().get("notifications", True)
     
-    def auto_prune_enabled(self):
-        return self.get_settings().get("autoprune", True)
+    def auto_prune_days(self):
+        autoprune = self.get_settings().get("autoprune")
+        if autoprune == "Always":
+            return 0
+        elif autoprune == "Never":
+            return -1
+        else:
+            return 7
 
 def apply_git_url(dialog, ctx, repo_path):
     sys.path.insert(0, current_dir)

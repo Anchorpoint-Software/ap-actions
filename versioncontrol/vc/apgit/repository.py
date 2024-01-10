@@ -1923,16 +1923,16 @@ class GitRepository(VCRepository):
             print(f"error in get_lfs_version: {str(e)}")
             return ""
 
-    def prune_lfs(self, force: bool = False):
+    def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
         args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]
         if force:
             args.append("--force")
         else:
             # prune worktree and recent commits but no recent refs
             args.append("--worktree")
-            args.insert(1, "lfs.fetchrecentrefsdays=0")
+            args.insert(1, f"lfs.fetchrecentrefsdays={recent_refs_days}")
             args.insert(1, "-c")
-            args.insert(1, "lfs.fetchrecentcommitsdays=7")
+            args.insert(1, f"lfs.fetchrecentcommitsdays={recent_commits_days}")
             args.insert(1, "-c")
 
         output = install_git.run_git_command(args, cwd=self.get_root_path())

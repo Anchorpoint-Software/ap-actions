@@ -62,15 +62,22 @@ def handle_git_autoprune(ctx, repo):
     from git_settings import GitAccountSettings
 
     git_settings = GitAccountSettings(ctx)
-    if not git_settings.auto_prune_enabled():
+    prune_days = git_settings.auto_prune_days()
+    if prune_days < 0:
         return
+    
+    prune_kwargs = {}
+    if prune_days > 0:
+        prune_kwargs["recent_commits_days"] = prune_days
+    elif prune_days == 0:
+        prune_kwargs["force"] = True
     
     try:
         lfs_version = repo.get_lfs_version()
         if not lfs_version.startswith("ap_"):
             print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
             return
-        count = repo.prune_lfs()
+        count = repo.prune_lfs(**prune_kwargs)
         print(f"Automatically pruned {count} LFS objects")
     except Exception as e:
         print(f"An error occurred while pruning LFS objects: {e}")
