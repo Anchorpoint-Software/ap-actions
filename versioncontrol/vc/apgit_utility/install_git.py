@@ -1,5 +1,4 @@
 import os, platform
-import vc.apgit_utility.constants as constants
 import anchorpoint as ap
 
 def _check_application(path: str):
