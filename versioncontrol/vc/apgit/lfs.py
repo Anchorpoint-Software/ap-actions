@@ -54,7 +54,7 @@ def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: 
         batch = []
         batch_size = 0
         for file in files:
-            if batch_size + len(file) + 1 > 6000:
+            if batch_size + len(file) + 1 > 7500: # max characters per command are 8192, but we need some space for the command itself
                 file_batches.append(batch)
                 batch = []
                 batch_size = 0
