@@ -14,11 +14,13 @@ class GitAccountSettings(ap.AnchorpointSettings):
         super().__init__()
         self.dialog = ap.Dialog()
         self.dialog.add_switch(True, var="autopush", text="Combine Commit and Push", callback=lambda d,v: refresh_timeline(d))
-        self.dialog.add_info("Anchorpoint will automatically push your changes to the remote Git repository")
+        self.dialog.add_info("Anchorpoint will automatically push your changes to the remote Git repository.")
         self.dialog.add_switch(True, var="autolock", text="Automatically lock changed files", callback=lambda d,v: refresh_timeline(d))
-        self.dialog.add_info("Anchorpoint will lock all binaries that have been modified. Locks will be released when the commits are pushed to the remote Git repository. <br><a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/projects/5-File-locking/#git-projects'>Learn about File Locking</a>")
+        self.dialog.add_info("Anchorpoint will lock all binaries that have been modified. Locks will be released when the commits are pushed to the remote Git repository. <br><a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/projects/5-File-locking/#git-projects'>Learn about File Locking</a>.")
         self.dialog.add_switch(True, var="notifications", text="Show notifications for new commits")
-        self.dialog.add_info("Show a system notification when new commits are available on the remote Git repository")
+        self.dialog.add_info("Show a system notification when new commits are available on the remote Git repository.")
+        self.dialog.add_switch(True, var="autoprune", text="Automatically clear Git LFS cache")
+        self.dialog.add_info("Clears the git LFS cache after each push to save disk space. This will never delete any data on the server or data that is not pushed to a Git remote.")
         self.dialog.load_settings(self.get_settings())
 
 
@@ -36,6 +38,9 @@ class GitAccountSettings(ap.AnchorpointSettings):
     
     def notifications_enabled(self):
         return self.get_settings().get("notifications", True)
+    
+    def auto_prune_enabled(self):
+        return self.get_settings().get("autoprune", True)
 
 def apply_git_url(dialog, ctx, repo_path):
     sys.path.insert(0, current_dir)
@@ -157,7 +162,7 @@ def prune(dialog, project_path):
 
     progress = ap.Progress("Clearing Cache")
     dialog.set_processing("prune_lfs", True, "Clearing Cache")
-    count = repo.prune_lfs()
+    count = repo.prune_lfs(force=True)
     dialog.set_processing("prune_lfs", False)
     if count == 0: 
         ui.show_info("Cache is already cleared")

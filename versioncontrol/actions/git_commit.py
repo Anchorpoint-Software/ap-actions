@@ -122,7 +122,7 @@ def push_changes(ctx, repo_path, channel_id: str):
     import sys
     script_dir = os.path.dirname(__file__)
     sys.path.insert(0, script_dir)
-    from git_push import handle_git_autolock as push_handle_git_autolock, push_in_progress, get_push_lockfile, delete_push_lockfiles
+    from git_push import handle_git_autolock as push_handle_git_autolock, push_in_progress, get_push_lockfile, delete_push_lockfiles, handle_git_autoprune
     if script_dir in sys.path:
         sys.path.remove(script_dir)
 
@@ -144,6 +144,8 @@ def push_changes(ctx, repo_path, channel_id: str):
                 show_push_failed("", channel_id, repo.get_root_path())    
             else:
                 push_handle_git_autolock(ctx, repo)
+                progress.set_text("Clearing Cache")
+                handle_git_autoprune(ctx, repo)
                 ap.UI().show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):

@@ -330,9 +330,23 @@ class GitRepository(VCRepository):
             current_env = os.environ.copy()
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
-            if not self.is_sparse_checkout_enabled():
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
-                if progress_wrapper.canceled(): return UpdateState.CANCEL
+
+            fetch_kwargs = {}
+            if self.is_sparse_checkout_enabled():
+                sparse_roots = self.get_sparse_checkout_folder_set()
+                if len(sparse_roots) > 0:
+                    fetch_kwargs["-I"] = ",".join(sparse_roots)
+
+            lfs_version = self.get_lfs_version()
+            if lfs_version.startswith("ap_"):
+                fetch_kwargs["branches", ["@{u}",f"^{branch}"]] # Fetch upstream but not files currently checked out at branch
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, **fetch_kwargs)
+            else:
+                print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
+                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, **fetch_kwargs)
+            
+            if progress_wrapper.canceled(): return UpdateState.CANCEL
+            
             for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
@@ -1437,7 +1451,7 @@ class GitRepository(VCRepository):
             if "this worktree is not sparse" in message:
                 raise Exception("This worktree is not sparse")
             raise e
-        
+
     def is_sparse_checkout_enabled(self):
         self._check_sparse_checkout_lock()
         try:
@@ -1874,8 +1888,6 @@ class GitRepository(VCRepository):
         progress_wrapper = None if not progress else _InternalProgress(progress)
         lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches, paths)
 
-        pass
-
     def get_all_files(self, ref: str = None) -> list[str]:
         try:
             return self.repo.git.ls_files("-z", ref).split('\x00')
@@ -1904,10 +1916,26 @@ class GitRepository(VCRepository):
             print(f"error in get_lfs_filehash: {str(e)}")
             return {}
         
+    def get_lfs_version(self):
+        try:
+            return self.repo.git.lfs("version")
+        except Exception as e:
+            print(f"error in get_lfs_version: {str(e)}")
+            return ""
 
-    def prune_lfs(self):
-        # output = self.repo.git.lfs("prune", "--force", "--verify-remote")
-        output = self.repo.git.lfs("prune", "--verify-remote")
+    def prune_lfs(self, force: bool = False):
+        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]
+        if force:
+            args.append("--force")
+        else:
+            # prune worktree and recent commits but no recent refs
+            args.append("--worktree")
+            args.insert(1, "lfs.fetchrecentrefsdays=0")
+            args.insert(1, "-c")
+            args.insert(1, "lfs.fetchrecentcommitsdays=7")
+            args.insert(1, "-c")
+
+        output = install_git.run_git_command(args, cwd=self.get_root_path())
 
         if "Deleting objects: 100%" not in output: return 0
 
