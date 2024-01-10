@@ -101,17 +101,6 @@ def add_git_ignore(repo, context, project_path, ignore_value = None):
         add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
         add_additional_scripts(context.yaml_dir, project_path, ignore_value)
 
-def _install_git_async(dialog, git_helper):
-    try:
-        git_helper.install_git()
-        ap.reload_create_project_dialog()
-    finally:
-        dialog.set_processing("install", False)
-
-def install_git_async(dialog, ctx, path, git_helper):
-    dialog.set_processing("install", True, "Installing Git")
-    ctx.run_async(_install_git_async, dialog, git_helper)
-
 def delete_folder_and_retry_async(folder_to_delete, project_path):
     import shutil
     if os.path.exists(folder_to_delete):
@@ -138,22 +127,12 @@ try:
             sys.path.insert(0, script_dir)
 
             import git_repository_helper as githelper
-            import vc.apgit_utility.install_git as install_git
             if script_dir in sys.path: sys.path.remove(script_dir)
 
-            self.git_installed = install_git.is_git_installed()
             self.dialog = ap.Dialog()
             self.git = None
             self.githelper = githelper
             self.setup_integration_name = None
-
-            if not self.git_installed:
-                self.dialog.add_text("To use Anchorpoint with Git repositories you have to install it")
-                self.dialog.add_info("When installing Git you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
-                self.dialog.add_button("Install", var="install", callback = lambda d: install_git_async(d, self.context, self.path, install_git))
-                if "set_valid" in dir(ap.Dialog):
-                    self.dialog.set_valid(False)
-                return
 
             try:
                 import vc.apgit.repository as git

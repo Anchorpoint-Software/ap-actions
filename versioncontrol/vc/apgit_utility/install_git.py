@@ -1,5 +1,4 @@
 import os, platform
-import io, shutil
 import vc.apgit_utility.constants as constants
 import anchorpoint as ap
 
@@ -7,10 +6,16 @@ def _check_application(path: str):
     return os.path.exists(path)
 
 def get_git_cmddir():
-    # Code duplicated in git_project.py to avoid installation dialog
-    dir = os.path.expanduser("~/Documents/Anchorpoint/actions")
-    dir = os.path.join(dir, "git-cmd")
-    return os.path.normpath(dir)
+    application_dir = ap.get_application_dir()
+    git_path = None
+    if platform.system() == "Windows":
+        git_path = os.path.join(application_dir, "plugins", "git")
+    elif platform.system() == "Darwin":
+        git_path = os.path.join(application_dir, "..", "Resources", "git")
+    else:
+        raise RuntimeError("Unsupported Platform")
+
+    return os.path.normpath(git_path)
 
 def is_git_installed():
     dir = get_git_cmddir()
@@ -95,45 +100,11 @@ def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
 
     return 0 if p.returncode == None else p.returncode
 
-def install_git():
-    r = _download_git()
-    progress = ap.Progress("Installing Git", infinite=True, show_loading_screen=True)
-
-    dir = get_git_cmddir()
-    if os.path.exists(dir):
-        shutil.rmtree(dir)
-
-    if platform.system() == "Darwin":
-        # Don't use zipfile on mac as it messes up permissions and alias files
-        import subprocess, tempfile
-        with tempfile.TemporaryDirectory() as tempdir:
-            with open(os.path.join(tempdir, "mac.zip"), "wb") as f:
-                f.write(r.content)
-            subprocess.check_call(["unzip", f.name, "-d", dir], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    else:
-        from zipfile import ZipFile
-        z = ZipFile(io.BytesIO(r.content))
-        z.extractall(path=dir)
-
-    _install_git_lfs()
+def setup_git():
+    _setup_git_lfs()
     _setup_git()
 
-    ap.UI().show_success("Git installed successfully")
-    progress.finish()
-
-def _download_git():
-    import requests
-    progress = ap.Progress("Downloading Git", infinite=True, show_loading_screen=True)
-    if platform.system() == "Windows":
-        r = requests.get(constants.INSTALL_URL_WIN, allow_redirects=True)
-    elif platform.system() == "Darwin":
-        r = requests.get(constants.INSTALL_URL_MAC, allow_redirects=True)
-    else:
-        raise RuntimeError("Unsupported Platform")
-    progress.finish()
-    return r
-
-def _install_git_lfs():
+def _setup_git_lfs():
     run_git_command([get_git_cmd_path(), "lfs", "install"])
 
 def _setup_git():
