@@ -337,14 +337,17 @@ class GitRepository(VCRepository):
                 if len(non_sparse_folders) > 0:
                     folders_to_fetch = non_sparse_folders
 
-            lfs_version = self.get_lfs_version()
-            if lfs_version.startswith("ap_"):
-                branches = ["@{u}",f"^{branch}"]
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, branches=branches)
-            else:
-                print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch)
-            
+            try:
+                lfs_version = self.get_lfs_version()
+                if lfs_version.startswith("ap_"):
+                    branches = ["@{u}",f"^{branch}"]
+                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, branches=branches)
+                else:
+                    print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
+                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch)
+            except Exception as e:
+                print(f"Failed to fetch LFS files, continuing: {str(e)}")
+                
             if progress_wrapper.canceled(): return UpdateState.CANCEL
             
             for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):

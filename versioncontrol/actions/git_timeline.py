@@ -825,7 +825,10 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                 else:
                     branches = [upstream]
 
-                repo.fetch_lfs_files(branches = branches, paths = folders_to_fetch, progress=helper.FetchProgress(progress))
+                try:
+                    repo.fetch_lfs_files(branches = branches, paths = folders_to_fetch, progress=helper.FetchProgress(progress))
+                except Exception as e:
+                    print("failed to fetch LFS files in merge, continuing", str(e))
             except Exception as e:
                 print("failed to fetch in merge", str(e))
                 raise e
