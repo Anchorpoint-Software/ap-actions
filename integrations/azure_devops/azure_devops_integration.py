@@ -361,6 +361,7 @@ class DevopsIntegration(ap.ApIntegration):
             progress.set_text("Creating Azure DevOps Project")
             new_repo = self.client.create_project_and_repository(current_org, project_name)
             settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
+            print(f"git repo name saved in integration_info: {new_repo.display_name}")
             settings.set(integration_project_name_key, new_repo.display_name)
             settings.store()
 
@@ -370,9 +371,29 @@ class DevopsIntegration(ap.ApIntegration):
             return new_repo.https_url
         except Exception as e:
             if "TF50309" in str(e):
-                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+            elif "TF50316" in str(e):
+                # Extract the name from the exception message
+                match = re.search(r'The following name is not valid: (.*). Please', str(e))
+                if match:
+                    invalid_name = match.group(1)
+                    ap.UI().show_error(
+                        title='Cannot create Azure DevOps Project',
+                        duration=8000,
+                        description=f'Failed to create, because the already adjusted project name "{invalid_name}" does not conform to the Azure DevOps <a href="https://learn.microsoft.com/en-us/azure/devops/organizations/settings/naming-restrictions?view=azure-devops#azure-repos-git">naming restrictions</a>. Please try again with a different name.'
+                    )
+                else:
+                    ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                       duration=8000, 
+                                       description=f'Failed to create, because project name does not conform to the Azure DevOps <a href="https://learn.microsoft.com/en-us/azure/devops/organizations/settings/naming-restrictions?view=azure-devops#azure-repos-git">naming restrictions</a>. Please try again with a different name.')
             elif "project already exists" in str(e):
-                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create Azure DevOps Project', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             raise e
