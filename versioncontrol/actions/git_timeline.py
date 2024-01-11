@@ -800,16 +800,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         if repo.get_current_branch_name() == branch:
             return
         
-        branch = repo.get_upstream_branch(branch)
         ui = ap.UI()
-
-        # if platform.system() == "Windows":
-        #     if is_executable_running(["unrealeditor.exe"]):
-        #         lfsExtensions = LFSExtensionTracker(repo)
-        #         if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
-        #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
-        #             return
-
         if repo.has_pending_changes(True):
             ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
             return
@@ -820,8 +811,21 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                 state = repo.fetch(progress=helper.FetchProgress(progress))
                 if state != UpdateState.OK:
                     print("failed to fetch in merge")
-                if not repo.is_sparse_checkout_enabled():
-                    repo.fetch_lfs_files([branch], progress=helper.FetchProgress(progress))
+
+                folders_to_fetch = None
+                if repo.is_sparse_checkout_enabled():
+                    non_sparse_folders = repo.get_sparse_checkout_folder_set()
+                    if len(non_sparse_folders) > 0:
+                        folders_to_fetch = non_sparse_folders
+                    
+                lfs_version = repo.get_lfs_version()
+                upstream = repo.get_upstream_branch(branch)
+                if lfs_version.startswith("ap_"):
+                    branches = [upstream, f"^{branch}"]
+                else:
+                    branches = [upstream]
+
+                repo.fetch_lfs_files(branches = branches, paths = folders_to_fetch, progress=helper.FetchProgress(progress))
             except Exception as e:
                 print("failed to fetch in merge", str(e))
                 raise e
