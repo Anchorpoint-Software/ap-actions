@@ -78,7 +78,7 @@ def handle_git_autoprune(ctx, repo):
             print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
             return
         count = repo.prune_lfs(**prune_kwargs)
-        print(f"Automatically pruned {count} LFS objects")
+        print(f"Automatically pruned {count} LFS objects after push.")
     except Exception as e:
         print(f"An error occurred while pruning LFS objects: {e}")
 

@@ -20,8 +20,8 @@ class GitAccountSettings(ap.AnchorpointSettings):
         self.dialog.add_switch(True, var="notifications", text="Show notifications for new commits")
         self.dialog.add_info("Show a system notification when new commits are available on the remote Git repository.")
         
-        self.dialog.add_text("Clear Git file cache after push:\t").add_dropdown("Files older than one week", ["Always", "Files older than one week", "Never"], var="autoprune")
-        self.dialog.add_info("Clears the git LFS cache after each push to save disk space. This will never delete any data on the server or data that is not pushed to a Git remote.")
+        self.dialog.add_text("Clear Git file cache automatically:\t").add_dropdown("Files older than one week", ["Always", "Files older than one week", "Never"], var="autoprune")
+        self.dialog.add_info("Clears the git LFS cache after each push and pull to save disk space. This will never delete any data on the server or data that is not pushed to a Git remote.")
         
         self.dialog.load_settings(self.get_settings())
 
