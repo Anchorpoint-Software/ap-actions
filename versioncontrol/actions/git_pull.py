@@ -174,6 +174,7 @@ def pull(repo: GitRepository, channel_id: str, ctx):
             repo.pop_stash()        
     
         update_pulled_commits()
+        progress.set_text("Clearing Cache")
         handle_git_autoprune(ctx, repo)
 
     return True
