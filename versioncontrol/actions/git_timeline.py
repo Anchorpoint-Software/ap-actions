@@ -800,6 +800,8 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         if repo.get_current_branch_name() == branch:
             return
         
+        upstream = repo.get_upstream_branch(branch)
+
         ui = ap.UI()
         if repo.has_pending_changes(True):
             ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
@@ -819,7 +821,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                         folders_to_fetch = non_sparse_folders
                     
                 lfs_version = repo.get_lfs_version()
-                upstream = repo.get_upstream_branch(branch)
+                
                 if lfs_version.startswith("ap_"):
                     branches = [upstream, f"^{branch}"]
                 else:
@@ -836,7 +838,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
-            if not repo.merge_branch(branch, progress=helper.BranchProgress(progress)):
+            if not repo.merge_branch(upstream, progress=helper.BranchProgress(progress)):
                 ui.show_info("Merge not needed", "Branch is already up to date.")
             else:
                 lock_disabler.enable_locking()
