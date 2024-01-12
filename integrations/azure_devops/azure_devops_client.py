@@ -377,7 +377,7 @@ class AzureDevOpsClient:
                     for repo in repos:
                         if repo.display_name == adjusted_name:
                             return repo
-                    return None
+                    raise Exception("Could not create project", "Repository could not be found in list of all repositories for this organization")
                 
     def _check_user_entitlements_result(self, response):
         if not response:
