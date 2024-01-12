@@ -202,7 +202,7 @@ def pull_async(channel_id: str, project_path, ctx):
             else:
                 ui.show_info("Failed to update Git Repository", "Please try again")    
                    
-    ap.vc_load_pending_changes(channel_id, True)
+    ap.vc_load_pending_changes(channel_id)
     ap.refresh_timeline_channel(channel_id)
 
 def resolve_conflicts(channel_id):

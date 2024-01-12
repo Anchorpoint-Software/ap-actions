@@ -153,6 +153,7 @@ def push_changes(ctx, repo_path, channel_id: str):
     finally:
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
         ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
+        ap.close_timeline_sidebar()
         ap.refresh_timeline_channel(channel_id)
         if git_dir:
             delete_push_lockfiles(git_dir)
@@ -165,7 +166,7 @@ def pull_changes(repo: GitRepository, channel_id: str, ctx):
         if not pull(repo, channel_id, ctx):
             raise Exception("Pull Failed")
         
-        ap.vc_load_pending_changes(channel_id, True)
+        ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
 
     except Exception as e:
@@ -295,6 +296,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             # Queue async to give Anchorpoint a chance to update the timeline
             ap.get_context().run_async(delay, commit_auto_push, progress, ctx, path, channel_id)
         else:
+            ap.close_timeline_sidebar()
             ui.show_success("Commit succeeded")
         
     except Exception as e:
@@ -304,7 +306,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             ui.show_error("Commit Failed", str(e).splitlines()[0])
             raise e
     finally:
-        ap.vc_load_pending_changes(channel_id, True)
+        ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
         ap.UI().reload_tree()
         return True
