@@ -1,3 +1,4 @@
+import logging
 import os, platform
 import anchorpoint as ap
 
@@ -69,6 +70,8 @@ def run_git_command(args, cwd = None, **kwargs):
         p = subprocess.run(args, env=current_env, cwd=cwd, capture_output=True, **kwargs)
         out = p.stdout.decode("utf-8").strip()
         err = p.stderr.decode("utf-8").strip()
+        logging.debug(f"git command ({args}):\ncode: {p.returncode}\nout: {out}\nerr: {err}")
+
         if p.returncode != 0:
             raise Exception(f"Failed to run git command ({args}): \nerr: {err}")
         
