@@ -37,6 +37,8 @@ def show_push_failed(error: str, channel_id, ctx):
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
 
+    print("Could not push: " + error)
+
     if "Updates were rejected because the remote contains work that you do" in error or "failed to push some refs to" in error:
         ap.UI().show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
         return
