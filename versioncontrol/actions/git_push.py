@@ -42,7 +42,10 @@ def show_push_failed(error: str, channel_id, ctx):
     if "Updates were rejected because the remote contains work that you do" in error or "failed to push some refs to" in error:
         ap.UI().show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
         return
-    if "This repository is over its data quota" in error:
+    if "Size must be less than or equal to" in error:
+        d.add_text("A file is too large for GitHub.")
+        d.add_info("GitHub does enforce a maximium size limit per file for Git LFS. Learn more about it <a href=\"https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-git-large-file-storage\">here.</a>")
+    elif "This repository is over its data quota" in error:
         d.add_text("The GitHub LFS limit has been reached.")
         d.add_info("To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.")
     else:
