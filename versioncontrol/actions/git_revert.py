@@ -317,6 +317,12 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
         show_restore_files_dialog(path, ctx.selected_files, entry_id, channel_id)
         return True
     
+    if action_id == "gitcopycommitid":
+        import pyperclip as pc
+        pc.copy(entry_id)
+        ui.show_success("Commit ID copied to clipboard", description=entry_id)
+        return True
+    
     if action_id == "gitresetproject":
         try:
             ap.timeline_channel_action_processing(channel_id, "gitresetproject", "Resetting Project...")

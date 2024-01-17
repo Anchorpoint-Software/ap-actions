@@ -666,6 +666,14 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
                 reset.enabled = not repo.is_push_required()
                 details.actions.append(reset)
 
+            copy_id_entry = ap.TimelineChannelAction()
+            copy_id_entry.name = "Copy ID"
+            copy_id_entry.icon = aps.Icon(":/icons/copy.svg")
+            copy_id_entry.identifier = "gitcopycommitid"
+            copy_id_entry.type = ap.ActionButtonType.SecondaryText
+            copy_id_entry.tooltip = "Copies the commit ID to the clipboard"
+            details.actions.append(copy_id_entry)
+
             restore_entry = ap.TimelineChannelAction()
             restore_entry.name = "Restore"
             restore_entry.icon = aps.Icon(":/icons/restore.svg")
