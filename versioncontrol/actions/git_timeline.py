@@ -52,13 +52,15 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         from vc.apgit.repository import GitRepository
         from git_push import push_in_progress
 
-        progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=5000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
         info = ap.TimelineChannelVCInfo()
 
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return info
+
+        # Fixes a bug where the index of git needs refreshing which makes all other commands slow
+        repo.git_status(True)
 
         has_conflicts = repo.has_conflicts()
         is_merging = repo.is_rebasing() or repo.is_merging()

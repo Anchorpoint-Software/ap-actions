@@ -13,7 +13,8 @@ try:
     if utility.setup_git():
         try: 
             import git
-        except:
+        except Exception as e:
+            print(f"Error importing GitPython: {e}")
             raise Warning("GitPython is not installed")
     else: raise Warning("Git not installed")
 

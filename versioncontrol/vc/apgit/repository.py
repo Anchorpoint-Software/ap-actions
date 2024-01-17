@@ -884,8 +884,51 @@ class GitRepository(VCRepository):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
-    def git_status(self):
-        return self._run_git_status()
+    def git_status(self, show_progress = False):
+        process = None
+        try:
+            if not show_progress:
+                return self._run_git_status()
+
+            git_path = install_git.get_git_cmd_path()
+            args = [git_path, "status"]
+            kwargs = {}
+            if platform.system() == "Windows":
+                from subprocess import CREATE_NO_WINDOW
+                kwargs["creationflags"] = CREATE_NO_WINDOW
+
+            current_env = os.environ.copy()
+            current_env.update(GitRepository.get_git_environment())
+            process = subprocess.Popen(
+                                    args, 
+                                    env=current_env,
+                                    stdout=subprocess.PIPE, 
+                                    stderr=subprocess.STDOUT,
+                                    universal_newlines=True,
+                                    bufsize=1, 
+                                    cwd=self.get_root_path(),
+                                    **kwargs)
+
+            progress = None
+            for line in process.stdout:
+                if line is None:
+                    break
+
+                if "Refresh index" in line:
+                    if not progress:
+                        progress = ap.Progress("Refreshing Git Index", infinite=False)
+                    
+                    print(line)
+                    match = re.search(r'(\d+)/(\d+)', line)
+                    if match:
+                        from_value, to_value = map(int, match.groups())
+                        progress.report_progress(from_value / to_value if to_value != 0 else 0)
+                    
+        except Exception as e:
+            print(f"Failed to call git status: {str(e)}")
+        finally:
+            if process: 
+                process.wait()
     
     def git_log(self):
         if self.has_remote() and not self.is_unborn():
