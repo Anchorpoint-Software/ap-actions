@@ -190,6 +190,7 @@ def pull_async(channel_id: str, project_path, ctx):
         if pull(repo, channel_id, ctx):
             ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui.show_success("Update Successful")
+            ap.update_timeline_last_seen()
         
     except Exception as e:
         if not git_errors.handle_error(e):

@@ -155,6 +155,7 @@ def push_async(channel_id: str, ctx):
                 progress.set_text("Clearing Cache")
                 handle_git_autoprune(ctx, repo)
                 ui.show_success("Push Successful")
+                ap.update_timeline_last_seen()
     except Exception as e:
         if not git_errors.handle_error(e):
             show_push_failed(str(e), channel_id, ctx)
