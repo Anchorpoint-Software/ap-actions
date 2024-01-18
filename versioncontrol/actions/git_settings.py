@@ -21,7 +21,7 @@ class GitAccountSettings(ap.AnchorpointSettings):
         self.dialog.add_info("Show a system notification when new commits are available on the remote Git repository.")
         
         self.dialog.add_text("Clear Git file cache automatically:\t").add_dropdown("Files older than one week", ["Always", "Files older than one week", "Never"], var="autoprune")
-        self.dialog.add_info("Clears the git LFS cache after each push and pull to save disk space. This will never delete any data on the server or data that is not pushed to a Git remote.")
+        self.dialog.add_info("Clears the Git LFS cache after each push and pull to save disk space. This will never delete any data on the server or data that is not pushed to a Git remote.")
         
         self.dialog.load_settings(self.get_settings())
 
@@ -270,7 +270,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_text("<b>Git Commands</b>")
         
         self.dialog.add_button("Open Git Console / Terminal", callback=open_terminal_pressed, primary=False)
-        self.dialog.add_info("Opens the Terminal / Command line with a set up git environment.<br>Can be used to run git commands on this computer.")
+        self.dialog.add_info("Opens the Terminal / Command line with a set up Git environment.<br>Can be used to run Git commands on this computer.")
 
         self.dialog.add_button("Clear Cache", var="prune_lfs", callback=lambda d: prune_pressed(d, ctx), primary=False, enabled=self.repo_available)
         self.dialog.add_info("Removes local files from the Git LFS cache that are old. This will never delete <br>any data on the server or data that is not pushed to a Git remote.")
