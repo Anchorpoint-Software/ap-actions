@@ -1547,6 +1547,7 @@ class GitRepository(VCRepository):
         def disable_sparse():
             self._check_sparse_checkout_lock()
             try:
+                sparse_folder_list = list(self.get_sparse_checkout_folder_set())
                 branch = self._get_current_branch()
                 remote = self._get_default_remote(branch)
                 if remote is None:
@@ -1557,7 +1558,7 @@ class GitRepository(VCRepository):
                 current_env.update(GitRepository.get_git_environment(remote_url))
                 progress_wrapper = None if not progress else _InternalProgress(progress)
                 if self._has_upstream():
-                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
+                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=sparse_folder_list, exclude_files=True)
                 if progress_wrapper and progress_wrapper.canceled(): return True
                 self.repo.git.sparse_checkout("disable")
 
