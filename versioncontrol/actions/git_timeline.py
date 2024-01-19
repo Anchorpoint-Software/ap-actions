@@ -97,7 +97,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.type = ap.ActionButtonType.Primary
             conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your shelved files"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
-            conflicts.enabled = False # Enable after pending changes are loaded
+            conflicts.enabled = True
             info.actions.append(conflicts)
 
             if is_merging:
@@ -617,8 +617,6 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
         if current_dir in sys.path: sys.path.remove(current_dir)
-
-        ap.enable_timeline_channel_action(channel_id, "gitresolveconflicts")
 
 def run_func_wrapper(func, callback, *args):
     res = func(*args)
