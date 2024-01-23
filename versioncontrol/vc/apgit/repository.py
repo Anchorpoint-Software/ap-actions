@@ -318,7 +318,7 @@ class GitRepository(VCRepository):
         if remote is None: return UpdateState.NO_REMOTE
         remote_url = self._get_remote_url(remote)
 
-        kwargs = {}
+        kwargs = {"allow-unrelated-histories": True}
         if rebase:
             kwargs["rebase"] = True
         else:
