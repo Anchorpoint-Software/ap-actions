@@ -71,6 +71,29 @@ def handle_files_to_pull(repo, ctx):
     make_readwrite(changes.deleted_files)
     make_readwrite(changes.new_files)
 
+def handle_git_autoprune(ctx, repo):
+    from git_settings import GitAccountSettings
+
+    git_settings = GitAccountSettings(ctx)
+    prune_days = git_settings.auto_prune_days()
+    if prune_days < 0:
+        return
+    
+    prune_kwargs = {}
+    if prune_days > 0:
+        prune_kwargs["recent_commits_days"] = prune_days
+    elif prune_days == 0:
+        prune_kwargs["force"] = True
+    
+    try:
+        lfs_version = repo.get_lfs_version()
+        if not lfs_version.startswith("ap_"):
+            print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
+            return
+        count = repo.prune_lfs(**prune_kwargs)
+        print(f"Automatically pruned {count} LFS objects after pull.")
+    except Exception as e:
+        print(f"An error occurred while pruning LFS objects: {e}")
 
 def pull(repo: GitRepository, channel_id: str, ctx):
     lock_disabler = ap.LockDisabler()
@@ -151,6 +174,8 @@ def pull(repo: GitRepository, channel_id: str, ctx):
             repo.pop_stash()        
     
         update_pulled_commits()
+        progress.set_text("Clearing Cache")
+        handle_git_autoprune(ctx, repo)
 
     return True
 
@@ -165,6 +190,7 @@ def pull_async(channel_id: str, project_path, ctx):
         if pull(repo, channel_id, ctx):
             ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui.show_success("Update Successful")
+            ap.update_timeline_last_seen()
         
     except Exception as e:
         if not git_errors.handle_error(e):
@@ -175,9 +201,9 @@ def pull_async(channel_id: str, project_path, ctx):
                 else:
                     ui.show_info("Conflicts detected", "Please resolve your conflicts")    
             else:
-                ui.show_error("Failed to update Git Repository", "Please try again")    
+                ui.show_info("Failed to update Git Repository", "Please try again")    
                    
-    ap.vc_load_pending_changes(channel_id, True)
+    ap.vc_load_pending_changes(channel_id)
     ap.refresh_timeline_channel(channel_id)
 
 def resolve_conflicts(channel_id):

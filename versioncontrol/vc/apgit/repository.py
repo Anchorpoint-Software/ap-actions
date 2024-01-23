@@ -166,12 +166,18 @@ class GitRepository(VCRepository):
         try:
             _set_username()
         except Exception as e:
-            self._set_safe_directory(path)
+            self.set_safe_directory(path)
             _set_username()
 
-    def _set_safe_directory(self, path):
+    def set_safe_directory(self, path):
+        path = path.replace(os.sep, '/')
+        if platform.system() == 'Windows' and path.startswith('//'):
+            # git needs prefix for UNC paths and uppercase resolve on windows
+            from pathlib import Path
+            path = '%(prefix)/' + str(Path(path).resolve()).replace(os.sep, '/')
         # set safe.directory to allow git on 'unsafe' paths such as FAT32 drives
-        self.repo.git.config("--global", "--add", "safe.directory", path.replace(os.sep, '/'))
+        self.repo.git.config("--global", "--add", "safe.directory", path)
+        print("Added Safe Directory")
 
     @classmethod
     def create(cls, path: str, username: str, email: str):
@@ -324,9 +330,26 @@ class GitRepository(VCRepository):
             current_env = os.environ.copy()
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
-            if not self.is_sparse_checkout_enabled():
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
-                if progress_wrapper.canceled(): return UpdateState.CANCEL
+
+            folders_to_fetch = None
+            if self.is_sparse_checkout_enabled():
+                non_sparse_folders = self.get_sparse_checkout_folder_set()
+                if len(non_sparse_folders) > 0:
+                    folders_to_fetch = non_sparse_folders
+
+            try:
+                lfs_version = self.get_lfs_version()
+                if lfs_version.startswith("ap_"):
+                    branches = ["@{u}",f"^{branch}"]
+                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, branches=branches)
+                else:
+                    print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
+                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch)
+            except Exception as e:
+                print(f"Failed to fetch LFS files, continuing: {str(e)}")
+                
+            if progress_wrapper.canceled(): return UpdateState.CANCEL
+            
             for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
                     state = UpdateState.ERROR
@@ -861,8 +884,51 @@ class GitRepository(VCRepository):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
-    def git_status(self):
-        return self._run_git_status()
+    def git_status(self, show_progress = False):
+        process = None
+        try:
+            if not show_progress:
+                return self._run_git_status()
+
+            git_path = install_git.get_git_cmd_path()
+            args = [git_path, "status"]
+            kwargs = {}
+            if platform.system() == "Windows":
+                from subprocess import CREATE_NO_WINDOW
+                kwargs["creationflags"] = CREATE_NO_WINDOW
+
+            current_env = os.environ.copy()
+            current_env.update(GitRepository.get_git_environment())
+            process = subprocess.Popen(
+                                    args, 
+                                    env=current_env,
+                                    stdout=subprocess.PIPE, 
+                                    stderr=subprocess.STDOUT,
+                                    universal_newlines=True,
+                                    bufsize=1, 
+                                    cwd=self.get_root_path(),
+                                    **kwargs)
+
+            progress = None
+            for line in process.stdout:
+                if line is None:
+                    break
+
+                if "Refresh index" in line:
+                    if not progress:
+                        progress = ap.Progress("Refreshing Git Index", infinite=False)
+                    
+                    print(line)
+                    match = re.search(r'(\d+)/(\d+)', line)
+                    if match:
+                        from_value, to_value = map(int, match.groups())
+                        progress.report_progress(from_value / to_value if to_value != 0 else 0)
+                    
+        except Exception as e:
+            print(f"Failed to call git status: {str(e)}")
+        finally:
+            if process: 
+                process.wait()
     
     def git_log(self):
         if self.has_remote() and not self.is_unborn():
@@ -888,7 +954,7 @@ class GitRepository(VCRepository):
             import anchorpoint
             exception_string = str(e)
             print(f"Failed to call git add (no progress): {exception_string}")
-            if "no space left on device" in exception_string:
+            if "no space left on device" in exception_string or "not enough space" in exception_string:
                 anchorpoint.UI().show_error("Could not Commit", "No space left on device", duration=10000)
             if "fsync error on '.git/objects/" in exception_string:
                 anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
@@ -920,15 +986,21 @@ class GitRepository(VCRepository):
             if proc.returncode != 0:
                 print(f"Failed to call git add: {proc.returncode}")
                 self._run_git_status()
-                self._add_files_no_progress(*args, **kwargs)
+                try:
+                    self._add_files_no_progress(*args, **kwargs)
+                except Exception as e:
+                    raise e
                 proc = None
 
-        except subprocess.CalledProcessError as e:
-            raise Exception(f"Failed to call git add: {e.cmd} {e.output}")
+        except Exception as e:
+            raise e
             
         finally:
             if proc:
-                finalize_process(proc)
+                try:
+                    finalize_process(proc)
+                except:
+                    pass
 
     def stage_all_files(self):
         self._check_index_lock()
@@ -1391,7 +1463,7 @@ class GitRepository(VCRepository):
 
                 folder = '/'.join(change_path.split('/')[:-1]) + '/'
                 if any(sparse_folder == folder for sparse_folder in sparse_checkout_folders):
-                    continue;
+                    continue
                 potential_sparse_checkout_folders.add(folder)
 
         process_changes(changes.new_files)
@@ -1425,7 +1497,7 @@ class GitRepository(VCRepository):
             if "this worktree is not sparse" in message:
                 raise Exception("This worktree is not sparse")
             raise e
-        
+
     def is_sparse_checkout_enabled(self):
         self._check_sparse_checkout_lock()
         try:
@@ -1475,6 +1547,7 @@ class GitRepository(VCRepository):
         def disable_sparse():
             self._check_sparse_checkout_lock()
             try:
+                sparse_folder_list = list(self.get_sparse_checkout_folder_set())
                 branch = self._get_current_branch()
                 remote = self._get_default_remote(branch)
                 if remote is None:
@@ -1485,7 +1558,7 @@ class GitRepository(VCRepository):
                 current_env.update(GitRepository.get_git_environment(remote_url))
                 progress_wrapper = None if not progress else _InternalProgress(progress)
                 if self._has_upstream():
-                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env)
+                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=sparse_folder_list, exclude_files=True)
                 if progress_wrapper and progress_wrapper.canceled(): return True
                 self.repo.git.sparse_checkout("disable")
 
@@ -1501,7 +1574,7 @@ class GitRepository(VCRepository):
             self._check_index_lock()
             folder_set = self.get_sparse_checkout_folder_set()
             if relative_folder_path in folder_set:
-                return False;
+                return False
             folder_set.add(relative_folder_path)
             new_sparse_checkout_folders = set()
             new_sparse_checkout_folders.add(relative_folder_path)
@@ -1587,7 +1660,7 @@ class GitRepository(VCRepository):
                     raise e
             try:
                 if len(sparse_root_set) == 1 and ".ap" in sparse_root_set:
-                    raise(Exception("Cannot unload root when it is the only sparse root"));
+                    raise(Exception("Cannot unload root when it is the only sparse root"))
                 self.repo.git.sparse_checkout("set", "--sparse-index", ".ap")
             except Exception as e:
                 raise e
@@ -1862,7 +1935,12 @@ class GitRepository(VCRepository):
         progress_wrapper = None if not progress else _InternalProgress(progress)
         lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches, paths)
 
-        pass
+    def get_all_files(self, ref: str = None) -> list[str]:
+        try:
+            return self.repo.git.ls_files("-z", ref).split('\x00')
+        except Exception as e:
+            print(f"error in get_all_files: {str(e)}")
+            return []
 
     def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
         if paths != None and len(paths) == 0:
@@ -1885,10 +1963,26 @@ class GitRepository(VCRepository):
             print(f"error in get_lfs_filehash: {str(e)}")
             return {}
         
+    def get_lfs_version(self):
+        try:
+            return self.repo.git.lfs("version")
+        except Exception as e:
+            print(f"error in get_lfs_version: {str(e)}")
+            return ""
 
-    def prune_lfs(self):
-        # output = self.repo.git.lfs("prune", "--force", "--verify-remote")
-        output = self.repo.git.lfs("prune", "--verify-remote")
+    def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
+        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]
+        if force:
+            args.append("--force")
+        else:
+            # prune worktree and recent commits but no recent refs
+            args.append("--worktree")
+            args.insert(1, f"lfs.fetchrecentrefsdays={recent_refs_days}")
+            args.insert(1, "-c")
+            args.insert(1, f"lfs.fetchrecentcommitsdays={recent_commits_days}")
+            args.insert(1, "-c")
+
+        output = install_git.run_git_command(args, cwd=self.get_root_path())
 
         if "Deleting objects: 100%" not in output: return 0
 

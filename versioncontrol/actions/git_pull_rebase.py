@@ -77,7 +77,7 @@ def pull_async(channel_id: str, project_path):
             if repo.has_pending_changes(True):
                 ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
             else:
-                ui.show_error("Failed to update Git Repository", "Please try again")    
+                ui.show_info("Failed to update Git Repository", "Please try again")    
                 raise e
             
         

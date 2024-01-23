@@ -101,17 +101,19 @@ def add_git_ignore(repo, context, project_path, ignore_value = None):
         add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
         add_additional_scripts(context.yaml_dir, project_path, ignore_value)
 
-def _install_git_async(dialog, git_helper):
-    try:
-        git_helper.install_git()
-        ap.reload_create_project_dialog()
-    finally:
-        dialog.set_processing("install", False)
+def delete_folder_and_retry_async(folder_to_delete, project_path):
+    import shutil
+    if os.path.exists(folder_to_delete):
+        shutil.rmtree(folder_to_delete)
+    
+    # Don't set remote URL as the remote has been deleted after a failed project creation when used with an integration
+    ap.show_create_project_dialog(project_path)
 
-def install_git_async(dialog, ctx, path, git_helper):
-    dialog.set_processing("install", True, "Installing Git")
-    ctx.run_async(_install_git_async, dialog, git_helper)
-
+def delete_project_and_retry(d, ctx, project_path):
+    d.close()
+    folder_to_delete = os.path.join(project_path, ".git")
+    ctx.run_async(delete_folder_and_retry_async, folder_to_delete, project_path)
+    
 try:
     class GitProjectType(ap.ProjectType):
         def __init__(self, path: str, remote: str, tags, ctx: ap.Context, integrations: ap.IntegrationList):
@@ -125,22 +127,12 @@ try:
             sys.path.insert(0, script_dir)
 
             import git_repository_helper as githelper
-            import vc.apgit_utility.install_git as install_git
             if script_dir in sys.path: sys.path.remove(script_dir)
 
-            self.git_installed = install_git.is_git_installed()
             self.dialog = ap.Dialog()
             self.git = None
             self.githelper = githelper
             self.setup_integration_name = None
-
-            if not self.git_installed:
-                self.dialog.add_text("To use Anchorpoint with Git repositories you have to install it")
-                self.dialog.add_info("When installing Git you are accepting the <a href=\"https://raw.githubusercontent.com/git-for-windows/git/main/COPYING\">license</a> of the owner.")
-                self.dialog.add_button("Install", var="install", callback = lambda d: install_git_async(d, self.context, self.path, install_git))
-                if "set_valid" in dir(ap.Dialog):
-                    self.dialog.set_valid(False)
-                return
 
             try:
                 import vc.apgit.repository as git
@@ -402,6 +394,16 @@ try:
 
             self._add_git_ignore(repo, git_ignore, project_path)
             return repo
+
+        def _handle_project_overwrite(self, project_path, user_url):
+            ap.close_create_project_dialog()
+            dialog = ap.Dialog()
+            dialog.title = "Existing Git Repository detected"
+            dialog.icon = self.context.icon
+            dialog.add_text("Anchorpoint has found another Git repository that<br>needs to be removed before you can create a new project.")
+            dialog.add_info("This will <b>delete</b> all your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can also remove it manually by deleting the hidden .git folder<br>in your project.")
+            dialog.add_button("Remove Existing Git Repository", callback=lambda d: delete_project_and_retry(d, self.context, project_path), primary=False).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+            dialog.show()
         
         def _open_repo(self, project_path, project, git_ignore, user_url):
             repo = self.git.GitRepository.load(project_path)
@@ -413,7 +415,7 @@ try:
                 url = user_url
 
             if user_url != None and user_url != url:
-                ap.UI().show_error("Could not setup project", f"You have selected an existing Git repository but the remote URL does not match {url}", duration=10000)
+                self._handle_project_overwrite(project_path, user_url)
                 sys.exit(0)
 
             repo.set_username(self.context.username, self.context.email, project_path)

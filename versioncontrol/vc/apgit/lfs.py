@@ -42,7 +42,7 @@ def _run_lfs_command(path: str, args, progress: RemoteProgress, env):
     if process.returncode != 0:
         raise RuntimeError("Git LFS error: " + str(process.stderr.read()))
 
-def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: list[str] = None, files: list[str] = None):
+def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: list[str] = None, files: list[str] = None, exclude_files: bool = False):
     args = [get_git_cmd_path(), "lfs", "fetch", remote]
     if not branches:
         args.append("@{u}")
@@ -54,7 +54,7 @@ def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: 
         batch = []
         batch_size = 0
         for file in files:
-            if batch_size + len(file) + 1 > 6000:
+            if batch_size + len(file) + 1 > 7500: # max characters per command are 8192, but we need some space for the command itself
                 file_batches.append(batch)
                 batch = []
                 batch_size = 0
@@ -65,7 +65,7 @@ def lfs_fetch(path: str, remote: str, progress: RemoteProgress, env,  branches: 
 
         for file_batch in file_batches:
             batch_args = args.copy()
-            batch_args.append("-I")
+            batch_args.append("-I" if not exclude_files else "-X")
             batch_args.append(",".join(file_batch))
             _run_lfs_command(path, batch_args, progress, env)
     else:

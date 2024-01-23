@@ -295,6 +295,34 @@ class AzureDevOpsClient:
         raise Exception("Project could not be found")
     
     def _get_auto_adjusted_project_name(self, name: str):
+        # List of system reserved names
+        reserved_names = ["AUX", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10",
+                        "CON", "DefaultCollection", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8",
+                        "LPT9", "NUL", "PRN", "SERVER", "SignalR", "Web", "WEB"]
+
+        # Replace reserved names with underscore
+        for reserved_name in reserved_names:
+            if reserved_name in name:
+                name = name.replace(reserved_name, '_')
+        
+        # Replace invalid characters with underscore
+        pattern = re.compile(r"[\\/:*?\"<>|;#$*{},+=\[\]]")
+        name = pattern.sub('_', name)
+        
+        # Remove leading and trailing underscores and dots
+        name = name.strip('_')
+        name = name.strip('.')
+        
+        # Check if name is too long
+        if len(name) > 64:
+            name = name[:64]
+
+        if len(name) == 0:
+            raise ValueError(f"project name is empty after applying restriction rules.")
+
+        return name
+    
+    def _get_auto_incremented_project_name(self, name: str):
         pattern = re.compile(r"_(\d{2})$")
         match = pattern.search(name)
         if match:
@@ -306,8 +334,9 @@ class AzureDevOpsClient:
         return name + "_01"
 
     def create_project_and_repository(self, organization: str, name: str):
+        adjusted_name = self._get_auto_adjusted_project_name(name)
         body = {
-            "name": name,
+            "name": adjusted_name,
             "visibility": "private",
             "capabilities": {
                 "versioncontrol": {
@@ -322,7 +351,7 @@ class AzureDevOpsClient:
         response = self._request_with_refresh("POST", f"https://dev.azure.com/{organization}/_apis/projects?api-version=7.0", json=body)
         if not response:
             if "project already exists" in response.text:
-                return self.create_project_and_repository(organization, self._get_auto_adjusted_project_name(name))
+                return self.create_project_and_repository(organization, self._get_auto_incremented_project_name(adjusted_name))
             raise Exception("Could not create project: ", response.text)
 
         operations_json = response.json()
@@ -346,9 +375,9 @@ class AzureDevOpsClient:
                     time.sleep(3)
                     repos = self.get_repositories(organization)
                     for repo in repos:
-                        if repo.display_name == name:
+                        if repo.display_name == adjusted_name:
                             return repo
-                    return None
+                    raise Exception("Could not create project", "Repository could not be found in list of all repositories for this organization")
                 
     def _check_user_entitlements_result(self, response):
         if not response:

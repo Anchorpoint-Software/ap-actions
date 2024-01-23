@@ -44,6 +44,7 @@ def parse_conflicts(repo_dir: str, conflicts, changes: dict[str,ap.VCPendingChan
             changes[conflict] = conflict_change
 
 def on_load_timeline_channel_info(channel_id: str, ctx):
+    path = None
     try:
         import sys
         sys.path.insert(0, script_dir)
@@ -51,13 +52,15 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
         from vc.apgit.repository import GitRepository
         from git_push import push_in_progress
 
-        progress = ap.Progress("Git is optimizing things", "This can take a while", show_loading_screen=True, delay=5000)
         ap.timeline_channel_action_processing(channel_id, "gitrefresh", "Refreshing Git timeline...")
         info = ap.TimelineChannelVCInfo()
 
         path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return info
+
+        # Fixes a bug where the index of git needs refreshing which makes all other commands slow
+        repo.git_status(True)
 
         has_conflicts = repo.has_conflicts()
         is_merging = repo.is_rebasing() or repo.is_merging()
@@ -94,6 +97,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             conflicts.type = ap.ActionButtonType.Primary
             conflicts.tooltip = "Resolve conflicts from other commits, branches, or from your shelved files"
             conflicts.icon = aps.Icon(":/icons/flash.svg")
+            conflicts.enabled = True
             info.actions.append(conflicts)
 
             if is_merging:
@@ -115,17 +119,23 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
 
             if b.name == current_branch_name:
                 info.current_branch = branch
-
+                
         if "has_stash" in dir(info):
             stash = repo.get_branch_stash()
             info.has_stash = stash is not None
             if info.has_stash:
-                info.stashed_file_count = repo.get_stash_change_count(stash)
+                try:
+                    info.stashed_file_count = repo.get_stash_change_count(stash)
+                except Exception as e:
+                    print(f"Could not get stash change count: {e}")
+                    print(f"Git Status {repo.git_status()}")
+                    info.stashed_file_count = 0
+
         
         return info
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print (f"on_load_timeline_channel_info exception: {str(e)}")
         return None
     finally:
@@ -306,6 +316,7 @@ def map_commit(repo, commit):
 
 def on_load_first_timeline_channel_entry(channel_id: str, ctx):
     import sys
+    path = None
     try:
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
@@ -329,7 +340,7 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print (f"on_load_first_timeline_channel_entry exception: {str(e)}")
         return None
     finally:
@@ -533,6 +544,7 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
 
 
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
+    path = None
     try:
         import sys, os
         sys.path.insert(0, current_dir)
@@ -599,7 +611,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         return info
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print (f"on_load_timeline_channel_pending_changes exception: {str(e)}")
         return None
     finally:
@@ -651,6 +663,14 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
                 reset.tooltip = "Resets the entire project to the state of this commit" if not repo.is_push_required() else "Cannot reset project, push your changes first"
                 reset.enabled = not repo.is_push_required()
                 details.actions.append(reset)
+
+            copy_id_entry = ap.TimelineChannelAction()
+            copy_id_entry.name = "Copy ID"
+            copy_id_entry.icon = aps.Icon(":/icons/copy.svg")
+            copy_id_entry.identifier = "gitcopycommitid"
+            copy_id_entry.type = ap.ActionButtonType.SecondaryText
+            copy_id_entry.tooltip = "Copies the commit ID to the clipboard"
+            details.actions.append(copy_id_entry)
 
             restore_entry = ap.TimelineChannelAction()
             restore_entry.name = "Restore"
@@ -730,6 +750,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
     sys.path.insert(0, script_dir)
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
     lock_disabler = ap.LockDisabler()
+    path = None
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
@@ -757,7 +778,7 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
             ap.UI().reload_tree()
         except Exception as e:
             import git_errors
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 ap.UI().show_info("Cannot switch branch", "You have changes that would be overwritten, commit them first.")
             return
 
@@ -772,6 +793,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
     import git_repository_helper as helper
     sys.path.insert(0, script_dir)
     lock_disabler = ap.LockDisabler()
+    path = None
     try:
         from vc.apgit.utility import get_repo_path, is_executable_running
         from vc.apgit.repository import GitRepository
@@ -786,16 +808,9 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         if repo.get_current_branch_name() == branch:
             return
         
-        branch = repo.get_upstream_branch(branch)
+        upstream = repo.get_upstream_branch(branch)
+
         ui = ap.UI()
-
-        # if platform.system() == "Windows":
-        #     if is_executable_running(["unrealeditor.exe"]):
-        #         lfsExtensions = LFSExtensionTracker(repo)
-        #         if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
-        #             ui.show_info("Cannot merge branch", "Unreal Engine prevents the merging of branches. Please close Unreal Engine and try again", duration = 10000)
-        #             return
-
         if repo.has_pending_changes(True):
             ui.show_info("Cannot merge branch", "You have changes that would be overwritten, commit them first.")
             return
@@ -806,8 +821,24 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                 state = repo.fetch(progress=helper.FetchProgress(progress))
                 if state != UpdateState.OK:
                     print("failed to fetch in merge")
-                if not repo.is_sparse_checkout_enabled():
-                    repo.fetch_lfs_files([branch], progress=helper.FetchProgress(progress))
+
+                folders_to_fetch = None
+                if repo.is_sparse_checkout_enabled():
+                    non_sparse_folders = repo.get_sparse_checkout_folder_set()
+                    if len(non_sparse_folders) > 0:
+                        folders_to_fetch = non_sparse_folders
+                    
+                lfs_version = repo.get_lfs_version()
+                
+                if lfs_version.startswith("ap_"):
+                    branches = [upstream, f"^{branch}"]
+                else:
+                    branches = [upstream]
+
+                try:
+                    repo.fetch_lfs_files(branches = branches, paths = folders_to_fetch, progress=helper.FetchProgress(progress))
+                except Exception as e:
+                    print("failed to fetch LFS files in merge, continuing", str(e))
             except Exception as e:
                 print("failed to fetch in merge", str(e))
                 raise e
@@ -815,7 +846,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
         
         try:
-            if not repo.merge_branch(branch, progress=helper.BranchProgress(progress)):
+            if not repo.merge_branch(upstream, progress=helper.BranchProgress(progress)):
                 ui.show_info("Merge not needed", "Branch is already up to date.")
             else:
                 lock_disabler.enable_locking()
@@ -823,7 +854,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
 
         except Exception as e:
             import git_errors
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 if "conflict" in str(e):
                     ui.show_info("Conflicts detected", "Please resolve your conflicts.")  
                     ap.vc_load_pending_changes(channel_id, True)  
@@ -891,6 +922,7 @@ def refresh_async(channel_id: str, project_path):
 
     import sys, os
     sys.path.insert(0, script_dir)
+    git_dir = None
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -913,6 +945,8 @@ def refresh_async(channel_id: str, project_path):
             delete_lockfiles(git_dir)
 
     except Exception as e:
+        import git_errors
+        git_errors.handle_error(e, git_dir)
         if "didn't exist" not in str(e):
             print("refresh_async exception: " + str(e))
         pass
@@ -967,6 +1001,7 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
     if channel_id != "Git": return None
     from git_lfs_helper import file_is_binary
     from git_load_file import get_lfs_cached_file
+    path = None
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -1041,7 +1076,7 @@ def on_vc_get_changes_info(channel_id: str, entry_id: Optional[str], ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, path)
         print("on_vc_get_changes_info exception")
         return None
     

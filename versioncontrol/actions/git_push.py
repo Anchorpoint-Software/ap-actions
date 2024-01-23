@@ -37,10 +37,15 @@ def show_push_failed(error: str, channel_id, ctx):
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
 
+    print("Could not push: " + error)
+
     if "Updates were rejected because the remote contains work that you do" in error or "failed to push some refs to" in error:
         ap.UI().show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
         return
-    if "This repository is over its data quota" in error:
+    if "Size must be less than or equal to" in error:
+        d.add_text("A file is too large for GitHub.")
+        d.add_info("GitHub does enforce a maximium size limit per file for Git LFS. Learn more about it <a href=\"https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-git-large-file-storage\">here.</a>")
+    elif "This repository is over its data quota" in error:
         d.add_text("The GitHub LFS limit has been reached.")
         d.add_info("To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.")
     else:
@@ -57,6 +62,30 @@ def show_push_failed(error: str, channel_id, ctx):
 
     d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
     d.show()
+
+def handle_git_autoprune(ctx, repo):
+    from git_settings import GitAccountSettings
+
+    git_settings = GitAccountSettings(ctx)
+    prune_days = git_settings.auto_prune_days()
+    if prune_days < 0:
+        return
+    
+    prune_kwargs = {}
+    if prune_days > 0:
+        prune_kwargs["recent_commits_days"] = prune_days
+    elif prune_days == 0:
+        prune_kwargs["force"] = True
+    
+    try:
+        lfs_version = repo.get_lfs_version()
+        if not lfs_version.startswith("ap_"):
+            print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
+            return
+        count = repo.prune_lfs(**prune_kwargs)
+        print(f"Automatically pruned {count} LFS objects after push.")
+    except Exception as e:
+        print(f"An error occurred while pruning LFS objects: {e}")
 
 def handle_git_autolock(ctx, repo):
     branch = repo.get_current_branch_name()
@@ -122,7 +151,11 @@ def push_async(channel_id: str, ctx):
                 show_push_failed("", channel_id, ctx)    
             else:
                 handle_git_autolock(ctx, repo)
+
+                progress.set_text("Clearing Cache")
+                handle_git_autoprune(ctx, repo)
                 ui.show_success("Push Successful")
+                ap.update_timeline_last_seen()
     except Exception as e:
         if not git_errors.handle_error(e):
             show_push_failed(str(e), channel_id, ctx)

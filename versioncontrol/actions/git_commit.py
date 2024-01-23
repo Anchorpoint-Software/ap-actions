@@ -15,6 +15,35 @@ import git_repository_helper as helper
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)
 
+def update_gitignore_settings(dialog: ap.Dialog, value, path):
+    settings = aps.Settings("gitignore_check")
+    settings.set(path, value) 
+    settings.store()
+
+def check_missing_gitignore(repo, is_game_project, has_gitignore):
+    if has_gitignore or not is_game_project: return True
+
+    path = repo.get_root_path()
+    settings = aps.Settings("gitignore_check")
+    if settings.get(path, False):
+        return True
+    
+    all_files = repo.get_all_files()
+    for file in all_files:
+        if file.endswith(".gitignore"):
+            return True
+
+    d = ap.Dialog()
+    d.title = "Missing .gitignore file"
+    d.icon = ":/icons/versioncontrol.svg"
+    d.add_text("Anchorpoint could not find a <b>.gitignore</b> file in your project.<br>Because of this, too many files would be committed")
+    d.add_info("Add a <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/1-Git-basics/?highlight#gitignore'>.gitignore</a> file and commit again.")
+    d.add_checkbox(callback=lambda d,v: update_gitignore_settings(d,v,path), var="neveraskagain", text="Disable this check")
+    d.add_button("Close", callback=lambda d: d.close())
+    d.show()
+
+    return False
+
 def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_files = True):
     def lfs_progress_callback(current, max):
         if progress.canceled:
@@ -23,12 +52,29 @@ def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_f
             progress.report_progress(current / max)
         return True
 
+    has_gitignore = False
+    is_game_project = False
+    gameextensions_to_check = {".umap", ".uasset", ".uproject", ".unity", ".unityproj"}
+
     to_stage = []
     for change in changes:
+        if ".gitignore" in change.path:
+            has_gitignore = True
+        
+        split = os.path.splitext(change.path)
+        if len(split) > 1:
+            ext = split[1].lower()
+            if ext in gameextensions_to_check:
+                is_game_project = True
+
         if change.selected:
             to_stage.append(change.path)
 
     if len(to_stage) == 0:
+        return
+
+    if not check_missing_gitignore(repo, is_game_project, has_gitignore):
+        print("missing gitignore")
         return
 
     if track_binary_files:
@@ -72,13 +118,16 @@ def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_f
         else:
             raise e
 
-def push_changes(ctx, repo: GitRepository, channel_id: str):
+def push_changes(ctx, repo_path, channel_id: str):
     import sys
     script_dir = os.path.dirname(__file__)
     sys.path.insert(0, script_dir)
-    from git_push import handle_git_autolock as push_handle_git_autolock, push_in_progress, get_push_lockfile, delete_push_lockfiles
+    from git_push import handle_git_autolock as push_handle_git_autolock, push_in_progress, get_push_lockfile, delete_push_lockfiles, handle_git_autoprune
     if script_dir in sys.path:
         sys.path.remove(script_dir)
+
+    repo = GitRepository.load(repo_path)
+    if not repo: return
 
     git_dir = repo.get_git_dir()
     if push_in_progress(git_dir):
@@ -95,6 +144,8 @@ def push_changes(ctx, repo: GitRepository, channel_id: str):
                 show_push_failed("", channel_id, repo.get_root_path())    
             else:
                 push_handle_git_autolock(ctx, repo)
+                progress.set_text("Clearing Cache")
+                handle_git_autoprune(ctx, repo)
                 ap.UI().show_success("Push Successful")
     except Exception as e:
         if not git_errors.handle_error(e):
@@ -102,6 +153,7 @@ def push_changes(ctx, repo: GitRepository, channel_id: str):
     finally:
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
         ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
+        ap.close_timeline_sidebar()
         ap.refresh_timeline_channel(channel_id)
         if git_dir:
             delete_push_lockfiles(git_dir)
@@ -114,7 +166,7 @@ def pull_changes(repo: GitRepository, channel_id: str, ctx):
         if not pull(repo, channel_id, ctx):
             raise Exception("Pull Failed")
         
-        ap.vc_load_pending_changes(channel_id, True)
+        ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
 
     except Exception as e:
@@ -138,7 +190,10 @@ def delay(func, progress, *args, **kwargs):
     if progress: progress.finish()
     func(*args, **kwargs)
 
-def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
+def commit_auto_push(ctx, repo_path, channel_id: str):
+    repo = GitRepository.load(repo_path)
+    if not repo: return
+
     ui = ap.UI()
     pull_required, canceled = repo_needs_pull(repo)
     if canceled:
@@ -147,7 +202,7 @@ def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
         # Queue async to give Anchorpoint a chance to update the timeline
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
         ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
-        ap.get_context().run_async(delay, push_changes, None, ctx, repo, channel_id)
+        ap.get_context().run_async(delay, push_changes, None, ctx, repo_path, channel_id)
     else:
         try:
             pull_changes(repo, channel_id, ctx)
@@ -160,7 +215,7 @@ def commit_auto_push(ctx, repo: GitRepository, channel_id: str):
         # Queue async to give Anchorpoint a chance to update the timeline
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
         ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
-        ap.get_context().run_async(delay, push_changes, None, ctx, repo, channel_id)
+        ap.get_context().run_async(delay, push_changes, None, ctx, repo_path, channel_id)
 
 def handle_git_autolock(repo, ctx, changes):
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
@@ -189,7 +244,10 @@ def handle_git_autolock(repo, ctx, changes):
     process_changes(changes.deleted_files)
     process_changes(changes.renamed_files)
     
-    ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
+    try:
+        ap.update_locks(ctx.workspace_id, ctx.project_id, patched_locks)
+    except Exception as e:
+        print(f"Failed to update locks: {str(e)}")
 
 def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
     import git_lfs_helper as lfs
@@ -236,8 +294,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
         if auto_push and not push_in_progress(repo.get_git_dir()):
             # Queue async to give Anchorpoint a chance to update the timeline
-            ap.get_context().run_async(delay, commit_auto_push, progress, ctx, repo, channel_id)
+            ap.get_context().run_async(delay, commit_auto_push, progress, ctx, path, channel_id)
         else:
+            ap.close_timeline_sidebar()
             ui.show_success("Commit succeeded")
         
     except Exception as e:
@@ -247,7 +306,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             ui.show_error("Commit Failed", str(e).splitlines()[0])
             raise e
     finally:
-        ap.vc_load_pending_changes(channel_id, True)
+        ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
         ap.UI().reload_tree()
         return True
