@@ -106,13 +106,17 @@ def delete_folder_and_retry_async(folder_to_delete, project_path):
     if os.path.exists(folder_to_delete):
         shutil.rmtree(folder_to_delete)
     
-    # Don't set remote URL as the remote has been deleted after a failed project creation when used with an integration
-    ap.show_create_project_dialog(project_path)
-
-def delete_project_and_retry(d, ctx, project_path):
+    
+def open_folder_and_retry(d, ctx, project_path):
     d.close()
-    folder_to_delete = os.path.join(project_path, ".git")
-    ctx.run_async(delete_folder_and_retry_async, folder_to_delete, project_path)
+    folder_to_open = os.path.join(project_path, ".git")
+    
+    if platform.system() == "Darwin":
+        os.system(f"open {folder_to_open}")
+    else:
+        os.startfile(folder_to_open)
+
+    ap.show_create_project_dialog()
     
 try:
     class GitProjectType(ap.ProjectType):
@@ -396,13 +400,18 @@ try:
             return repo
 
         def _handle_project_overwrite(self, project_path, user_url):
+            import time
+
+            print("Create Project: Existing Git Repository detected that needs to be deleted manually")            
             ap.close_create_project_dialog()
+            time.sleep(0.25)
+
             dialog = ap.Dialog()
             dialog.title = "Existing Git Repository detected"
             dialog.icon = self.context.icon
             dialog.add_text("Anchorpoint has found another Git repository that<br>needs to be removed before you can create a new project.")
-            dialog.add_info("This will <b>delete</b> all your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can also remove it manually by deleting the hidden .git folder<br>in your project.")
-            dialog.add_button("Remove Existing Git Repository", callback=lambda d: delete_project_and_retry(d, self.context, project_path), primary=False).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+            dialog.add_info("Removing a Git repository will <b>delete</b> your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can remove it manually by deleting the hidden .git folder in your project.")
+            dialog.add_button("Open Git Repository Folder", callback=lambda d: open_folder_and_retry(d, self.context, project_path), primary=False).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
         
         def _open_repo(self, project_path, project, git_ignore, user_url):
@@ -447,10 +456,18 @@ try:
             add_git_ignore(repo, self.context, project_path, ignore_value)
 
         def _get_git_parent_dir(self, folder_path):
-            for root, dirs, _ in os.walk(folder_path):
-                for dir in dirs:
-                    if dir == ".git":
-                        return root
+            try:
+                for root, dirs, _ in os.walk(folder_path):
+                    for dir in dirs:
+                        if dir == ".git":
+                            if len(os.listdir(os.path.join(root,dir))) == 0:
+                                return None
+                            elif self.git.GitRepository.load(root) != None:
+                                return root
+                            else:
+                                return None
+            except Exception as e:
+                return None
             return None
 
         def _is_path_equal(self, path1: str, path2: str):
