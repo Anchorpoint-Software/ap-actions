@@ -99,6 +99,9 @@ def on_add_user_to_project(email, ctx: ap.Context):
         ap.UI().show_success(title='Member added to GitHub repository', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_github_project_name(project.name)
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            repo_name = integration_project_name
         if "Organization is required." in str(e):
             ap.UI().show_error(title='Cannot add member to GitHub repository', duration=8000, description=f'No organization found. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         elif "No matching member found." in str(e):
@@ -141,6 +144,9 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         ap.UI().show_success(title='Member removed from GitHub repository', duration=3000, description=f'Member {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_github_project_name(project.name)
+        integration_project_name = settings.get(integration_project_name_key, None)
+        if integration_project_name is not None:
+            repo_name = integration_project_name
         if "Organization is required." in str(e):
             ap.UI().show_info(title='Cannot add member to GitHub repository', duration=8000, description=f'No organization found. You have to remove your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         elif "No matching member found." in str(e):
