@@ -322,7 +322,10 @@ try:
                             break
 
             folder_is_empty = self.githelper.folder_empty(project_path)
-            git_parent_dir = self._get_git_parent_dir(project_path)
+            git_parent_dir, is_valid_repo = self._get_git_parent_dir(project_path)
+            if git_parent_dir and not is_valid_repo:
+                self._handle_project_overwrite(project_path)
+                sys.exit(0)
 
             if integration_tags != None:
                 settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
@@ -393,7 +396,7 @@ try:
             self._add_git_ignore(repo, git_ignore, project_path)
             return repo
 
-        def _handle_project_overwrite(self, project_path, user_url):
+        def _handle_project_overwrite(self, project_path):
             import time
 
             print("Create Project: Existing Git Repository detected that needs to be deleted manually")            
@@ -418,7 +421,7 @@ try:
                 url = user_url
 
             if user_url != None and user_url != url:
-                self._handle_project_overwrite(project_path, user_url)
+                self._handle_project_overwrite(project_path)
                 sys.exit(0)
 
             repo.set_username(self.context.username, self.context.email, project_path)
@@ -454,15 +457,16 @@ try:
                 for root, dirs, _ in os.walk(folder_path):
                     for dir in dirs:
                         if dir == ".git":
-                            if len(os.listdir(os.path.join(root,dir))) == 0:
-                                return None
-                            elif self.git.GitRepository.load(root) != None:
-                                return root
-                            else:
-                                return None
+                            try:
+                                if len(os.listdir(os.path.join(root,dir))) <= 1:
+                                    return None, False
+                                is_valid = self.git.GitRepository.load(root) != None
+                                return root, is_valid
+                            except:
+                                return root, False
             except Exception as e:
-                return None
-            return None
+                return None, False
+            return None, False
 
         def _is_path_equal(self, path1: str, path2: str):
             if path1 == None or path2 == None: return False
