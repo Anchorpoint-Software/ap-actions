@@ -160,7 +160,7 @@ def setup_credentials_async(dialog, org: str):
         ap.UI().show_success(title='Azure DevOps credentials stored', duration=3000, description=f'Azure DevOps credentials stored successfully.')
     except Exception as e:
         print(f"Failed to store Azure DevOps credentials: {str(e)}")
-        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=6000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
