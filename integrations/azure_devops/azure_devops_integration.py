@@ -159,7 +159,8 @@ def setup_credentials_async(dialog, org: str):
         GitRepository.store_credentials(devops_root, "https", result["username"], result["password"], org)
         ap.UI().show_success(title='Azure DevOps credentials stored', duration=3000, description=f'Azure DevOps credentials stored successfully.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+        print(f"Failed to store Azure DevOps credentials: {str(e)}")
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=6000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
