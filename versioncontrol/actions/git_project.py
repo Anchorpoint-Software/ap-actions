@@ -241,7 +241,7 @@ try:
                     if action.name == value:
                         action_found = True
                         if(not integration.is_setup or not integration.is_connected):
-                            dialog.set_value(setup_integration_btn, f"Setup {integration.name} Integration")
+                            dialog.set_value(setup_integration_btn, f"Setup Integration")
                             self.setup_integration_name = integration.name
                             dialog.hide_row(setup_integration_btn,False)
                             self.setup_integration_visible = True
