@@ -100,12 +100,6 @@ def add_git_ignore(repo, context, project_path, ignore_value = None):
     if ignore_value and ignore_value != add_ignore_config.NO_IGNORE:
         add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
         add_additional_scripts(context.yaml_dir, project_path, ignore_value)
-
-def delete_folder_and_retry_async(folder_to_delete, project_path):
-    import shutil
-    if os.path.exists(folder_to_delete):
-        shutil.rmtree(folder_to_delete)
-    
     
 def open_folder_and_retry(d, ctx, project_path):
     d.close()
