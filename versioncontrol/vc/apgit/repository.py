@@ -289,7 +289,8 @@ class GitRepository(VCRepository):
             state = UpdateState.OK
             for info in self.repo.remote(remote).push(refspec=branch, progress = progress_wrapper, **kwargs):
                 if info.flags & git.PushInfo.ERROR:
-                    state = UpdateState.ERROR
+                    raise Exception(f"Push failed: {info.summary}")
+                    
             return state
         except Exception as e:
             raise e
