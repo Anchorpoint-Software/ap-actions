@@ -198,6 +198,8 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     except:
         message = str(e)
 
+    exception_message = str(e)
+
     if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
         print(message)
         isread = "error: unable to index file" in message
@@ -278,8 +280,8 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
 
-    if "failed due to: exit code" in message:
-        print(f"Git Error: {message}")
+    if "failed due to: exit code" in exception_message:
+        print(f"Git Error: {exception_message}")
 
         def extract_first_fatal_error(error_message):
             try:
@@ -291,7 +293,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                 return None
             return None
         
-        error = extract_first_fatal_error(message)
+        error = extract_first_fatal_error(exception_message)
         msg = "In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail."
         if error:
             if len(error) > 50:
