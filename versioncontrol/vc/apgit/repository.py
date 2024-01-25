@@ -388,22 +388,22 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False):
+    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False, progress: Optional[Progress] = None):
         logging.info(f"Restoring files: {files}")
-        
+        if not changelist_id:
+            changelist_id = "HEAD"
+
+        if progress:
+            self.fetch_lfs_files(branches=[changelist_id], paths=files, progress=progress)
+
         if not keep_original:
             self._check_index_lock()
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "restore_spec")
                 self._write_pathspec_file(files, pathspec)
-                if changelist_id:
-                    self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
-                else:
-                    self.repo.git.checkout(pathspec_from_file=pathspec)
+                self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
         else:
             # read data of files from git at specific commit
-            if not changelist_id:
-                changelist_id = "HEAD"
             try:
                 kwargs = {}
                 if platform.system() == "Windows":
