@@ -278,4 +278,27 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
 
+    if "failed due to: exit code" in message:
+        print(f"Git Error: {message}")
+
+        def extract_first_fatal_error(error_message):
+            try:
+                lines = error_message.split('\n')
+                for line in lines:
+                    if 'fatal: ' in line:
+                        return line.split('fatal: ')[-1].strip()
+            except:
+                return None
+            return None
+        
+        error = extract_first_fatal_error(message)
+        msg = "In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail."
+        if error:
+            if len(error) > 50:
+                error = error[:50] + "..."
+            ap.UI().show_error("An issue has occured", f"{error}<br><br>{msg}", duration=10000)
+        else:
+            ap.UI().show_error("An issue has occured", msg, duration=10000)
+        return True
+    
     return False
