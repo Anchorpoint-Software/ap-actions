@@ -873,6 +873,16 @@ class GitRepository(VCRepository):
             print (e)
 
         return changes
+    
+    def diff_changelist(self, id: str) -> list[str]:
+        try:
+            changes = self.repo.git.diff("--name-only", "-z", id)
+            return changes.split('\x00')
+
+        except Exception as e:
+            print(e)
+
+        return []
 
     def _normalize_string(self, path):
         import unicodedata

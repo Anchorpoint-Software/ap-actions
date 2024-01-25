@@ -238,6 +238,10 @@ def reset_commit(path, commit: HistoryEntry, channel_id, force):
             ui.show_error("Cannot reset project", "Reset Project cannot be used with local repositories")
             return 
 
+        changes = repo.diff_changelist(commit.id)
+        if len(changes) > 0 and changes[0] != '':
+            repo.fetch_lfs_files([commit.id], changes, progress=helper.FetchProgress(progress))
+
         repo.reset(commit.id, True)
 
         ap.vc_load_pending_changes(channel_id)
