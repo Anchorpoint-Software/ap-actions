@@ -942,6 +942,9 @@ def delete_fetch_lockfiles(repo_git_dir):
             print(f"An error occurred while deleting {lockfile}: {e}")
 
 
+def on_timeline_refresh(ctx):
+    ctx.run_async(refresh_async, "Git", ctx.project_path)
+
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -951,7 +954,7 @@ def refresh_async(channel_id: str, project_path):
     timeline_channel = aps.get_timeline_channel(project, channel_id)
     if not timeline_channel:
         return
-
+    
     import sys, os
     sys.path.insert(0, script_dir)
     git_dir = None
