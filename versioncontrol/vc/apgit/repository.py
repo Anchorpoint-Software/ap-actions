@@ -295,22 +295,13 @@ class GitRepository(VCRepository):
         except Exception as e:
             raise e
 
-    def fetch(self, progress: Optional[Progress] = None) -> UpdateState:
-        branch = self._get_current_branch()
-        remote = self._get_default_remote(branch)
-        if remote is None: remote = "origin"
-
-        state = UpdateState.OK
-        if progress is not None:
-            for info in self.repo.remote(remote).fetch(progress = _InternalProgress(progress), prune = True):
-                if info.flags & git.FetchInfo.ERROR:
-                    state = UpdateState.ERROR
-        else: 
-            for info in self.repo.remote(remote).fetch(prune = True):
-                if info.flags & git.FetchInfo.ERROR:
-                    state = UpdateState.ERROR
-
-        return state
+    def fetch(self, progress: Optional[Progress] = None):
+        if progress:
+            progress.ap_progress.set_text("Talking to Server")
+        status, stdout, stderr = self.repo.git.fetch(with_extended_output=True)
+        if status != 0:
+            raise Exception(f"Fetch failed: {stdout} stderr: {stderr}")
+        return len(stdout) > 0 or len(stderr) > 0
 
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
         self._check_index_lock()

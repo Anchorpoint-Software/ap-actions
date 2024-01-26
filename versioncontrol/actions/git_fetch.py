@@ -23,11 +23,8 @@ def fetch_async(channel_id: str, project_path):
         
         if repo.has_remote():
             progress = ap.Progress("Fetching Git Changes", show_loading_screen=True)
-            state = repo.fetch(progress=helper.FetchProgress(progress))
-            if state != UpdateState.OK:
-                ui.show_error("Failed to fetch Git Repository")    
-            else:
-                ui.show_success("Fetch Successful")
+            repo.fetch(progress=helper.FetchProgress(progress))
+            ui.show_success("Fetch Successful")
             progress.finish()
             
     except Exception as e:
