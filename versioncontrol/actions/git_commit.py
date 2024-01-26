@@ -174,7 +174,7 @@ def pull_changes(repo: GitRepository, channel_id: str, ctx):
         raise e
     
 def repo_needs_pull(repo: GitRepository):
-    progress = ap.Progress("Looking for Changes on Server", show_loading_screen=True, cancelable=True)
+    progress = ap.Progress("Looking for Changes on Server", cancelable=True)
     
     try:
         repo.fetch()
