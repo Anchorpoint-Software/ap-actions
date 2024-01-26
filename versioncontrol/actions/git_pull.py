@@ -95,6 +95,13 @@ def handle_git_autoprune(ctx, repo):
     except Exception as e:
         print(f"An error occurred while pruning LFS objects: {e}")
 
+def clear_cache(repo_path, ctx):
+    progress = ap.Progress("Updating Git Changes", cancelable=False)
+    progress.set_text("Clearing Cache")
+    repo = GitRepository.load(repo_path)
+    if not repo: return
+    handle_git_autoprune(ctx, repo)
+
 def pull(repo: GitRepository, channel_id: str, ctx):
     lock_disabler = ap.LockDisabler()
     ui = ap.UI()
@@ -174,8 +181,7 @@ def pull(repo: GitRepository, channel_id: str, ctx):
             repo.pop_stash()        
     
         update_pulled_commits()
-        progress.set_text("Clearing Cache")
-        handle_git_autoprune(ctx, repo)
+        ctx.run_async(clear_cache, repo.get_root_path(), ctx)
 
     return True
 
