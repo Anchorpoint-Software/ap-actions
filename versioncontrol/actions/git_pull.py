@@ -128,8 +128,10 @@ def pull(repo: GitRepository, channel_id: str, ctx):
     commits_to_pull = repo.get_history(remote_only=True)
 
     try:
+        ap.enable_timeline_channel_action(channel_id, "gitpull", False)
         state = repo.update(progress=PullProgress(progress), rebase=False)
     except Exception as e:
+        ap.enable_timeline_channel_action(channel_id, "gitpull", True)
         if "unable to unlink" in str(e):
             print("Could not unlink files on pull, resetting project")
             repo.reset(commit_id=None, hard=True)
