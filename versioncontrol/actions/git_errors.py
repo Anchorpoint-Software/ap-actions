@@ -289,6 +289,9 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                 for line in lines:
                     if 'fatal: ' in line:
                         return line.split('fatal: ')[-1].strip()
+                    
+                    if 'error: ' in line:
+                        return line.split('error: ')[-1].strip()
             except:
                 return None
             return None
