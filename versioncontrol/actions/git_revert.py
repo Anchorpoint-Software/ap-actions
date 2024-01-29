@@ -83,6 +83,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
     finally:
         ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
+        time.sleep(1)
     
     ui.show_success("Revert Successful")
 
