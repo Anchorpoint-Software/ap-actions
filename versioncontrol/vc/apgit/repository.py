@@ -1995,6 +1995,37 @@ class GitRepository(VCRepository):
                 return int(re.search("\d+\)", pruned_match.group()).group()[:-1])
         except:
             return 0        
+        
+    # Returns True if a corruption occurred and was fixed
+    def fix_lfs_corruption(self):
+        def _run_lfs_fsck():
+            fsck_output = ""
+            try:
+                fsck_output = self.repo.git.lfs("fsck")
+            except Exception as e:
+                fsck_output = str(e)
+            return fsck_output
+
+        fsck_output = _run_lfs_fsck()
+        if "corruptObject" in fsck_output:
+            lines = fsck_output.split("\n")
+            corrupt_objects = []
+            for line in lines:
+                if "corruptObject" in line:
+                    corrupt_objects.append(line)
+
+            print(f"Found {len(corrupt_objects)} corrupt LFS objects. Attempting to fix them.")
+            print(f"Corrupt objects: {corrupt_objects}")
+
+            self.repo.git.add("--renormalize", ".")
+
+            fsck_output = _run_lfs_fsck()
+            if "corruptObject" in fsck_output:
+                print(f"Failed to fix LFS corruption {fsck_output}")
+                raise Exception("Failed to fix LFS corruption")
+
+            return True
+        return False
 
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None
