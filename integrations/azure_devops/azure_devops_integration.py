@@ -375,6 +375,10 @@ class DevopsIntegration(ap.ApIntegration):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
                                    description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+            elif "TF400813" in str(e):
+                ap.UI().show_error(title='Azure DevOps has issues to create your project', 
+                                   duration=8000, 
+                                   description=f'Check the <a href="https://dev.azure.com/{current_org}/_settings/organizationPolicy">policies</a>if Third-party application access via OAuth is enabled. If enabled, please check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a> or try again.')
             elif "TF50316" in str(e):
                 # Extract the name from the exception message
                 match = re.search(r'The following name is not valid: (.*). Please', str(e))
