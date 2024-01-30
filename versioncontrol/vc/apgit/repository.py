@@ -1972,6 +1972,8 @@ class GitRepository(VCRepository):
             return ""
 
     def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
+        print("clear cache disabled temporarily")
+        return 0
         args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]
         if force:
             args.append("--force")
