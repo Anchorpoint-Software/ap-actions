@@ -540,7 +540,10 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
         if not lfsExtensions.is_file_tracked(change.path):
             continue
         if change.status == ap.VCFileStatus.Deleted:
-            beforerefs.append(change_path)
+            if ref == "HEAD":
+                currentrefs.append(change_path)
+            else:
+                beforerefs.append(change_path)
         else:
             currentrefs.append(change_path)
     
