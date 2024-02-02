@@ -29,22 +29,22 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
     
     current_group = client.get_current_group()
     if current_group is None:
-        ap.UI().show_error(title='Cannot add member to Gitlab', duration=6000, description=f'Failed to get current group. You have to add your member directly on GitLab.')
+        ap.UI().show_error(title='Cannot add member to GitLab', duration=6000, description=f'Failed to get current group. You have to add your member directly on GitLab.')
         return
     
     if current_group.is_user:
         return
 
     if not client.init():
-        ap.UI().show_error(title='Cannot add member to Gitlab', duration=6000, description=f'Failed to connect integration. You have to add your member directly on GitLab.')
+        ap.UI().show_error(title='Cannot add member to GitLab', duration=6000, description=f'Failed to connect integration. You have to add your member directly on GitLab.')
         return
     
     try:
         client.add_user_to_group(current_group, email)
-        ap.UI().show_success(title='Member added to Gitlab', duration=3000, description=f'User {email} added to group {current_group.name}.')
+        ap.UI().show_success(title='Member added to GitLab', duration=3000, description=f'User {email} added to group {current_group.name}.')
     except Exception as e:
         print(str(e))
-        ap.UI().show_error(title='Cannot add member to Gitlab', duration=10000, description=f'Cannot to add the member to the group. You have to add your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
+        ap.UI().show_error(title='Cannot add member to GitLab', duration=10000, description=f'Cannot to add the member to the group. You have to add your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
 
 def on_remove_user_from_workspace(email, ctx: ap.Context):
     client = GitlabClient(ctx.workspace_id, ap.get_config().gitlab_client_id, ap.get_config().gitlab_client_key)
@@ -54,22 +54,22 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     
     current_group = client.get_current_group()
     if current_group is None:
-        ap.UI().show_error(title='Cannot remove member to Gitlab', duration=6000, description=f'Cannot get current group. You have to remove your member directly on GitLab.')
+        ap.UI().show_error(title='Cannot remove member to GitLab', duration=6000, description=f'Cannot get current group. You have to remove your member directly on GitLab.')
         return
     
     if current_group.is_user:
         return
 
     if not client.init():
-        ap.UI().show_error(title='Cannot remove member to Gitlab', duration=6000, description=f'Failed to connect integration. You have to remove your member directly on GitLab.')
+        ap.UI().show_error(title='Cannot remove member to GitLab', duration=6000, description=f'Failed to connect integration. You have to remove your member directly on GitLab.')
         return
     
     try:
         client.remove_user_from_group(current_group, email)
-        ap.UI().show_success(title='Member removed from Gitlab', duration=3000, description=f'User {email} removed from group {current_group.name}.')
+        ap.UI().show_success(title='Member removed from GitLab', duration=3000, description=f'User {email} removed from group {current_group.name}.')
     except Exception as e:
         print(str(e))
-        ap.UI().show_error(title='Cannot remove member from Gitlab', duration=10000, description=f'Failed to remove member from group. You have to remove your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
+        ap.UI().show_error(title='Cannot remove member from GitLab', duration=10000, description=f'Failed to remove member from group. You have to remove your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
 
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
@@ -81,17 +81,17 @@ def on_add_user_to_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitLab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
         return
     
     client = GitlabClient(ctx.workspace_id, ap.get_config().gitlab_client_id, ap.get_config().gitlab_client_key)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=6000, description=f'Gitlab integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitLab project', duration=6000, description=f'GitLab integration is not setup. Please add manually.')
         return
     
     if not client.init():
-        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot add member to GitLab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     current_group = client.get_current_group()
@@ -102,11 +102,11 @@ def on_add_user_to_project(email, ctx: ap.Context):
         if integration_project_name is not None:
             project_name = integration_project_name
         client.add_user_to_project(current_group, email, project_name)
-        ap.UI().show_success(title='Member added to Gitlab project', duration=3000, description=f'User {email} added to project {project.name}.')
+        ap.UI().show_success(title='Member added to GitLab project', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
         print(str(e))
-        ap.UI().show_error(title='Cannot add member to Gitlab project', duration=10000, description=f'You have to add your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
+        ap.UI().show_error(title='Cannot add member to GitLab project', duration=10000, description=f'You have to add your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
@@ -119,17 +119,17 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from GitLab project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
         return
     
     client = GitlabClient(ctx.workspace_id, ap.get_config().gitlab_client_id, ap.get_config().gitlab_client_key)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=6000, description=f'Gitlab integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from GitLab project', duration=6000, description=f'GitLab integration is not setup. Please add manually.')
         return
     
     if not client.init():
-        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot remove member from GitLab project', duration=6000, description=f'Failed to connect integration. Please add manually.')
         return
     
     current_group = client.get_current_group()
@@ -140,10 +140,10 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         if integration_project_name is not None:
             project_name = integration_project_name
         client.remove_user_from_project(current_group, email, project_name)
-        ap.UI().show_success(title='Member removed from Gitlab project', duration=3000, description=f'User {email} removed from project {project.name}.')
+        ap.UI().show_success(title='Member removed from GitLab project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
-        ap.UI().show_error(title='Cannot remove member from Gitlab project', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
+        ap.UI().show_error(title='Cannot remove member from GitLab project', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
         return
 
 def setup_credentials_async(dialog):
@@ -160,9 +160,9 @@ def setup_credentials_async(dialog):
             or result.get("username") is None or result.get("password") is None):
             raise Exception("Login failed")
         GitRepository.store_credentials(gitlab_root, "https", result["username"], result["password"])
-        ap.UI().show_success(title='Gitlab credentials stored', duration=3000, description=f'Gitlab credentials stored successfully.')
+        ap.UI().show_success(title='GitLab credentials stored', duration=3000, description=f'GitLab credentials stored successfully.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot store Gitlab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+        ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
@@ -176,8 +176,8 @@ class GitlabIntegration(ap.ApIntegration):
         config = ap.get_config()
         self.client = GitlabClient(ctx.workspace_id, config.gitlab_client_id, config.gitlab_client_key)
 
-        self.name = 'Gitlab (gitlab.com)'
-        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Gitlab (gitlab.com) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
+        self.name = 'GitLab (gitlab.com)'
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an GitLab (gitlab.com) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
         self.priority = 98
         self.tags = integration_tags
 
@@ -195,7 +195,7 @@ class GitlabIntegration(ap.ApIntegration):
             self._setup_not_connected_state()
 
         createRepo = ap.IntegrationAction()
-        createRepo.name = "New Gitlab Repository"
+        createRepo.name = "New GitLab Repository"
         createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
         createRepo.icon = aps.Icon(":/icons/organizations-and-products/gitlab.svg")
@@ -209,7 +209,7 @@ class GitlabIntegration(ap.ApIntegration):
         connect.enabled = True
         connect.icon = aps.Icon(":/icons/plug.svg")
         connect.identifier = connect_action_id
-        connect.tooltip = "Connect to Gitlab"
+        connect.tooltip = "Connect to GitLab"
         self.add_preferences_action(connect)
         self.is_connected = False
 
@@ -221,7 +221,7 @@ class GitlabIntegration(ap.ApIntegration):
         disconnect.enabled = True
         disconnect.icon = aps.Icon(":/icons/unPlug.svg")
         disconnect.identifier = disconnect_action_id
-        disconnect.tooltip = "Disconnect from Gitlab"
+        disconnect.tooltip = "Disconnect from GitLab"
         self.add_preferences_action(disconnect)
 
         settings = ap.IntegrationAction()
@@ -229,7 +229,7 @@ class GitlabIntegration(ap.ApIntegration):
         settings.enabled = True
         settings.icon = aps.Icon(":/icons/wheel.svg")
         settings.identifier = settings_action_id
-        settings.tooltip = "Open settings for Gitlab integration"
+        settings.tooltip = "Open settings for GitLab integration"
         self.add_preferences_action(settings)
 
         self.is_connected = True
@@ -242,7 +242,7 @@ class GitlabIntegration(ap.ApIntegration):
         reconnect.enabled = True
         reconnect.icon = aps.Icon(":/icons/plug.svg")
         reconnect.identifier = reconnect_action_id
-        reconnect.tooltip = "Reconnect to Gitlab"
+        reconnect.tooltip = "Reconnect to GitLab"
         self.add_preferences_action(reconnect)
         self.is_connected = False
     
@@ -269,7 +269,7 @@ class GitlabIntegration(ap.ApIntegration):
                     self.client.set_current_group(current_group)
                 self.show_settings_dialog(current_group, groups)
             except Exception as e:
-                ap.UI().show_error(title='Cannot load Gitlab Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
+                ap.UI().show_error(title='Cannot load GitLab Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
                 return
 
     def on_auth_deeplink_received(self, url: str):
@@ -288,13 +288,13 @@ class GitlabIntegration(ap.ApIntegration):
             self.is_connected = True
             self.start_update()
         except Exception as e:
-            ap.UI().show_error(title='Gitlab authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
+            ap.UI().show_error(title='GitLab authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
             return
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
         if action_id == create_repo_dialog_entry:
             if self.is_setup:
-                dialog.add_info("You may need to <b>log into</b> Gitlab again after the final step.", var=create_dialog_info_entry)
+                dialog.add_info("You may need to <b>log into</b> GitLab again after the final step.", var=create_dialog_info_entry)
                 return [create_dialog_info_entry]
             return []
 
@@ -321,7 +321,7 @@ class GitlabIntegration(ap.ApIntegration):
     def show_settings_dialog(self, current_group, groups):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
-        dialog.title = "Gitlab Settings"
+        dialog.title = "GitLab Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitlab/logo.svg")
 
         dialog.add_text("<b>1. Account</b>", var="accounttext")
@@ -347,9 +347,9 @@ class GitlabIntegration(ap.ApIntegration):
 
         dialog.add_text("<b>3. Git Credentials</b>")
         dialog.add_image(os.path.join(self.ctx.yaml_dir, "gitlab/gitLabCredentials.webp"),width=230)
-        dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your Gitlab login data to grant Anchorpoint<br>permission to upload and download files.")
-        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_highlight_entry, callback=self.credential_btn_callback)
-        dialog.add_button("Enter your Gitlab credentials", var=settings_credential_btn_entry, callback=self.credential_btn_callback, primary=False)
+        dialog.add_info("Opens the Git Credential Manager, where you need to<br>enter your GitLab login data to grant Anchorpoint<br>permission to upload and download files.")
+        dialog.add_button("Enter your GitLab credentials", var=settings_credential_btn_highlight_entry, callback=self.credential_btn_callback)
+        dialog.add_button("Enter your GitLab credentials", var=settings_credential_btn_entry, callback=self.credential_btn_callback, primary=False)
         dialog.hide_row(settings_credential_btn_entry, True)
 
         dialog.show()
@@ -357,7 +357,7 @@ class GitlabIntegration(ap.ApIntegration):
     def create_new_repo(self, project_id: str, project_name: str, progress: ap.Progress) -> str:
         current_group = self.client.get_current_group()
         try:
-            progress.set_text("Creating Gitlab Project")
+            progress.set_text("Creating GitLab Project")
             new_repo = self.client.create_project(current_group, project_name)
             settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
             settings.set(integration_project_name_key, new_repo.name)
@@ -369,7 +369,7 @@ class GitlabIntegration(ap.ApIntegration):
             return new_repo.http_url_to_repo
         except Exception as e:
             if "has already been taken" in str(e):
-                ap.UI().show_error(title='Cannot create Gitlab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
+                ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create Gitlab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab">troubleshooting</a>.')
             raise e

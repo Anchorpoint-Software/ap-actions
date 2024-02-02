@@ -20,7 +20,7 @@ scope= "api read_user read_repository write_repository profile email" # do not c
 
 @dataclass
 class Group:
-    """Represents a user account or an group on Gitlab"""
+    """Represents a user account or an group on GitLab"""
     id: str
     email: str # only for user account
     path: str # only for group
@@ -30,7 +30,7 @@ class Group:
 
 @dataclass
 class Project:
-    """Represents a project on Gitlab"""
+    """Represents a project on GitLab"""
     id: str
     name: str
     name_with_namespace: str
@@ -81,7 +81,7 @@ class GitlabClient:
 
     def oauth2_response(self, response_url: str):  
         if "integration/auth" not in response_url:
-            raise Exception("Not an Gitlab OAuth2 response") 
+            raise Exception("Not an GitLab OAuth2 response") 
         
         self.oauth = OAuth2Session(self.client_id, redirect_uri=redirect_uri,
                            state=self.state, scope=scope)
