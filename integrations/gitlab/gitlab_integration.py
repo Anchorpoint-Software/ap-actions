@@ -282,8 +282,7 @@ class GitlabIntegration(ap.ApIntegration):
             if current_group is None:
                 current_group = groups[0]
                 self.client.set_current_group(current_group)
-            if len(groups) > 1:
-                self.show_settings_dialog(current_group, groups)
+            self.show_settings_dialog(current_group, groups)
             self._setup_connected_state()
             self.is_setup = True
             self.is_connected = True
