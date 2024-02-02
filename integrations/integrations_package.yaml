@@ -22,4 +22,5 @@ action:
     - ap::integrations::azure_devops
     - ap::integrations::github
     - ap::integrations::gitlab
+    - ap::integrations::gitlab_self
     - ap::integrations::gitea
