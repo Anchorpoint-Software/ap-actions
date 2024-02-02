@@ -197,8 +197,8 @@ class GitlabSelfIntegration(ap.ApIntegration):
         config = ap.get_config()
         self.client = GitlabSelfClient(ctx.workspace_id)
 
-        self.name = 'Gitlab (Self-Hosted)'
-        self.description = "Manage your own hosted Gitlab server directly from Anchorpoint.<br>Each member will need an Gitlab (Self-Hosted) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab_self/'>Learn more</a>"
+        self.name = 'Gitlab (self-hosted)'
+        self.description = "Manage your own hosted GitLab server directly from Anchorpoint.<br>Each member will need an Gitlab (self-hosted) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab_self/'>Learn more</a>"
         self.priority = 97
         self.tags = integration_tags
 
@@ -218,10 +218,10 @@ class GitlabSelfIntegration(ap.ApIntegration):
             self._setup_not_connected_state()
 
         createRepo = ap.IntegrationAction()
-        createRepo.name = "New Gitlab (Self-Hosted) Repository"
+        createRepo.name = "New Gitlab (self-hosted) Repository"
         createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
-        createRepo.icon = aps.Icon(":/icons/organizations-and-products/gitlab.svg")
+        createRepo.icon = aps.Icon(":/icons/organizations-and-products/gitlabSelfHost.svg")
         self.add_create_project_action(createRepo)
 
     def _setup_not_connected_state(self):
@@ -241,7 +241,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
             disconnect.enabled = True
             disconnect.icon = aps.Icon(":/icons/clearCache.svg")
             disconnect.identifier = disconnect_action_id
-            disconnect.tooltip = "Clear Gitlab (Self-Hosted) configuration"
+            disconnect.tooltip = "Clear Gitlab (self-hosted) configuration"
             self.add_preferences_action(disconnect)
         self.is_connected = False
 
@@ -253,7 +253,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         disconnect.enabled = True
         disconnect.icon = aps.Icon(":/icons/unPlug.svg")
         disconnect.identifier = disconnect_action_id
-        disconnect.tooltip = "Clear Gitlab (Self-Hosted) configuration"
+        disconnect.tooltip = "Clear Gitlab (self-hosted) configuration"
         self.add_preferences_action(disconnect)
 
         settings = ap.IntegrationAction()
@@ -261,7 +261,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         settings.enabled = True
         settings.icon = aps.Icon(":/icons/wheel.svg")
         settings.identifier = settings_action_id
-        settings.tooltip = "Open settings for Gitlab (Self-Hosted) integration"
+        settings.tooltip = "Open settings for Gitlab (self-hosted) integration"
         self.add_preferences_action(settings)
 
         self.is_connected = True
@@ -274,7 +274,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         reconnect.enabled = True
         reconnect.icon = aps.Icon(":/icons/plug.svg")
         reconnect.identifier = reconnect_action_id
-        reconnect.tooltip = "Reconnect to Gitlab (Self-Hosted)"
+        reconnect.tooltip = "Reconnect to Gitlab (self-hosted)"
         self.add_preferences_action(reconnect)
 
         if(self.is_setup_for_workspace):
@@ -283,7 +283,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
             disconnect.enabled = True
             disconnect.icon = aps.Icon(":/icons/clearCache.svg")
             disconnect.identifier = disconnect_action_id
-            disconnect.tooltip = "Clear Gitlab (Self-Hosted) configuration"
+            disconnect.tooltip = "Clear Gitlab (self-hosted) configuration"
             self.add_preferences_action(disconnect)
 
         self.is_connected = False
@@ -316,7 +316,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
                     self.client.set_current_group(current_group)
                 self.show_settings_dialog(current_group, groups)
             except Exception as e:
-                ap.UI().show_error(title='Cannot load Gitlab (Self-Hosted) Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
+                ap.UI().show_error(title='Cannot load Gitlab Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
                 return
 
     def on_auth_deeplink_received(self, url: str):
@@ -336,7 +336,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
             self.is_connected = True
             self.start_update()
         except Exception as e:
-            ap.UI().show_error(title='Gitlab (Self-Hosted) authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
+            ap.UI().show_error(title='Gitlab authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
             return
 
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
@@ -413,20 +413,20 @@ class GitlabSelfIntegration(ap.ApIntegration):
     def show_workspace_setup_dialog(self):
         dialog = ap.Dialog()
         dialog.name = setup_action_id
-        dialog.title = "Setup Gitlab (Self-Hosted) for Workspace"
-        dialog.icon = os.path.join(self.ctx.yaml_dir, "gitea/logo.svg")
+        dialog.title = "Setup GitLab for your Workspace"
+        dialog.icon = ":/icons/organizations-and-products/gitlabSelfHost.svg"
         dialog.callback_validate_finsihed = self.update_dialog_after_validate
 
-        dialog.add_text("<b>1. Gitlab URL</b>", var="remoteurltext")
-        dialog.add_info("Enter your Gitlab server url with port if needed")
+        dialog.add_text("<b>1. GitLab URL</b>", var="remoteurltext")
+        dialog.add_info("Enter your GitLab server URL with port if needed")
         dialog.add_input(placeholder='https://mygitlabserver.com:3030', var=server_url_entry, width=400, validate_callback=self.validate_url)
 
-        dialog.add_text("<b>2. Gitea OAuth Application</b>", var="oauthapp")
-        dialog.add_info("Insert your valid Gitea url first", var=client_values_info_entry)
+        dialog.add_text("<b>2. GitLab OAuth Application</b>", var="oauthapp")
+        dialog.add_info("Insert your valid GitLab URL first", var=client_values_info_entry)
         dialog.add_text("Client ID")
         dialog.add_input(placeholder='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', var=client_id_entry, width=400, validate_callback=self.validate_client_id)
 
-        dialog.add_button("Connect to Gitlab", var=connect_to_server_btn_entry, callback=lambda d: self.connect_to_server(d), enabled=False)
+        dialog.add_button("Connect to GitLab", var=connect_to_server_btn_entry, callback=lambda d: self.connect_to_server(d), enabled=False)
 
         dialog.show()
 
@@ -445,7 +445,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
     def show_settings_dialog(self, current_group, groups):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
-        dialog.title = "Gitlab (Self-Hosted) Settings"
+        dialog.title = "Gitlab (self-hosted) Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitlab_self/logo.svg")
 
         dialog.add_text("<b>1. Account</b>", var="accounttext")
@@ -461,7 +461,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
             if group.avatar_url is not None:
                 entry.icon = group.avatar_url
             else:
-                entry.icon = ":/icons/organizations-and-products/gitlab.svg"
+                entry.icon = ":/icons/organizations-and-products/gitlabSelfHost.svg"
             entry.use_icon_color = True
             dropdown_entries.append(entry)
 
@@ -481,7 +481,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
     def show_clear_integration_dialog(self):
         dialog = ap.Dialog()
         dialog.name = clear_action_id
-        dialog.title = "Disconnect Gitlab (Self-Hosted)"
+        dialog.title = "Disconnect Gitlab"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "gitea/logo.svg")
 
         dialog.add_text("Do you also want to remove the gitlab server infos (url,<br>client id) for all workspace members?")

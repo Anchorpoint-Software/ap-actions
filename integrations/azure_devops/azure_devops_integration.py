@@ -195,7 +195,7 @@ class DevopsIntegration(ap.ApIntegration):
         createRepo.name = "New Azure DevOps Repository"
         createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
-        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOpsNew.svg")
+        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOps.svg")
         self.add_create_project_action(createRepo)
 
     def _setup_not_connected_state(self):
