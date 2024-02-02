@@ -198,7 +198,7 @@ class GiteaIntegration(ap.ApIntegration):
 
         self.name = 'Gitea (self-hosted)'
         self.description = "A self-hosted Git repository for local or cloud servers. Create repositories <br> and add members directly from Anchorpoint. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitea/'>Learn more</a>"
-        self.priority = 97
+        self.priority = 96
         self.tags = integration_tags
 
         icon_path = os.path.join(ctx.yaml_dir, "gitea/logo.svg")
