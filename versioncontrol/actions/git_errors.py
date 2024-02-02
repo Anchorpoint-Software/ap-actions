@@ -280,6 +280,16 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
 
+    if "Couldn't connect to server" in message:
+        # Extract the repo URL
+        import re
+        match = re.search(r"unable to access '(.*?)':", message)
+        if match:
+            repo_url = match.group(1)
+            error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">git troubleshooting</a>."
+            ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
+        return True
+
     if "failed due to: exit code" in exception_message:
         print(f"Git Error: {exception_message}")
 
