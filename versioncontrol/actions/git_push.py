@@ -81,7 +81,7 @@ def handle_git_autoprune(ctx, repo):
     
     try:
         lfs_version = repo.get_lfs_version()
-        if not lfs_version.startswith("ap_"):
+        if not "Anchorpoint" in lfs_version:
             print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
             return
         count = repo.prune_lfs(**prune_kwargs)

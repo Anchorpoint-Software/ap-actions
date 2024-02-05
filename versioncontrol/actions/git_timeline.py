@@ -830,7 +830,7 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
                     
                 lfs_version = repo.get_lfs_version()
                 
-                if lfs_version.startswith("ap_"):
+                if "Anchorpoint" in lfs_version:
                     branches = [upstream, f"^{branch}"]
                 else:
                     branches = [upstream]

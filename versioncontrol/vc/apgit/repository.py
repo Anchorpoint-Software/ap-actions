@@ -340,7 +340,7 @@ class GitRepository(VCRepository):
 
             try:
                 lfs_version = self.get_lfs_version()
-                if lfs_version.startswith("ap_"):
+                if "Anchorpoint" in lfs_version:
                     branches = ["@{u}",f"^{branch}"]
                     lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, branches=branches)
                 else:
@@ -1972,9 +1972,12 @@ class GitRepository(VCRepository):
             return ""
 
     def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
-        print("clear cache disabled temporarily")
-        return 0
-        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]
+        lfs_version = self.get_lfs_version()
+        if not "Anchorpoint" in lfs_version:
+            print("clear cache disabled temporarily")
+            return 0
+        
+        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--safe"]
         if force:
             args.append("--force")
         else:
