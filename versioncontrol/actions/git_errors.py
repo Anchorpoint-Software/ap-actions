@@ -166,7 +166,26 @@ def restore_corrupted_index():
     except Exception as e:
         print(e)
 
-def show_repository_not_found_error(message):
+def clear_credentials_async(dialog, repo_path: Optional[str]):
+    try:
+        dialog.set_processing("updatecreds", True, "Updating")
+        repo = GitRepository.load(repo_path)
+        if repo and repo.clear_credentials():
+            repo.fetch()
+            ap.UI().show_success("Credentials updated")
+    finally:
+        dialog.close()
+
+def clear_credentials(dialog, repo_path: Optional[str]):
+    if not repo_path:
+        print("No repository path provided for clear credentials in repository not found error")
+        dialog.close()
+        return
+    
+    ctx = ap.get_context()
+    ctx.run_async(clear_credentials_async, dialog, repo_path)
+
+def show_repository_not_found_error(message, repo_path):
     def extract_repository_url(input_string):
         import re
         pattern = r"repository '([^']+)' not found"
@@ -185,8 +204,8 @@ def show_repository_not_found_error(message):
         d.title = "Your repository was not found"
         d.icon = ":/icons/versioncontrol.svg"
         d.add_text(f"The URL {url}<br>cannot be found under your account.")
-        d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
-        d.add_button("OK", callback=lambda d: d.close())
+        d.add_info("Most likely you are logged in with a wrong Git account.<br>Update credentials or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
+        d.add_button("Update Credentials", var="updatecreds", callback=lambda d: clear_credentials(d, repo_path), primary=False)
         d.show()
         return True
 
@@ -256,7 +275,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
     
     if "fatal: repository" in message and "not found" in message:
-        return show_repository_not_found_error(message)
+        return show_repository_not_found_error(message, repo_path)
     
     if "Another Git repository found in" in message:
         ap.UI().show_error("Another Git repository found", message, duration=10000)
