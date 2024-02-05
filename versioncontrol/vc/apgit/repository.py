@@ -289,7 +289,8 @@ class GitRepository(VCRepository):
             state = UpdateState.OK
             for info in self.repo.remote(remote).push(refspec=branch, progress = progress_wrapper, **kwargs):
                 if info.flags & git.PushInfo.ERROR:
-                    state = UpdateState.ERROR
+                    raise Exception(f"Push failed: {info.summary}")
+                    
             return state
         except Exception as e:
             raise e
@@ -1971,6 +1972,8 @@ class GitRepository(VCRepository):
             return ""
 
     def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
+        print("clear cache disabled temporarily")
+        return 0
         args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote"]
         if force:
             args.append("--force")

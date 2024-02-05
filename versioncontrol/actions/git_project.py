@@ -100,19 +100,17 @@ def add_git_ignore(repo, context, project_path, ignore_value = None):
     if ignore_value and ignore_value != add_ignore_config.NO_IGNORE:
         add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
         add_additional_scripts(context.yaml_dir, project_path, ignore_value)
-
-def delete_folder_and_retry_async(folder_to_delete, project_path):
-    import shutil
-    if os.path.exists(folder_to_delete):
-        shutil.rmtree(folder_to_delete)
     
-    # Don't set remote URL as the remote has been deleted after a failed project creation when used with an integration
-    ap.show_create_project_dialog(project_path)
-
-def delete_project_and_retry(d, ctx, project_path):
+def open_folder_and_retry(d, ctx, project_path):
     d.close()
-    folder_to_delete = os.path.join(project_path, ".git")
-    ctx.run_async(delete_folder_and_retry_async, folder_to_delete, project_path)
+    folder_to_open = os.path.join(project_path, ".git")
+    
+    if platform.system() == "Darwin":
+        os.system(f"open {folder_to_open}")
+    else:
+        os.startfile(folder_to_open)
+
+    ap.show_create_project_dialog()
     
 try:
     class GitProjectType(ap.ProjectType):
@@ -243,7 +241,7 @@ try:
                     if action.name == value:
                         action_found = True
                         if(not integration.is_setup or not integration.is_connected):
-                            dialog.set_value(setup_integration_btn, f"Setup {integration.name} Integration")
+                            dialog.set_value(setup_integration_btn, f"Setup Integration")
                             self.setup_integration_name = integration.name
                             dialog.hide_row(setup_integration_btn,False)
                             self.setup_integration_visible = True
@@ -324,7 +322,10 @@ try:
                             break
 
             folder_is_empty = self.githelper.folder_empty(project_path)
-            git_parent_dir = self._get_git_parent_dir(project_path)
+            git_parent_dir, is_valid_repo = self._get_git_parent_dir(project_path)
+            if git_parent_dir and not is_valid_repo:
+                self._handle_project_overwrite(project_path)
+                sys.exit(0)
 
             if integration_tags != None:
                 settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
@@ -395,14 +396,19 @@ try:
             self._add_git_ignore(repo, git_ignore, project_path)
             return repo
 
-        def _handle_project_overwrite(self, project_path, user_url):
+        def _handle_project_overwrite(self, project_path):
+            import time
+
+            print("Create Project: Existing Git Repository detected that needs to be deleted manually")            
             ap.close_create_project_dialog()
+            time.sleep(0.25)
+
             dialog = ap.Dialog()
             dialog.title = "Existing Git Repository detected"
             dialog.icon = self.context.icon
             dialog.add_text("Anchorpoint has found another Git repository that<br>needs to be removed before you can create a new project.")
-            dialog.add_info("This will <b>delete</b> all your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can also remove it manually by deleting the hidden .git folder<br>in your project.")
-            dialog.add_button("Remove Existing Git Repository", callback=lambda d: delete_project_and_retry(d, self.context, project_path), primary=False).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+            dialog.add_info("Removing a Git repository will <b>delete</b> your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can remove it manually by deleting the hidden .git folder in your project.")
+            dialog.add_button("Open Git Repository Folder", callback=lambda d: open_folder_and_retry(d, self.context, project_path), primary=False).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
         
         def _open_repo(self, project_path, project, git_ignore, user_url):
@@ -415,7 +421,7 @@ try:
                 url = user_url
 
             if user_url != None and user_url != url:
-                self._handle_project_overwrite(project_path, user_url)
+                self._handle_project_overwrite(project_path)
                 sys.exit(0)
 
             repo.set_username(self.context.username, self.context.email, project_path)
@@ -447,11 +453,20 @@ try:
             add_git_ignore(repo, self.context, project_path, ignore_value)
 
         def _get_git_parent_dir(self, folder_path):
-            for root, dirs, _ in os.walk(folder_path):
-                for dir in dirs:
-                    if dir == ".git":
-                        return root
-            return None
+            try:
+                for root, dirs, _ in os.walk(folder_path):
+                    for dir in dirs:
+                        if dir == ".git":
+                            try:
+                                if len(os.listdir(os.path.join(root,dir))) <= 1:
+                                    return None, False
+                                is_valid = self.git.GitRepository.load(root) != None
+                                return root, is_valid
+                            except:
+                                return root, False
+            except Exception as e:
+                return None, False
+            return None, False
 
         def _is_path_equal(self, path1: str, path2: str):
             if path1 == None or path2 == None: return False
