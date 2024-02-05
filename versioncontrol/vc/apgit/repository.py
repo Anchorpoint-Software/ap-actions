@@ -551,7 +551,7 @@ class GitRepository(VCRepository):
         progress_wrapper = None if not progress else _InternalProgress(progress)
         git_path = install_git.get_git_cmd_path()
 
-        args = [git_path, "merge", branch_name, "--no-ff", "--progress"]
+        args = [git_path, "merge", branch_name, "--no-ff", "--progress", "--no-edit"]
 
         kwargs = {}
         if platform.system() == "Windows":
