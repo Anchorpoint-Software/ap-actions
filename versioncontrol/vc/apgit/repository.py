@@ -1169,7 +1169,10 @@ class GitRepository(VCRepository):
         
     def continue_rebasing(self):
         self._check_index_lock()
-        self.repo.git(c = "core.editor=true").rebase("--continue")
+        configs = ["core.editor=true"]
+        if not shutil.which("gpg"):
+            configs.append("commit.gpgsign=false")
+        self.repo.git(c=configs).rebase("--continue")
 
     def abort_rebasing(self):
         self._check_index_lock()
@@ -1181,7 +1184,11 @@ class GitRepository(VCRepository):
         
     def continue_merge(self):
         self._check_index_lock()
-        self.repo.git(c = "core.editor=true").merge("--continue")
+        configs = ["core.editor=true"]
+        if not shutil.which("gpg"):
+            configs.append("commit.gpgsign=false")
+
+        self.repo.git(c=configs).merge("--continue")
 
     def abort_merge(self):
         self._check_index_lock()
