@@ -552,6 +552,10 @@ class GitRepository(VCRepository):
         git_path = install_git.get_git_cmd_path()
 
         args = [git_path, "merge", branch_name, "--no-ff", "--progress", "--no-edit"]
+        gpg = shutil.which("gpg")
+        if not gpg:
+            args.insert(1, "commit.gpgsign=false")
+            args.insert(1, "-c") 
 
         kwargs = {}
         if platform.system() == "Windows":
