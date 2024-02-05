@@ -2,7 +2,7 @@ from git import GitCommandError
 import anchorpoint as ap
 import apsync as aps
 
-import sys, os, importlib
+import sys, os, importlib, time
 import git_errors
         
 current_dir = os.path.dirname(__file__)
@@ -17,28 +17,33 @@ if parent_dir in sys.path: sys.path.remove(parent_dir)
 def fetch_async(channel_id: str, project_path):
     ui = ap.UI()
     try:
+        progress = None
         path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
         
         if repo.has_remote():
-            progress = ap.Progress("Fetching Git Changes", show_loading_screen=True)
-            state = repo.fetch(progress=helper.FetchProgress(progress))
-            if state != UpdateState.OK:
-                ui.show_error("Failed to fetch Git Repository")    
-            else:
-                ui.show_success("Fetch Successful")
-            progress.finish()
-            
-    except Exception as e:
-        if not git_errors.handle_error(e):
-            ui.show_error("Failed to fetch Git Repository", str(e))
-            raise e
-    finally:    
+            progress = ap.Progress("Fetching Git Changes")
+            if not repo.fetch(progress=helper.FetchProgress(progress)):
+                progress.finish()
+                progress = None
+
         if "vc_load_pending_changes" in dir(ap):
             ap.vc_load_pending_changes("Git")
         ap.refresh_timeline_channel(channel_id)
 
+        if progress:
+            time.sleep(1)
+            progress.finish()
+            
+    except Exception as e:
+        if "vc_load_pending_changes" in dir(ap):
+            ap.vc_load_pending_changes("Git")
+        ap.refresh_timeline_channel(channel_id)
+
+        if not git_errors.handle_error(e):
+            ui.show_error("Failed to fetch Git Repository", str(e))
+            raise e
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id != "gitrefresh": return False

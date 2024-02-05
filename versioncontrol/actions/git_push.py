@@ -32,7 +32,7 @@ class PushProgress(Progress):
     def canceled(self):
         return self.ap_progress.canceled
 
-def show_push_failed(error: str, channel_id, ctx):
+def show_push_failed(repo, error: str, channel_id, ctx):
     d = ap.Dialog()
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
@@ -51,11 +51,24 @@ def show_push_failed(error: str, channel_id, ctx):
     elif "protected branch" in error:
         d.add_text("The branch is protected, you cannot push to it.")
     else:
-        from textwrap import TextWrapper
-        d.add_text("Something went wrong, the Git push did not work correctly")
-        error = "\n".join(TextWrapper(width=100).wrap(error))
-        if error != "":
-            d.add_text(error)
+        corrupt_lfs = False
+        try:
+            corrupt_lfs = repo.fix_lfs_corruption()
+        except Exception as e:
+            print(f"An error occurred while fixing LFS corruption: {e}")
+            pass
+
+        if corrupt_lfs:
+            d.add_text("Anchorpoint has detected an inconsistency in the Git LFS cache and has fixed it.\nPlease try pushing again.")
+        else:
+            from textwrap import TextWrapper
+            d.add_text("Something went wrong, the Git push did not work correctly")
+            d.add_info("In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail.")
+            error = "\n".join(TextWrapper(width=100).wrap(error))
+            if error != "":
+                d.add_text(error)
+
+            ap.UI().show_error("Push Failed", "The push failed, please try again.")
 
     def retry():
         ctx = ap.get_context()
@@ -150,7 +163,7 @@ def push_async(channel_id: str, ctx):
             if state == UpdateState.CANCEL:
                 ui.show_info("Push Canceled")
             elif state != UpdateState.OK:
-                show_push_failed("", channel_id, ctx)    
+                show_push_failed(repo, "", channel_id, ctx)    
             else:
                 handle_git_autolock(ctx, repo)
 
@@ -160,7 +173,7 @@ def push_async(channel_id: str, ctx):
                 ap.update_timeline_last_seen()
     except Exception as e:
         if not git_errors.handle_error(e):
-            show_push_failed(str(e), channel_id, ctx)
+            show_push_failed(repo, str(e), channel_id, ctx)
     finally:
         progress.finish()
         if git_dir:

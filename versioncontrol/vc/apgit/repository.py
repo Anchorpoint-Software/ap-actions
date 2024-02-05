@@ -295,22 +295,13 @@ class GitRepository(VCRepository):
         except Exception as e:
             raise e
 
-    def fetch(self, progress: Optional[Progress] = None) -> UpdateState:
-        branch = self._get_current_branch()
-        remote = self._get_default_remote(branch)
-        if remote is None: remote = "origin"
-
-        state = UpdateState.OK
-        if progress is not None:
-            for info in self.repo.remote(remote).fetch(progress = _InternalProgress(progress), prune = True):
-                if info.flags & git.FetchInfo.ERROR:
-                    state = UpdateState.ERROR
-        else: 
-            for info in self.repo.remote(remote).fetch(prune = True):
-                if info.flags & git.FetchInfo.ERROR:
-                    state = UpdateState.ERROR
-
-        return state
+    def fetch(self, progress: Optional[Progress] = None):
+        if progress:
+            progress.ap_progress.set_text("Talking to Server")
+        status, stdout, stderr = self.repo.git.fetch(with_extended_output=True)
+        if status != 0:
+            raise Exception(f"Fetch failed: {stdout} stderr: {stderr}")
+        return len(stdout) > 0 or len(stderr) > 0
 
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
         self._check_index_lock()
@@ -388,22 +379,22 @@ class GitRepository(VCRepository):
         self._check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False):
+    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False, progress: Optional[Progress] = None):
         logging.info(f"Restoring files: {files}")
-        
+        if not changelist_id:
+            changelist_id = "HEAD"
+
+        if progress:
+            self.fetch_lfs_files(branches=[changelist_id], paths=files, progress=progress)
+
         if not keep_original:
             self._check_index_lock()
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "restore_spec")
                 self._write_pathspec_file(files, pathspec)
-                if changelist_id:
-                    self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
-                else:
-                    self.repo.git.checkout(pathspec_from_file=pathspec)
+                self.repo.git.checkout(changelist_id, pathspec_from_file=pathspec)
         else:
             # read data of files from git at specific commit
-            if not changelist_id:
-                changelist_id = "HEAD"
             try:
                 kwargs = {}
                 if platform.system() == "Windows":
@@ -877,6 +868,16 @@ class GitRepository(VCRepository):
             print (e)
 
         return changes
+    
+    def diff_changelist(self, id: str) -> list[str]:
+        try:
+            changes = self.repo.git.diff("--name-only", "-z", id)
+            return changes.split('\x00')
+
+        except Exception as e:
+            print(e)
+
+        return []
 
     def _normalize_string(self, path):
         import unicodedata
@@ -2003,6 +2004,37 @@ class GitRepository(VCRepository):
                 return int(re.search("\d+\)", pruned_match.group()).group()[:-1])
         except:
             return 0        
+        
+    # Returns True if a corruption occurred and was fixed
+    def fix_lfs_corruption(self):
+        def _run_lfs_fsck():
+            fsck_output = ""
+            try:
+                fsck_output = self.repo.git.lfs("fsck")
+            except Exception as e:
+                fsck_output = str(e)
+            return fsck_output
+
+        fsck_output = _run_lfs_fsck()
+        if "corruptObject" in fsck_output:
+            lines = fsck_output.split("\n")
+            corrupt_objects = []
+            for line in lines:
+                if "corruptObject" in line:
+                    corrupt_objects.append(line)
+
+            print(f"Found {len(corrupt_objects)} corrupt LFS objects. Attempting to fix them.")
+            print(f"Corrupt objects: {corrupt_objects}")
+
+            self.repo.git.add("--renormalize", ".")
+
+            fsck_output = _run_lfs_fsck()
+            if "corruptObject" in fsck_output:
+                print(f"Failed to fix LFS corruption {fsck_output}")
+                raise Exception("Failed to fix LFS corruption")
+
+            return True
+        return False
 
     def _command_exists(self, cmd: str):
         return shutil.which(cmd) is not None

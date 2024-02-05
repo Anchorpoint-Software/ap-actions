@@ -198,6 +198,8 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     except:
         message = str(e)
 
+    exception_message = str(e)
+
     if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
         print(message)
         isread = "error: unable to index file" in message
@@ -278,4 +280,40 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
 
+    if "Couldn't connect to server" in message:
+        # Extract the repo URL
+        import re
+        match = re.search(r"unable to access '(.*?)':", message)
+        if match:
+            repo_url = match.group(1)
+            error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">git troubleshooting</a>."
+            ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
+        return True
+
+    if "failed due to: exit code" in exception_message:
+        print(f"Git Error: {exception_message}")
+
+        def extract_first_fatal_error(error_message):
+            try:
+                lines = error_message.split('\n')
+                for line in lines:
+                    if 'fatal: ' in line:
+                        return line.split('fatal: ')[-1].strip()
+                    
+                    if 'error: ' in line:
+                        return line.split('error: ')[-1].strip()
+            except:
+                return None
+            return None
+        
+        error = extract_first_fatal_error(exception_message)
+        msg = "In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail."
+        if error:
+            if len(error) > 50:
+                error = error[:50] + "..."
+            ap.UI().show_error("An issue has occured", f"{error}<br><br>{msg}", duration=10000)
+        else:
+            ap.UI().show_error("An issue has occured", msg, duration=10000)
+        return True
+    
     return False

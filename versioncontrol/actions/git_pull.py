@@ -95,6 +95,13 @@ def handle_git_autoprune(ctx, repo):
     except Exception as e:
         print(f"An error occurred while pruning LFS objects: {e}")
 
+def clear_cache(repo_path, ctx):
+    progress = ap.Progress("Updating Git Changes", cancelable=False)
+    progress.set_text("Clearing Cache")
+    repo = GitRepository.load(repo_path)
+    if not repo: return
+    handle_git_autoprune(ctx, repo)
+
 def pull(repo: GitRepository, channel_id: str, ctx):
     lock_disabler = ap.LockDisabler()
     ui = ap.UI()
@@ -121,8 +128,10 @@ def pull(repo: GitRepository, channel_id: str, ctx):
     commits_to_pull = repo.get_history(remote_only=True)
 
     try:
+        ap.enable_timeline_channel_action(channel_id, "gitpull", False)
         state = repo.update(progress=PullProgress(progress), rebase=False)
     except Exception as e:
+        ap.enable_timeline_channel_action(channel_id, "gitpull", True)
         if "unable to unlink" in str(e):
             print("Could not unlink files on pull, resetting project")
             repo.reset(commit_id=None, hard=True)
@@ -174,8 +183,7 @@ def pull(repo: GitRepository, channel_id: str, ctx):
             repo.pop_stash()        
     
         update_pulled_commits()
-        progress.set_text("Clearing Cache")
-        handle_git_autoprune(ctx, repo)
+        ctx.run_async(clear_cache, repo.get_root_path(), ctx)
 
     return True
 

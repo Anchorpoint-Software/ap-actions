@@ -314,6 +314,23 @@ def map_commit(repo, commit):
 
     return entry
 
+def fetch_async(channel_id, repo_path):
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    if script_dir in sys.path: sys.path.remove(script_dir)
+
+    repo = GitRepository.load(repo_path)
+    if not repo:
+        return None
+    
+    try:
+        if fetch_with_lock(repo):
+            # There are new changes, load them
+            ap.refresh_timeline_channel(channel_id)
+    except Exception as e:
+        print(f"Could not fetch: {e}")
+        pass
+
 def on_load_first_timeline_channel_entry(channel_id: str, ctx):
     import sys
     path = None
@@ -325,7 +342,8 @@ def on_load_first_timeline_channel_entry(channel_id: str, ctx):
         repo = GitRepository.load(path)
         if not repo:
             return None
-        
+        ctx.run_async(fetch_async, channel_id, path)
+
         if repo.is_unborn():
             if not repo.has_remote():
                 return None
@@ -522,7 +540,10 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
         if not lfsExtensions.is_file_tracked(change.path):
             continue
         if change.status == ap.VCFileStatus.Deleted:
-            beforerefs.append(change_path)
+            if ref == "HEAD":
+                currentrefs.append(change_path)
+            else:
+                beforerefs.append(change_path)
         else:
             currentrefs.append(change_path)
     
@@ -818,9 +839,10 @@ def on_vc_merge_branch(channel_id: str, branch: str, ctx):
         if repo.has_remote():
             progress = ap.Progress(f"Merging Branch: {branch}", show_loading_screen = True)
             try:
-                state = repo.fetch(progress=helper.FetchProgress(progress))
-                if state != UpdateState.OK:
-                    print("failed to fetch in merge")
+                try:
+                    repo.fetch(progress=helper.FetchProgress(progress))
+                except Exception as e:
+                    print(f"failed to fetch in merge {e}")
 
                 folders_to_fetch = None
                 if repo.is_sparse_checkout_enabled():
@@ -895,7 +917,20 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
         ap.reload_timeline_entries()
         if script_dir in sys.path : sys.path.remove(script_dir)
         
-def delete_lockfiles(repo_git_dir):
+def fetch_with_lock(repo):
+    from vc.models import UpdateState
+    git_dir = repo.get_git_dir()
+    lockfile = os.path.join(git_dir, f"ap-fetch-{os.getpid()}.lock")
+    if os.path.exists(lockfile):
+        return
+
+    try:
+        with open(lockfile, "w") as f:
+            return repo.fetch()
+    finally:
+        delete_fetch_lockfiles(git_dir)
+
+def delete_fetch_lockfiles(repo_git_dir):
     import glob
     pattern = os.path.join(repo_git_dir, "ap-fetch-*.lock")
 
@@ -910,6 +945,9 @@ def delete_lockfiles(repo_git_dir):
             print(f"An error occurred while deleting {lockfile}: {e}")
 
 
+def on_timeline_refresh(ctx):
+    ctx.run_async(refresh_async, "Git", ctx.project_path)
+
 def refresh_async(channel_id: str, project_path):
     if channel_id != "Git": return None
     project = aps.get_project(project_path)
@@ -919,7 +957,7 @@ def refresh_async(channel_id: str, project_path):
     timeline_channel = aps.get_timeline_channel(project, channel_id)
     if not timeline_channel:
         return
-
+    
     import sys, os
     sys.path.insert(0, script_dir)
     git_dir = None
@@ -931,18 +969,11 @@ def refresh_async(channel_id: str, project_path):
         repo = GitRepository.load(path)
         if not repo: return
 
-        git_dir = repo.get_git_dir()
-        lockfile = os.path.join(git_dir, f"ap-fetch-{os.getpid()}.lock")
-        if os.path.exists(lockfile):
-            return
-
         try:
-            with open(lockfile, "w") as f:
-                repo.fetch()
+            fetch_with_lock(repo)
         finally:
             ap.vc_load_pending_changes(channel_id)
             ap.refresh_timeline_channel(channel_id)
-            delete_lockfiles(git_dir)
 
     except Exception as e:
         import git_errors

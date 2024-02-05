@@ -5,11 +5,16 @@ import git_errors
 
 import sys, os, itertools
 script_dir = os.path.join(os.path.dirname(__file__), "..")
+current_dir = os.path.dirname(__file__)
+sys.path.insert(0, current_dir)
 sys.path.insert(0, script_dir)
 
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
+import git_repository_helper as helper
+
 if script_dir in sys.path : sys.path.remove(script_dir)
+if current_dir in sys.path : sys.path.remove(current_dir)
 
 def revert(channel_id, project_path, new_files, selected_files: list[str], changes, revert_all = False):
     ui = ap.UI()
@@ -35,6 +40,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
     try:
         try:
             if revert_all:
+                repo.fetch_lfs_files(["HEAD"], list(relative_selected_paths), progress=helper.FetchProgress(progress))
                 repo.unstage_all_files()
                 repo.restore_all_files()
                 if new_files:
@@ -58,7 +64,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
                 
                 if len(paths_to_unstage) > 0:
                     repo.unstage_files(paths_to_unstage)
-                repo.restore_files(paths_to_revert)
+                repo.restore_files(paths_to_revert, progress=helper.FetchProgress(progress))
                 for path in paths_to_delete:
                     os.remove(path)
 
@@ -77,6 +83,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
     finally:
         ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
+        time.sleep(1)
     
     ui.show_success("Revert Successful")
 
@@ -147,7 +154,7 @@ def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
                 paths_to_delete.append(os.path.join(repo_root, added_file.path))
 
         if len(relative_selected_paths) > 0:
-            repo.restore_files(list(relative_selected_paths), entry_id + "~")
+            repo.restore_files(list(relative_selected_paths), entry_id + "~", progress=helper.FetchProgress(progress))
         for path in paths_to_delete:
             os.remove(path)
 
@@ -171,7 +178,6 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
         repo_root = repo.get_root_path()
 
         progress = ap.Progress("Restoring Files", show_loading_screen=True)
-
         relative_selected_paths = set()
 
         for path in files:
@@ -196,8 +202,7 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
 
         changes = repo.get_all_pending_changes()
         pending_changes_count = changes.size()
-
-        repo.restore_files(list(relative_selected_paths), entry_id, keep_original)
+        repo.restore_files(list(relative_selected_paths), entry_id, keep_original, progress=helper.FetchProgress(progress))
 
         changes = repo.get_all_pending_changes()
         if keep_original:
@@ -233,6 +238,10 @@ def reset_commit(path, commit: HistoryEntry, channel_id, force):
         if not repo.has_remote():
             ui.show_error("Cannot reset project", "Reset Project cannot be used with local repositories")
             return 
+
+        changes = repo.diff_changelist(commit.id)
+        if len(changes) > 0 and changes[0] != '':
+            repo.fetch_lfs_files([commit.id], changes, progress=helper.FetchProgress(progress))
 
         repo.reset(commit.id, True)
 

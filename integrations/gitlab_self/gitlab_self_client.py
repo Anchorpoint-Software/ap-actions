@@ -5,17 +5,18 @@ from typing import Optional
 from requests_oauthlib import OAuth2Session
 from oauthlib.oauth2 import TokenExpiredError, AccessDeniedError
 import random
-import base64
+import base64, os
+import hashlib
 import re
 
 import apsync as aps
 
-gitlab_api_url = "https://gitlab.com/api/v4"
-gitlab_auth_url = "https://gitlab.com/oauth/authorize"
+gitlab_self_shared_settings_key = "gitlab_self"
+gitlab_self_host_url_key = "gitlab_host_url"
+gitlab_self_client_id_key = "client_id"
+
 redirect_uri = "https://www.anchorpoint.app/app/integration/auth"
 internal_redirect_uri = "ap://integration/auth"
-token_url = "https://gitlab.com/oauth/token"
-token_refresh_url = "https://gitlab.com/oauth/token"
 scope= "api read_user read_repository write_repository profile email" # do not change order
 
 @dataclass
@@ -39,27 +40,25 @@ class Project:
     http_url_to_repo: str
     ssh_url_to_repo: str
 
-class GitlabClient:
-    def __init__(self, workspace_id: str, client_id: str, client_secret: str) -> None:
+class GitlabSelfClient:
+    def __init__(self, workspace_id: str) -> None:
         super().__init__()
         self.workspace_id = workspace_id
-        self.client_id = client_id
-        self.client_secret = client_secret
 
     def init(self) -> bool:
-        settings = aps.Settings(f"{self.workspace_id}_gitlab")
+        settings = aps.Settings(f"{self.workspace_id}_gitlab_self")
         token64 = settings.get("token", None)
         if token64:
             token = json.loads(base64.b64decode(token64.encode()).decode())
 
             extra = {
-                'client_id': self.client_id,
-                'client_secret': self.client_secret,
+                'client_id': self.client_id
             }
 
             def token_updater(token):
                 self._store_token(token)
 
+            token_refresh_url = f"{self.host_url}/oauth/token"
             self.oauth = OAuth2Session(client_id=self.client_id,
                                         token=token,
                                         auto_refresh_kwargs=extra,
@@ -69,13 +68,36 @@ class GitlabClient:
             return True
         return False
     
+    def is_server_reachable(self, host_url: str) -> bool:
+        import requests
+        try:
+            response = requests.get(host_url)
+            return response.status_code == 200
+        except Exception as e:
+            return False
+        
+    def get_host_url(self) -> Optional[str]:
+        return self.host_url
+    
     def start_auth(self):
         import webbrowser
 
         self.state = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(32))
+
+        # Generate a code verifier
+        self.code_verifier = ''.join(random.choice(string.ascii_letters + string.digits) for _ in range(64))
+
+        # Generate a code challenge
+        m = hashlib.sha256()
+        m.update(self.code_verifier.encode('utf-8'))
+        code_challenge = base64.urlsafe_b64encode(m.digest()).decode('utf-8').replace('=', '')
+
         oauth = OAuth2Session(self.client_id, redirect_uri=redirect_uri, scope=scope)
 
-        authorization_url, _ = oauth.authorization_url(gitlab_auth_url, state=self.state)
+        gitlab_auth_url = f"{self.host_url}/oauth/authorize"
+
+        authorization_url, _ = oauth.authorization_url(gitlab_auth_url, code_challenge=code_challenge, 
+                                                       code_challenge_method='S256', state=self.state)
         print(authorization_url)
         webbrowser.open(authorization_url)
 
@@ -86,25 +108,53 @@ class GitlabClient:
         self.oauth = OAuth2Session(self.client_id, redirect_uri=redirect_uri,
                            state=self.state, scope=scope)
         
+        token_url = f"{self.host_url}/oauth/token"
         response_url = response_url.replace(internal_redirect_uri, redirect_uri)
-        token = self.oauth.fetch_token(token_url, client_secret=self.client_secret,
-                                authorization_response=response_url)
+        token = self.oauth.fetch_token(token_url, authorization_response=response_url, code_verifier=self.code_verifier)
         self._store_token(token)
         self.init()
 
     def _store_token(self, token):
         t = json.dumps(token)
-        settings = aps.Settings(f"{self.workspace_id}_gitlab")
+        settings = aps.Settings(f"{self.workspace_id}_gitlab_self")
         settings.set("token", base64.b64encode(t.encode()).decode())
         settings.store()
 
+    def store_for_workspace(self, host_url: str, client_id: str):
+        sharedSettings = aps.SharedSettings(self.workspace_id, gitlab_self_shared_settings_key)
+        host_url = host_url.rstrip('/')
+        sharedSettings.set(gitlab_self_host_url_key, base64.b64encode(host_url.encode()).decode())
+        sharedSettings.set(gitlab_self_client_id_key, base64.b64encode(client_id.encode()).decode())
+        sharedSettings.store()
+
+    def setup_workspace_settings(self):
+        sharedSettings = aps.SharedSettings(self.workspace_id, gitlab_self_shared_settings_key)
+        host_url = sharedSettings.get(gitlab_self_host_url_key, None)
+        if host_url:
+            self.host_url = base64.b64decode(host_url.encode()).decode()
+            if self.host_url.startswith("http://"):
+                os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+        client_id = sharedSettings.get(gitlab_self_client_id_key, None)
+        if client_id:
+            self.client_id = base64.b64decode(client_id.encode()).decode()
+
+    def is_setup_for_workspace(self) -> bool:
+        sharedSettings = aps.SharedSettings(self.workspace_id, gitlab_self_shared_settings_key)
+        if sharedSettings.get(gitlab_self_host_url_key, None) is None:
+            return False
+        if sharedSettings.get(gitlab_self_client_id_key, None) is None:
+            return False
+        return True
+
     def is_setup(self) -> bool:
-        settings = aps.Settings(f"{self.workspace_id}_gitlab")
+        if not self.is_setup_for_workspace():
+            return False
+        settings = aps.Settings(f"{self.workspace_id}_gitlab_self")
         token64 = settings.get("token", None)
         return token64 is not None
     
     def get_current_group(self) -> Group:
-        settings = aps.Settings(f"{self.workspace_id}_gitlab")
+        settings = aps.Settings(f"{self.workspace_id}_gitlab_self")
         org_str = settings.get("group", None)
         if org_str:
             org_map = json.loads(base64.b64decode(org_str.encode()).decode())
@@ -127,14 +177,19 @@ class GitlabClient:
         }
 
         org_str = json.dumps(org_map)
-        settings = aps.Settings(f"{self.workspace_id}_gitlab")
+        settings = aps.Settings(f"{self.workspace_id}_gitlab_self")
         settings.set("group", base64.b64encode(org_str.encode()).decode())
         settings.store()
 
-    def clear_integration(self):
-        settings = aps.Settings(f"{self.workspace_id}_gitlab")
+    def clear_integration(self,  clear_workspace_settings: bool = False):
+        settings = aps.Settings(f"{self.workspace_id}_gitlab_self")
         settings.clear()
         settings.store()
+        if clear_workspace_settings:
+            sharedSettings = aps.SharedSettings(self.workspace_id, gitlab_self_shared_settings_key)
+            sharedSettings.clear()
+            self.host_url = None
+            self.client_id = None
 
     def setup_refresh_token(self):
         success = self.init()
@@ -145,9 +200,12 @@ class GitlabClient:
         except Exception as e:
             return False
         return True
-    
+
+    def get_api_url(self):
+        return self.host_url + "/api/v4"
+
     def _get_current_user(self):
-        response = self.oauth.get(f"{gitlab_api_url}/user")
+        response = self.oauth.get(f"{self.get_api_url()}/user")
         if not response:
             raise Exception("Could not get current user: ", response.text)
         
@@ -161,7 +219,7 @@ class GitlabClient:
     
     def _get_user_groups(self):
         min_access_level = 40 #Maintainer
-        response = self.oauth.get(f"{gitlab_api_url}/groups?min_access_level={min_access_level}")
+        response = self.oauth.get(f"{self.get_api_url()}/groups?min_access_level={min_access_level}")
         if not response:
             raise Exception("Could not get user groups: ", response.text)
         data = response.json()
@@ -202,7 +260,7 @@ class GitlabClient:
         return name + "_01"
 
     def create_project(self, group: Group, name: str):
-        url = f"{gitlab_api_url}/projects"
+        url = f"{self.get_api_url()}/projects"
 
         data = {
             "name": name,
@@ -236,7 +294,7 @@ class GitlabClient:
         if group.is_user:
             return
         
-        url = f"{gitlab_api_url}/groups/{group.id}/invitations"
+        url = f"{self.get_api_url()}/groups/{group.id}/invitations"
     
         response = self.oauth.get(url)
         if response.status_code == 200:
@@ -267,7 +325,7 @@ class GitlabClient:
         if group.is_user:
             return
         
-        member_url = f"{gitlab_api_url}/groups/{group.id}/members"
+        member_url = f"{self.get_api_url()}/groups/{group.id}/members"
         response = self.oauth.get(member_url)
 
         if response.status_code == 200:
@@ -286,7 +344,7 @@ class GitlabClient:
         elif response.status_code != 404:
             raise Exception("Error checking group members: ", response.text)
 
-        invitation_url = f"{gitlab_api_url}/groups/{group.id}/invitations"
+        invitation_url = f"{self.get_api_url()}/groups/{group.id}/invitations"
         response = self.oauth.get(invitation_url)
 
         if response.status_code == 200:
@@ -308,7 +366,7 @@ class GitlabClient:
     
 
     def _get_project_id_by_name(self, project_name, group: Group):
-        projects_url = f"{gitlab_api_url}/projects?search={project_name}&membership=true"
+        projects_url = f"{self.get_api_url()}/projects?search={project_name}&membership=true"
         response = self.oauth.get(projects_url)
 
         if response.status_code == 200:
@@ -320,7 +378,7 @@ class GitlabClient:
         raise Exception("Project not found.")
     
     def _is_user_invited_to_project(self, project_id, user_email):
-        invites_url = f"{gitlab_api_url}/projects/{project_id}/invitations"
+        invites_url = f"{self.get_api_url()}/projects/{project_id}/invitations"
         response = self.oauth.get(invites_url)
 
         if response.status_code == 200:
@@ -333,7 +391,7 @@ class GitlabClient:
         raise Exception("Failed to check project invitations.")
     
     def _invite_user_to_project(self, project_id, user_email):
-        invite_url = f"{gitlab_api_url}/projects/{project_id}/invitations"
+        invite_url = f"{self.get_api_url()}/projects/{project_id}/invitations"
         data = {
             "email": user_email,
             "access_level": 40  # access level maintainer
@@ -346,7 +404,7 @@ class GitlabClient:
             raise Exception("Failed to invite user to project.")
 
     def _remove_invited_user_from_project(self, project_id, user_email):
-        remove_invite_url = f"{gitlab_api_url}/projects/{project_id}/invitations/{user_email}"
+        remove_invite_url = f"{self.get_api_url()}/projects/{project_id}/invitations/{user_email}"
         response = self.oauth.delete(remove_invite_url)
 
         if not response:
@@ -364,7 +422,7 @@ class GitlabClient:
             self._remove_invited_user_from_project(project_id, user_email)
             return
 
-        member_url = f"{gitlab_api_url}/projects/{project_id}/members"
+        member_url = f"{self.get_api_url()}/projects/{project_id}/members"
         response = self.oauth.get(member_url)
 
         if response.status_code == 200:

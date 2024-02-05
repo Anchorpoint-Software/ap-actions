@@ -163,7 +163,7 @@ class GithubIntegration(ap.ApIntegration):
         self.client = GitHubClient(ctx.workspace_id, config.github_client_id, config.github_client_key)
 
         self.name = 'GitHub'
-        self.description = "Create GitHub repositories directly in Anchorpoint.<a href='https://docs.anchorpoint.app/docs/1-overview/integrations/github/'>Learn more</a>"
+        self.description = "Create GitHub repositories directly in Anchorpoint. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/github/'>Learn more</a>"
         self.priority = 99
         self.tags = integration_tags
 

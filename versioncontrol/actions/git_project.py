@@ -55,26 +55,6 @@ def url_changed(dialog: ap.Dialog, value):
         git_provider = "Bitbucket"
         
     dialog.set_value(remote_entry_login_info_text, f"You eventually need to <b>log into</b> {git_provider} after the final step")
-
-def path_changed(dialog: ap.Dialog, git, path, ctx):
-    from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
-    dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
-
-    git_ignore = dialog.get_value("ignore_dropdown")
-    if git_ignore == NO_IGNORE:
-        ignore_default = get_ignore_file_default(dropdown_values, path)
-        if not ignore_default:
-            dialog.set_value("ignore_dropdown", NO_IGNORE)
-        else:
-            dialog.set_value("ignore_dropdown", ignore_default)
-    url = get_repo_url(git, path)
-    if url and url != "":
-        dialog.set_value("url", url)
-
-    is_repo = is_git.is_git_repo(path)
-    if(is_repo):
-        dialog.hide_row(remote_entry_download_all_checkbox, True)
-        dialog.set_value(remote_entry_download_all_checkbox, True)
     
 def add_additional_scripts(yaml_dir, project_path, ignore_value):
     import shutil
@@ -131,6 +111,7 @@ try:
             self.git = None
             self.githelper = githelper
             self.setup_integration_name = None
+            self.is_local_repo = False
 
             try:
                 import vc.apgit.repository as git
@@ -143,6 +124,7 @@ try:
                 if self.git and os.path.exists(path) and path != "":
                     repo = self.git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
+                    self.is_local_repo = True
                 if remote != "":
                     print("remote", remote)
                     self.pre_selected = True
@@ -159,7 +141,7 @@ try:
 
 
             self.setup_integration_visible = False
-            self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: path_changed(d,self.git,v,ctx))
+            self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: self.path_changed(d,self.git,v,ctx))
 
             from add_ignore_config import get_ignore_file_dropdown_entries, NO_IGNORE
             dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
@@ -173,7 +155,7 @@ try:
             self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
             self.dialog.add_text("<b>Remote Settings</b>", var="remoteSettings")
             self.create_dropdown_entries(repo_url)
-            path_changed(self.dialog, self.git, self.path, ctx)
+            self.path_changed(self.dialog, self.git, self.path, ctx)
 
 
         def create_dropdown_entries(self, repo_url: str):
@@ -253,11 +235,42 @@ try:
             if not self.setup_integration_visible:
                 dialog.hide_row(setup_integration_btn,True)
 
+        def path_changed(self, dialog: ap.Dialog, git, path, ctx):
+            from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
+            dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
+
+            git_ignore = dialog.get_value("ignore_dropdown")
+            if git_ignore == NO_IGNORE:
+                ignore_default = get_ignore_file_default(dropdown_values, path)
+                if not ignore_default:
+                    dialog.set_value("ignore_dropdown", NO_IGNORE)
+                else:
+                    dialog.set_value("ignore_dropdown", ignore_default)
+            url = get_repo_url(git, path)
+            if url and url != "":
+                dialog.set_value("url", url)
+
+            self.is_local_repo = is_git.is_git_repo(path)
+            if(self.is_local_repo):
+                dialog.hide_row(remote_entry_download_all_checkbox, True)
+                dialog.set_value(remote_entry_download_all_checkbox, True)
+
+                try:
+                    repo = git.GitRepository.load(path)
+                    repo_url = repo.get_remote_url()
+                    if repo_url != "":
+                        dialog.set_value(create_project_dropdown, remote_dropdown_entry_name)
+                        dialog.set_value(remote_entry_url_input, repo_url)
+                except:
+                    self.is_local_repo = False
+                
+
         def toggle_row_visibility(self, dialog,value):
                 row_vars = self.dialog_var_map[value]
                 #show all rows of the selected integration action
                 for row_var in row_vars:
-                    dialog.hide_row(row_var,False)
+                    if not self.is_local_repo or row_var != remote_entry_download_all_checkbox:
+                        dialog.hide_row(row_var,False)
                 #hide all other rows
                 for key, row_vars in self.dialog_var_map.items():
                     if key != value:

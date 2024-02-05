@@ -159,7 +159,8 @@ def setup_credentials_async(dialog, org: str):
         GitRepository.store_credentials(devops_root, "https", result["username"], result["password"], org)
         ap.UI().show_success(title='Azure DevOps credentials stored', duration=3000, description=f'Azure DevOps credentials stored successfully.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+        print(f"Failed to store Azure DevOps credentials: {str(e)}")
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
@@ -194,7 +195,7 @@ class DevopsIntegration(ap.ApIntegration):
         createRepo.name = "New Azure DevOps Repository"
         createRepo.identifier = create_repo_dialog_entry
         createRepo.enabled = True
-        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOpsNew.svg")
+        createRepo.icon = aps.Icon(":/icons/organizations-and-products/AzureDevOps.svg")
         self.add_create_project_action(createRepo)
 
     def _setup_not_connected_state(self):
@@ -374,6 +375,10 @@ class DevopsIntegration(ap.ApIntegration):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
                                    description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+            elif "TF400813" in str(e):
+                ap.UI().show_error(title='Azure DevOps has issues to create your project', 
+                                   duration=8000, 
+                                   description=f'Check the <a href="https://dev.azure.com/{current_org}/_settings/organizationPolicy">policies</a>if Third-party application access via OAuth is enabled. If enabled, please check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a> or try again.')
             elif "TF50316" in str(e):
                 # Extract the name from the exception message
                 match = re.search(r'The following name is not valid: (.*). Please', str(e))
