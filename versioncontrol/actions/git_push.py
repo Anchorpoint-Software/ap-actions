@@ -6,6 +6,7 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
+from git_pull import pull
 from git_timeline import clear_forced_unlocked_config
 
 importlib.invalidate_caches()
@@ -39,10 +40,10 @@ def show_push_failed(repo, error: str, channel_id, ctx):
 
     print("Could not push: " + error)
 
-    if "Updates were rejected because the remote contains work that you do" in error or "failed to push some refs to" in error:
-        ap.UI().show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
-        return
-    if "Size must be less than or equal to" in error:
+    if "Updates were rejected because the remote contains work that you do" in error or "failed to push some refs to" in error or "non-fast-forward" in error or "Updates were rejected because the tip of your current branch is behind" in error:
+        d.add_text("There are newer changes on the server.")
+        d.add_info("While pushing your changes, someone else has pushed new changes to the server.<br>Just hit retry to pull the new changes and push your changes again.")
+    elif "Size must be less than or equal to" in error:
         d.add_text("A file is too large for GitHub.")
         d.add_info("GitHub does enforce a maximium size limit per file for Git LFS. Learn more about it <a href=\"https://docs.github.com/en/repositories/working-with-files/managing-large-files/about-git-large-file-storage\">here.</a>")
     elif "This repository is over its data quota" in error:
@@ -66,13 +67,13 @@ def show_push_failed(repo, error: str, channel_id, ctx):
             d.add_info("In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail.")
             error = "\n".join(TextWrapper(width=100).wrap(error))
             if error != "":
-                d.add_text(error)
+                d.add_text(f"Error: <i>{error}</i>")
 
             ap.UI().show_error("Push Failed", "The push failed, please try again.")
 
     def retry():
         ctx = ap.get_context()
-        ctx.run_async(push_async, channel_id, ctx)
+        ctx.run_async(sync_changes, channel_id, ctx)
         d.close()
 
     d.add_button("Retry", callback=lambda d: retry()).add_button("Close", callback=lambda d: d.close(), primary=False)
@@ -135,10 +136,75 @@ def delete_push_lockfiles(repo_git_dir):
         except Exception as e:
             print(f"An error occurred while deleting {lockfile}: {e}")
 
-def push_async(channel_id: str, ctx):
+def delay(func, progress, *args, **kwargs):
+    import time
+    time.sleep(1)
+    if progress: progress.finish()
+    func(*args, **kwargs)
+
+def repo_needs_pull(repo: GitRepository, progress):
+    if not progress:
+        progress = ap.Progress("Looking for Changes on Server", cancelable=True)
+    else:
+        progress.set_text("Looking for Changes on Server")
+    
+    try:
+        repo.fetch()
+        return repo.is_pull_required(), progress.canceled
+    except Exception as e:
+        git_errors.handle_error(e)
+        ap.UI().show_info("Could not get remote changes", duration = 4000)
+        raise e
+
+def pull_changes(repo: GitRepository, channel_id: str, ctx):
+    rebase = False
+    if rebase: raise NotImplementedError()
+
+    try:
+        if not pull(repo, channel_id, ctx):
+            raise Exception("Pull Failed")
+        
+        ap.vc_load_pending_changes(channel_id)
+        ap.refresh_timeline_channel(channel_id)
+
+    except Exception as e:
+        print(e)
+        raise e
+
+def sync_changes(channel_id: str, ctx):
+    ui = ap.UI()
+    path = get_repo_path(channel_id, ctx.project_path)
+    repo = GitRepository.load(path)
+    if not repo: return
+
+    ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
+    ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
+
+    pull_required, canceled = repo_needs_pull(repo, None)
+    if canceled:
+        ui.show_success("Push canceled")
+
+    if not pull_required:
+        # Queue async to give Anchorpoint a chance to update the timeline
+        ap.get_context().run_async(delay, push_changes, None, ctx, path, channel_id)
+    else:
+        try:
+            pull_changes(repo, channel_id, ctx)
+        except Exception as e:
+            git_errors.handle_error(e)
+            print(f"Auto-Push: Could not pull {str(e)}")
+            ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 20000)
+
+            ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
+            ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
+            return
+
+        # Queue async to give Anchorpoint a chance to update the timeline
+        ap.get_context().run_async(delay, push_changes, None, ctx, path, channel_id)
+
+def push_changes(ctx, path, channel_id):
     ui = ap.UI()
     try:
-        path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
@@ -149,14 +215,8 @@ def push_async(channel_id: str, ctx):
         
         ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
         
-        repo.fetch()
-        if repo.is_pull_required():
-            ui.show_info("Cannot Push Changes", "There are newer changes on the server, you have to pull them first")
-            ap.stop_timeline_channel_action_processing(channel_id, "gitpush")    
-            ap.refresh_timeline_channel(channel_id)
-            return
-        
         lockfile = get_push_lockfile(git_dir)
+        
         with open(lockfile, "w") as f:
             state = repo.push(progress=PushProgress(progress))
         
@@ -178,11 +238,13 @@ def push_async(channel_id: str, ctx):
         progress.finish()
         if git_dir:
             delete_push_lockfiles(git_dir)
+
+        ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
         ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
 
     ap.refresh_timeline_channel(channel_id)
 
 def on_timeline_channel_action(channel_id: str, action_id: str, ctx):
     if action_id != "gitpush": return False
-    ctx.run_async(push_async, channel_id, ctx)
+    ctx.run_async(sync_changes, channel_id, ctx)
     return True
