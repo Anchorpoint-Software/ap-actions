@@ -1,6 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 from gitlab_client import *
+import webbrowser
 import os
 
 integration_tags = ["git", "gitlab"]
@@ -71,6 +72,10 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
         print(str(e))
         ap.UI().show_error(title='Cannot remove member from GitLab', duration=10000, description=f'Failed to remove member from group. You have to remove your member <a href="https://gitlab.com/groups/{current_group.path}/-/group_members">directly on GitLab</a>.')
 
+def open_browser_and_close_dialog(dialog, url):
+    webbrowser.open(url)
+    dialog.close()
+
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
@@ -105,8 +110,16 @@ def on_add_user_to_project(email, ctx: ap.Context):
         ap.UI().show_success(title='Member added to GitLab project', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
-        print(str(e))
-        ap.UI().show_error(title='Cannot add member to GitLab project', duration=10000, description=f'You have to add your member <a href="https://gitlab.com/{current_group.path}/{repo_name}/-/project_members">directly on GitLab</a>.')
+        
+        import time
+        time.sleep(1)
+        dialog = ap.Dialog()
+        dialog.title = "Cannot add member to GitLab project"
+        dialog.icon = ":/icons/organizations-and-products/gitlab.svg"
+        dialog.add_info(f'You have to add your member directly on GitLab')
+        dialog.add_button("Add Member on GitLab", callback=lambda d: open_browser_and_close_dialog(d, f'https://gitlab.com/{current_group.path}/{repo_name}/-/project_members'))
+        dialog.show()
+        
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
