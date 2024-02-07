@@ -53,7 +53,7 @@ def unmount(dialog):
 def show_options():
     drives = get_used_drives()
     if len(drives) == 0:
-        ui.show_error("No drives to unmount", "Mount another drive first")
+        ui.show_info("No drives to unmount", "Mount another drive first")
         return
 
     dialog = ap.Dialog()
