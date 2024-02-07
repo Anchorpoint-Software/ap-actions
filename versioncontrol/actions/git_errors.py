@@ -294,7 +294,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         if repo_path:
             repo = GitRepository.load(repo_path)
             if repo:
-                repo.set_safe_directory()
+                repo.set_safe_directory(repo_path)
         else:
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
