@@ -1,5 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
+import webbrowser
 from gitea_client import *
 import os, re
 from urllib.parse import urlparse, urlunparse
@@ -82,6 +83,10 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
         print(str(e))
         ap.UI().show_error(title='Cannot remove member from Gitea', duration=10000, description=f'Failed to remove member from organization. You have to remove your member <a href="{client.get_host_url()}/org/{current_org.name}/teams/owners">directly on Gitea</a>.')
 
+def open_browser_and_close_dialog(dialog, url):
+    webbrowser.open(url)
+    dialog.close()
+
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
@@ -118,8 +123,15 @@ def on_add_user_to_project(email, ctx: ap.Context):
         ap.UI().show_success(title='Member added to Gitea repository', duration=3000, description=f'User {email} added to repository {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitea_repo_name(project.name)
-        print(str(e))
-        ap.UI().show_error(title='Cannot add member to Gitea repository', duration=10000, description=f'You have to add your member <a href="{client.get_host_url()}/{current_org.name}/{repo_name}/settings/collaboration">directly on Gitea</a>.')
+
+        import time
+        time.sleep(1)
+        dialog = ap.Dialog()
+        dialog.title = "Cannot add member to Gitea repository"
+        dialog.icon = ":/icons/organizations-and-products/gitea.svg"
+        dialog.add_info(f'You have to add your member directly on Gitea.')
+        dialog.add_button("Add Member on Gitea", callback=lambda d: open_browser_and_close_dialog(d, f'{client.get_host_url()}/{current_org.name}/{repo_name}/settings/collaboration'))
+        dialog.show()
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):

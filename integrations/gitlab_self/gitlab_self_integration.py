@@ -1,5 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
+import webbrowser
 from gitlab_self_client import *
 from urllib.parse import urlparse, urlunparse
 import os
@@ -82,6 +83,10 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
         print(str(e))
         ap.UI().show_error(title='Cannot remove member from GitLab', duration=10000, description=f'Cannot remove member from group. You have to remove your member <a href="{client.get_host_url()}/groups/{current_group.path}/-/group_members">directly from your GitLab server</a>.')
 
+def open_browser_and_close_dialog(dialog, url):
+    webbrowser.open(url)
+    dialog.close()
+
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
@@ -118,8 +123,15 @@ def on_add_user_to_project(email, ctx: ap.Context):
         ap.UI().show_success(title='Member added to GitLab project', duration=3000, description=f'User {email} added to project {project.name}.')
     except Exception as e:
         repo_name = client.generate_gitlab_repo_name(project.name)
-        print(str(e))
-        ap.UI().show_error(title='Cannot add member to GitLab project', duration=10000, description=f'You have to add your member <a href="{client.get_host_url()}/{current_group.path}/{repo_name}/-/project_members">directly on your GitLab server</a>.')
+        
+        import time
+        time.sleep(1)
+        dialog = ap.Dialog()
+        dialog.title = "Cannot add member to GitLab project"
+        dialog.icon = ":/icons/organizations-and-products/gitlab.svg"
+        dialog.add_info(f'You have to add your member directly on GitLab')
+        dialog.add_button("Add Member on GitLab", callback=lambda d: open_browser_and_close_dialog(d, f'{client.get_host_url()}/{current_group.path}/{repo_name}/-/project_members'))
+        dialog.show()
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
@@ -198,7 +210,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         self.client = GitlabSelfClient(ctx.workspace_id)
 
         self.name = 'GitLab (self-hosted)'
-        self.description = "Manage your own hosted GitLab server directly from Anchorpoint.<br>Each member will need an GitLab (self-hosted) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab_self/'>Learn more</a>"
+        self.description = "Manage your own hosted GitLab server directly from Anchorpoint.<br>Each member will need an GitLab (self-hosted) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab_self-hosted/'>Learn more</a>"
         self.priority = 97
         self.tags = integration_tags
 
@@ -370,7 +382,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
             dialog.set_value(client_values_info_entry, "Please insert your valid GitLab url first.")
             return "Please insert a valid url"
         extracted_url = self.extract_server_url(value)
-        dialog.set_value(client_values_info_entry, f"Create a <a href='{extracted_url}/admin/applications/new'>GitLab OAuth app</a> with following settings:<br><br>1. Application Name: <b>Anchorpoint</b><br>2. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>3. Uncheck <b>Confidential</b> checkbox and check <b>Trusted</b> checkbox<br>4. Check api, read_user, read_repository, write_repository, profile and email scopes<br>5. Press <b> Save Application</b> and enter the client id below")
+        dialog.set_value(client_values_info_entry, f"Create a <a href='{extracted_url}/-/user_settings/applications'>GitLab OAuth app</a> with following settings:<br><br>1. Press <b>Add new application</b><br>2. Application Name: <b>Anchorpoint</b><br>3. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>4. Uncheck <b>Confidential</b> checkbox<br>5. Check api, read_user, read_repository, write_repository, profile and email scopes<br>6. Press <b>Save Application</b> and enter the <b>Application ID</b> below<br><br> If you cannot create an GitLab OAuth app, please ask your<br>GitLab admin to create one for you.")
         return
     
     def extract_server_url(self, url: str):
@@ -423,7 +435,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
 
         dialog.add_text("<b>2. GitLab OAuth Application</b>", var="oauthapp")
         dialog.add_info("Insert your valid GitLab URL first", var=client_values_info_entry)
-        dialog.add_text("Client ID")
+        dialog.add_text("Application ID")
         dialog.add_input(placeholder='xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', var=client_id_entry, width=400, validate_callback=self.validate_client_id)
 
         dialog.add_button("Connect to GitLab", var=connect_to_server_btn_entry, callback=lambda d: self.connect_to_server(d), enabled=False)
@@ -482,7 +494,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         dialog = ap.Dialog()
         dialog.name = clear_action_id
         dialog.title = "Disconnect GitLab"
-        dialog.icon = os.path.join(self.ctx.yaml_dir, "gitea/logo.svg")
+        dialog.icon = os.path.join(self.ctx.yaml_dir, "gitlab_self/logo.svg")
 
         dialog.add_text("Do you also want to remove the gitlab server infos (url,<br>client id) for all workspace members?")
         dialog.add_checkbox(text="Delete gitlab server infos from workspace",var=remove_data_entry, default=False)

@@ -1,5 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
+import webbrowser
+import urllib.parse 
 from azure_devops_client import *
 import os
 
@@ -67,6 +69,20 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     except Exception as e:
         ap.UI().show_error(title='Cannot remove user from Azure DevOps', duration=10000, description=f'Failed to remove user from organization, because "{str(e)}". Please remove manually <a href="https://{devops_root}/{current_org}/_settings/users">here</a>.')
 
+def open_browser_and_close_dialog(dialog, url):
+    webbrowser.open(url)
+    dialog.close()
+
+def show_add_member_error_dialog(title, message, url, btn_text):
+    import time
+    time.sleep(1)
+    dialog = ap.Dialog()
+    dialog.title = title
+    dialog.icon = ":/icons/organizations-and-products/AzureDevOps.svg"
+    dialog.add_info(message)
+    dialog.add_button(btn_text, callback=lambda d: open_browser_and_close_dialog(d, url))
+    dialog.show()
+
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
@@ -101,9 +117,11 @@ def on_add_user_to_project(email, ctx: ap.Context):
         client.add_user_to_project(current_org, email, azureProject.project_id)
         ap.UI().show_success(title='User added to Azure DevOps project', duration=3000, description=f'User {email} added to project {project.name}.')
     except BillingSetupRequiredException as bsre:
-        ap.UI().show_error(title='Cannot add user to Azure DevOps', duration=10000, description=f'You need to setup <a href="{bsre.href_url}">billing</a> to invite more members.')
+        show_add_member_error_dialog("Cannot add user to Azure DevOps", f"You need to setup billing to invite more members.", bsre.href_url, "Setup Billing")
     except Exception as e:
-        ap.UI().show_error(title='Cannot add user to Azure DevOps project', duration=10000, description=f'Failed to add user, because "{str(e)}". Please add manually.')
+        encoded_project_name = urllib.parse.quote(project_name)
+        project_url = f'https://dev.azure.com/{current_org}/{encoded_project_name}/_settings/teams'
+        show_add_member_error_dialog("Cannot add user to Azure DevOps project", f'Failed to add user, because "{str(e)}".<br>Please add user manually.', project_url, "Add User on Azure DevOps")
         return
 
 def on_remove_user_from_project(email, ctx: ap.Context):
@@ -393,10 +411,18 @@ class DevopsIntegration(ap.ApIntegration):
                     ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                        duration=8000, 
                                        description=f'Failed to create, because project name does not conform to the Azure DevOps <a href="https://learn.microsoft.com/en-us/azure/devops/organizations/settings/naming-restrictions?view=azure-devops#azure-repos-git">naming restrictions</a>. Please try again with a different name.')
+            elif "TF50309" in str(e):
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             elif "project already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
                                    description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
+            elif "Connection aborted" in str(e):
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             else:
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 

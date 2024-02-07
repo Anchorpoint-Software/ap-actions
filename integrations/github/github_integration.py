@@ -1,5 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
+import webbrowser
 from github_client import *
 import os
 
@@ -65,6 +66,11 @@ def on_remove_user_from_workspace(email, ctx: ap.Context):
     except Exception as e:
         ap.UI().show_error(title='Cannot remove member from GitHub', duration=10000, description=f'Failed to remove member from organization, because "{str(e)}". Please remove manually <a href="https://github.com/orgs/{current_org.login}/people">here</a>.')
 
+def open_browser_and_close_dialog(dialog, url):
+    print(f"{url} called for open in browser")
+    webbrowser.open(url)
+    dialog.close()
+
 def on_add_user_to_project(email, ctx: ap.Context):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "integration_info")
     project_integration_tags = settings.get("integration_tags")
@@ -102,12 +108,20 @@ def on_add_user_to_project(email, ctx: ap.Context):
         integration_project_name = settings.get(integration_project_name_key, None)
         if integration_project_name is not None:
             repo_name = integration_project_name
+        
+        import time
+        time.sleep(1)
+        dialog = ap.Dialog()
+        dialog.title = "Cannot add member to GitHub repository"
+        dialog.icon = ":/icons/organizations-and-products/github.svg"
         if "Organization is required." in str(e):
-            ap.UI().show_error(title='Cannot add member to GitHub repository', duration=8000, description=f'No organization found. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
+            dialog.add_info(f'No organization found. You have to add your member directly on GitHub.')
         elif "No matching member found." in str(e):
-            ap.UI().show_error(title='Cannot add member to GitHub repository', duration=8000, description=f'It appears that the GitHub username is different from the member\'s email address. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
+            dialog.add_info(f'It appears that the GitHub username is different from the member\'s email address. You have to add your member directly on GitHub.')
         else:
-            ap.UI().show_error(title='Cannot add member to GitHub repository', duration=10000, description=f'It appears that the GitHub username is different from the member\'s email address. You have to add your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
+            dialog.add_info(f'It appears that the GitHub username is different from the member\'s email address. You have to add your member directly on GitHub.')
+        dialog.add_button("Add Member on GitHub", callback=lambda d: open_browser_and_close_dialog(d, f'https://github.com/{current_org.login}/{repo_name}/settings/access'))
+        dialog.show()
         return
     
 def on_remove_user_from_project(email, ctx: ap.Context):
