@@ -415,6 +415,10 @@ class DevopsIntegration(ap.ApIntegration):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
                                    description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
+            elif "Connection aborted" in str(e):
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             else:
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
