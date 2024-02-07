@@ -411,6 +411,10 @@ class DevopsIntegration(ap.ApIntegration):
                     ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                        duration=8000, 
                                        description=f'Failed to create, because project name does not conform to the Azure DevOps <a href="https://learn.microsoft.com/en-us/azure/devops/organizations/settings/naming-restrictions?view=azure-devops#azure-repos-git">naming restrictions</a>. Please try again with a different name.')
+            elif "TF50309" in str(e):
+                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
+                                   duration=8000, 
+                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             elif "project already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
