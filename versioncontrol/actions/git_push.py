@@ -51,6 +51,9 @@ def show_push_failed(repo, error: str, channel_id, ctx):
         d.add_info("To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.")
     elif "protected branch" in error:
         d.add_text("The branch is protected, you cannot push to it.")
+    elif "Couldn't connect to server" in error or "Could not resolve host" in error or "Timed out" in error or "Connection refused" in error or "no such host" in error:
+        d.add_text("Could not connect to the Git server, maybe you are offline?")
+        d.add_info("Please check your internet connection and try again.")
     else:
         corrupt_lfs = False
         try:
