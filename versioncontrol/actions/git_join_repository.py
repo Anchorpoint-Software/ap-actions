@@ -66,7 +66,7 @@ if __name__ == "__main__":
             ap.refresh_timeline_channel(timeline_channel.id)
 
         except Exception as e:
-            print(e)
+            ap.log_error(f"Cannot join Git Repository: {str(e)}")
             d = ap.Dialog()
             d.title = "Cannot join Git Repository"
             d.icon = ":/icons/versioncontrol.svg"

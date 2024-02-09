@@ -38,7 +38,7 @@ def show_push_failed(repo, error: str, channel_id, ctx):
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
 
-    print("Could not push: " + error)
+    ap.log_error(f"Could not push: {error}")
 
     if "Updates were rejected because the remote contains work that you do" in error or "failed to push some refs to" in error or "non-fast-forward" in error or "Updates were rejected because the tip of your current branch is behind" in error:
         d.add_text("There are newer changes on the server.")
@@ -71,8 +71,6 @@ def show_push_failed(repo, error: str, channel_id, ctx):
             error = "\n".join(TextWrapper(width=100).wrap(error))
             if error != "":
                 d.add_text(f"Error: <i>{error}</i>")
-
-            ap.UI().show_error("Push Failed", "The push failed, please try again.")
 
     def retry():
         ctx = ap.get_context()
@@ -211,7 +209,6 @@ def push_changes(ctx, path, channel_id):
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Pushing Git Changes", cancelable=True)
-        
         git_dir = repo.get_git_dir()
         if push_in_progress(git_dir):
             return
