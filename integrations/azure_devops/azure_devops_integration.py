@@ -306,7 +306,10 @@ class DevopsIntegration(ap.ApIntegration):
             self.is_connected = True
             self.start_update()
         except Exception as e:
-            ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
+            if "No organizations found" in str(e):
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'No organizations found. Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
+            else:
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             return
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
