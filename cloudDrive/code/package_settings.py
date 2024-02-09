@@ -34,7 +34,7 @@ def create_dialog():
         dialog.icon = ctx.icon 
 
     dialog.add_text("Server\t\t").add_dropdown(rclone_config.get_dropdown_label(configuration["type"]), dropdown_values, var="type_var",callback = toggleOptions)
-    dialog.add_info("Choose an S3 compatible server such as AWS, Wasabi or choose <br>a Backblaze B2 server. Take a look at this <a href='https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/'>tutorial</a>.")
+    dialog.add_info("Choose an S3 compatible server such as AWS, Wasabi or choose <br>a Backblaze B2 server. Take a look at this <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/cloud-drive/'>tutorial</a>.")
 
     #Backblaze
     dialog.add_text("Key Id\t\t").add_input(configuration["b2_account"],placeholder="039skN...",var="b2_account_var")

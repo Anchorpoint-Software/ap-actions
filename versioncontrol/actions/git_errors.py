@@ -132,7 +132,7 @@ def _handle_azure_ipv6():
         d.title = "Azure DevOps requires a configuration change"
         d.icon = ":/icons/versioncontrol.svg"
         d.add_text("May Anchorpoint apply the change for you?\nWindows will ask you for permission.")
-        d.add_info("Learn more about <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/#azure-devops-network-configuration\">Azure DevOps network configuration</a>")
+        d.add_info("Learn more about <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/#azure-devops-network-configuration\">Azure DevOps network configuration</a>")
         d.add_button("Continue", callback=lambda d:_apply_azure_ipv4(d, ipv4_address, hostname))
         d.show()
         
@@ -185,7 +185,7 @@ def show_repository_not_found_error(message):
         d.title = "Your repository was not found"
         d.icon = ":/icons/versioncontrol.svg"
         d.add_text(f"The URL {url}<br>cannot be found under your account.")
-        d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
+        d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">troubleshooting</a> for help.")
         d.add_button("OK", callback=lambda d: d.close())
         d.show()
         return True
@@ -244,7 +244,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
 
     if "Not a git repository" in message:
-        ap.UI().show_info("Not a git repository", "This folder is not a git repository. Check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.", duration=6000)
+        ap.UI().show_info("Not a git repository", "This folder is not a git repository. Check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">troubleshooting</a> for help.", duration=6000)
         return True
 
     if "Connection was reset" in message and "fatal: unable to access" in message and "dev.azure" in message:
@@ -268,7 +268,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     
     if "LFS object not found" in message:
         print(message)
-        ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
+        ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
         return True
     
     if "detected dubious ownership in repository" in message:
@@ -286,7 +286,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         match = re.search(r"unable to access '(.*?)':", message)
         if match:
             repo_url = match.group(1)
-            error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">git troubleshooting</a>."
+            error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
             ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
         return True
 

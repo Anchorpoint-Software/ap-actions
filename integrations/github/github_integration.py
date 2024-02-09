@@ -177,7 +177,7 @@ class GithubIntegration(ap.ApIntegration):
         self.client = GitHubClient(ctx.workspace_id, config.github_client_id, config.github_client_key)
 
         self.name = 'GitHub'
-        self.description = "Create GitHub repositories directly in Anchorpoint. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/github/'>Learn more</a>"
+        self.description = "Create GitHub repositories directly in Anchorpoint. <a href='https://docs.anchorpoint.app/docs/general/integrations/github/'>Learn more</a>"
         self.priority = 99
         self.tags = integration_tags
 
@@ -360,5 +360,5 @@ class GithubIntegration(ap.ApIntegration):
             if "already exists" in str(e):
                 ap.UI().show_error(title='Cannot create GitHub Repository', duration=8000, description=f'Failed to create, because repository with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create GitHub Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/github">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create GitHub Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/github">troubleshooting</a>.')
             raise e

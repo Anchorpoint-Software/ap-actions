@@ -178,7 +178,7 @@ def setup_credentials_async(dialog, org: str):
         ap.UI().show_success(title='Azure DevOps credentials stored', duration=3000, description=f'Azure DevOps credentials stored successfully.')
     except Exception as e:
         print(f"Failed to store Azure DevOps credentials: {str(e)}")
-        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
@@ -192,7 +192,7 @@ class DevopsIntegration(ap.ApIntegration):
         self.client = AzureDevOpsClient(ctx.workspace_id)
 
         self.name = 'Azure DevOps'
-        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/'>Learn more</a>"
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/'>Learn more</a>"
         self.priority = 100
         self.tags = integration_tags
 
@@ -307,9 +307,9 @@ class DevopsIntegration(ap.ApIntegration):
             self.start_update()
         except Exception as e:
             if "No organizations found" in str(e):
-                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'No organizations found. Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'No organizations found. Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             else:
-                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             return
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
@@ -395,11 +395,11 @@ class DevopsIntegration(ap.ApIntegration):
             if "TF50309" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             elif "TF400813" in str(e):
                 ap.UI().show_error(title='Azure DevOps has issues to create your project', 
                                    duration=8000, 
-                                   description=f'Check the <a href="https://dev.azure.com/{current_org}/_settings/organizationPolicy">policies</a>if Third-party application access via OAuth is enabled. If enabled, please check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a> or try again.')
+                                   description=f'Check the <a href="https://dev.azure.com/{current_org}/_settings/organizationPolicy">policies</a>if Third-party application access via OAuth is enabled. If enabled, please check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a> or try again.')
             elif "TF50316" in str(e):
                 # Extract the name from the exception message
                 match = re.search(r'The following name is not valid: (.*). Please', str(e))
@@ -417,7 +417,7 @@ class DevopsIntegration(ap.ApIntegration):
             elif "TF50309" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             elif "project already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
@@ -425,9 +425,9 @@ class DevopsIntegration(ap.ApIntegration):
             elif "Connection aborted" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             else:
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             raise e

@@ -210,7 +210,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         self.client = GitlabSelfClient(ctx.workspace_id)
 
         self.name = 'GitLab (self-hosted)'
-        self.description = "Manage your own hosted GitLab server directly from Anchorpoint.<br>Each member will need an GitLab (self-hosted) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab_self-hosted/'>Learn more</a>"
+        self.description = "Manage your own hosted GitLab server directly from Anchorpoint.<br>Each member will need an GitLab (self-hosted) account. <a href='https://docs.anchorpoint.app/docs/general/integrations/gitlab-self-hosted/'>Learn more</a>"
         self.priority = 97
         self.tags = integration_tags
 
@@ -528,5 +528,5 @@ class GitlabSelfIntegration(ap.ApIntegration):
             if "has already been taken" in str(e):
                 ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab_self">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/gitlab_self">troubleshooting</a>.')
             raise e

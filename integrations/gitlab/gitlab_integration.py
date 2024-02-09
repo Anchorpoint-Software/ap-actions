@@ -190,7 +190,7 @@ class GitlabIntegration(ap.ApIntegration):
         self.client = GitlabClient(ctx.workspace_id, config.gitlab_client_id, config.gitlab_client_key)
 
         self.name = 'GitLab (gitlab.com)'
-        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an GitLab (gitlab.com) account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab/'>Learn more</a>"
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an GitLab (gitlab.com) account. <a href='https://docs.anchorpoint.app/docs/general/integrations/gitlab/'>Learn more</a>"
         self.priority = 98
         self.tags = integration_tags
 
@@ -384,5 +384,5 @@ class GitlabIntegration(ap.ApIntegration):
             if "has already been taken" in str(e):
                 ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitlab">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/gitlab">troubleshooting</a>.')
             raise e

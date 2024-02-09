@@ -209,7 +209,7 @@ class GiteaIntegration(ap.ApIntegration):
         self.client = GiteaClient(ctx.workspace_id)
 
         self.name = 'Gitea (self-hosted)'
-        self.description = "A self-hosted Git repository for local or cloud servers. Create repositories <br> and add members directly from Anchorpoint. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/gitea/'>Learn more</a>"
+        self.description = "A self-hosted Git repository for local or cloud servers. Create repositories <br> and add members directly from Anchorpoint. <a href='https://docs.anchorpoint.app/docs/general/integrations/gitea/'>Learn more</a>"
         self.priority = 96
         self.tags = integration_tags
 
@@ -545,5 +545,5 @@ class GiteaIntegration(ap.ApIntegration):
             if "already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Gitea Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
-                ap.UI().show_error(title='Cannot create Gitea Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/gitea">troubleshooting</a>.')
+                ap.UI().show_error(title='Cannot create Gitea Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/gitea">troubleshooting</a>.')
             raise e
