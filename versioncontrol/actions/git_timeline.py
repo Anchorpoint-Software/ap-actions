@@ -665,6 +665,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         get_cached_paths(entry_id, repo, changes)
 
         has_remote = repo.has_remote()
+        conflicts = repo.has_conflicts()
 
         if not repo.commit_not_pulled(entry_id):
             revert = ap.TimelineChannelAction()
@@ -672,7 +673,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
             revert.icon = aps.Icon(":/icons/undo.svg")
             revert.identifier = "gitrevertcommit"
             revert.type = ap.ActionButtonType.SecondaryText
-            revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files."
+            revert.tooltip = "Undoes all file changes from this commit. The files will show up as changed files." if not conflicts else "Cannot undo commit, resolve conflicts first"
+            revert.enabled = not conflicts
             details.actions.append(revert)
 
             if has_remote:
