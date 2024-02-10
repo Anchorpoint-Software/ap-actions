@@ -309,7 +309,7 @@ class DevopsIntegration(ap.ApIntegration):
             if "No organizations found" in str(e):
                 ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'No organizations found. Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             elif "Connection aborted" in str(e):
-                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because the connection was aborted. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page.')
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because the connection was aborted. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page.')
             else:
                 ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             return
