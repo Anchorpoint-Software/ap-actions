@@ -289,7 +289,10 @@ class GithubIntegration(ap.ApIntegration):
             self.is_connected = True
             self.start_update()
         except Exception as e:
-            ap.UI().show_error(title='GitHub authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
+            if "Connection aborted" in str(e):
+                ap.UI().show_error(title='GitHub authentication failed', duration=6000, description=f'The authentication failed, because the connection was aborted. Please try again.')
+            else:
+                ap.UI().show_error(title='GitHub authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
             return
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
