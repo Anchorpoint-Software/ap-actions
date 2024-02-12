@@ -134,17 +134,17 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please remove manually.')
         return
     
     client = AzureDevOpsClient(ctx.workspace_id)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Azure DevOps integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Azure DevOps integration is not setup. Please remove manually.')
         return
     
     if not client.setup_refresh_token():
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to connect integration. Please remove manually.')
         return
     
     current_org = client.get_current_organization()
@@ -157,7 +157,7 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         client.remove_user_from_project(current_org, email, project_name)
         ap.UI().show_success(title='User removed from Azure DevOps project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please remove manually.')
         return
 
 def setup_credentials_async(dialog, org: str):
