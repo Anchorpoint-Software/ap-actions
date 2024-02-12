@@ -69,7 +69,11 @@ def get_repo_path(channel_id: str, project_path: str):
     return folder
 
 def get_repo_url_from_channel(channel_id: str, workspace_id: str, project_id: str):
-    project = aps.get_project_by_id(project_id, workspace_id)
+    try:
+        project = aps.get_project_by_id(project_id, workspace_id)
+    except Exception as e:
+        print(f"get_repo_url_from_channel failed with {str(e)}")
+        return None
     if not project: return None
     channel = aps.get_timeline_channel(project, channel_id)
     if not channel: return None
