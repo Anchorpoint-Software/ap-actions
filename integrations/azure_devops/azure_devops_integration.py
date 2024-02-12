@@ -280,11 +280,16 @@ class DevopsIntegration(ap.ApIntegration):
                 current_org = self.client.get_current_organization()
                 display_name = self.client.get_user().display_name
                 if current_org is None:
+                    if not organizations:
+                        raise Exception("Organizations list is empty")
                     current_org = organizations[0]
                     self.client.set_current_organization(current_org)
                 self.show_settings_dialog(current_org, display_name, organizations)
             except Exception as e:
-                ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
+                if "Organizations list is empty" in str(e):
+                    ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because no organizations where found. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/">troubleshooting</a> page.')
+                else:
+                    ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
                 return
 
     def on_auth_deeplink_received(self, url: str):
