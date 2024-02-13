@@ -258,7 +258,7 @@ try:
                 try:
                     repo = git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
-                    if repo_url != "":
+                    if repo_url and repo_url != "":
                         dialog.set_value(create_project_dropdown, remote_dropdown_entry_name)
                         dialog.set_value(remote_entry_url_input, repo_url)
                 except:
