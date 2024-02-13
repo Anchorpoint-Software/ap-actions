@@ -101,10 +101,31 @@ class GitHubClient:
         script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
+
+        def _setup_credentials_with_retry(retries=3):
+            import time
+            for i in range(retries):
+                try:
+                    GitRepository.store_credentials("github.com", "https", "Personal Access Token", token["access_token"])
+                    credentials = GitRepository.get_credentials("github.com", "https")
+                    if credentials:
+                        return
+                    else:
+                        raise Exception("Credentials are empty")
+                except Exception as e:
+                    print(f"Could not store credentials on attempt {i+1}: {str(e)}")
+                    if i < retries - 1:
+                        time.sleep(0.2)
+                        continue
+                    else:
+                        raise Exception(f"Credentials are empty after {retries} retries with last error: {str(e)}")
+            return
+
         try:
-            GitRepository.store_credentials("github.com", "https", "Personal Access Token", token["access_token"])
+            _setup_credentials_with_retry(retries=3)
         except Exception as e:
             print(f"Could not store credentials: {str(e)}")
+            raise e
         finally:
             if script_dir in sys.path:
                 sys.path.remove(script_dir)
