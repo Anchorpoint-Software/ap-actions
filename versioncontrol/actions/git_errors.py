@@ -179,13 +179,18 @@ def show_repository_not_found_error(message):
     context = ap.get_context()
     if not context: 
         return False
-
+    
     if url:
         d = ap.Dialog()
         d.title = "Your repository was not found"
         d.icon = ":/icons/versioncontrol.svg"
         d.add_text(f"The URL {url}<br>cannot be found under your account.")
-        d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">troubleshooting</a> for help.")
+        
+        if "github" in url.lower():
+            d.add_info("If you're using our GitHub integration, try disconnecting and connecting it again.<br>If you are not using the GitHub integration, check if you are logged in with the correct GitHub account.")
+        else:
+            d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">troubleshooting</a> for help.")
+        
         d.add_button("OK", callback=lambda d: d.close())
         d.show()
         return True

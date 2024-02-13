@@ -1,6 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 import os, sys, platform
+import git_errors
 
 import is_git_repo as is_git
 
@@ -400,7 +401,14 @@ try:
             self.githelper.update_project(project_path, url, False, None, project)
             if url:
                 repo.add_remote(url)
-                repo.fetch(progress=self.githelper.FetchProgress(progress))
+                try:
+                    repo.fetch(progress=self.githelper.FetchProgress(progress))
+                except Exception as e:
+                    ap.close_create_project_dialog()
+                    import time
+                    time.sleep(0.25)
+                    git_errors.handle_error(e)
+                    raise e
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
                     ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains files.", duration=10000)
