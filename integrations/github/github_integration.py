@@ -168,6 +168,75 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         else:
             ap.UI().show_error(title='Cannot remove member from GitHub repository', duration=10000, description=f'Failed to remove member, because "{str(e)}". You have to remove your member <a href="https://github.com/{current_org.login}/{repo_name}/settings/access">directly on GitHub</a>.')
         return
+    
+def retry_create_test_repo(client: GitHubClient, dialog):
+    dialog.close()
+    ctx = ap.get_context()
+    ctx.run_async(create_test_repo_async, client)
+
+def show_test_repo_error_dialog(client: GitHubClient, message):
+    dialog = ap.Dialog()
+    dialog.title = "We have found an issue"
+    dialog.icon = ":/icons/organizations-and-products/AzureDevOps.svg"
+    dialog.add_info(message)
+    dialog.add_button("Retry", callback=lambda d: retry_create_test_repo(client, d), primary=True)
+    dialog.show()
+
+def create_test_repo_async(client: GitHubClient):
+    current_org = client.get_current_organization()
+    progress = None
+    try:
+        progress = ap.Progress("Testing GitHub Integration", "Creating Anchorpoint-Test repository", infinite=True, show_loading_screen=True)
+        new_repo = client.create_repository(current_org, "Anchorpoint-Test")
+        if new_repo is None:
+            raise Exception("Created project not found")
+    except Exception as e:
+        def get_dialog_create_message(reason: str):
+            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the selected organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work anyway, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
+        if "301" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("the organization was renamed or deleted"))
+        elif "403" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message(f"you do not have permission to create a repository in {current_org.name}"))
+        elif "404" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("the organization could not be found"))
+        else:
+            show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
+        return
+    finally:
+        if progress is not None:
+            progress.finish()
+    
+    import sys, os
+    script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    temp_path = None
+    try:
+        progress.set_text("Cloning Anchorpoint-Test Repository")
+        repo_url = new_repo.clone_url
+        ctx = ap.get_context()
+        import tempfile
+        temp_path = tempfile.mkdtemp()
+        GitRepository.clone(repo_url, temp_path, ctx.username, ctx.email)
+    except Exception as e:
+        def get_dialog_clone_message(reason: str):
+            return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work anyway, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
+        print(f"Failed to clone repository: {str(e)}")
+        show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
+        return
+    finally:
+        if temp_path is not None:
+            import shutil
+            try:
+                shutil.rmtree(temp_path)
+            except Exception as e:
+                print(f"Failed to remove temp path: {str(e)}")
+        if progress is not None:
+            progress.finish()
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
+    ap.UI().show_success(title='GitHub Integration Test sucessful', duration=3000, description=f'Test repository "Anchorpoint-Test" created and cloned successfully.')
 
 class GithubIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
@@ -307,13 +376,17 @@ class GithubIntegration(ap.ApIntegration):
         if action_id == create_repo_dialog_entry:
             return self.create_new_repo(project_id, project_name, progress)
 
-    def apply_org_callback(self, dialog: ap.Dialog, organizations):
-        org_name = dialog.get_value(settings_org_dropdown_entry)
-        org = next((x for x in organizations if x.name == org_name), None)
+    def create_test_repo_btn_callback(self, dialog: ap.Dialog):
+        dialog.close()
+        ctx = ap.get_context()
+        ctx.run_async(create_test_repo_async, self.client)
+
+    def apply_org_callback(self, dialog: ap.Dialog, value, organizations):
+        org = next((x for x in organizations if x.name == value), None)
         if org is None:
             return
+        print("Selected organization: " + org.name)
         self.client.set_current_organization(org)
-        dialog.close()
 
     def show_settings_dialog(self, current_org, organizations):
         dialog = ap.Dialog()
@@ -321,11 +394,11 @@ class GithubIntegration(ap.ApIntegration):
         dialog.title = "GitHub Settings"
         dialog.icon = os.path.join(self.ctx.yaml_dir, "github/logo.svg")
 
-        dialog.add_text("<b>1.Account</b>", var="accounttext")
+        dialog.add_text("<b>1. Account</b>", var="accounttext")
         dialog.add_text(organizations[0].name)
         dialog.add_empty()
 
-        dialog.add_text("<b>2.Organization</b>", var="orgtext")
+        dialog.add_text("<b>2. Organization</b>", var="orgtext")
 
         dropdown_entries = []
 
@@ -339,12 +412,18 @@ class GithubIntegration(ap.ApIntegration):
             entry.use_icon_color = True
             dropdown_entries.append(entry)
 
-        dialog.add_dropdown(current_org.name, dropdown_entries, var=settings_org_dropdown_entry)
+        dialog.add_dropdown(current_org.name, dropdown_entries, callback=lambda d, v: self.apply_org_callback(d,v, organizations), var=settings_org_dropdown_entry)
 
         if len(organizations) > 1:
-            dialog.add_info("It looks like you are member of organizations on GitHub.<br>Select the one you want to connect to this Anchorpoint workspace<br>or use your personal account.")
+            dialog.add_info("It looks like you are member of organizations on GitHub.<br>Select the one you want to connect to this Anchorpoint<br>workspace or use your personal account.")
 
-        dialog.add_button("Apply", var="apply", callback=lambda d: self.apply_org_callback(d, organizations))
+        dialog.add_empty()
+
+        dialog.add_text("<b>3. Test Integration</b>")
+        dialog.add_info("Anchorpoint will create and clone a repository called<br>\"Anchorpoint-Test\" to check if the integration is working<br>properly. You can delete this repository later.")
+        dialog.add_button("Create Test Repository", callback=lambda d: self.create_test_repo_btn_callback(d))
+        dialog.add_empty()
+
         dialog.show()
 
     def create_new_repo(self, project_id:str, project_name: str, progress: ap.Progress) -> str:

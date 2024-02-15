@@ -256,7 +256,7 @@ class GitHubClient:
         if not response:
             if "already exists" in response.text:
                 return self.create_repository(organization, self._get_auto_adjusted_repository_name(name))
-            raise Exception("Could not create repository: ", response.text)
+            raise Exception(f"Could not create repository with status code: {response.status_code} and message: {response.text}")
         data = response.json()
         return RemoteRepository(name=data["name"],
                                 clone_url=data["clone_url"],
