@@ -218,7 +218,7 @@ class GitlabClient:
         if not response:
             if "has already been taken" in response.text:
                 return self.create_project(group, self._get_auto_adjusted_project_name(name))
-            raise Exception("Could not create repository: ", response.text)
+            raise Exception(f"Could not create repository: {response.text} and status code {response.status_code}")
 
         project_data = response.json()
 

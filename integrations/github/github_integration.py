@@ -177,7 +177,7 @@ def retry_create_test_repo(client: GitHubClient, dialog):
 def show_test_repo_error_dialog(client: GitHubClient, message):
     dialog = ap.Dialog()
     dialog.title = "We have found an issue"
-    dialog.icon = ":/icons/organizations-and-products/AzureDevOps.svg"
+    dialog.icon = ":/icons/organizations-and-products/github.svg"
     dialog.add_info(message)
     dialog.add_button("Retry", callback=lambda d: retry_create_test_repo(client, d), primary=True)
     dialog.show()
@@ -192,7 +192,7 @@ def create_test_repo_async(client: GitHubClient):
             raise Exception("Created project not found")
     except Exception as e:
         def get_dialog_create_message(reason: str):
-            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the selected organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work anyway, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
+            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the selected organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
         if "301" in str(e):
             show_test_repo_error_dialog(client, get_dialog_create_message("the organization was renamed or deleted"))
         elif "403" in str(e):
@@ -201,10 +201,8 @@ def create_test_repo_async(client: GitHubClient):
             show_test_repo_error_dialog(client, get_dialog_create_message("the organization could not be found"))
         else:
             show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
+        progress.finish()
         return
-    finally:
-        if progress is not None:
-            progress.finish()
     
     import sys, os
     script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
@@ -220,7 +218,7 @@ def create_test_repo_async(client: GitHubClient):
         GitRepository.clone(repo_url, temp_path, ctx.username, ctx.email)
     except Exception as e:
         def get_dialog_clone_message(reason: str):
-            return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work anyway, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
+            return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
         print(f"Failed to clone repository: {str(e)}")
         show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
         return

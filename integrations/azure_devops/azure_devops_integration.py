@@ -213,7 +213,7 @@ def create_test_repo_async(client: AzureDevOpsClient):
             raise Exception("Created project not found")
     except Exception as e:
         def get_dialog_create_message(reason: str):
-            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work anyway,<br> then create a repository on the Azure DevOps website and clone it via https."
+            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the Azure DevOps website and clone it via https."
         if "TF50309" in str(e):
             show_test_repo_error_dialog(client, get_dialog_create_message("you do not have permission to create projects in the organization"))
         elif "TF400813" in str(e):
@@ -224,10 +224,8 @@ def create_test_repo_async(client: AzureDevOpsClient):
             show_test_repo_error_dialog(client, get_dialog_create_message("the Connection was aborted"))
         else:
             show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
+        progress.finish()
         return
-    finally:
-        if progress is not None:
-            progress.finish()
     
     import sys, os
     script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
@@ -243,7 +241,7 @@ def create_test_repo_async(client: AzureDevOpsClient):
         GitRepository.clone(repo_url, temp_path, ctx.username, ctx.email)
     except Exception as e:
         def get_dialog_clone_message(reason: str):
-            return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work anyway,<br> then create a repository on the Azure DevOps website and clone it via https."
+            return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the Azure DevOps website and clone it via https."
         try:
             message = e.stderr
         except:
