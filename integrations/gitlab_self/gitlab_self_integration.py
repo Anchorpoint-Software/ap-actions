@@ -195,12 +195,91 @@ def setup_credentials_async(dialog, host_url: str):
         GitRepository.store_credentials(netloc, scheme, result["username"], result["password"], path)
         ap.UI().show_success(title='GitLab credentials stored', duration=3000, description=f'GitLab credentials stored successfully.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+        if "User cancelled dialog" in str(e):
+            ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because you cancelled the credential dialog. Please try again.')
+        else:
+            ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
         if script_dir in sys.path:
             sys.path.remove(script_dir)
+
+def retry_create_test_repo(client: GitlabSelfClient, dialog):
+    dialog.close()
+    ctx = ap.get_context()
+    ctx.run_async(create_test_repo_async, client)
+
+def retry_credential_setup(dialog: ap.Dialog, host_url: str):
+    ctx = ap.get_context()
+    ctx.run_async(setup_credentials_async, dialog, host_url)
+
+def show_test_repo_error_dialog(client: GitlabSelfClient, message):
+    dialog = ap.Dialog()
+    dialog.title = "We have found an issue"
+    dialog.icon = ":/icons/organizations-and-products/gitlabSelfHost.svg"
+    dialog.add_info(message)
+    dialog.add_button("Retry", callback=lambda d: retry_create_test_repo(client, d), primary=True).add_button("Update Credentials", var=settings_credential_btn_entry, callback=lambda d: retry_credential_setup(d, client.get_host_url()), primary=False)
+    dialog.show()
+
+def create_test_repo_async(client: GitlabSelfClient):
+    current_group = client.get_current_group()
+    progress = None
+    try:
+        progress = ap.Progress("Testing GitLab Integration", "Creating Anchorpoint-Test repository", infinite=True, show_loading_screen=True)
+        new_project = client.create_project(current_group, "Anchorpoint-Test")
+        if new_project is None:
+            raise Exception("Created project not found")
+    except Exception as e:
+        def get_dialog_create_message(reason: str):
+            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you have access to your group / user account on the <a href='{client.get_host_url()}'>GitLab server website</a>.<br>2. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/gitlab-self-hosted/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the <a href='{client.get_host_url()}'>GitLab server website</a> and clone it via https."
+        if "401" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("your are not authorized"))
+        elif "403" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message(f"you do not have permission to create a repository in {current_group.name}"))
+        else:
+            show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
+        progress.finish()
+        return
+    
+    import sys, os
+    script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    temp_path = None
+    try:
+        progress.set_text("Cloning Anchorpoint-Test Repository")
+        repo_url = new_project.http_url_to_repo
+        ctx = ap.get_context()
+        import tempfile
+        temp_path = tempfile.mkdtemp()
+        GitRepository.clone(repo_url, temp_path, ctx.username, ctx.email)
+    except Exception as e:
+        def get_dialog_clone_message(reason: str):
+            return f"The Anchorpoint-Test repository could not be clone, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you have access to your group / user account on the <a href='{client.get_host_url()}'>GitLab server website</a>.<br>2. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/gitlab-self-hosted/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the <a href='{client.get_host_url()}'>GitLab server website</a> and clone it via https."
+        try:
+            message = e.stderr
+        except:
+            message = str(e)
+        if "fatal: repository" in message and "not found" in message:
+            show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))
+        else:
+            show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
+        return
+    finally:
+        if temp_path is not None:
+            import shutil
+            try:
+                shutil.rmtree(temp_path)
+            except Exception as e:
+                print(f"Failed to remove temp path: {str(e)}")
+        if progress is not None:
+            progress.finish()
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
+    ap.UI().show_success(title='GitLab self-hosted Integration Test sucessful', duration=3000, description=f'Test repository "Anchorpoint-Test" created and cloned successfully.')
+
 
 class GitlabSelfIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
@@ -454,6 +533,11 @@ class GitlabSelfIntegration(ap.ApIntegration):
         ctx = ap.get_context()
         ctx.run_async(setup_credentials_async, dialog, self.client.get_host_url())
 
+    def create_test_repo_btn_callback(self, dialog: ap.Dialog):
+        dialog.close()
+        ctx = ap.get_context()
+        ctx.run_async(create_test_repo_async, self.client)
+
     def show_settings_dialog(self, current_group, groups):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
@@ -487,6 +571,12 @@ class GitlabSelfIntegration(ap.ApIntegration):
         dialog.add_button("Enter your GitLab credentials", var=settings_credential_btn_highlight_entry, callback=self.credential_btn_callback)
         dialog.add_button("Enter your GitLab credentials", var=settings_credential_btn_entry, callback=self.credential_btn_callback, primary=False)
         dialog.hide_row(settings_credential_btn_entry, True)
+        dialog.add_empty()
+
+        dialog.add_text("<b>4. Test Integration</b>")
+        dialog.add_info("Anchorpoint will create and clone a repository called<br>\"Anchorpoint-Test\" to check if the integration is working<br>properly. You can delete this repository later.")
+        dialog.add_button("Create Test Repository", callback=lambda d: self.create_test_repo_btn_callback(d))
+        dialog.add_empty()
 
         dialog.show()
 

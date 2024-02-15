@@ -175,7 +175,10 @@ def setup_credentials_async(dialog):
         GitRepository.store_credentials(gitlab_root, "https", result["username"], result["password"])
         ap.UI().show_success(title='GitLab credentials stored', duration=3000, description=f'GitLab credentials stored successfully.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
+        if "User cancelled dialog" in str(e):
+            ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because you cancelled the credential dialog. Please try again.')
+        else:
+            ap.UI().show_error(title='Cannot store GitLab credentials', duration=6000, description=f'Failed to store credentials, because "{str(e)}". Please try again.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
