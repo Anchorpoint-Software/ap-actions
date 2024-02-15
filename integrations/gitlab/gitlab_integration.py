@@ -241,6 +241,7 @@ def create_test_repo_async(client: GitlabClient):
             message = e.stderr
         except:
             message = str(e)
+        print(f"Failed to clone test repo: {message}")
         if "fatal: repository" in message and "not found" in message:
             show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))
         else:
