@@ -29,7 +29,7 @@ def cancel_merge(channel_id, project_path):
         elif repo.is_merging():
             repo.abort_merge()
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             raise e
 
     ap.refresh_timeline_channel(channel_id)
@@ -85,7 +85,7 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
 
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             raise e
     
     if repo.has_conflicts() == False: 

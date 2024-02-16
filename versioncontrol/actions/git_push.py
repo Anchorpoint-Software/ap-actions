@@ -192,7 +192,7 @@ def sync_changes(channel_id: str, ctx):
         try:
             pull_changes(repo, channel_id, ctx)
         except Exception as e:
-            git_errors.handle_error(e)
+            git_errors.handle_error(e, path)
             print(f"Auto-Push: Could not pull {str(e)}")
             ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 20000)
 
@@ -232,7 +232,7 @@ def push_changes(ctx, path, channel_id):
                 ui.show_success("Push Successful")
                 ap.update_timeline_last_seen()
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             show_push_failed(repo, str(e), channel_id, ctx)
     finally:
         progress.finish()

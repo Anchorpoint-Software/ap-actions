@@ -304,7 +304,7 @@ class GitRepository(VCRepository):
         return len(stdout) > 0 or len(stderr) > 0
 
     def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
-        self._check_index_lock()
+        self.check_index_lock()
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
         if remote is None: return UpdateState.NO_REMOTE
@@ -354,7 +354,7 @@ class GitRepository(VCRepository):
         return state
 
     def revert_changelist(self, changelist_id: str):
-        self._check_index_lock()
+        self.check_index_lock()
         try:
             self.repo.git.revert(changelist_id, "-n")
             
@@ -376,7 +376,7 @@ class GitRepository(VCRepository):
         self.repo.git.reset("HEAD~")
 
     def restore_changelist(self, changelist_id: str):
-        self._check_index_lock()
+        self.check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
     def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False, progress: Optional[Progress] = None):
@@ -388,7 +388,7 @@ class GitRepository(VCRepository):
             self.fetch_lfs_files(branches=[changelist_id], paths=files, progress=progress)
 
         if not keep_original:
-            self._check_index_lock()
+            self.check_index_lock()
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "restore_spec")
                 self._write_pathspec_file(files, pathspec)
@@ -463,11 +463,11 @@ class GitRepository(VCRepository):
             self.repo.git.clean("-f")
 
     def restore_all_files(self):
-        self._check_index_lock()
+        self.check_index_lock()
         self.repo.git.checkout(".")
 
     def reset(self, commit_id: Optional[str], hard: bool = False):
-        self._check_index_lock()
+        self.check_index_lock()
         args = []
         if hard:
             args.append("--hard")
@@ -476,7 +476,7 @@ class GitRepository(VCRepository):
         self.repo.git.reset(*args)
         
     def switch_branch(self, branch_name: str, progress: Optional[Progress] = None):
-        self._check_index_lock()
+        self.check_index_lock()
 
         split = branch_name.split("/")
         if len(split) > 1:
@@ -531,7 +531,7 @@ class GitRepository(VCRepository):
             raise RuntimeError("Git Switch error: " + str(process.returncode))
 
     def merge_branch(self, branch_name: str, progress: Optional[Progress] = None) -> bool:
-        self._check_index_lock()
+        self.check_index_lock()
 
         current_env = os.environ.copy()
         branch = self._get_current_branch()
@@ -620,7 +620,7 @@ class GitRepository(VCRepository):
         if stash:
             raise FileExistsError(f"Stash on branch {stash.branch} already exists")
 
-        self._check_index_lock()
+        self.check_index_lock()
         message = self._get_stash_message()
         kwargs = {
             "message": message
@@ -638,7 +638,7 @@ class GitRepository(VCRepository):
         self.repo.git.stash(**kwargs)
 
     def pop_stash(self, stash: Optional[Stash] = None):
-        self._check_index_lock()
+        self.check_index_lock()
         if not stash:
             stash = self.get_branch_stash()
         if stash:
@@ -770,7 +770,7 @@ class GitRepository(VCRepository):
         import sys
         defenc = sys.getfilesystemencoding()
 
-        self._check_index_lock()
+        self.check_index_lock()
 
         changes = Changes()
         root = self.get_root_path()
@@ -839,7 +839,7 @@ class GitRepository(VCRepository):
         return ignored_files
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
-        self._check_index_lock()
+        self.check_index_lock()
         changes = Changes()
         
         try:
@@ -952,7 +952,7 @@ class GitRepository(VCRepository):
             print(f"Failed to call git status: {str(e)}")
 
     def _add_files_no_progress(self, *args, **kwargs):
-        self._check_index_lock()
+        self.check_index_lock()
         try:
             logging.info("Calling git add (no progress)")
             self.repo.git.add("--sparse", *args, **kwargs)
@@ -968,7 +968,7 @@ class GitRepository(VCRepository):
 
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
-        self._check_index_lock()
+        self.check_index_lock()
         proc = None
         try:
             proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", "--sparse", **kwargs, as_process=True)
@@ -1009,11 +1009,11 @@ class GitRepository(VCRepository):
                     pass
 
     def stage_all_files(self):
-        self._check_index_lock()
+        self.check_index_lock()
         self.repo.git.add("--sparse", ".")
 
     def unstage_all_files(self):
-        self._check_index_lock()
+        self.check_index_lock()
         self.repo.git.restore("--staged", ".")
 
     def stage_files(self, paths: list[str], progress_callback = None):
@@ -1026,7 +1026,7 @@ class GitRepository(VCRepository):
             self._add_files(len(paths), progress_callback, *paths)
 
     def unstage_files(self, paths: list[str]):
-        self._check_index_lock()
+        self.check_index_lock()
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "unstage_spec")
@@ -1047,7 +1047,7 @@ class GitRepository(VCRepository):
             self._add_files(len(paths), progress_callback, ".")
 
     def remove_files(self, paths: list[str]):
-        self._check_index_lock()
+        self.check_index_lock()
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "rm_spec")
@@ -1057,7 +1057,7 @@ class GitRepository(VCRepository):
             self.repo.git.rm(*paths)
 
     def commit(self, message: str):
-        self._check_index_lock()
+        self.check_index_lock()
         args = [install_git.get_git_cmd_path(), "commit", "-m", message]
         gpg = shutil.which("gpg")
         if not gpg:
@@ -1084,7 +1084,7 @@ class GitRepository(VCRepository):
             self.repo.git.lfs("track", rel_paths[i:i+20])
 
     def get_deleted_files(self):
-        self._check_index_lock()
+        self.check_index_lock()
         unstaged_files = []
         staged_files = []
         status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
@@ -1114,7 +1114,7 @@ class GitRepository(VCRepository):
         return len(self.get_conflicts(path)) != 0
 
     def get_file_conflict_status(self, rel_path: str):
-        self._check_index_lock()
+        self.check_index_lock()
         status_lines = self.repo.git(no_pager=True).status("-z", rel_path, porcelain=True, untracked_files=True).split('\x00')
         
         if len(status_lines) == 1:
@@ -1139,7 +1139,7 @@ class GitRepository(VCRepository):
             return ap.VCFileStatus.Conflicted, ap.VCFileStatus.Conflicted
 
     def get_conflicts(self, path: str = None):
-        self._check_index_lock()
+        self.check_index_lock()
 
         conflicts = []
         if path:
@@ -1156,7 +1156,7 @@ class GitRepository(VCRepository):
         return conflicts
 
     def has_conflicts(self):
-        self._check_index_lock()
+        self.check_index_lock()
         conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U")
         return conflicts != None and len(conflicts) > 0
 
@@ -1168,14 +1168,14 @@ class GitRepository(VCRepository):
         return False
         
     def continue_rebasing(self):
-        self._check_index_lock()
+        self.check_index_lock()
         configs = ["core.editor=true"]
         if not shutil.which("gpg"):
             configs.append("commit.gpgsign=false")
         self.repo.git(c=configs).rebase("--continue")
 
     def abort_rebasing(self):
-        self._check_index_lock()
+        self.check_index_lock()
         self.repo.git.rebase("--abort")
 
     def is_merging(self):
@@ -1183,7 +1183,7 @@ class GitRepository(VCRepository):
         return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
         
     def continue_merge(self):
-        self._check_index_lock()
+        self.check_index_lock()
         configs = ["core.editor=true"]
         if not shutil.which("gpg"):
             configs.append("commit.gpgsign=false")
@@ -1191,7 +1191,7 @@ class GitRepository(VCRepository):
         self.repo.git(c=configs).merge("--continue")
 
     def abort_merge(self):
-        self._check_index_lock()
+        self.check_index_lock()
         self.repo.git.merge("--abort")
 
     def _merge_gitattributes(self, file: str):
@@ -1212,7 +1212,7 @@ class GitRepository(VCRepository):
                 f.write(attr)
 
     def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
-        self._check_index_lock()
+        self.check_index_lock()
 
         checkout_ours = []
         checkout_theirs = []
@@ -1584,11 +1584,11 @@ class GitRepository(VCRepository):
                 raise e
 
         if relative_folder_path == "":
-            self._check_index_lock()
+            self.check_index_lock()
             self._check_sparse_checkout_lock()
             disable_sparse()
         else:
-            self._check_index_lock()
+            self.check_index_lock()
             folder_set = self.get_sparse_checkout_folder_set()
             if relative_folder_path in folder_set:
                 return False
@@ -1665,7 +1665,7 @@ class GitRepository(VCRepository):
             if change.path.startswith(relative_folder_path_slash):
                 raise Exception(f"Cannot unload folder {relative_folder_path} because it contains uncommitted changes")
 
-        self._check_index_lock()
+        self.check_index_lock()
         self._check_sparse_checkout_lock()
         if relative_folder_path == "":
             try:
@@ -2095,7 +2095,7 @@ class GitRepository(VCRepository):
     def _get_repo_internal_dir(self):
         return os.path.join(self.repo.working_dir, ".git")
 
-    def _check_index_lock(self):
+    def check_index_lock(self):
         # check if the index is already locked
         index_lock = os.path.join(self.get_git_dir(), "index.lock")
         if os.path.exists(index_lock):

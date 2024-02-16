@@ -168,8 +168,8 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     git_settings = GitAccountSettings(ctx)
 
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
+    path = get_repo_path(channel_id, ctx.project_path)
     try:
-        path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
 
@@ -209,7 +209,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         
     except Exception as e:
         import git_errors
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             print(str(e))
             ui.show_error("Commit Failed", str(e).splitlines()[0])
             raise e

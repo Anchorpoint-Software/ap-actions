@@ -329,6 +329,18 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
         return True
 
+    if ".git/index.lock" in exception_message:
+        if repo_path:
+            repo = GitRepository.load(repo_path)
+            if repo:
+                try:
+                    repo.check_index_lock()
+                    ap.UI().show_error("Could not apply change", "Please try again", duration=10000)
+                    return True
+                except:
+                    print(f"Failed to remove index.lock in {repo_path}. Error: {exception_message}")
+                    return False
+
     if "failed due to: exit code" in exception_message:
         print(f"Git Error: {exception_message}")
 

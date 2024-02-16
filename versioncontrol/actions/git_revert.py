@@ -20,8 +20,8 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
     ui = ap.UI()
     progress = ap.Progress("Reverting Files", show_loading_screen=True)
     
-    path = get_repo_path(channel_id, project_path)
-    repo = GitRepository.load(path)
+    repo_path = get_repo_path(channel_id, project_path)
+    repo = GitRepository.load(repo_path)
     if not repo: return
 
     repo_root = repo.get_root_path()
@@ -33,7 +33,7 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
         utility.make_file_writable(path)
         if not utility.is_file_writable(path):
             error = f"error: unable to unlink '{relpath}':"
-            if not git_errors.handle_error(error):
+            if not git_errors.handle_error(error, repo_path):
                 ui.show_info("Could not revert files", f"A file is not writable: {relpath}", duration=6000)
             return True
         
@@ -69,15 +69,18 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
                     os.remove(path)
 
         except Exception as e:
-            if git_errors.handle_error(e):
+            if git_errors.handle_error(e, repo_path):
                 ui.show_error("Could not revert files")
                 return
             raise e
 
         
     except Exception as e:
-        git_errors.handle_error(e)
-        ui.show_error("Could not revert files")
+        git_errors.handle_error(e, repo_path)
+        if "Git process already running and the index is locked" in str(e):
+            ui.show_info("Could not revert files", "A git process is already running. Please wait a moment and try again", duration=10000)
+        else:
+            ui.show_error("Could not revert files")
         print(str(e))
         return
     finally:
@@ -123,15 +126,15 @@ def undo(path: str, entry_id: str, channel_id: str):
         ui.show_success("Undo succeeded")
 
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             logging.info(str(e))
             ui.show_error("Undo Failed", str(e))
 
-def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
+def undo_files(repo_path: str, files: list[str], entry_id: str, channel_id: str):
     ui = ap.UI()
     try:
         progress = ap.Progress("Undoing File Changes", show_loading_screen=True)
-        repo = GitRepository.load(path)
+        repo = GitRepository.load(repo_path)
         repo_root = repo.get_root_path()
 
         # Check if any file to revert is locked by an application
@@ -142,7 +145,7 @@ def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
             utility.make_file_writable(path)
             if not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
-                if not git_errors.handle_error(error):
+                if not git_errors.handle_error(error, repo_path):
                     ui.show_info("Could not undo files", f"A file is not writable: {relpath}", duration=6000)
                 return True
             
@@ -164,17 +167,17 @@ def undo_files(path: str, files: list[str], entry_id: str, channel_id: str):
         ui.show_success("Undo succeeded")
 
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, repo_path):
             logging.info(str(e))
             ui.show_error("Undo Failed", str(e))
 
-def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, keep_original: bool):
+def restore_files(repo_path: str, files: list[str], entry_id: str, channel_id: str, keep_original: bool):
     ui = ap.UI()
     if len(files) == 0:
         ap.UI().show_success("No Files Selected")
 
     try:
-        repo = GitRepository.load(path)
+        repo = GitRepository.load(repo_path)
         repo_root = repo.get_root_path()
 
         progress = ap.Progress("Restoring Files", show_loading_screen=True)
@@ -187,7 +190,7 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
                 utility.make_file_writable(path)
             if not keep_original and not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
-                if not git_errors.handle_error(error):
+                if not git_errors.handle_error(error, repo_path):
                     ui.show_info("Could not restore files", f"A file is not writable: {relpath}", duration=6000)
                 return True
                 
@@ -222,7 +225,7 @@ def restore_files(path: str, files: list[str], entry_id: str, channel_id: str, k
 
 
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, repo_path):
             logging.info(str(e))
             ui.show_error("Restore Failed", str(e))
 
@@ -251,7 +254,7 @@ def reset_commit(path, commit: HistoryEntry, channel_id, force):
         ui.show_success("Reset Succeeded")
 
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             logging.info(str(e))
             ui.show_error("Reset Failed", str(e))
     finally:
@@ -300,9 +303,9 @@ def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str
 def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
     ui = ap.UI()
     if action_id == "gitrevertcommit":
+        path = get_repo_path(channel_id, ctx.project_path)
         try:
             ap.timeline_channel_action_processing(channel_id, "gitrevertcommit", "Undoing Commit...")
-            path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
 
@@ -314,7 +317,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 ap.refresh_timeline_channel(channel_id)
 
         except Exception as e:
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 logging.info(str(e))
                 ui.show_error("Undo Failed", str(e))
         finally:
@@ -334,9 +337,9 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
         return True
     
     if action_id == "gitresetproject":
+        path = get_repo_path(channel_id, ctx.project_path)
         try:
             ap.timeline_channel_action_processing(channel_id, "gitresetproject", "Resetting Project...")
-            path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
 
@@ -354,7 +357,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             show_restore_project_dialog(path, commit, channel_id, has_changes)
 
         except Exception as e:
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 logging.info(str(e))
                 ui.show_error("Reset Failed", str(e))
         finally:    
@@ -363,8 +366,8 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
 
     
     if action_id == "gitrevertcommitfiles":
+        path = get_repo_path(channel_id, ctx.project_path)
         try:
-            path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
 
@@ -376,7 +379,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 ap.refresh_timeline_channel(channel_id)
 
         except Exception as e:
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 logging.info(str(e))
                 ui.show_error("Undo Failed", str(e))
         finally:

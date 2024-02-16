@@ -407,7 +407,7 @@ try:
                     ap.close_create_project_dialog()
                     import time
                     time.sleep(0.25)
-                    git_errors.handle_error(e)
+                    git_errors.handle_error(e, project_path)
                     raise e
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
@@ -470,7 +470,7 @@ try:
                 ap.close_create_project_dialog()
                 import time
                 time.sleep(0.25)
-                if not git_errors.handle_error(e):
+                if not git_errors.handle_error(e, project_path):
                     ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password, or you don't have access to the repository.", duration=10000)
                 sys.exit(0)
 

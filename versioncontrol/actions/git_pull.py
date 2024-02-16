@@ -190,8 +190,8 @@ def pull(repo: GitRepository, channel_id: str, ctx):
 
 def pull_async(channel_id: str, project_path, ctx):
     ui = ap.UI()
+    path = get_repo_path(channel_id, project_path)
     try:
-        path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
 
@@ -201,7 +201,7 @@ def pull_async(channel_id: str, project_path, ctx):
             ap.update_timeline_last_seen()
         
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             print(e)
             if "conflict" in str(e).lower():
                 if repo.is_merging():

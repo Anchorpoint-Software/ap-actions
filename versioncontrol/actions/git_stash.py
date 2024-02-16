@@ -46,9 +46,9 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         ui.show_success("No Files Selected")
         return True
 
+    repo_path = get_repo_path(channel_id, ctx.project_path)
     try:
-        path = get_repo_path(channel_id, ctx.project_path)
-        repo = GitRepository.load(path)
+        repo = GitRepository.load(repo_path)
         if not repo: return
         progress = ap.Progress("Shelving Files", show_loading_screen=True)
 
@@ -61,7 +61,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
             relative_selected_files.append(relpath)
             if not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
-                if not git_errors.handle_error(error):
+                if not git_errors.handle_error(error, repo_path):
                     ui.show_info("Could not shelve files", f"A file is not writable: {relpath}", duration=6000)
                 return True
 
@@ -74,7 +74,7 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
         ap.refresh_timeline_channel(channel_id)
         ui.show_success("Files shelved")
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, repo_path):
             ui.show_error("Could not shelve files", str(e))
     finally:
         return True
@@ -83,8 +83,8 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
     ui = ap.UI()
 
     if action_id == "gitstashdrop":
+        path = get_repo_path(channel_id, ctx.project_path)
         try:
-            path = get_repo_path(channel_id, ctx.project_path)
             repo = GitRepository.load(path)
             if not repo: return
 
@@ -97,15 +97,15 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog.show()
             
         except Exception as e:
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, path):
                 ui.show_error("Could not delete shelved files", str(e))
         finally:
             return True
         
     if action_id == "gitstashapply":
+        repo_path = get_repo_path(channel_id, ctx.project_path)
         try:
-            path = get_repo_path(channel_id, ctx.project_path)
-            repo = GitRepository.load(path)
+            repo = GitRepository.load(repo_path)
             if not repo: return
             
             if repo.has_pending_changes(True):
@@ -121,7 +121,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
                 path = os.path.join(repo.get_root_path(), change.path)
                 if not utility.is_file_writable(path):
                     error = f"error: unable to unlink '{change.path}':"
-                    if not git_errors.handle_error(error):
+                    if not git_errors.handle_error(error, repo_path):
                         ui.show_info("Could not restore shelved files", f"A file is not writable: {change.path}", duration=6000)
                     return True
 
@@ -133,7 +133,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
         except Exception as e:
             error = str(e)
             print(error)
-            if not git_errors.handle_error(e):
+            if not git_errors.handle_error(e, repo_path):
                 if "already exists" in error:
                     logging.info(f"Could not restore shelved files: ", str(e))
                     ui.show_info("Could not restore all shelved files", "You have changed files that would be overwritten.  We kept the shelved files in case you need it again", duration=15000)
