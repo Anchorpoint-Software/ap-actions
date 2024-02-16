@@ -281,7 +281,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     if "fatal: repository" in message and "not found" in message:
         return show_repository_not_found_error(message, repo_path)
     
-    if "could not read Password" in message:
+    if "could not read Password" in message or "Authentication failed" in message:
         show_invalid_credentials_error("Invalid Git Credentials", "Your Git credentials are invalid. Please update them.", repo_path, None)
         return True
     
