@@ -92,7 +92,7 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             dialog.title = "Clear Shelved Files"
             dialog.icon = ":/icons/trash.svg"
             dialog.add_text("Are you sure to <b>remove all files</b><br>in the shelf. This cannot be undone.")
-            dialog.add_info("Learn more about <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/git/4-Resolving-conflicts/#shelved-files'>Shelved Files</a>")
+            dialog.add_info("Learn more about <a href='https://docs.anchorpoint.app/docs/version-control/features/resolving-conflicts/#shelved-files'>Shelved Files</a>")
             dialog.add_button("Clear", callback=lambda d: delete_button_pressed(path, channel_id, d)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
             

@@ -134,17 +134,17 @@ def on_remove_user_from_project(email, ctx: ap.Context):
     
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if project is None:
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to find project with id {ctx.projectId}. Please remove manually.')
         return
     
     client = AzureDevOpsClient(ctx.workspace_id)
     
     if not client.is_setup():
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Azure DevOps integration is not setup. Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Azure DevOps integration is not setup. Please remove manually.')
         return
     
     if not client.setup_refresh_token():
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to connect integration. Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=6000, description=f'Failed to connect integration. Please remove manually.')
         return
     
     current_org = client.get_current_organization()
@@ -157,7 +157,7 @@ def on_remove_user_from_project(email, ctx: ap.Context):
         client.remove_user_from_project(current_org, email, project_name)
         ap.UI().show_success(title='User removed from Azure DevOps project', duration=3000, description=f'User {email} removed from project {project.name}.')
     except Exception as e:
-        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please add manually.')
+        ap.UI().show_error(title='Cannot remove user from Azure DevOps project', duration=10000, description=f'Failed to remove user, because "{str(e)}". Please remove manually.')
         return
 
 def setup_credentials_async(dialog, org: str):
@@ -178,12 +178,93 @@ def setup_credentials_async(dialog, org: str):
         ap.UI().show_success(title='Azure DevOps credentials stored', duration=3000, description=f'Azure DevOps credentials stored successfully.')
     except Exception as e:
         print(f"Failed to store Azure DevOps credentials: {str(e)}")
-        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
     finally:
         dialog.set_processing(settings_credential_btn_highlight_entry, False)
         dialog.set_processing(settings_credential_btn_entry, False)
         if script_dir in sys.path:
             sys.path.remove(script_dir)
+
+def retry_create_test_repo(client: AzureDevOpsClient, dialog):
+    dialog.close()
+    ctx = ap.get_context()
+    ctx.run_async(create_test_repo_async, client)
+
+def retry_credential_setup(client: AzureDevOpsClient, dialog: ap.Dialog):
+    ctx = ap.get_context()
+    org = client.get_current_organization()
+    ctx.run_async(setup_credentials_async, dialog, org)
+
+def show_test_repo_error_dialog(client: AzureDevOpsClient, message):
+    dialog = ap.Dialog()
+    dialog.title = "We have found an issue"
+    dialog.icon = ":/icons/organizations-and-products/AzureDevOps.svg"
+    dialog.add_info(message)
+    dialog.add_button("Retry", callback=lambda d: retry_create_test_repo(client, d), primary=True).add_button("Update Credentials", var=settings_credential_btn_entry, callback=lambda d: retry_credential_setup(client, d), primary=False)
+    dialog.show()
+
+def create_test_repo_async(client: AzureDevOpsClient):
+    current_org = client.get_current_organization()
+    progress = None
+    try:
+        progress = ap.Progress("Testing Azure DevOps Integration", "Creating Anchorpoint-Test repository", infinite=True, show_loading_screen=True)
+        new_repo = client.create_project_and_repository(current_org, "Anchorpoint-Test")
+        if new_repo is None:
+            raise Exception("Created project not found")
+    except Exception as e:
+        def get_dialog_create_message(reason: str):
+            return f"The Anchorpoint-Test repository could not be created, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the Azure DevOps website and clone it via https."
+        if "TF50309" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("you do not have permission to create projects in the organization"))
+        elif "TF400813" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("Third-party application access via OAuth is not enabled"))
+        elif "Created project not found" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("the newly created project could not be found"))
+        elif "Connection aborted" in str(e):
+            show_test_repo_error_dialog(client, get_dialog_create_message("the Connection was aborted"))
+        else:
+            show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
+        progress.finish()
+        return
+    
+    import sys, os
+    script_dir = os.path.join(os.path.dirname(__file__), "..", "..", "versioncontrol")
+    sys.path.insert(0, script_dir)
+    from vc.apgit.repository import GitRepository
+    temp_path = None
+    try:
+        progress.set_text("Cloning Anchorpoint-Test Repository")
+        repo_url = new_repo.https_url
+        ctx = ap.get_context()
+        import tempfile
+        temp_path = tempfile.mkdtemp()
+        GitRepository.clone(repo_url, temp_path, ctx.username, ctx.email)
+    except Exception as e:
+        def get_dialog_clone_message(reason: str):
+            return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the Azure DevOps website and clone it via https."
+        try:
+            message = e.stderr
+        except:
+            message = str(e)
+        print(f"Failed to clone test repo: {message}")
+        if "fatal: repository" in message and "not found" in message:
+            show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))
+        else:
+            show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
+        return
+    finally:
+        if temp_path is not None:
+            import shutil
+            try:
+                shutil.rmtree(temp_path)
+            except Exception as e:
+                print(f"Failed to remove temp path: {str(e)}")
+        if progress is not None:
+            progress.finish()
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
+    ap.UI().show_success(title='Azure DevOps Integration Test sucessful', duration=3000, description=f'Test repository "Anchorpoint-Test" created and cloned successfully.')
 
 class DevopsIntegration(ap.ApIntegration):
     def __init__(self, ctx: ap.Context):
@@ -192,7 +273,7 @@ class DevopsIntegration(ap.ApIntegration):
         self.client = AzureDevOpsClient(ctx.workspace_id)
 
         self.name = 'Azure DevOps'
-        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/'>Learn more</a>"
+        self.description = "Create repositories, add members and do it all directly in Anchorpoint.<br>Each member will need an Azure DevOps account. <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/'>Learn more</a>"
         self.priority = 100
         self.tags = integration_tags
 
@@ -280,11 +361,16 @@ class DevopsIntegration(ap.ApIntegration):
                 current_org = self.client.get_current_organization()
                 display_name = self.client.get_user().display_name
                 if current_org is None:
+                    if not organizations:
+                        raise Exception("Organizations list is empty")
                     current_org = organizations[0]
                     self.client.set_current_organization(current_org)
                 self.show_settings_dialog(current_org, display_name, organizations)
             except Exception as e:
-                ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
+                if "Organizations list is empty" in str(e):
+                    ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because no organizations where found. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/">troubleshooting</a> page.')
+                else:
+                    ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
                 return
 
     def on_auth_deeplink_received(self, url: str):
@@ -308,8 +394,10 @@ class DevopsIntegration(ap.ApIntegration):
         except Exception as e:
             if "No organizations found" in str(e):
                 ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'No organizations found. Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
+            elif "Connection aborted" in str(e):
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because the connection was aborted. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page.')
             else:
-                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
+                ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             return
         
     def setup_create_project_dialog_entries(self, action_id, dialog: ap.Dialog):
@@ -347,8 +435,12 @@ class DevopsIntegration(ap.ApIntegration):
         webbrowser.open(f"https://{devops_root}/{org}/_settings/organizationPolicy")
         dialog.hide_row(settings_policies_btn_entry, False)
         dialog.hide_row(settings_policies_btn_highlight_entry, True)
-        
 
+    def create_test_repo_btn_callback(self, dialog: ap.Dialog, current_org: str):
+        dialog.close()
+        ctx = ap.get_context()
+        ctx.run_async(create_test_repo_async, self.client)
+        
     def show_settings_dialog(self, current_org: str, display_name: str, organizations):
         dialog = ap.Dialog()
         dialog.name = settings_action_id
@@ -374,6 +466,11 @@ class DevopsIntegration(ap.ApIntegration):
         dialog.add_button("Check OAuth Policies", var=settings_policies_btn_highlight_entry, callback=self.policies_btn_callback)
         dialog.add_button("Check OAuth Policies", var=settings_policies_btn_entry, callback=self.policies_btn_callback, primary=False)
         dialog.hide_row(settings_policies_btn_entry, True)
+        dialog.add_empty()
+
+        dialog.add_text("<b>4. Test Integration</b>")
+        dialog.add_info("Anchorpoint will create and clone a repository called<br>\"Anchorpoint-Test\" to check if the integration is working<br>properly. You can delete this repository later.")
+        dialog.add_button("Create Test Repository", callback=lambda d: self.create_test_repo_btn_callback(d, current_org))
 
         dialog.show()
 
@@ -382,24 +479,24 @@ class DevopsIntegration(ap.ApIntegration):
         try:
             progress.set_text("Creating Azure DevOps Project")
             new_repo = self.client.create_project_and_repository(current_org, project_name)
+            if new_repo is None:
+                raise Exception("Created project not found")
             settings = aps.SharedSettings(project_id, self.ctx.workspace_id, "integration_info")
             print(f"git repo name saved in integration_info: {new_repo.display_name}")
             settings.set(integration_project_name_key, new_repo.display_name)
             settings.store()
 
             progress.set_text("")
-            if new_repo is None:
-                raise Exception("Created project not found")
             return new_repo.https_url
         except Exception as e:
             if "TF50309" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             elif "TF400813" in str(e):
                 ap.UI().show_error(title='Azure DevOps has issues to create your project', 
                                    duration=8000, 
-                                   description=f'Check the <a href="https://dev.azure.com/{current_org}/_settings/organizationPolicy">policies</a>if Third-party application access via OAuth is enabled. If enabled, please check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a> or try again.')
+                                   description=f'Check the <a href="https://dev.azure.com/{current_org}/_settings/organizationPolicy">policies</a>if Third-party application access via OAuth is enabled. If enabled, please check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a> or try again.')
             elif "TF50316" in str(e):
                 # Extract the name from the exception message
                 match = re.search(r'The following name is not valid: (.*). Please', str(e))
@@ -414,10 +511,6 @@ class DevopsIntegration(ap.ApIntegration):
                     ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                        duration=8000, 
                                        description=f'Failed to create, because project name does not conform to the Azure DevOps <a href="https://learn.microsoft.com/en-us/azure/devops/organizations/settings/naming-restrictions?view=azure-devops#azure-repos-git">naming restrictions</a>. Please try again with a different name.')
-            elif "TF50309" in str(e):
-                ap.UI().show_error(title='Cannot create Azure DevOps Project', 
-                                   duration=8000, 
-                                   description=f'Failed to create, because you do not have permission to create projects in the {current_org} organization. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             elif "project already exists" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
@@ -425,9 +518,9 @@ class DevopsIntegration(ap.ApIntegration):
             elif "Connection aborted" in str(e):
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             else:
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
-                                   description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/1-overview/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
+                                   description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             raise e

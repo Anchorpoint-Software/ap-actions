@@ -1,6 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 import os, sys, platform
+import git_errors
 
 import is_git_repo as is_git
 
@@ -400,7 +401,14 @@ try:
             self.githelper.update_project(project_path, url, False, None, project)
             if url:
                 repo.add_remote(url)
-                repo.fetch(progress=self.githelper.FetchProgress(progress))
+                try:
+                    repo.fetch(progress=self.githelper.FetchProgress(progress))
+                except Exception as e:
+                    ap.close_create_project_dialog()
+                    import time
+                    time.sleep(0.25)
+                    git_errors.handle_error(e)
+                    raise e
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
                     ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains files.", duration=10000)
@@ -537,7 +545,7 @@ def on_folder_opened(ctx: ap.Context):
     dialog.title = "Open Git Repository"
     dialog.icon = ctx.icon
 
-    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/3-Version-Control%20using%20Git/\">Git.</a>")
+    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/version-control/first-steps/\">Git.</a>")
     dialog.add_checkbox(callback=lambda d,v: update_open_settings(d,v,path), var="neveraskagain", text="Never ask again")
     dialog.add_button("Continue", var="yes", callback=lambda d: connect_repo(d,path)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
     

@@ -219,7 +219,7 @@ class AzureDevOpsClient:
                 raise AccessDeniedError
 
             if response.status_code != 200:
-                print(response.status_code, response.reason)
+                print(f"Azure DevOps Request failed: {response.status_code}, {response.reason}, {response.text}")
 
             return response
         except TokenExpiredError as e:

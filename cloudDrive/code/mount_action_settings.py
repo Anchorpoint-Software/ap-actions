@@ -11,7 +11,7 @@ ui = ap.UI()
 try:
     settings = aps.Settings("rclone")
 except:
-    ui.show_error("Cannot load settings","Please refer to the <a href='https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.")
+    ui.show_error("Cannot load settings","Please refer to the <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/cloud-drive/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.")
     sys.exit()
 
 def isWin():
