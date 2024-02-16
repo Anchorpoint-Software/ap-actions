@@ -467,7 +467,11 @@ try:
                 self._add_git_ignore(repo, git_ignore, project_path)
             except Exception as e:            
                 print(e)
-                ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password, or you don't have access to the repository.", duration=10000)
+                ap.close_create_project_dialog()
+                import time
+                time.sleep(0.25)
+                if not git_errors.handle_error(e):
+                    ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password, or you don't have access to the repository.", duration=10000)
                 sys.exit(0)
 
         def _add_git_ignore(self, repo, ignore_value, project_path):
