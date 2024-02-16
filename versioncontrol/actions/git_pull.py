@@ -203,7 +203,7 @@ def pull_async(channel_id: str, project_path, ctx):
     except Exception as e:
         if not git_errors.handle_error(e):
             print(e)
-            if "conflict" in str(e):
+            if "conflict" in str(e).lower():
                 if repo.is_merging():
                     ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
                 else:

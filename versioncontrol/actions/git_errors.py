@@ -322,6 +322,9 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         ap.UI().show_error("Could not connect to the Git server", "Please check your internet connection and try again.", duration=10000)
         return True
 
+    if "CONFLICT" in exception_message:
+        return False
+
     if "failed due to: exit code" in exception_message:
         print(f"Git Error: {exception_message}")
 
