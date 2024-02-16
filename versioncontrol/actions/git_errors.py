@@ -217,12 +217,7 @@ def show_repository_not_found_error(message, repo_path):
     return False
 
 def handle_error(e: Exception, repo_path: Optional[str] = None):
-    try:
-        message = e.stderr
-    except:
-        message = str(e)
-
-    exception_message = str(e)
+    message = str(e)
 
     if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
         print(message)
@@ -314,22 +309,22 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
         return True
     
-    if "This repository is over its data quota" in exception_message:
+    if "This repository is over its data quota" in message:
         ap.UI().show_error("The GitHub LFS limit has been reached", "To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.", duration=10000)
         return True
     
-    if "Couldn't connect to server" in exception_message or "Could not resolve host" in exception_message or "Timed out" in exception_message or "Connection refused" in exception_message or "no such host" in exception_message:
+    if "Couldn't connect to server" in message or "Could not resolve host" in message or "Timed out" in message or "Connection refused" in message or "no such host" in message:
         ap.UI().show_error("Could not connect to the Git server", "Please check your internet connection and try again.", duration=10000)
         return True
 
-    if "CONFLICT" in exception_message:
+    if "CONFLICT" in message:
         return False
     
-    if "unmerged" in exception_message:
+    if "unmerged" in message:
         ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
         return True
 
-    if ".git/index.lock" in exception_message:
+    if ".git/index.lock" in message:
         if repo_path:
             repo = GitRepository.load(repo_path)
             if repo:
@@ -338,11 +333,11 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                     ap.UI().show_error("Could not apply change", "Please try again", duration=10000)
                     return True
                 except:
-                    print(f"Failed to remove index.lock in {repo_path}. Error: {exception_message}")
+                    print(f"Failed to remove index.lock in {repo_path}. Error: {message}")
                     return False
 
-    if "failed due to: exit code" in exception_message:
-        print(f"Git Error: {exception_message}")
+    if "failed due to: exit code" in message:
+        print(f"Git Error: {message}")
 
         def extract_first_fatal_error(error_message):
             try:
@@ -357,7 +352,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                 return None
             return None
         
-        error = extract_first_fatal_error(exception_message)
+        error = extract_first_fatal_error(message)
         msg = "In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail."
         if error:
             if len(error) > 50:
