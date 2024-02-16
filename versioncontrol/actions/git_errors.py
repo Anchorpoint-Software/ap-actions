@@ -308,6 +308,14 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">git troubleshooting</a>."
             ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
         return True
+    
+    if "This repository is over its data quota" in exception_message:
+        ap.UI().show_error("The GitHub LFS limit has been reached", "To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.", duration=10000)
+        return True
+    
+    if "Couldn't connect to server" in exception_message or "Could not resolve host" in exception_message or "Timed out" in exception_message or "Connection refused" in exception_message or "no such host" in exception_message:
+        ap.UI().show_error("Could not connect to the Git server", "Please check your internet connection and try again.", duration=10000)
+        return True
 
     if "failed due to: exit code" in exception_message:
         print(f"Git Error: {exception_message}")
