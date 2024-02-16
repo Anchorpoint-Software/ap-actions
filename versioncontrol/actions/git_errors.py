@@ -324,6 +324,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
 
     if "CONFLICT" in exception_message:
         return False
+    
+    if "unmerged" in exception_message:
+        ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
+        return True
 
     if "failed due to: exit code" in exception_message:
         print(f"Git Error: {exception_message}")
