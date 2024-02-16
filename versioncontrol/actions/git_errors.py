@@ -221,9 +221,9 @@ def show_repository_not_found_error(message, repo_path):
 
 def handle_error(e: Exception, repo_path: Optional[str] = None):
     message = str(e)
+    print(message)
 
     if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
-        print(message)
         isread = "error: unable to index file" in message
         permission = "read" if isread else "write"
         operation = "read" if isread else "changed"
@@ -293,7 +293,6 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
     
     if "LFS object not found" in message:
-        print(message)
         ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
         return True
     
@@ -331,6 +330,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
         return True
 
+    if "unable to write new_index file" in message:
+        ap.UI().show_error("Could not apply changes", "Maybe you are out of disk space?", duration=10000)
+        return True
+
     if ".git/index.lock" in message:
         if repo_path:
             repo = GitRepository.load(repo_path)
@@ -344,8 +347,6 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                     return False
                 
     if "failed due to: exit code" in message:
-        print(f"Git Error: {message}")
-
         def extract_first_fatal_error(error_message):
             try:
                 lines = error_message.split('\n')
