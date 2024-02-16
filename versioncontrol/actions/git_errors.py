@@ -185,6 +185,21 @@ def clear_credentials(dialog, repo_path: Optional[str]):
     ctx = ap.get_context()
     ctx.run_async(clear_credentials_async, dialog, repo_path)
 
+def show_invalid_credentials_error(title, message, repo_path, url):
+    d = ap.Dialog()
+    d.title = title
+    d.icon = ":/icons/versioncontrol.svg"
+    d.add_text(message)
+
+    if url and "github" in url.lower():
+        d.add_info("If you're using our GitHub integration, try disconnecting and connecting it again.<br>If you are not using the GitHub integration, check if you are logged in with the correct GitHub account.")
+    else:
+        d.add_info("Most likely you are logged in with a wrong Git account.<br>Update credentials or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
+    
+    d.add_button("Update Credentials", var="updatecreds", callback=lambda d: clear_credentials(d, repo_path), primary=False)
+    d.add_button("OK", callback=lambda d: d.close())
+    d.show()
+
 def show_repository_not_found_error(message, repo_path):
     def extract_repository_url(input_string):
         import re
@@ -200,18 +215,7 @@ def show_repository_not_found_error(message, repo_path):
         return False
     
     if url:
-        d = ap.Dialog()
-        d.title = "Your repository was not found"
-        d.icon = ":/icons/versioncontrol.svg"
-        d.add_text(f"The URL {url}<br>cannot be found under your account.")
-        
-        if "github" in url.lower():
-            d.add_info("If you're using our GitHub integration, try disconnecting and connecting it again.<br>If you are not using the GitHub integration, check if you are logged in with the correct GitHub account.")
-        else:
-            d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">troubleshooting</a> for help.")
-        
-        d.add_button("OK", callback=lambda d: d.close())
-        d.show()
+        show_invalid_credentials_error("Your repository was not found", f"The URL {url}<br>cannot be found under your account.", repo_path, url)
         return True
 
     return False
@@ -277,6 +281,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     if "fatal: repository" in message and "not found" in message:
         return show_repository_not_found_error(message, repo_path)
     
+    if "could not read Password" in message:
+        show_invalid_credentials_error("Invalid Git Credentials", "Your Git credentials are invalid. Please update them.", repo_path, None)
+        return True
+    
     if "Another Git repository found in" in message:
         ap.UI().show_error("Another Git repository found", message, duration=10000)
         return True
@@ -335,7 +343,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                 except:
                     print(f"Failed to remove index.lock in {repo_path}. Error: {message}")
                     return False
-
+                
     if "failed due to: exit code" in message:
         print(f"Git Error: {message}")
 
