@@ -166,7 +166,40 @@ def restore_corrupted_index():
     except Exception as e:
         print(e)
 
-def show_repository_not_found_error(message):
+def clear_credentials_async(dialog, repo_path: Optional[str]):
+    try:
+        dialog.set_processing("updatecreds", True, "Updating")
+        repo = GitRepository.load(repo_path)
+        if repo and repo.clear_credentials():
+            repo.fetch()
+            ap.UI().show_success("Credentials updated")
+    finally:
+        dialog.close()
+
+def clear_credentials(dialog, repo_path: Optional[str]):
+    if not repo_path:
+        print("No repository path provided for clear credentials in repository not found error")
+        dialog.close()
+        return
+    
+    ctx = ap.get_context()
+    ctx.run_async(clear_credentials_async, dialog, repo_path)
+
+def show_invalid_credentials_error(title, message, repo_path, url):
+    d = ap.Dialog()
+    d.title = title
+    d.icon = ":/icons/versioncontrol.svg"
+    d.add_text(message)
+
+    if url and "github" in url.lower():
+        d.add_info("If you're using our GitHub integration, try disconnecting and connecting it again.<br>If you are not using the GitHub integration, check if you are logged in with the correct GitHub account.")
+    else:
+        d.add_info("Most likely you are logged in with a wrong Git account.<br>Update credentials or check our <a href=\"https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/\">troubleshooting</a> for help.")
+    
+    d.add_button("Update Credentials", var="updatecreds", callback=lambda d: clear_credentials(d, repo_path), primary=False)
+    d.show()
+
+def show_repository_not_found_error(message, repo_path):
     def extract_repository_url(input_string):
         import re
         pattern = r"repository '([^']+)' not found"
@@ -181,32 +214,16 @@ def show_repository_not_found_error(message):
         return False
     
     if url:
-        d = ap.Dialog()
-        d.title = "Your repository was not found"
-        d.icon = ":/icons/versioncontrol.svg"
-        d.add_text(f"The URL {url}<br>cannot be found under your account.")
-        
-        if "github" in url.lower():
-            d.add_info("If you're using our GitHub integration, try disconnecting and connecting it again.<br>If you are not using the GitHub integration, check if you are logged in with the correct GitHub account.")
-        else:
-            d.add_info("Most likely you are logged in with a wrong Git account.<br>Check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">troubleshooting</a> for help.")
-        
-        d.add_button("OK", callback=lambda d: d.close())
-        d.show()
+        show_invalid_credentials_error("Your repository was not found", f"The URL {url}<br>cannot be found under your account.", repo_path, url)
         return True
 
     return False
 
 def handle_error(e: Exception, repo_path: Optional[str] = None):
-    try:
-        message = e.stderr
-    except:
-        message = str(e)
-
-    exception_message = str(e)
+    message = str(e)
+    print(message)
 
     if "warning: failed to remove" in message or "error: unable to unlink" in message or "error: unable to index file" in message:
-        print(message)
         isread = "error: unable to index file" in message
         permission = "read" if isread else "write"
         operation = "read" if isread else "changed"
@@ -261,7 +278,11 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
     
     if "fatal: repository" in message and "not found" in message:
-        return show_repository_not_found_error(message)
+        return show_repository_not_found_error(message, repo_path)
+    
+    if "could not read Password" in message or "Authentication failed" in message:
+        show_invalid_credentials_error("Invalid Git Credentials", "Your Git credentials are invalid. Please update them.", repo_path, None)
+        return True
     
     if "Another Git repository found in" in message:
         ap.UI().show_error("Another Git repository found", message, duration=10000)
@@ -272,7 +293,6 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
     
     if "LFS object not found" in message:
-        print(message)
         ap.UI().show_error("Missing File", "An object is missing on the server, learn <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/#missing-file\">how to fix</a> this.", duration=10000)
         return True
     
@@ -280,7 +300,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         if repo_path:
             repo = GitRepository.load(repo_path)
             if repo:
-                repo.set_safe_directory()
+                repo.set_safe_directory(repo_path)
         else:
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
@@ -294,10 +314,39 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
             ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
         return True
+    
+    if "This repository is over its data quota" in message:
+        ap.UI().show_error("The GitHub LFS limit has been reached", "To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.", duration=10000)
+        return True
+    
+    if "Couldn't connect to server" in message or "Could not resolve host" in message or "Timed out" in message or "Connection refused" in message or "no such host" in message:
+        ap.UI().show_error("Could not connect to the Git server", "Please check your internet connection and try again.", duration=10000)
+        return True
 
-    if "failed due to: exit code" in exception_message:
-        print(f"Git Error: {exception_message}")
+    if "CONFLICT" in message:
+        return False
+    
+    if "unmerged" in message:
+        ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
+        return True
 
+    if "unable to write new_index file" in message:
+        ap.UI().show_error("Could not apply changes", "Maybe you are out of disk space?", duration=10000)
+        return True
+
+    if ".git/index.lock" in message:
+        if repo_path:
+            repo = GitRepository.load(repo_path)
+            if repo:
+                try:
+                    repo.check_index_lock()
+                    ap.UI().show_error("Could not apply change", "Please try again", duration=10000)
+                    return True
+                except:
+                    print(f"Failed to remove index.lock in {repo_path}. Error: {message}")
+                    return False
+                
+    if "failed due to: exit code" in message:
         def extract_first_fatal_error(error_message):
             try:
                 lines = error_message.split('\n')
@@ -311,7 +360,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                 return None
             return None
         
-        error = extract_first_fatal_error(exception_message)
+        error = extract_first_fatal_error(message)
         msg = "In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail."
         if error:
             if len(error) > 50:

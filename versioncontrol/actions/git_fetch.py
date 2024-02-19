@@ -16,9 +16,9 @@ if parent_dir in sys.path: sys.path.remove(parent_dir)
 
 def fetch_async(channel_id: str, project_path):
     ui = ap.UI()
+    path = get_repo_path(channel_id, project_path)
     try:
         progress = None
-        path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
         
@@ -41,7 +41,7 @@ def fetch_async(channel_id: str, project_path):
             ap.vc_load_pending_changes("Git")
         ap.refresh_timeline_channel(channel_id)
 
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             ui.show_error("Failed to fetch Git Repository", str(e))
             raise e
 

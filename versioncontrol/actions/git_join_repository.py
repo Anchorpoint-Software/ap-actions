@@ -66,7 +66,7 @@ if __name__ == "__main__":
             ap.refresh_timeline_channel(timeline_channel.id)
 
         except Exception as e:
-            print(e)
+            ap.log_error(f"Cannot join Git Repository: {str(e)}")
             d = ap.Dialog()
             d.title = "Cannot join Git Repository"
             d.icon = ":/icons/versioncontrol.svg"
@@ -115,7 +115,15 @@ if __name__ == "__main__":
     def is_location_same_repo(path: str, url: str):
         try:
             repo = GitRepository.load(path)
-            if repo and url == repo.get_remote_url():
+            
+            url_normalized = url
+            repo_url_normalized = repo.get_remote_url()
+            if url_normalized.endswith(".git"):
+                url_normalized = url_normalized[:-4]
+            if repo_url_normalized.endswith(".git"):
+                repo_url_normalized = repo_url_normalized[:-4]
+
+            if repo and url_normalized == repo_url_normalized:
                 return True
             return False
         except: 

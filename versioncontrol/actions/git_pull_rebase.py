@@ -36,8 +36,8 @@ class PullProgress(Progress):
 
 def pull_async(channel_id: str, project_path):
     ui = ap.UI()
+    path = get_repo_path(channel_id, project_path)
     try:
-        path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
         progress = ap.Progress("Updating Git Changes", show_loading_screen=True, cancelable=True)
@@ -73,7 +73,7 @@ def pull_async(channel_id: str, project_path):
             ui.show_success("Update Successful")
         progress.finish()
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             if repo.has_pending_changes(True):
                 ui.show_info("Cannot pull", "You have files that would be overwritten, commit them first")
             else:

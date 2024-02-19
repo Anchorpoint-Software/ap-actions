@@ -6,9 +6,7 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
-from git_pull import pull
-from git_push import PushProgress, show_push_failed
-import git_errors
+from git_push import sync_changes
 from vc.apgit.repository import * 
 from vc.apgit.utility import get_repo_path
 import git_repository_helper as helper
@@ -117,72 +115,6 @@ def stage_files(changes, all_files_selected, repo, lfs, progress, track_binary_f
             d.show()
         else:
             raise e
-
-def push_changes(ctx, repo_path, channel_id: str):
-    import sys
-    script_dir = os.path.dirname(__file__)
-    sys.path.insert(0, script_dir)
-    from git_push import handle_git_autolock as push_handle_git_autolock, push_in_progress, get_push_lockfile, delete_push_lockfiles, handle_git_autoprune
-    if script_dir in sys.path:
-        sys.path.remove(script_dir)
-
-    repo = GitRepository.load(repo_path)
-    if not repo: return
-
-    git_dir = repo.get_git_dir()
-    if push_in_progress(git_dir):
-        return
-    
-    try:
-        lockfile = get_push_lockfile(git_dir)
-        with open(lockfile, "w") as f:
-            progress = ap.Progress("Pushing Git Changes", cancelable=True)
-            state = repo.push(progress=PushProgress(progress))
-            if state == UpdateState.CANCEL:
-                ap.UI().show_info("Push Canceled")
-            elif state != UpdateState.OK:
-                show_push_failed("", channel_id, repo.get_root_path())    
-            else:
-                push_handle_git_autolock(ctx, repo)
-                progress.set_text("Clearing Cache")
-                handle_git_autoprune(ctx, repo)
-                ap.UI().show_success("Push Successful")
-    except Exception as e:
-        if not git_errors.handle_error(e):
-            show_push_failed(str(e), channel_id, repo.get_root_path())
-    finally:
-        ap.stop_timeline_channel_action_processing(channel_id, "gitpush")
-        ap.stop_timeline_channel_action_processing(channel_id, "gitpull")
-        ap.close_timeline_sidebar()
-        ap.refresh_timeline_channel(channel_id)
-        if git_dir:
-            delete_push_lockfiles(git_dir)
-
-def pull_changes(repo: GitRepository, channel_id: str, ctx):
-    rebase = False
-    if rebase: raise NotImplementedError()
-
-    try:
-        if not pull(repo, channel_id, ctx):
-            raise Exception("Pull Failed")
-        
-        ap.vc_load_pending_changes(channel_id)
-        ap.refresh_timeline_channel(channel_id)
-
-    except Exception as e:
-        print(e)
-        raise e
-    
-def repo_needs_pull(repo: GitRepository):
-    progress = ap.Progress("Looking for Changes on Server", cancelable=True)
-    
-    try:
-        repo.fetch()
-        return repo.is_pull_required(), progress.canceled
-    except Exception as e:
-        git_errors.handle_error(e)
-        ap.UI().show_info("Could not get remote changes", "Your changed files have been committed, you can push them manually to the server", duration = 8000)
-        raise e
     
 def delay(func, progress, *args, **kwargs):
     import time
@@ -190,32 +122,8 @@ def delay(func, progress, *args, **kwargs):
     if progress: progress.finish()
     func(*args, **kwargs)
 
-def commit_auto_push(ctx, repo_path, channel_id: str):
-    repo = GitRepository.load(repo_path)
-    if not repo: return
-
-    ui = ap.UI()
-    pull_required, canceled = repo_needs_pull(repo)
-    if canceled:
-        ui.show_success("Push canceled")
-    if not pull_required:
-        # Queue async to give Anchorpoint a chance to update the timeline
-        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
-        ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
-        ap.get_context().run_async(delay, push_changes, None, ctx, repo_path, channel_id)
-    else:
-        try:
-            pull_changes(repo, channel_id, ctx)
-        except Exception as e:
-            git_errors.handle_error(e)
-            print(f"Auto-Push: Could not pull {str(e)}")
-            ui.show_info("Could not pull changes from server", "Your changed files have been committed, you can push them manually to the server", duration = 20000)
-            return
-
-        # Queue async to give Anchorpoint a chance to update the timeline
-        ap.timeline_channel_action_processing(channel_id, "gitpush", "Pushing...")
-        ap.timeline_channel_action_processing(channel_id, "gitpull", "Pushing...")
-        ap.get_context().run_async(delay, push_changes, None, ctx, repo_path, channel_id)
+def commit_auto_push(ctx, channel_id: str):
+    sync_changes(channel_id, ctx)
 
 def handle_git_autolock(repo, ctx, changes):
     locks = ap.get_locks(ctx.workspace_id, ctx.project_id)
@@ -260,8 +168,8 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     git_settings = GitAccountSettings(ctx)
 
     progress = ap.Progress("Committing Files", "Depending on your file count and size this may take some time", show_loading_screen=True, cancelable=True)
+    path = get_repo_path(channel_id, ctx.project_path)
     try:
-        path = get_repo_path(channel_id, ctx.project_path)
         repo = GitRepository.load(path)
         if not repo: return
 
@@ -294,14 +202,14 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
 
         if auto_push and not push_in_progress(repo.get_git_dir()):
             # Queue async to give Anchorpoint a chance to update the timeline
-            ap.get_context().run_async(delay, commit_auto_push, progress, ctx, path, channel_id)
+            ap.get_context().run_async(delay, commit_auto_push, progress, ctx, channel_id)
         else:
             ap.close_timeline_sidebar()
             ui.show_success("Commit succeeded")
         
     except Exception as e:
         import git_errors
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             print(str(e))
             ui.show_error("Commit Failed", str(e).splitlines()[0])
             raise e

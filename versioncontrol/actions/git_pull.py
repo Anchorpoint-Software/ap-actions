@@ -87,7 +87,7 @@ def handle_git_autoprune(ctx, repo):
     
     try:
         lfs_version = repo.get_lfs_version()
-        if not lfs_version.startswith("ap_"):
+        if not "Anchorpoint" in lfs_version:
             print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
             return
         count = repo.prune_lfs(**prune_kwargs)
@@ -190,8 +190,8 @@ def pull(repo: GitRepository, channel_id: str, ctx):
 
 def pull_async(channel_id: str, project_path, ctx):
     ui = ap.UI()
+    path = get_repo_path(channel_id, project_path)
     try:
-        path = get_repo_path(channel_id, project_path)
         repo = GitRepository.load(path)
         if not repo: return
 
@@ -201,9 +201,9 @@ def pull_async(channel_id: str, project_path, ctx):
             ap.update_timeline_last_seen()
         
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             print(e)
-            if "conflict" in str(e):
+            if "conflict" in str(e).lower():
                 if repo.is_merging():
                     ui.show_info("Conflicts detected", "Please resolve your conflicts or cancel the pull")    
                 else:
