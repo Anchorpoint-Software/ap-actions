@@ -5,6 +5,8 @@ import os, sys, pathlib, platform, webbrowser
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 
+from git_errors import handle_error
+
 def refresh_timeline(dialog):
     dialog.store_settings()
     ap.vc_load_pending_changes("Git", False)
@@ -88,7 +90,12 @@ def apply_git_url(dialog, ctx, repo_path):
         metadata["gitRemoteUrl"] = old_url
         channel.metadata = metadata
         aps.update_timeline_channel(project, channel)
-        ap.UI().show_error("Could not change URL", str(e))
+
+        error_message = str(e)
+        if "fatal: repository" in error_message and "not found" in error_message:
+            ap.UI().show_error("Could not change URL", "The repository could not be found, did you mistype the URL?")
+        elif not handle_error(e, repo_path):
+            ap.UI().show_error("Could not change URL", str(e))
     finally:
         dialog.set_processing("applyurl", False)
 
