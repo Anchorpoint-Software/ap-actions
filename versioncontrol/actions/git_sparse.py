@@ -111,7 +111,7 @@ def on_load_remote_folders(ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, ctx.project_path)
         raise e
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
@@ -144,7 +144,7 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+        git_errors.handle_error(e, ctx.project_path)
         raise e
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
@@ -209,7 +209,7 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
 
     except Exception as e:
         import git_errors
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, ctx.project_path):
             message = str(e)
             if "it contains uncommitted changes" in message:
                 print("Failed to unload folder because it contains uncommitted changes")

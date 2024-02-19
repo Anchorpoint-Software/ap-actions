@@ -29,7 +29,7 @@ def cancel_merge(channel_id, project_path):
         elif repo.is_merging():
             repo.abort_merge()
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             raise e
 
     ap.refresh_timeline_channel(channel_id)
@@ -85,7 +85,7 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
                     repo.conflict_resolved(ConflictResolveState.TAKE_THEIRS, paths)
 
     except Exception as e:
-        if not git_errors.handle_error(e):
+        if not git_errors.handle_error(e, path):
             raise e
     
     if repo.has_conflicts() == False: 
@@ -131,6 +131,16 @@ def get_lfs_cached_file(sha256, repo_dir):
     except Exception as e:
         print(f"get_lfs_cached_file exception: {str(e)}")
         return None
+
+def extract_info_from_conflict(conflict_str: str):
+    import re
+    pattern = r'oid sha256:(\w+)\nsize (\d+)'
+    matches = re.findall(pattern, conflict_str)
+    if len(matches) != 2:
+        raise ValueError('Expected two matches for SHA256 and size')
+    current_change = {'sha256': matches[0][0], 'size': int(matches[0][1])}
+    incoming_change = {'sha256': matches[1][0], 'size': int(matches[1][1])}
+    return current_change, incoming_change
 
 def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     path = get_repo_path(channel_id, ctx.project_path)
@@ -203,7 +213,15 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
                     stash_id = stash_id + "^"
                 hash_current = repo.get_lfs_filehash([rel_filepath], stash_id)
             else:
-                hash_current = []
+                try:
+                    with open(file_path, "r") as file:
+                        conflict_str = file.read()
+                        # Incoming is current from a user perspective
+                        _, incoming = extract_info_from_conflict(conflict_str)
+                        hash_current = {rel_filepath: incoming["sha256"]}
+                except Exception as e:
+                    print(f"get_lfs_filehash exception: {str(e)}")
+                    hash_current = []
         else:
             hash_current = repo.get_lfs_filehash([rel_filepath], lfs_ref_current)
 

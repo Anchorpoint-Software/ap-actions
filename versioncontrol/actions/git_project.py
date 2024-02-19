@@ -259,7 +259,7 @@ try:
                 try:
                     repo = git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
-                    if repo_url != "":
+                    if repo_url and repo_url != "":
                         dialog.set_value(create_project_dropdown, remote_dropdown_entry_name)
                         dialog.set_value(remote_entry_url_input, repo_url)
                 except:
@@ -407,7 +407,7 @@ try:
                     ap.close_create_project_dialog()
                     import time
                     time.sleep(0.25)
-                    git_errors.handle_error(e)
+                    git_errors.handle_error(e, project_path)
                     raise e
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
@@ -467,7 +467,11 @@ try:
                 self._add_git_ignore(repo, git_ignore, project_path)
             except Exception as e:            
                 print(e)
-                ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password, or you don't have access to the repository.", duration=10000)
+                ap.close_create_project_dialog()
+                import time
+                time.sleep(0.25)
+                if not git_errors.handle_error(e, project_path):
+                    ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password, or you don't have access to the repository.", duration=10000)
                 sys.exit(0)
 
         def _add_git_ignore(self, repo, ignore_value, project_path):
