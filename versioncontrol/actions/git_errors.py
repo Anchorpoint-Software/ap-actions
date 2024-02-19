@@ -346,7 +346,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                     print(f"Failed to remove index.lock in {repo_path}. Error: {message}")
                     return False
                 
-    if "failed due to: exit code" in message or "has no refspec set" in message:
+    if "failed due to: exit code" in message or "has no refspec set" in message or "clean filter 'lfs' failed'" in message:
         def extract_first_fatal_error(error_message):
             try:
                 lines = error_message.split('\n')
