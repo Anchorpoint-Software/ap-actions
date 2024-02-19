@@ -344,7 +344,7 @@ class GitRepository(VCRepository):
             
             for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
                 if info.flags & git.FetchInfo.ERROR:
-                    state = UpdateState.ERROR
+                    raise Exception(f"Pull failed: {info.note}")
 
         except Exception as e:
             if self.has_conflicts():
@@ -742,7 +742,7 @@ class GitRepository(VCRepository):
                 remote_name = remote if remote else "origin"
             except:
                 remote_name = "origin"
-                
+
             self.repo.git.remote("set-url", remote_name, url)
 
             # Make a prune fetch to remove outdated refs from the old remote
