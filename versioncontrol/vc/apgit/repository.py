@@ -736,9 +736,13 @@ class GitRepository(VCRepository):
             else:
                 raise Exception("Cannot change remote URL because there are pending changes")
         else:
-            branch = self._get_current_branch()
-            remote = self._get_default_remote(branch)
-            remote_name = remote if remote else "origin"
+            try:
+                branch = self._get_current_branch()
+                remote = self._get_default_remote(branch)
+                remote_name = remote if remote else "origin"
+            except:
+                remote_name = "origin"
+                
             self.repo.git.remote("set-url", remote_name, url)
 
             # Make a prune fetch to remove outdated refs from the old remote
