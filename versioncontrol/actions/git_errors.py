@@ -255,6 +255,8 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         d.add_button("OK", callback=lambda d: d.close())
         d.show()
 
+        print(f"Showing Dialog: {user_error}")
+
         return True
 
     if "Stash on branch" in message:
