@@ -1993,7 +1993,7 @@ class GitRepository(VCRepository):
             print("clear cache disabled temporarily")
             return 0
         
-        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--safe"]
+        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote", "--verify-unreachable", "--when-unverified=continue"]
         if force:
             args.append("--force")
         else:
