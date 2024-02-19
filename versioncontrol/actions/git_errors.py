@@ -288,7 +288,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         ap.UI().show_error("Another Git repository found", message, duration=10000)
         return True
     
-    if "no space left on device" in message:
+    if "no space left on device" in message or "not enough space" in message:
         ap.UI().show_error("No space left on device", message, duration=10000)
         return True
     
