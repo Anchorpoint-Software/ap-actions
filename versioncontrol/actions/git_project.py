@@ -64,9 +64,9 @@ def add_additional_scripts(yaml_dir, project_path, ignore_value):
         if os.path.exists(assets_path):
             file = os.path.join(yaml_dir, "inscripts", "Unity", "RespectReadOnly.cs")
             if os.path.exists(file):
-                target_dir = os.path.join(assets_path, "Anchorpoint")
+                target_dir = os.path.join(assets_path, "Scripts","Editor")
                 if not os.path.exists(target_dir):
-                    os.mkdir(target_dir)
+                    os.makedirs(target_dir)
                 shutil.copy(file, target_dir)
 
 def add_git_ignore(repo, context, project_path, ignore_value = None):
