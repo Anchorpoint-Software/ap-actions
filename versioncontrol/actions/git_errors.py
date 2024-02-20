@@ -328,6 +328,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     if "CONFLICT" in message:
         return False
     
+    if "User canceled authentication" in message:
+        ap.UI().show_info("User canceled authentication", "The authentication was canceled by the user.", duration=10000)
+        return True
+    
     if "unmerged" in message or "not concluded your merge" in message:
         ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
         return True
