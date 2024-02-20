@@ -588,12 +588,15 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         repo_dir = repo.get_root_path()
         changes = dict[str,ap.VCPendingChange]()
 
-        is_rebasing = repo.is_rebasing() or repo.is_merging()
+        is_merging = repo.is_rebasing() or repo.is_merging()
 
-        if not is_rebasing:
+        if not is_merging:
             parse_changes(repo_dir, repo.get_pending_changes(staged = True), changes, True)
         parse_changes(repo_dir, repo.get_pending_changes(staged = False), changes, False)
-        parse_conflicts(repo_dir, repo.get_conflicts(), changes)
+
+        conflicts = repo.get_conflicts()
+        parse_conflicts(repo_dir, conflicts, changes)
+        has_conflicts = len(conflicts) > 0
 
         get_cached_paths("HEAD", repo, changes, deleted_only=True)
 
@@ -614,7 +617,7 @@ def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
         commit.identifier = "gitcommit"
         commit.icon = aps.Icon(":/icons/submit.svg")
         commit.type = ap.ActionButtonType.Primary
-        if is_rebasing:
+        if is_merging and has_conflicts:
             commit.enabled = False
             commit.tooltip = "Cannot commit when resolving conflicts" if not auto_push else "Cannot push when resolving conflicts"
         else:
