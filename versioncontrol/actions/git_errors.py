@@ -328,6 +328,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     if "CONFLICT" in message:
         return False
     
+    if "Failed to find location service" in message:
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
+        return True
+    
     if "User canceled authentication" in message:
         ap.UI().show_info("User canceled authentication", "The authentication was canceled by the user.", duration=10000)
         return True
