@@ -64,7 +64,9 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
                 
                 if len(paths_to_unstage) > 0:
                     repo.unstage_files(paths_to_unstage)
-                repo.restore_files(paths_to_revert, progress=helper.FetchProgress(progress))
+
+                if len(paths_to_revert) > 0:
+                    repo.restore_files(paths_to_revert, progress=helper.FetchProgress(progress))
                 for path in paths_to_delete:
                     os.remove(path)
 
