@@ -343,6 +343,18 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     if "CONFLICT" in message:
         return False
     
+    if "MERGE_HEAD exists" in message:
+        if repo_path:
+            repo = GitRepository.load(repo_path)
+            if repo:
+                if repo.has_conflicts():
+                    ap.UI().show_error("Merge in progress", "A merge is in progress, please resolve the conflicts and continue.", duration=10000)
+                else:
+                    ap.UI().show_error("Merge in progress", "Commit your changes and continue", duration=10000)
+            return True
+        ap.UI().show_error("Merge in progress", "A merge is in progress, please resolve the conflicts and continue.", duration=10000)
+        return True
+
     if "Failed to find location service" in message:
         ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
         return True
