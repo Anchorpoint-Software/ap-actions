@@ -367,7 +367,11 @@ class GitRepository(VCRepository):
         except Exception as e:
             error = str(e)
             if not "CONFLICT" in error:
-                self.repo.git.revert("--abort")
+                try:
+                    self.repo.git.revert("--abort")
+                except Exception as e:
+                    print(f"Error aborting revert_changelist: {str(e)}")
+
                 raise e
         
         self.repo.git.revert("--quit")
