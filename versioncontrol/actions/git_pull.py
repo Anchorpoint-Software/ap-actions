@@ -111,7 +111,7 @@ def pull(repo: GitRepository, channel_id: str, ctx):
     staged_changes = repo.get_pending_changes(True)
     
     stashed_changes = False
-    if changes.size() > 0 or staged_changes.size() > 0:
+    if not repo.is_unborn() and (changes.size() > 0 or staged_changes.size() > 0):
         progress.set_text("Shelving Changed Files")
         if not check_changes_writable(repo, changes):
             return True
