@@ -219,6 +219,21 @@ def show_repository_not_found_error(message, repo_path):
 
     return False
 
+def fix_username(repo_path):
+    if not repo_path:
+        return False
+    
+    repo = GitRepository.load(repo_path)
+    if not repo:
+        return False
+    
+    context = ap.get_context()
+    if not context:
+        return False
+    
+    repo.set_username(context.username, context.email, repo_path)
+    return True
+
 def handle_error(e: Exception, repo_path: Optional[str] = None):
     message = str(e)
     print(message)
@@ -343,6 +358,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
     if "unable to write new_index file" in message:
         ap.UI().show_error("Could not apply changes", "Maybe you are out of disk space?", duration=10000)
         return True
+
+    if "name consists only of disallowed characters" in message:
+        fix_username(repo_path)
+        return False # Still show original error to user
 
     if ".git/index.lock" in message:
         if repo_path:
