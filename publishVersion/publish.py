@@ -1,6 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys
+import os
+import sys
 
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.project_path)
@@ -60,7 +61,7 @@ def copy():
             new_location = new_location+"/"+appendix
             # check if folder is correct
             if(not os.path.isdir(new_location)):
-                ui.show_error(f"Folder not set correctly","Please check your output folder in the settings.")
+                ui.show_error("Folder not set correctly","Please check your output folder in the settings.")
                 return        
 
         new_path = os.path.join(new_location,new_name_appendix+"."+ctx.suffix)

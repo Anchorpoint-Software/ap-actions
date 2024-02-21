@@ -1,6 +1,8 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys, platform
+import os
+import sys
+import platform
 import git_errors
 
 import is_git_repo as is_git
@@ -117,7 +119,7 @@ try:
             try:
                 import vc.apgit.repository as git
                 self.git = git
-            except Warning as e:
+            except Warning:
                 sys.exit(0)
 
             repo_url = None
@@ -224,7 +226,7 @@ try:
                     if action.name == value:
                         action_found = True
                         if(not integration.is_setup or not integration.is_connected):
-                            dialog.set_value(setup_integration_btn, f"Setup Integration")
+                            dialog.set_value(setup_integration_btn, "Setup Integration")
                             self.setup_integration_name = integration.name
                             dialog.hide_row(setup_integration_btn,False)
                             self.setup_integration_visible = True
@@ -375,7 +377,7 @@ try:
             print(f"folder_is_empty {folder_is_empty}")
             print(f"git_parent_dir {git_parent_dir}")
 
-            raise Exception(f"Cannot create the Git project, unknown set of parameters")
+            raise Exception("Cannot create the Git project, unknown set of parameters")
 
         def project_created(self):
             folder_id = aps.get_folder_id(self.path)
@@ -489,7 +491,7 @@ try:
                                 return root, is_valid
                             except:
                                 return root, False
-            except Exception as e:
+            except Exception:
                 return None, False
             return None, False
 

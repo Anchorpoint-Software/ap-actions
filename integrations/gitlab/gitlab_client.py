@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 import json
 import string
-from typing import Optional
 from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2 import TokenExpiredError, AccessDeniedError
 import random
 import base64
 import re
@@ -142,7 +140,7 @@ class GitlabClient:
             return success
         try:
             self._get_current_user()
-        except Exception as e:
+        except Exception:
             return False
         return True
     

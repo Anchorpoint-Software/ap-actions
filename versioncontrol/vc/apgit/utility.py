@@ -17,7 +17,7 @@ def is_executable_running(names: list[str]):
 def is_git_running():
     try:
         return is_executable_running(["git", "git.exe"])
-    except Exception as e:
+    except Exception:
         return True # Expect it to be running
     
 def get_locking_application(path: str):
@@ -48,7 +48,7 @@ def is_file_writable(path: str):
         f=open(path, "a")
         f.close()
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 def setup_git():
@@ -60,7 +60,7 @@ def get_repo_path(channel_id: str, project_path: str):
     if not project: return project_path
     channel = aps.get_timeline_channel(project, channel_id)
     if not channel: return project_path
-    if not "gitPathId" in channel.metadata: return project_path
+    if "gitPathId" not in channel.metadata: return project_path
     try:
         folder = aps.get_folder_by_id(channel.metadata["gitPathId"], project)
     except:
@@ -77,5 +77,5 @@ def get_repo_url_from_channel(channel_id: str, workspace_id: str, project_id: st
     if not project: return None
     channel = aps.get_timeline_channel(project, channel_id)
     if not channel: return None
-    if not "gitRemoteUrl" in channel.metadata: return None
+    if "gitRemoteUrl" not in channel.metadata: return None
     return channel.metadata["gitRemoteUrl"]

@@ -8,7 +8,7 @@ title_var = "title"
 message_var = "message"
 
 def notification_clicked_cb():
-    ui.show_info(f"Hello from Notification click") 
+    ui.show_info("Hello from Notification click") 
 
 def button_clicked_cb(dialog):
     title = dialog.get_value(title_var)

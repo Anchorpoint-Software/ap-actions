@@ -1,7 +1,8 @@
 from shutil import copyfile
 import anchorpoint as ap
 import apsync as aps
-import sys, os
+import sys
+import os
 
 NO_IGNORE = "No .gitignore"
 

@@ -1,4 +1,5 @@
-import os, pathlib
+import os
+import pathlib
 import mimetypes
 
 from binaryornot.check import is_binary

@@ -1,4 +1,5 @@
-import sys, os
+import sys
+import os
 current_dir = os.path.dirname(__file__)
 
 class GitFileLocker:

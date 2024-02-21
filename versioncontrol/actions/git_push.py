@@ -1,7 +1,8 @@
 import anchorpoint as ap
-import apsync as aps
 
-import sys, os, importlib
+import sys
+import os
+import importlib
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
@@ -86,7 +87,7 @@ def handle_git_autoprune(ctx, repo):
     
     try:
         lfs_version = repo.get_lfs_version()
-        if not "Anchorpoint" in lfs_version:
+        if "Anchorpoint" not in lfs_version:
             print(f"Skipping LFS auto prune because it is not supported by the version of LFS {lfs_version}.")
             return
         count = repo.prune_lfs(**prune_kwargs)

@@ -1,7 +1,6 @@
-from ast import parse
-from ctypes import util
 import os
-import shutil, tempfile
+import shutil
+import tempfile
 
 from git import GitCommandError
 import git
@@ -11,12 +10,13 @@ from vc.versioncontrol_interface import *
 import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-import logging, re
-import gc, subprocess, platform
+import logging
+import re
+import gc
+import subprocess
+import platform
 from datetime import datetime
-from io import BytesIO
 import anchorpoint as ap
-import time
 
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
@@ -142,7 +142,7 @@ class GitRepository(VCRepository):
         try:
             import subprocess
             install_git.run_git_command([install_git.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-        except Exception as e:
+        except Exception:
             return False
         return True
 
@@ -165,7 +165,7 @@ class GitRepository(VCRepository):
             self.repo.git.config("user.email", email)
         try:
             _set_username()
-        except Exception as e:
+        except Exception:
             self.set_safe_directory(path)
             _set_username()
 
@@ -366,7 +366,7 @@ class GitRepository(VCRepository):
                 pass
         except Exception as e:
             error = str(e)
-            if not "CONFLICT" in error:
+            if "CONFLICT" not in error:
                 try:
                     self.repo.git.revert("--abort")
                 except Exception as e:
@@ -489,7 +489,7 @@ class GitRepository(VCRepository):
                 remote = self.repo.remote(split[0])
                 if remote:
                     branch_name = "/".join(split[1:])
-            except Exception as e:
+            except Exception:
                 # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
                 pass
         
@@ -1242,7 +1242,7 @@ class GitRepository(VCRepository):
             except:
                 continue
 
-            if paths and not file in relative_paths:
+            if paths and file not in relative_paths:
                 continue
 
             if ".gitattributes" in file:
@@ -1369,7 +1369,7 @@ class GitRepository(VCRepository):
         try:
             with open(merge_head, "r", encoding="utf-8") as f:
                 return f.readline().replace("\n", "").strip()
-        except Exception as e:
+        except Exception:
             return None
 
     def get_upstream_branch(self, branch: str) -> str:
@@ -1446,7 +1446,7 @@ class GitRepository(VCRepository):
             blob = tree[relative_path]
             is_blob = blob is not None and blob.type == 'blob'
             return is_blob
-        except Exception as e:
+        except Exception:
             return False
         
     def _check_sparse_checkout_lock(self):
@@ -1609,7 +1609,7 @@ class GitRepository(VCRepository):
             all_root_folders_sparse_roots = True
             root_folders = self.get_folders_from_tree(recursive=False)
             for root_folder in root_folders:
-                if not root_folder in folder_set:
+                if root_folder not in folder_set:
                     all_root_folders_sparse_roots = False
                     break
 
@@ -1647,7 +1647,7 @@ class GitRepository(VCRepository):
         if not parent_folder:
             if relative_folder_path in filtered_sparse_roots:
                 filtered_sparse_roots.remove(relative_folder_path)
-                if not ".ap" in filtered_sparse_roots:
+                if ".ap" not in filtered_sparse_roots:
                     filtered_sparse_roots.add(".ap")
                 return filtered_sparse_roots
 
@@ -1700,7 +1700,7 @@ class GitRepository(VCRepository):
                 else:
                     raise e
 
-            if relative_folder_path and not relative_folder_path in sparse_root_set:
+            if relative_folder_path and relative_folder_path not in sparse_root_set:
                 folders = self.get_folders_from_tree()
                 sparse_root_set = self._generate_sparse_root_set(folders, sparse_root_set, relative_folder_path)
             elif relative_folder_path:
@@ -1837,7 +1837,7 @@ class GitRepository(VCRepository):
                     for commit in local_commits:
                         local_commit_set.add(commit.hexsha)
 
-        except Exception as e:
+        except Exception:
             pass
      
         for commit in base_commits:
@@ -1999,7 +1999,7 @@ class GitRepository(VCRepository):
 
     def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
         lfs_version = self.get_lfs_version()
-        if not "Anchorpoint" in lfs_version:
+        if "Anchorpoint" not in lfs_version:
             print("clear cache disabled temporarily")
             return 0
         
@@ -2013,7 +2013,7 @@ class GitRepository(VCRepository):
             args.insert(1, "-c")
             args.insert(1, f"lfs.fetchrecentcommitsdays={recent_commits_days}")
             args.insert(1, "-c")
-            args.insert(1, f"lfs.pruneoffsetdays=0")
+            args.insert(1, "lfs.pruneoffsetdays=0")
             args.insert(1, "-c")
 
         output = install_git.run_git_command(args, cwd=self.get_root_path())
@@ -2127,7 +2127,7 @@ class GitRepository(VCRepository):
             if entry_id:
                 return self.repo.git.show(f"{entry_id}:{path}")
             return self.repo.git.show(f"HEAD:{path}")
-        except Exception as e:
+        except Exception:
             logging.info(f"Error getting file content for {path} at {entry_id}")
             return ""
         
@@ -2135,7 +2135,7 @@ class GitRepository(VCRepository):
         try:
             stash_id = f"stash@{{{stash.id}}}"
             return self.repo.git.show(f"{stash_id}:{path}")
-        except Exception as e:
+        except Exception:
             logging.info(f"Error getting file content for {path} at stash {stash_id}")
             return ""
 
@@ -2234,7 +2234,6 @@ class GitRepository(VCRepository):
         return host, path
 
     def clear_credentials(self):
-        from urllib.parse import urlparse
 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)

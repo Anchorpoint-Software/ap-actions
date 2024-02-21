@@ -1,4 +1,5 @@
-import os, platform
+import os
+import platform
 from vc.apgit.repository import * 
 from git_settings import GitProjectSettings
 def on_folder_created(folder_path: str, ctx):

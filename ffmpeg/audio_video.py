@@ -74,7 +74,7 @@ def run_ffmpeg(arguments, remove_audio):
             ui.show_success("Audio Removed")
         else:
             ui.show_success("Audio Changed")
-    except Exception as e:
+    except Exception:
         if remove_audio:
             ui.show_error("Could not remove audio")
         else:

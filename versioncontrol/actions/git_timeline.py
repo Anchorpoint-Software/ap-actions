@@ -1,8 +1,10 @@
 import anchorpoint as ap
 import apsync as aps
 from typing import Optional
-import os, logging
-import platform, re, sys
+import os
+import platform
+import re
+import sys
 from datetime import datetime
 
 current_dir = os.path.dirname(__file__)
@@ -184,7 +186,8 @@ def handle_files_to_pull(repo, ctx):
 
 def get_config_path():
     from pathlib import Path
-    import os, sys
+    import os
+    import sys
     if sys.platform == "darwin":
         return os.path.join(str(Path.home()), "Library", "Application Support", "Anchorpoint Software", "Anchorpoint", "git")
     elif sys.platform == "win32":
@@ -227,7 +230,6 @@ def save_last_seen_fetched_commit(project_id: str, commit: str):
     with open(file_path, "wb") as f:
         pickle.dump(project_commit, f)
 
-import re
 
 def extract_branches_from_commit_message(commit_message, current_branch):
     # Handle case: "Merge branch 'master' into conflicting-branch"
@@ -388,7 +390,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
         history_list = list()
         try:
             history = repo.get_history(time_start, time_end)
-        except Exception as e:
+        except Exception:
             return history_list, False
 
         cleanup_locks = True
@@ -428,7 +430,7 @@ def on_load_timeline_channel_entries(channel_id: str, time_start: datetime, time
             last_seen_commit = load_last_seen_fetched_commit(ctx.project_id)
             if newest_commit_to_pull and last_seen_commit != newest_commit_to_pull.id:
                 if commits_to_pull == 1:
-                    ap.UI().show_system_notification("You have new commits", f"You have one new commit to pull from the server.", callback = load_timeline_callback)
+                    ap.UI().show_system_notification("You have new commits", "You have one new commit to pull from the server.", callback = load_timeline_callback)
                 else:
                     ap.UI().show_system_notification("You have new commits", f"You have {commits_to_pull} new commits to pull from the server.", callback = load_timeline_callback)
                 save_last_seen_fetched_commit(ctx.project_id, newest_commit_to_pull.id)
@@ -567,7 +569,8 @@ def get_cached_paths(ref, repo, changes, deleted_only = False):
 def on_load_timeline_channel_pending_changes(channel_id: str, ctx):
     path = None
     try:
-        import sys, os
+        import sys
+        import os
         sys.path.insert(0, current_dir)
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
@@ -715,7 +718,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         
 
 def on_load_timeline_channel_stash_details(channel_id: str, ctx):
-    import sys, os
+    import sys
     sys.path.insert(0, script_dir)
     try:
         from vc.apgit.utility import get_repo_path
@@ -772,7 +775,7 @@ def on_load_timeline_channel_entry_details_async(channel_id: str, entry_id: str,
     ctx.run_async(run_func_wrapper, on_load_timeline_channel_entry_details, callback, channel_id, entry_id, ctx)
 
 def on_vc_switch_branch(channel_id: str, branch: str, ctx):
-    import sys, os
+    import sys
     import git_repository_helper as helper
     sys.path.insert(0, script_dir)
     progress = ap.Progress(f"Switching Branch: {branch}", show_loading_screen = True)
@@ -816,16 +819,14 @@ def on_vc_switch_branch(channel_id: str, branch: str, ctx):
         if script_dir in sys.path: sys.path.remove(script_dir)
 
 def on_vc_merge_branch(channel_id: str, branch: str, ctx):
-    import sys, os
+    import sys
     import git_repository_helper as helper
     sys.path.insert(0, script_dir)
     lock_disabler = ap.LockDisabler()
     path = None
     try:
-        from vc.apgit.utility import get_repo_path, is_executable_running
+        from vc.apgit.utility import get_repo_path
         from vc.apgit.repository import GitRepository
-        from vc.models import UpdateState
-        from git_lfs_helper import LFSExtensionTracker
         if channel_id != "Git": return None
 
         path = get_repo_path(channel_id, ctx.project_path)
@@ -914,7 +915,7 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
         
         try:
             repo.create_branch(branch)
-        except Exception as e:
+        except Exception:
             ap.UI().show_info("Cannot create branch")
             return
     except Exception as e:
@@ -924,7 +925,6 @@ def on_vc_create_branch(channel_id: str, branch: str, ctx):
         if script_dir in sys.path : sys.path.remove(script_dir)
         
 def fetch_with_lock(repo):
-    from vc.models import UpdateState
     git_dir = repo.get_git_dir()
     lockfile = os.path.join(git_dir, f"ap-fetch-{os.getpid()}.lock")
     if os.path.exists(lockfile):
@@ -964,7 +964,7 @@ def refresh_async(channel_id: str, project_path):
     if not timeline_channel:
         return
     
-    import sys, os
+    import sys
     sys.path.insert(0, script_dir)
     git_dir = None
     try:

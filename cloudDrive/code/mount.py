@@ -1,13 +1,11 @@
-from ast import arguments
-from re import sub
 import anchorpoint as ap
 import apsync as aps
 import platform
 import subprocess
-import os, sys
+import os
+import sys
 import json
 import socket
-import time
 
 # current fix to make sure that no old module is loaded
 if 'rclone_install_helper' in sys.modules: del sys.modules['rclone_install_helper']
@@ -338,7 +336,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
 def is_json(myjson):
     try:
         myjson = json.loads(myjson)
-    except ValueError as e:
+    except ValueError:
         return
     return myjson
 
@@ -400,7 +398,6 @@ def resolve_configuration(shared_settings, configuration, password):
     return True
 
 def get_settings(workspace_id: str):
-    import pyperclip as pc 
 
     ui = ap.UI()
     shared_settings = aps.SharedSettings(workspace_id, "AnchorpointCloudMount")

@@ -166,7 +166,6 @@ def copy_configuration_key(dialog : ap.Dialog):
     ui.show_success("Configuration Code copied to Clipboard")  
     
 def init_dialog():
-    import pyperclip as pc 
     if settings.get("Config")=="":
         create_dialog()
     else:
@@ -233,7 +232,6 @@ def set_password(dialog : ap.Dialog):
 
 try:
     import pyperclip as pc
-    from Crypto.Cipher import AES
     init_dialog()
 except:
     ctx.run_async(install_modules)

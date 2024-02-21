@@ -3,7 +3,6 @@ import anchorpoint as ap
 import apsync as aps
 import os 
 import tempfile
-import subprocess
 
 def get_image(workspace_id,input_path):
     # start progress

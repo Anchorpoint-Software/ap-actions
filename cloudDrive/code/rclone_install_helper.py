@@ -193,6 +193,7 @@ def _install_mac_fuse_async():
 
 def check_and_install_modules():
     try:
+        # ruff: noqa
         import pyperclip as pc
         from Crypto.Cipher import AES
     except:

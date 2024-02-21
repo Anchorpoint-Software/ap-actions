@@ -1,8 +1,8 @@
-from git import GitCommandError
 import anchorpoint as ap
-import apsync as aps
 
-import sys, os, importlib, time
+import sys
+import os
+import time
 import git_errors
         
 current_dir = os.path.dirname(__file__)

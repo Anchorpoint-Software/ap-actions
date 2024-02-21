@@ -1,6 +1,8 @@
 import anchorpoint as ap
 import apsync as aps
-import os, re, sys
+import os
+import re
+import sys
 from datetime import datetime
 from template_settings import get_workspace_template_dir, get_callback_location
 
@@ -64,7 +66,7 @@ else:
     callbacks = None
 
 if os.path.exists(template_dir) == False and os.path.exists(project_template_dir) == False:
-    ui.show_info("No templates available", f"Please add a proper template using the Save as Template action")
+    ui.show_info("No templates available", "Please add a proper template using the Save as Template action")
     sys.exit(0)
 
 # Return the template path for the project of workspace (project wins)
@@ -209,7 +211,7 @@ def create_template(dialog):
         else: 
             ctx.run_async(create_documents_from_template_async, template_path, target_folder, ctx)    
     else:
-        ui.show_error("Template does not exist", f"Please add a proper template")
+        ui.show_error("Template does not exist", "Please add a proper template")
 
     dialog.close()
 
@@ -338,7 +340,7 @@ for token in template_available_tokens:
     template_available_tokens[token] = set()
 
 if len(folder_templates) == 0:
-    ui.show_info("No templates available", f"Please add a proper template using the Save as Template Action")
+    ui.show_info("No templates available", "Please add a proper template using the Save as Template Action")
 else:
     if not create_project:
         # Check if the target location is part of a project. A project can store metadata, which could be tokens e.g "Client_Name". 

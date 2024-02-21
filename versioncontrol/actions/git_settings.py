@@ -1,6 +1,10 @@
 import anchorpoint as ap
 import apsync as aps
-import os, sys, pathlib, platform, webbrowser
+import os
+import sys
+import pathlib
+import platform
+import webbrowser
 
 current_dir = os.path.dirname(__file__)
 script_dir = os.path.join(os.path.dirname(__file__), "..")
@@ -162,7 +166,7 @@ def open_terminal_pressed(dialog):
         if os.path.exists(ctx.project_path):
             os.system(f"start cmd /k \"{pathlib.Path(ctx.project_path).drive} & cd {ctx.project_path}\"")
         else:
-            os.system(f"start cmd /k")
+            os.system("start cmd /k")
 
 def prune(dialog, project_path):
     sys.path.insert(0, script_dir)

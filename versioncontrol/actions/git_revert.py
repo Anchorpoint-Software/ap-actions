@@ -1,9 +1,9 @@
-from logging import exception
 import anchorpoint as ap
-import apsync as aps
 import git_errors
 
-import sys, os, itertools
+import sys
+import os
+import itertools
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 current_dir = os.path.dirname(__file__)
 sys.path.insert(0, current_dir)

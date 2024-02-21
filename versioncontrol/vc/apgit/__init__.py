@@ -1,4 +1,3 @@
-import anchorpoint
 
 try:
     import vc.apgit.utility as utility
@@ -12,7 +11,7 @@ try:
         
     if utility.setup_git():
         try: 
-            import git
+            pass
         except Exception as e:
             print(f"Error importing GitPython: {e}")
             raise Warning("GitPython is not installed")

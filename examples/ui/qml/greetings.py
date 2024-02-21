@@ -5,7 +5,6 @@
 
 import anchorpoint as ap
 from PySide2.QtWidgets import QApplication
-from PySide2.QtQuick import QQuickWindow
 from PySide2.QtCore import QUrl, QObject, QMetaObject, Slot
 from PySide2.QtQml import QQmlComponent
 

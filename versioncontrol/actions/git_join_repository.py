@@ -10,17 +10,18 @@ def on_is_action_enabled(path: str, type: ap.Type, ctx: ap.Context) -> bool:
         if not project: return False
         channel = aps.get_timeline_channel(project, "Git")
         return channel is not None
-    except Exception as e:
+    except Exception:
         return False
 
 if __name__ == "__main__":
-    import sys, os
+    import sys
+    import os
     script_dir = os.path.join(os.path.dirname(__file__), "..")
     sys.path.insert(0, script_dir)
 
     try:
         from vc.apgit.repository import * 
-    except Warning as e:
+    except Warning:
         sys.exit(0)
 
     import platform

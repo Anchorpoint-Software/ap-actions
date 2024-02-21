@@ -222,7 +222,7 @@ class AzureDevOpsClient:
                 print(f"Azure DevOps Request failed: {response.status_code}, {response.reason}, {response.text}")
 
             return response
-        except TokenExpiredError as e:
+        except TokenExpiredError:
             return refresh_token()   
 
     def user_is_admin(self, organization: str, user: UserProfile):
@@ -241,7 +241,7 @@ class AzureDevOpsClient:
 
 
     def get_user(self) -> UserProfile:
-        response = self._request_with_refresh("GET", f"https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.0")
+        response = self._request_with_refresh("GET", "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.0")
        
         if not response:
             raise Exception("Could not get user account: ", response.text)
@@ -318,7 +318,7 @@ class AzureDevOpsClient:
             name = name[:64]
 
         if len(name) == 0:
-            raise ValueError(f"project name is empty after applying restriction rules.")
+            raise ValueError("project name is empty after applying restriction rules.")
 
         return name
     
@@ -483,7 +483,7 @@ class AzureDevOpsClient:
         users_response = self._request_with_refresh("GET",f"https://vssps.dev.azure.com/{organization}/_apis/graph/users?api-version=7.0-preview.1")
         if not users_response or users_response.status_code != 200:
             raise Exception(f"Could not load users of {organization}: ", users_response.text)
-        users_data = users_response.json()["value"];
+        users_data = users_response.json()["value"]
         for user in users_data:
             if user["mailAddress"] == user_email:
                 return user["descriptor"]
@@ -494,7 +494,7 @@ class AzureDevOpsClient:
         groups_response = self._request_with_refresh("GET", (f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?api-version=7.0-preview.1"))
         if not groups_response or groups_response.status_code != 200:
             raise Exception(f"Could not load groups of {organization}: ", groups_response.text)
-        groups_data = groups_response.json()["value"];
+        groups_data = groups_response.json()["value"]
         for group in groups_data:
             if group["displayName"] == group_name:
                 return group["descriptor"]

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from types import new_class
 from typing import Optional
 from enum import Enum
 from datetime import datetime

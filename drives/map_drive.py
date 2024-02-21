@@ -1,5 +1,4 @@
 import anchorpoint as ap
-import apsync as aps
 import platform
 import subprocess
 import os

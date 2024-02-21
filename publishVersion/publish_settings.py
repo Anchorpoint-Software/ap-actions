@@ -1,7 +1,6 @@
-from fileinput import filename
 import anchorpoint as ap
 import apsync as aps
-import os, sys
+import sys
 
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.path)

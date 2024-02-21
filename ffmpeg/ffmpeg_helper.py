@@ -1,4 +1,10 @@
-import platform, os, requests, zipfile, io, shutil, stat
+import platform
+import os
+import requests
+import zipfile
+import io
+import shutil
+import stat
 import anchorpoint as ap
 
 if platform.system() == "Darwin":

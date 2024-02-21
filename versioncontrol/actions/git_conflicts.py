@@ -1,9 +1,8 @@
-from git import GitCommandError
 import anchorpoint as ap
-import apsync as aps
 import git_errors
 
-import sys, os, importlib
+import sys
+import os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 

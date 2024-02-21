@@ -1,7 +1,8 @@
-from subprocess import call
 from typing import Optional
 import anchorpoint as ap
-import platform, sys, os
+import platform
+import sys
+import os
 
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
@@ -70,7 +71,8 @@ def _shorten_filepath(file: str):
     return file
 
 def _apply_azure_ipv4(d, ip_address, hostname):
-    import tempfile, subprocess
+    import tempfile
+    import subprocess
 
     d.close()
     temp_dir = tempfile.gettempdir()
@@ -79,17 +81,17 @@ def _apply_azure_ipv4(d, ip_address, hostname):
 
     batch_script = batch_script.replace("\\","/")
 
-    script_content = f'@echo off\n'
-    script_content += f'echo # Workaround for IPv6 issue for dev.azure.com, added by Anchorpoint >> C:\\Windows\\System32\\drivers\\etc\\hosts\n'
+    script_content = '@echo off\n'
+    script_content += 'echo # Workaround for IPv6 issue for dev.azure.com, added by Anchorpoint >> C:\\Windows\\System32\\drivers\\etc\\hosts\n'
     script_content += f'echo {ip_address} {hostname} >> C:\\Windows\\System32\\drivers\\etc\\hosts\n'
-    script_content += f'ping -n 2 127.0.0.1 > nul\n'  # Pause for a short duration
+    script_content += 'ping -n 2 127.0.0.1 > nul\n'  # Pause for a short duration
 
     with open(batch_script, 'w') as f:
         f.write(script_content)
 
-    script_content = f'import ctypes\n'
+    script_content = 'import ctypes\n'
     script_content += f'result = ctypes.windll.shell32.ShellExecuteW(None, \"runas\", \"{batch_script}\", None, None, 0)\n'
-    script_content += f'if int(result) <= 32: sys.exit(1)\n'
+    script_content += 'if int(result) <= 32: sys.exit(1)\n'
 
     with open(python_script, 'w') as f:
         f.write(script_content)
@@ -106,7 +108,8 @@ def _apply_azure_ipv4(d, ip_address, hostname):
         os.remove(python_script)
 
 def _handle_azure_ipv6():
-    import platform, socket
+    import platform
+    import socket
     if platform.system() != "Windows":
         print("Error: IPv6 error for dev.azure.com but not on Windows")
         return False
@@ -330,7 +333,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             repo_url = match.group(1)
             error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
         else: 
-            error_message = f"The repository cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
+            error_message = "The repository cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
 
         ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
         return True
@@ -355,7 +358,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
 
     if "Failed to find location service" in message:
-        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description=f'Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
+        ap.UI().show_error(title='Cannot store Azure DevOps credentials', duration=10000, description='Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#could-not-store-credentials">troubleshooting</a> page to learn how to fix this.')
         return True
     
     if "User canceled authentication" in message:

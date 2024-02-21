@@ -3,11 +3,9 @@ import json
 import string
 from typing import Optional
 from requests_oauthlib import OAuth2Session
-from oauthlib.oauth2 import TokenExpiredError, AccessDeniedError, Client
-import oauthlib
 import random
-import base64, os
-import logging
+import base64
+import os
 import re
 
 import apsync as aps
@@ -71,7 +69,7 @@ class GiteaClient:
         try:
             response = requests.get(host_url)
             return response.status_code == 200
-        except Exception as e:
+        except Exception:
             return False
         
     def get_host_url(self) -> Optional[str]:
@@ -186,7 +184,7 @@ class GiteaClient:
             return success
         try:
             self._get_current_user()
-        except Exception as e:
+        except Exception:
             return False
         return True
     

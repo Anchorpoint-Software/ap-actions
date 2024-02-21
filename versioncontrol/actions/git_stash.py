@@ -1,10 +1,9 @@
-from logging import exception
 import anchorpoint as ap
-import apsync as aps
 import git_errors
 import itertools
 
-import sys, os
+import sys
+import os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 
@@ -135,10 +134,10 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             print(error)
             if not git_errors.handle_error(e, repo_path):
                 if "already exists" in error:
-                    logging.info(f"Could not restore shelved files: ", str(e))
+                    logging.info("Could not restore shelved files: ", str(e))
                     ui.show_info("Could not restore all shelved files", "You have changed files that would be overwritten.  We kept the shelved files in case you need it again", duration=15000)
                 elif "CONFLICT" in error:
-                    logging.info(f"Could not restore shelved files due to conflict: ", str(e))
+                    logging.info("Could not restore shelved files due to conflict: ", str(e))
                     ui.show_info("Shelved Files are Kept", "At least one file from the shelve is conflicting. We kept the shelved files in case you need it again", duration=15000)
                 else:
                     raise e

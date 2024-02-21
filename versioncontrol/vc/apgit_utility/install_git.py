@@ -1,5 +1,6 @@
 import logging
-import os, platform
+import os
+import platform
 import anchorpoint as ap
 
 def _check_application(path: str):
@@ -58,7 +59,8 @@ def get_git_exec_path():
 
 def run_git_command(args, cwd = None, **kwargs):
     from vc.apgit.repository import GitRepository
-    import subprocess, platform
+    import subprocess
+    import platform
     current_env = os.environ.copy()
     current_env.update(GitRepository.get_git_environment())
 
@@ -82,7 +84,8 @@ def run_git_command(args, cwd = None, **kwargs):
 
 def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
     from vc.apgit.repository import GitRepository
-    import subprocess, platform
+    import subprocess
+    import platform
     current_env = os.environ.copy()
     current_env.update(GitRepository.get_git_environment())
     args.append("--verbose")

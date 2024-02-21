@@ -2,7 +2,8 @@ import anchorpoint as ap
 import apsync as aps
 from typing import Optional
 
-import sys, os
+import sys
+import os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.versioncontrol_interface as vc

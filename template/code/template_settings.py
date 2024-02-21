@@ -1,7 +1,8 @@
 from shutil import copyfile
 import anchorpoint as ap
 import apsync as aps
-import os, platform
+import os
+import platform
 
 ctx = ap.get_context()
 ui = ap.UI()

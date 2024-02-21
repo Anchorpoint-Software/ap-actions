@@ -1,6 +1,5 @@
 import anchorpoint as ap
 import apsync as aps
-from sys import platform
 import subprocess
 import random
 import string
@@ -49,7 +48,7 @@ if "blender" in ctx.inputs:
     if blender_path.lower().endswith("blender.app"):
         blender_path = os.path.join(blender_path, "Contents/MacOS/Blender")
 
-    if ap.check_application(blender_path, f"Path to Blender is not correct, please try again", "blender"):
+    if ap.check_application(blender_path, "Path to Blender is not correct, please try again", "blender"):
         # Tell the UI that these files are being processed
         for file in ctx.selected_files:
             ui.show_busy(file)
