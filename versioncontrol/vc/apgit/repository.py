@@ -1550,11 +1550,15 @@ class GitRepository(VCRepository):
             
             if len(new_sparse_checkout_folders) != 0 and self._has_upstream():
                 lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=list(new_sparse_checkout_folders))
-            if progress_wrapper and progress_wrapper.canceled(): return True
-            if progress_wrapper and progress_wrapper.progress and progress_wrapper.progress.progress:
-                progress_wrapper.progress.progress.ap_progress.set_text("Checking out Files")
-                progress_wrapper.progress.progress.ap_progress.stop_progress()
-                progress_wrapper.progress.progress.ap_progress.set_cancelable(False)
+            
+            try:
+                if progress_wrapper and progress_wrapper.canceled(): return True
+                if progress_wrapper and progress_wrapper.progress and progress_wrapper.progress.progress:
+                    progress_wrapper.progress.progress.ap_progress.set_text("Checking out Files")
+                    progress_wrapper.progress.progress.ap_progress.stop_progress()
+                    progress_wrapper.progress.progress.ap_progress.set_cancelable(False)
+            except:
+                pass
             proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
             bytes_data = "\n".join(folder_set).encode('utf-8')
             proc.stdin.write(bytes_data)
