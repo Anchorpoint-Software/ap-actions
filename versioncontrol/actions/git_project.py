@@ -539,6 +539,13 @@ def on_folder_opened(ctx: ap.Context):
 
     if len(ctx.project_id) > 0:
         return
+    
+    try:
+        project = aps.get_project(path)
+        if project:
+            return
+    except Exception as e:
+        print(f"Could not get project {str(e)}")
 
     settings = aps.Settings("connect_git_repo")
     never_ask_again = settings.get(path, False)
