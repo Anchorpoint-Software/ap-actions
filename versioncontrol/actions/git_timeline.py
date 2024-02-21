@@ -708,7 +708,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         details.changes = ap.VCChangeList(changes.values())
         return details
     except Exception as e:
-        print(f"on_load_timeline_channel_entry_details exception: {str(e)}")
+        ap.log_error(f"on_load_timeline_channel_entry_details exception: {str(e)}")
         raise e
     finally:
         if script_dir in sys.path: sys.path.remove(script_dir)
