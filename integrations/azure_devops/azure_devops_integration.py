@@ -223,6 +223,7 @@ def create_test_repo_async(client: AzureDevOpsClient):
         elif "Connection aborted" in str(e):
             show_test_repo_error_dialog(client, get_dialog_create_message("the Connection was aborted"))
         else:
+            ap.log_error(f"Azure Devops - Create Test Repo Error: {str(e)}")
             show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
         progress.finish()
         return
@@ -250,6 +251,7 @@ def create_test_repo_async(client: AzureDevOpsClient):
         if "fatal: repository" in message and "not found" in message:
             show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))
         else:
+            ap.log_error(f"Azure Devops - Clone Test Repo Error: {message}")
             show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
         return
     finally:
@@ -370,6 +372,7 @@ class DevopsIntegration(ap.ApIntegration):
                 if "Organizations list is empty" in str(e):
                     ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because no organizations where found. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/">troubleshooting</a> page.')
                 else:
+                    ap.log_error(f"Azure Devops - Get Organizations Error: {str(e)}")
                     ap.UI().show_error(title='Cannot load Azure DevOps Settings', duration=6000, description=f'Failed to load, because "{str(e)}". Please try again.')
                 return
 
@@ -397,6 +400,7 @@ class DevopsIntegration(ap.ApIntegration):
             elif "Connection aborted" in str(e):
                 ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because the connection was aborted. Please try again or visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page.')
             else:
+                ap.log_error(f"Azure Devops - OAuth Deeplink Error: {str(e)}")
                 ap.UI().show_error(title='Azure DevOps authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please visit our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting">troubleshooting</a> page to learn how to fix this.')
             return
         
@@ -520,6 +524,7 @@ class DevopsIntegration(ap.ApIntegration):
                                    duration=8000, 
                                    description=f'Failed to create, because the connection was aborted. Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')
             else:
+                ap.log_error(f"Azure Devops - Unknown Create Project Error: {str(e)}")
                 ap.UI().show_error(title='Cannot create Azure DevOps Project', 
                                    duration=8000, 
                                    description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#member-cannot-create-azure-devops-projects-from-anchorpoint">troubleshooting</a>.')

@@ -200,6 +200,7 @@ def create_test_repo_async(client: GitHubClient):
         elif "404" in str(e):
             show_test_repo_error_dialog(client, get_dialog_create_message("the organization could not be found"))
         else:
+            ap.log_error(f"Github - Create Test Project Error: {str(e)}")
             show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
         progress.finish()
         return
@@ -224,6 +225,7 @@ def create_test_repo_async(client: GitHubClient):
         except:
             message = str(e)
         print(f"Failed to clone test repo: {message}")
+        ap.log_error(f"Github - Unknown Clone Test Repo Error: {message}")
         show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
         return
     finally:
@@ -363,6 +365,7 @@ class GithubIntegration(ap.ApIntegration):
             if "Connection aborted" in str(e):
                 ap.UI().show_error(title='GitHub authentication failed', duration=6000, description=f'The authentication failed, because the connection was aborted. Please try again.')
             else:
+                ap.log_error(f"Github - Unknown Auth Error: {str(e)}")
                 ap.UI().show_error(title='GitHub authentication failed', duration=6000, description=f'The authentication failed, because "{str(e)}". Please try again.')
             return
         
@@ -444,5 +447,6 @@ class GithubIntegration(ap.ApIntegration):
             if "already exists" in str(e):
                 ap.UI().show_error(title='Cannot create GitHub Repository', duration=8000, description=f'Failed to create, because repository with name {project_name} already exists. Please try again.')
             else:
+                ap.log_error(f"Github - Unknown Create Project Error: {str(e)}")
                 ap.UI().show_error(title='Cannot create GitHub Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/github">troubleshooting</a>.')
             raise e

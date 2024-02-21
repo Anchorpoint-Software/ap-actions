@@ -238,6 +238,7 @@ def create_test_repo_async(client: GitlabSelfClient):
         elif "403" in str(e):
             show_test_repo_error_dialog(client, get_dialog_create_message(f"you do not have permission to create a repository in {current_group.name}"))
         else:
+            ap.log_error(f"Gitlab - Unknown Create Test Repo Error: {str(e)}")
             show_test_repo_error_dialog(client, get_dialog_create_message("of an unknown error"))
         progress.finish()
         return
@@ -265,6 +266,7 @@ def create_test_repo_async(client: GitlabSelfClient):
         if "fatal: repository" in message and "not found" in message:
             show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))
         else:
+            ap.log_error(f"Gitlab - Unknown Clone Test Repo Error: {message}")
             show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))
         return
     finally:
@@ -619,5 +621,6 @@ class GitlabSelfIntegration(ap.ApIntegration):
             if "has already been taken" in str(e):
                 ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because project with name {project_name} already exists. Please try again.')
             else:
+                ap.log_error(f"Gitlab - Unknown Create Project Error: {str(e)}")
                 ap.UI().show_error(title='Cannot create GitLab Repository', duration=8000, description=f'Failed to create, because "{str(e)}". Please try again<br>or check our <a href="https://docs.anchorpoint.app/docs/general/integrations/gitlab_self">troubleshooting</a>.')
             raise e
