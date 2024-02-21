@@ -363,7 +363,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         return True
     
     if "unmerged" in message or "not concluded your merge" in message:
-        ap.UI().show_error("Confict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
+        ap.UI().show_error("Conflict Detected", "A file is conflicting, use \"Resolve Conflicts\" to continue.", duration=10000)
         return True
 
     if "unable to write new_index file" in message:
