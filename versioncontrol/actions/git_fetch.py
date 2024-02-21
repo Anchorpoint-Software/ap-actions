@@ -28,8 +28,7 @@ def fetch_async(channel_id: str, project_path):
                 progress.finish()
                 progress = None
 
-        if "vc_load_pending_changes" in dir(ap):
-            ap.vc_load_pending_changes("Git")
+        ap.vc_load_pending_changes("Git")
         ap.refresh_timeline_channel(channel_id)
 
         if progress:
