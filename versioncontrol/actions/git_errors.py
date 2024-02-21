@@ -409,6 +409,8 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("An issue has occured", f"{error}<br><br>{msg}", duration=10000)
         else:
             ap.UI().show_error("An issue has occured", msg, duration=10000)
+        
+        ap.log_error(message)
         return True
     
     return False
