@@ -322,24 +322,23 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             ap.UI().show_error("Detected dubious ownership in repository", message, duration=10000)
         return True
 
-    if "Couldn't connect to server" in message:
+    if "Couldn't connect to server" in message or "Could not resolve host" in message or "Timed out" in message or "Connection refused" in message or "no such host" in message:
         # Extract the repo URL
         import re
         match = re.search(r"unable to access '(.*?)':", message)
         if match:
             repo_url = match.group(1)
             error_message = f"The repository \"{repo_url}\" cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
-            ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
+        else: 
+            error_message = f"The repository cannot be reached. Check your internet connection, contact your server admin for more information or check our <a href=\"https://docs.anchorpoint.app/docs/version-control/troubleshooting/\">git troubleshooting</a>."
+
+        ap.UI().show_error("Couldn't connect to repository", error_message, duration=10000)
         return True
     
     if "This repository is over its data quota" in message:
         ap.UI().show_error("The GitHub LFS limit has been reached", "To solve the problem open your GitHub <a href=\"https://docs.github.com/en/billing/managing-billing-for-git-large-file-storage/about-billing-for-git-large-file-storage\">Billing and Plans</a> page and buy more <b>Git LFS Data</b>.", duration=10000)
         return True
     
-    if "Couldn't connect to server" in message or "Could not resolve host" in message or "Timed out" in message or "Connection refused" in message or "no such host" in message:
-        ap.UI().show_error("Could not connect to the Git server", "Please check your internet connection and try again.", duration=10000)
-        return True
-
     if "CONFLICT" in message:
         return False
     
