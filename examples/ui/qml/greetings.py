@@ -15,6 +15,7 @@ ui = ap.UI()
 ap_context = ap.get_context()
 yaml_dir = ap_context.yaml_dir
 
+
 # We create a controller class that inhertis from QObject.
 # The controller class is providing 'slots' that can be called from the QML file
 class Controller(QObject):

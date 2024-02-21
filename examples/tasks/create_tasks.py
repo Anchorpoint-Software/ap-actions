@@ -4,7 +4,7 @@ import apsync as aps
 ctx = ap.get_context()
 api = ap.get_api()
 
-# To quickly create a task (and a task list) call 
+# To quickly create a task (and a task list) call
 task = api.tasks.create_task(ctx.path, "Todo List", "Create Rig")
 
 # You can access a task list by name

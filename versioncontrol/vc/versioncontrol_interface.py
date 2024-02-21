@@ -1,9 +1,17 @@
 from typing import Optional
 from vc.models import *
 
+
 class Progress:
-    def update(self, operation_code: str, current_count: int, max_count: int, info_text: Optional[str] = None):
+    def update(
+        self,
+        operation_code: str,
+        current_count: int,
+        max_count: int,
+        info_text: Optional[str] = None,
+    ):
         pass
+
 
 class VCRepository:
     @staticmethod
@@ -23,7 +31,14 @@ class VCRepository:
         pass
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None):
+    def clone(
+        cls,
+        remote_url: str,
+        local_path: str,
+        username: str,
+        email: str,
+        progress: Optional[Progress] = None,
+    ):
         pass
 
     @classmethod
@@ -48,10 +63,14 @@ class VCRepository:
     def get_root_path(self):
         pass
 
-    def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+    def launch_external_diff(
+        self, tool: Optional[str] = None, paths: Optional[list[str]] = None
+    ):
         pass
 
-    def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+    def launch_external_merge(
+        self, tool: Optional[str] = None, paths: Optional[list[str]] = None
+    ):
         pass
 
     def get_current_change_id(self) -> str:

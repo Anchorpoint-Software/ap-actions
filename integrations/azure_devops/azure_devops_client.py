@@ -15,28 +15,43 @@ import urllib
 
 client_id = "46AC92C5-16D1-4BB8-9CB4-A5BBDFD9AF52"
 redirect_uri = "https://www.anchorpoint.app/app/azure/auth"
-scope = ["vso.identity_manage", "vso.graph_manage", "vso.code_full", "vso.code_status", "vso.memberentitlementmanagement_write", "vso.profile_write", "vso.project_manage", "vso.tokenadministration", "vso.tokens"]
+scope = [
+    "vso.identity_manage",
+    "vso.graph_manage",
+    "vso.code_full",
+    "vso.code_status",
+    "vso.memberentitlementmanagement_write",
+    "vso.profile_write",
+    "vso.project_manage",
+    "vso.tokenadministration",
+    "vso.tokens",
+]
 azure_url = "https://app.vssps.visualstudio.com/oauth2/authorize"
 client_secret = "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsIng1dCI6Im9PdmN6NU1fN3AtSGpJS2xGWHo5M3VfVjBabyJ9.eyJjaWQiOiI0NmFjOTJjNS0xNmQxLTRiYjgtOWNiNC1hNWJiZGZkOWFmNTIiLCJjc2kiOiJmODVhMjdhZC1lODZmLTQyYjItOWM0MS05MTVjYmEwNzlkYWYiLCJuYW1laWQiOiI2NDIxMTgzYi0zNWIzLTYyNWUtYTQ0NS0wYWIxZGY1OTRkNjQiLCJpc3MiOiJhcHAudnN0b2tlbi52aXN1YWxzdHVkaW8uY29tIiwiYXVkIjoiYXBwLnZzdG9rZW4udmlzdWFsc3R1ZGlvLmNvbSIsIm5iZiI6MTY3MzExNDk1NSwiZXhwIjoxODMwODgxMzU1fQ.Va39WTNEQQ3qtj4b-nV-_L8-twviVKbm6SxMRQRIBPWyuylzLRBk9d-ez6ho2m9pwrs9g3nm588Chlog-VoGmpsg3DwVDIPQDDN5Xc4cqQ9MsNu7u_64yemZMLliSxkSOp53MDeaIIVbGSV3WN5XkM828-xRAHRDJ3_QFbbD5FxiTdxTpY7a0pB-Jsv6BIDmCY0-c3HNl38ZLzFm8nBfXIc56jqmvOIxikgwj2pW-fJNIkiCCMnkwq4QedhvzTworw1_uHVKahJseaP_u8gtPBPKa89-apTsuKXJ-IJgW9DlnGXNKYQ84YOW0E9UCU6ihD1xzGE66pTYifucHtdGPQ"
 token_url = "https://app.vssps.visualstudio.com/oauth2/token"
 token_refresh_url = "https://app.vssps.visualstudio.com/oauth2/token"
 state = "GitPython"
 
+
 @dataclass
 class UserProfile:
     """Represents a user profile e.g. on Azure DevOps"""
+
     display_name: str
     user_id: str
     email: str
 
+
 @dataclass
 class RemoteRepository:
     """Represents a repository e.g. on Azure DevOps"""
+
     display_name: str
     https_url: str
     ssh_url: Optional[str]
     project_id: str
     repository_id: str
+
 
 class BillingSetupRequiredException(Exception):
     def __init__(self, message, href_url):
@@ -46,31 +61,33 @@ class BillingSetupRequiredException(Exception):
 
 
 class AzureDevOpsClient:
-    def __init__(self, workspace_id: str, clear = False) -> None:
+    def __init__(self, workspace_id: str, clear=False) -> None:
         super().__init__()
         self.workspace_id = workspace_id
         self.oauth = None
-        
+
     def init(self) -> bool:
         settings = aps.Settings(f"{self.workspace_id}_azure_devops")
         token64 = settings.get("token", None)
         if token64:
             token = json.loads(base64.b64decode(token64.encode()).decode())
-            self.oauth = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope, token=token)
+            self.oauth = OAuth2Session(
+                client_id, redirect_uri=redirect_uri, scope=scope, token=token
+            )
             return True
         return False
-    
+
     def start_auth(self):
         import webbrowser
-        
+
         oauth = OAuth2Session(client_id, redirect_uri=redirect_uri, scope=scope)
         authorization_url, _ = oauth.authorization_url(azure_url, state=state)
         webbrowser.open(authorization_url)
 
-    def oauth2_response(self, response_url: str):  
+    def oauth2_response(self, response_url: str):
         if "azure/auth" not in response_url:
-            raise Exception("Not an Azure OAuth2 response") 
-        
+            raise Exception("Not an Azure OAuth2 response")
+
         authorization_response_url = parse_qs(urlparse(response_url).query)
         try:
             code = authorization_response_url["code"][0]
@@ -86,12 +103,10 @@ class AzureDevOpsClient:
             "client_assertion": client_secret,
             "assertion": code,
             "redirect_uri": redirect_uri,
-            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer"
+            "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
         }
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         response = requests.post(token_url, headers=headers, data=body)
         if not response:
@@ -113,11 +128,11 @@ class AzureDevOpsClient:
         settings = aps.Settings(f"{self.workspace_id}_azure_devops")
         token64 = settings.get("token", None)
         return token64 is not None
-    
+
     def get_current_organization(self) -> str:
         settings = aps.Settings(f"{self.workspace_id}_azure_devops")
         return settings.get("organization", None)
-    
+
     def set_current_organization(self, organization: str):
         settings = aps.Settings(f"{self.workspace_id}_azure_devops")
         settings.set("organization", organization)
@@ -128,16 +143,18 @@ class AzureDevOpsClient:
         settings.clear()
         settings.store()
 
-    def _token_post_with_retry(self, token_url, headers, body, max_retries=3, retry_delay=1):
-            for _ in range(max_retries):
-                try:
-                    response = requests.post(token_url, headers=headers, data=body)
-                    return response
-                except ConnectionResetError as cre:
-                    print(f"Connection reset error received: {str(cre)}. Retrying...")
-                    time.sleep(retry_delay)
+    def _token_post_with_retry(
+        self, token_url, headers, body, max_retries=3, retry_delay=1
+    ):
+        for _ in range(max_retries):
+            try:
+                response = requests.post(token_url, headers=headers, data=body)
+                return response
+            except ConnectionResetError as cre:
+                print(f"Connection reset error received: {str(cre)}. Retrying...")
+                time.sleep(retry_delay)
 
-            raise Exception(f"Reached max retries ({max_retries}). Giving up.")
+        raise Exception(f"Reached max retries ({max_retries}). Giving up.")
 
     def setup_refresh_token(self):
         self.init()
@@ -146,37 +163,37 @@ class AzureDevOpsClient:
             "client_assertion": client_secret,
             "assertion": self.oauth.token["refresh_token"],
             "redirect_uri": redirect_uri,
-            "grant_type": "refresh_token"
+            "grant_type": "refresh_token",
         }
 
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
-        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         try:
-            response = self._token_post_with_retry(token_url=token_url, headers=headers, body=body)
+            response = self._token_post_with_retry(
+                token_url=token_url, headers=headers, body=body
+            )
         except Exception as e:
             print(f"Could not refresh token: {str(e)}")
             return False
-        
+
         if not response:
             if response.status_code == 401:
                 return False
             return False
-        
+
         self._store_token(response.json())
         return self.init()
-    
+
     def _request(self, func, *args, **kwargs):
-        if(func == "GET"):
+        if func == "GET":
             return self.oauth.get(*args, **kwargs)
-        elif(func == "POST"):
+        elif func == "POST":
             return self.oauth.post(*args, **kwargs)
-        elif(func == "DELETE"):
+        elif func == "DELETE":
             return self.oauth.delete(*args, **kwargs)
-        elif(func == "PUT"):
+        elif func == "PUT":
             return self.oauth.put(*args, **kwargs)
-        elif(func == "PATCH"):
+        elif func == "PATCH":
             return self.oauth.patch(*args, **kwargs)
         else:
             raise Exception("Unknown request method")
@@ -188,24 +205,24 @@ class AzureDevOpsClient:
                 "client_assertion": client_secret,
                 "assertion": self.oauth.token["refresh_token"],
                 "redirect_uri": redirect_uri,
-                "grant_type": "refresh_token"
+                "grant_type": "refresh_token",
             }
 
-            headers = {
-                "Content-Type": "application/x-www-form-urlencoded"
-            }
+            headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
             try:
-                response = self._token_post_with_retry(token_url=token_url, headers=headers, body=body)
+                response = self._token_post_with_retry(
+                    token_url=token_url, headers=headers, body=body
+                )
             except Exception as e:
                 print(f"Could not refresh token: {str(e)}")
                 raise TokenExpiredError
-            
+
             if not response:
                 if response.status_code == 401:
                     raise AccessDeniedError
                 raise TokenExpiredError
-            
+
             self._store_token(response.json())
             self.init()
             return self._request(func, *args, **kwargs)
@@ -219,14 +236,19 @@ class AzureDevOpsClient:
                 raise AccessDeniedError
 
             if response.status_code != 200:
-                print(f"Azure DevOps Request failed: {response.status_code}, {response.reason}, {response.text}")
+                print(
+                    f"Azure DevOps Request failed: {response.status_code}, {response.reason}, {response.text}"
+                )
 
             return response
         except TokenExpiredError:
-            return refresh_token()   
+            return refresh_token()
 
     def user_is_admin(self, organization: str, user: UserProfile):
-        response = self._request_with_refresh("GET", f"https://vssps.dev.azure.com/{organization}/_apis/identities?searchFilter=General&filterValue=Project+Collection+Administrators&queryMembership=direct&api-version=7.0")
+        response = self._request_with_refresh(
+            "GET",
+            f"https://vssps.dev.azure.com/{organization}/_apis/identities?searchFilter=General&filterValue=Project+Collection+Administrators&queryMembership=direct&api-version=7.0",
+        )
         if not response:
             raise Exception("Could not check if user is admin: ", response.text)
 
@@ -235,25 +257,32 @@ class AzureDevOpsClient:
             groups_json = json["value"]
             for group_json in groups_json:
                 member_ids = group_json["memberIds"]
-                return user.user_id in member_ids 
+                return user.user_id in member_ids
         except:
             return False
 
-
     def get_user(self) -> UserProfile:
-        response = self._request_with_refresh("GET", "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.0")
-       
+        response = self._request_with_refresh(
+            "GET",
+            "https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=7.0",
+        )
+
         if not response:
             raise Exception("Could not get user account: ", response.text)
         json = response.json()
-        
-        return UserProfile(json["displayName"], json["publicAlias"], json["emailAddress"])
+
+        return UserProfile(
+            json["displayName"], json["publicAlias"], json["emailAddress"]
+        )
 
     def get_organizations(self, user: UserProfile):
-        response = self._request_with_refresh("GET", f"https://app.vssps.visualstudio.com/_apis/accounts?memberId={user.user_id}&api-version=7.0")
+        response = self._request_with_refresh(
+            "GET",
+            f"https://app.vssps.visualstudio.com/_apis/accounts?memberId={user.user_id}&api-version=7.0",
+        )
         if not response:
             raise Exception("Could not get user organizations: ", response.text)
-        
+
         organizations_json = response.json()["value"]
         organizations = []
         for organization_json in organizations_json:
@@ -262,7 +291,10 @@ class AzureDevOpsClient:
         return organizations
 
     def get_repositories(self, organization: str) -> list[RemoteRepository]:
-        response = self._request_with_refresh("GET", f"https://dev.azure.com/{organization}/_apis/projects?api-version=7.0")
+        response = self._request_with_refresh(
+            "GET",
+            f"https://dev.azure.com/{organization}/_apis/projects?api-version=7.0",
+        )
         if not response:
             raise Exception("Could not get projects for organization: ", response.text)
 
@@ -271,14 +303,23 @@ class AzureDevOpsClient:
 
         for project_json in projects_json["value"]:
             project_id = project_json["id"]
-            response = self._request_with_refresh("GET", f"https://dev.azure.com/{organization}/{project_id}/_apis/git/repositories?includeAllUrls=true&api-version=7.0")
+            response = self._request_with_refresh(
+                "GET",
+                f"https://dev.azure.com/{organization}/{project_id}/_apis/git/repositories?includeAllUrls=true&api-version=7.0",
+            )
             if not response:
                 print("Could not get projects for organization: ", response.text)
                 continue
-            
+
             repositories_json = response.json()
             for repository_json in repositories_json["value"]:
-                repository = RemoteRepository(repository_json["name"], repository_json["remoteUrl"], None, project_id, repository_json["id"])
+                repository = RemoteRepository(
+                    repository_json["name"],
+                    repository_json["remoteUrl"],
+                    None,
+                    project_id,
+                    repository_json["id"],
+                )
                 if "sshUrl" in repository_json:
                     repository.ssh_url = repository_json["sshUrl"]
 
@@ -286,33 +327,62 @@ class AzureDevOpsClient:
 
         return repositories
 
-    def get_project_by_name(self, organization: str, project_name: str) -> RemoteRepository:
+    def get_project_by_name(
+        self, organization: str, project_name: str
+    ) -> RemoteRepository:
         repos = self.get_repositories(organization)
         for repo in repos:
             if repo.display_name == project_name:
                 return repo
 
         raise Exception("Project could not be found")
-    
+
     def _get_auto_adjusted_project_name(self, name: str):
         # List of system reserved names
-        reserved_names = ["AUX", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10",
-                        "CON", "DefaultCollection", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8",
-                        "LPT9", "NUL", "PRN", "SERVER", "SignalR", "Web", "WEB"]
+        reserved_names = [
+            "AUX",
+            "COM1",
+            "COM2",
+            "COM3",
+            "COM4",
+            "COM5",
+            "COM6",
+            "COM7",
+            "COM8",
+            "COM9",
+            "COM10",
+            "CON",
+            "DefaultCollection",
+            "LPT1",
+            "LPT2",
+            "LPT3",
+            "LPT4",
+            "LPT5",
+            "LPT6",
+            "LPT7",
+            "LPT8",
+            "LPT9",
+            "NUL",
+            "PRN",
+            "SERVER",
+            "SignalR",
+            "Web",
+            "WEB",
+        ]
 
         # Replace reserved names with underscore
         for reserved_name in reserved_names:
             if reserved_name in name:
-                name = name.replace(reserved_name, '_')
-        
+                name = name.replace(reserved_name, "_")
+
         # Replace invalid characters with underscore
         pattern = re.compile(r"[\\/:*?\"<>|;#$*{},+=\[\]]")
-        name = pattern.sub('_', name)
-        
+        name = pattern.sub("_", name)
+
         # Remove leading and trailing underscores and dots
-        name = name.strip('_')
-        name = name.strip('.')
-        
+        name = name.strip("_")
+        name = name.strip(".")
+
         # Check if name is too long
         if len(name) > 64:
             name = name[:64]
@@ -321,7 +391,7 @@ class AzureDevOpsClient:
             raise ValueError("project name is empty after applying restriction rules.")
 
         return name
-    
+
     def _get_auto_incremented_project_name(self, name: str):
         pattern = re.compile(r"_(\d{2})$")
         match = pattern.search(name)
@@ -329,7 +399,7 @@ class AzureDevOpsClient:
             if match.group(1):
                 number = int(match.group(1))
                 new_number = number + 1
-                return name[:match.start()] + "_" + "{:02d}".format(new_number)
+                return name[: match.start()] + "_" + "{:02d}".format(new_number)
             return name + "_01"
         return name + "_01"
 
@@ -339,34 +409,38 @@ class AzureDevOpsClient:
             "name": adjusted_name,
             "visibility": "private",
             "capabilities": {
-                "versioncontrol": {
-                "sourceControlType": "Git"
-                },
+                "versioncontrol": {"sourceControlType": "Git"},
                 "processTemplate": {
                     "templateTypeId": "6b724908-ef14-45cf-84f8-768b5384da45"
                 },
-            }
+            },
         }
 
-        response = self._request_with_refresh("POST", f"https://dev.azure.com/{organization}/_apis/projects?api-version=7.0", json=body)
+        response = self._request_with_refresh(
+            "POST",
+            f"https://dev.azure.com/{organization}/_apis/projects?api-version=7.0",
+            json=body,
+        )
         if not response:
             if "project already exists" in response.text:
-                return self.create_project_and_repository(organization, self._get_auto_incremented_project_name(adjusted_name))
+                return self.create_project_and_repository(
+                    organization, self._get_auto_incremented_project_name(adjusted_name)
+                )
             raise Exception("Could not create project: ", response.text)
 
         operations_json = response.json()
         if operations_json["status"] in ["queued", "notSet"]:
             url = operations_json["url"]
-            
+
             start_time = time.time()
             while True:
-                if (time.time() - start_time > 180):
+                if time.time() - start_time > 180:
                     raise Exception("Project creation on Azure DevOps takes very long")
-                
+
                 time.sleep(2)
 
                 response = self._request_with_refresh("GET", url)
-                if not response: 
+                if not response:
                     raise Exception("Could not check project status: ", response.text)
                 operation_status = response.json()["status"]
                 if operation_status in ["cancelled, failed"]:
@@ -377,24 +451,29 @@ class AzureDevOpsClient:
                     for repo in repos:
                         if repo.display_name == adjusted_name:
                             return repo
-                    raise Exception("Could not create project", "Repository could not be found in list of all repositories for this organization")
-                
+                    raise Exception(
+                        "Could not create project",
+                        "Repository could not be found in list of all repositories for this organization",
+                    )
+
     def _check_user_entitlements_result(self, response):
         if not response:
             raise Exception("Could not check user entitlements: ", response.text)
-        
+
         print(f"Check user entitlements response: {response}")
         data = response.json()
-        if data.get('operationResult', {}).get('isSuccess', False) is False:
-            errors = data.get('operationResult', {}).get('errors', [])
-            
+        if data.get("operationResult", {}).get("isSuccess", False) is False:
+            errors = data.get("operationResult", {}).get("errors", [])
+
             for error in errors:
-                if error.get('key', 0) == 5015:
-                    error_value = error.get('value', '')
+                if error.get("key", 0) == 5015:
+                    error_value = error.get("value", "")
                     start_index = error_value.find('href="') + 6
                     end_index = error_value.find('"', start_index)
                     href_url = error_value[start_index:end_index]
-                    raise BillingSetupRequiredException("Billing setup is required", href_url)
+                    raise BillingSetupRequiredException(
+                        "Billing setup is required", href_url
+                    )
 
             raise Exception("Could not add user to organization")
 
@@ -402,113 +481,145 @@ class AzureDevOpsClient:
         body = {
             "accessLevel": {
                 "licensingSource": "account",
-                "accountLicenseType": "express" #basic
+                "accountLicenseType": "express",  # basic
             },
-            "user": {
-                "principalName": user_email,
-                "subjectKind": "user"
-            },
+            "user": {"principalName": user_email, "subjectKind": "user"},
         }
-        
-        response = self._request_with_refresh("POST", f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0", json=body)
+
+        response = self._request_with_refresh(
+            "POST",
+            f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0",
+            json=body,
+        )
         print(f"Add user to organization: {response}")
         if not response:
             raise Exception("Could not add user to organization: ", response.text)
-        
+
         self._check_user_entitlements_result(response)
 
         group_name = "Project Collection Administrators"
-        group_descriptor = self._get_group_descriptor_by_name(organization, group_name)        
+        group_descriptor = self._get_group_descriptor_by_name(organization, group_name)
         user_descriptor = self._get_user_descriptor_by_email(organization, user_email)
-        self._add_user_to_group(organization, user_descriptor, group_descriptor, group_name)
+        self._add_user_to_group(
+            organization, user_descriptor, group_descriptor, group_name
+        )
 
     def add_user_to_project(self, organization: str, user_email: str, project_id: str):
         body = {
             "accessLevel": {
                 "licensingSource": "account",
-                "accountLicenseType": "express" #basic
+                "accountLicenseType": "express",  # basic
             },
-            "user": {
-                "principalName": user_email,
-                "subjectKind": "user"
-            },
+            "user": {"principalName": user_email, "subjectKind": "user"},
             "projectEntitlements": [
                 {
-                    "group": {
-                        "groupType": "projectContributor"
-                    },
-                    "projectRef": {
-                        "id": project_id
-                    }
+                    "group": {"groupType": "projectContributor"},
+                    "projectRef": {"id": project_id},
                 }
-            ]
+            ],
         }
-        
-        response = self._request_with_refresh("POST", f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0", json=body)
+
+        response = self._request_with_refresh(
+            "POST",
+            f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?api-version=7.0",
+            json=body,
+        )
         print(f"Add user to project: {response}")
         if not response:
             raise Exception("Could not add user to repository: ", response.text)
-        
+
         self._check_user_entitlements_result(response)
 
-
-    def remove_user_from_organization(self, organization: str, user_email: str):    
+    def remove_user_from_organization(self, organization: str, user_email: str):
         user_id = self._get_user_id_by_email(organization, user_email)
-        response = self._request_with_refresh("DELETE", f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements/{user_id}?api-version=7.0")
+        response = self._request_with_refresh(
+            "DELETE",
+            f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements/{user_id}?api-version=7.0",
+        )
         print(f"Remove user from organization: {response}")
         if not response:
-            raise Exception("Could not add user to repository: ", response.text) 
+            raise Exception("Could not add user to repository: ", response.text)
 
     def _get_graph_descriptor(self, organization: str, id: str):
-        response = self._request_with_refresh("GET", f"https://vssps.dev.azure.com/{organization}/_apis/graph/descriptors/{id}?api-version=7.0")
+        response = self._request_with_refresh(
+            "GET",
+            f"https://vssps.dev.azure.com/{organization}/_apis/graph/descriptors/{id}?api-version=7.0",
+        )
         if not response:
             raise Exception("Descriptor could not be found: ", response.text)
 
         return response.json()["value"]
 
     def _get_user_id_by_email(self, organization: str, user_email: str):
-        response = self._request_with_refresh("GET", f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?$filter=name+eq+'{urllib.parse.quote(user_email)}'+and+licenseId+eq+'Account-Express'&api-version=7.0")
+        response = self._request_with_refresh(
+            "GET",
+            f"https://vsaex.dev.azure.com/{organization}/_apis/userentitlements?$filter=name+eq+'{urllib.parse.quote(user_email)}'+and+licenseId+eq+'Account-Express'&api-version=7.0",
+        )
         if not response:
             raise Exception("Could not find user: ", response.text)
-        
+
         members_json = response.json()["members"]
         for member_json in members_json:
             user_json = member_json["user"]
             if user_json["mailAddress"] == user_email:
                 return member_json["id"]
-        
+
         raise Exception("Could not find user in organization")
-    
+
     def _get_user_descriptor_by_email(self, organization: str, user_email: str):
-        users_response = self._request_with_refresh("GET",f"https://vssps.dev.azure.com/{organization}/_apis/graph/users?api-version=7.0-preview.1")
+        users_response = self._request_with_refresh(
+            "GET",
+            f"https://vssps.dev.azure.com/{organization}/_apis/graph/users?api-version=7.0-preview.1",
+        )
         if not users_response or users_response.status_code != 200:
-            raise Exception(f"Could not load users of {organization}: ", users_response.text)
+            raise Exception(
+                f"Could not load users of {organization}: ", users_response.text
+            )
         users_data = users_response.json()["value"]
         for user in users_data:
             if user["mailAddress"] == user_email:
                 return user["descriptor"]
-            
+
         raise Exception(f"Could not find user {user_email}")
-    
+
     def _get_group_descriptor_by_name(self, organization: str, group_name: str):
-        groups_response = self._request_with_refresh("GET", (f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?api-version=7.0-preview.1"))
+        groups_response = self._request_with_refresh(
+            "GET",
+            (
+                f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?api-version=7.0-preview.1"
+            ),
+        )
         if not groups_response or groups_response.status_code != 200:
-            raise Exception(f"Could not load groups of {organization}: ", groups_response.text)
+            raise Exception(
+                f"Could not load groups of {organization}: ", groups_response.text
+            )
         groups_data = groups_response.json()["value"]
         for group in groups_data:
             if group["displayName"] == group_name:
                 return group["descriptor"]
-        
+
         raise Exception(f"Could not find group {group_name}")
-    
-    def _add_user_to_group(self, organization: str, user_descriptor: str, group_descriptor: str, group_name: str):
-        membership_check_response = self._request_with_refresh("GET",f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
+
+    def _add_user_to_group(
+        self,
+        organization: str,
+        user_descriptor: str,
+        group_descriptor: str,
+        group_name: str,
+    ):
+        membership_check_response = self._request_with_refresh(
+            "GET",
+            f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1",
+        )
         print(f"User group membership response {membership_check_response}")
 
         if membership_check_response.status_code == 200:
             print(f"User is already a member of {group_name} group")
         elif membership_check_response.status_code == 404:
-            membership_add_response = self._request_with_refresh("PUT",f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
+            membership_add_response = self._request_with_refresh(
+                "PUT",
+                f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1",
+            )
 
             if membership_add_response.status_code == 201:
                 print(f"User added to {group_name} group")
@@ -517,11 +628,18 @@ class AzureDevOpsClient:
         else:
             raise Exception("Membership check failed")
 
-    def remove_user_from_project(self, organization: str, user_email: str, project_name: str):
+    def remove_user_from_project(
+        self, organization: str, user_email: str, project_name: str
+    ):
         project = self.get_project_by_name(organization, project_name)
-        project_descriptor = self._get_graph_descriptor(organization, project.project_id)
-        
-        response = self._request_with_refresh("GET", f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?scopeDescriptor={project_descriptor}&api-version=7.0-preview.1")
+        project_descriptor = self._get_graph_descriptor(
+            organization, project.project_id
+        )
+
+        response = self._request_with_refresh(
+            "GET",
+            f"https://vssps.dev.azure.com/{organization}/_apis/graph/groups?scopeDescriptor={project_descriptor}&api-version=7.0-preview.1",
+        )
 
         if not response:
             raise Exception("Could not get groups of project: ", response.text)
@@ -533,10 +651,12 @@ class AzureDevOpsClient:
 
         if not group_descriptor:
             raise Exception("No group descriptor found")
-        
+
         user_descriptor = self._get_user_descriptor_by_email(organization, user_email)
 
-        response = self._request_with_refresh("DELETE", f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1")
+        response = self._request_with_refresh(
+            "DELETE",
+            f"https://vssps.dev.azure.com/{organization}/_apis/graph/memberships/{user_descriptor}/{group_descriptor}?api-version=7.0-preview.1",
+        )
         if not response:
             raise Exception("Could not remove user from project: ", response.text)
-        

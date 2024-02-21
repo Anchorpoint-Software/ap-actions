@@ -4,25 +4,37 @@ import git_errors
 import sys
 import os
 import itertools
+
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 current_dir = os.path.dirname(__file__)
 sys.path.insert(0, current_dir)
 sys.path.insert(0, script_dir)
 
-from vc.apgit.repository import * 
+from vc.apgit.repository import *
 from vc.apgit.utility import get_repo_path
 import git_repository_helper as helper
 
-if script_dir in sys.path : sys.path.remove(script_dir)
-if current_dir in sys.path : sys.path.remove(current_dir)
+if script_dir in sys.path:
+    sys.path.remove(script_dir)
+if current_dir in sys.path:
+    sys.path.remove(current_dir)
 
-def revert(channel_id, project_path, new_files, selected_files: list[str], changes, revert_all = False):
+
+def revert(
+    channel_id,
+    project_path,
+    new_files,
+    selected_files: list[str],
+    changes,
+    revert_all=False,
+):
     ui = ap.UI()
     progress = ap.Progress("Reverting Files", show_loading_screen=True)
-    
+
     repo_path = get_repo_path(channel_id, project_path)
     repo = GitRepository.load(repo_path)
-    if not repo: return
+    if not repo:
+        return
 
     repo_root = repo.get_root_path()
     # Check if any file to revert is locked by an application
@@ -34,13 +46,21 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
         if not utility.is_file_writable(path):
             error = f"error: unable to unlink '{relpath}':"
             if not git_errors.handle_error(error, repo_path):
-                ui.show_info("Could not revert files", f"A file is not writable: {relpath}", duration=6000)
+                ui.show_info(
+                    "Could not revert files",
+                    f"A file is not writable: {relpath}",
+                    duration=6000,
+                )
             return True
-        
+
     try:
         try:
             if revert_all:
-                repo.fetch_lfs_files(["HEAD"], list(relative_selected_paths), progress=helper.FetchProgress(progress))
+                repo.fetch_lfs_files(
+                    ["HEAD"],
+                    list(relative_selected_paths),
+                    progress=helper.FetchProgress(progress),
+                )
                 repo.unstage_all_files()
                 repo.restore_all_files()
                 if new_files:
@@ -50,23 +70,32 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
                 paths_to_unstage = []
                 paths_to_delete = []
                 paths_to_revert = []
-                for change in itertools.chain(staged_changes.new_files, staged_changes.renamed_files, staged_changes.modified_files, staged_changes.deleted_files):
+                for change in itertools.chain(
+                    staged_changes.new_files,
+                    staged_changes.renamed_files,
+                    staged_changes.modified_files,
+                    staged_changes.deleted_files,
+                ):
                     if change.path in relative_selected_paths:
                         paths_to_unstage.append(change.path)
 
                 for change in changes:
-                    rel_path = os.path.relpath(change.path, repo_root).replace("\\", "/")
+                    rel_path = os.path.relpath(change.path, repo_root).replace(
+                        "\\", "/"
+                    )
                     if rel_path in relative_selected_paths:
                         if change.status == ap.VCFileStatus.New:
                             paths_to_delete.append(change.path)
                         else:
                             paths_to_revert.append(rel_path)
-                
+
                 if len(paths_to_unstage) > 0:
                     repo.unstage_files(paths_to_unstage)
 
                 if len(paths_to_revert) > 0:
-                    repo.restore_files(paths_to_revert, progress=helper.FetchProgress(progress))
+                    repo.restore_files(
+                        paths_to_revert, progress=helper.FetchProgress(progress)
+                    )
                 for path in paths_to_delete:
                     os.remove(path)
 
@@ -76,11 +105,14 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
                 return
             raise e
 
-        
     except Exception as e:
         git_errors.handle_error(e, repo_path)
         if "Git process already running and the index is locked" in str(e):
-            ui.show_info("Could not revert files", "A git process is already running. Please wait a moment and try again", duration=10000)
+            ui.show_info(
+                "Could not revert files",
+                "A git process is already running. Please wait a moment and try again",
+                duration=10000,
+            )
         else:
             ui.show_error("Could not revert files")
         print(str(e))
@@ -89,16 +121,25 @@ def revert(channel_id, project_path, new_files, selected_files: list[str], chang
         ap.vc_load_pending_changes(channel_id, True)
         ap.refresh_timeline_channel(channel_id)
         time.sleep(1)
-    
+
     ui.show_success("Revert Successful")
 
-def revert_button_pressed(channel_id, project_path, selected_files, changes, revert_all, dialog):
+
+def revert_button_pressed(
+    channel_id, project_path, selected_files, changes, revert_all, dialog
+):
     ctx = ap.get_context()
-    ctx.run_async(revert, channel_id, project_path, True, selected_files, changes, revert_all)
+    ctx.run_async(
+        revert, channel_id, project_path, True, selected_files, changes, revert_all
+    )
     dialog.close()
 
-def on_pending_changes_action(channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx):
-    if action_id != "gitrevert": return False
+
+def on_pending_changes_action(
+    channel_id: str, action_id: str, message: str, changes, all_files_selected, ctx
+):
+    if action_id != "gitrevert":
+        return False
 
     revert_all = len(changes) == len(ctx.selected_files)
     if len(ctx.selected_files) == 0:
@@ -108,12 +149,22 @@ def on_pending_changes_action(channel_id: str, action_id: str, message: str, cha
     dialog = ap.Dialog()
     dialog.title = "Confirm Reversion"
     dialog.icon = ":/icons/revert.svg"
-    dialog.add_text("Choosing <b>Revert</b> will reset your selected files to the last saved state in your repository. <ul> <li>Deleted files will be restored</li><li>New created files will be deleted</li><li>Modified files will return to their previously saved state</li> </ul>")
-    dialog.add_info("Attention, this command is not undoable. <a href='https://docs.anchorpoint.app/docs/version-control/features/commands/#revert'>Learn more about Revert</a>")
-    dialog.add_button("Revert", callback=lambda d: revert_button_pressed(channel_id, ctx.project_path, ctx.selected_files, changes, revert_all, d)).add_button("Cancel",callback=lambda d: d.close(), primary=False)
+    dialog.add_text(
+        "Choosing <b>Revert</b> will reset your selected files to the last saved state in your repository. <ul> <li>Deleted files will be restored</li><li>New created files will be deleted</li><li>Modified files will return to their previously saved state</li> </ul>"
+    )
+    dialog.add_info(
+        "Attention, this command is not undoable. <a href='https://docs.anchorpoint.app/docs/version-control/features/commands/#revert'>Learn more about Revert</a>"
+    )
+    dialog.add_button(
+        "Revert",
+        callback=lambda d: revert_button_pressed(
+            channel_id, ctx.project_path, ctx.selected_files, changes, revert_all, d
+        ),
+    ).add_button("Cancel", callback=lambda d: d.close(), primary=False)
     dialog.show()
 
     return True
+
 
 def undo(path: str, entry_id: str, channel_id: str):
     ui = ap.UI()
@@ -132,6 +183,7 @@ def undo(path: str, entry_id: str, channel_id: str):
             logging.info(str(e))
             ui.show_error("Undo Failed", str(e))
 
+
 def undo_files(repo_path: str, files: list[str], entry_id: str, channel_id: str):
     ui = ap.UI()
     try:
@@ -148,9 +200,13 @@ def undo_files(repo_path: str, files: list[str], entry_id: str, channel_id: str)
             if not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error, repo_path):
-                    ui.show_info("Could not undo files", f"A file is not writable: {relpath}", duration=6000)
+                    ui.show_info(
+                        "Could not undo files",
+                        f"A file is not writable: {relpath}",
+                        duration=6000,
+                    )
                 return True
-            
+
         changes = repo.get_changes_for_changelist(entry_id)
         paths_to_delete = []
         for added_file in changes.new_files:
@@ -159,7 +215,11 @@ def undo_files(repo_path: str, files: list[str], entry_id: str, channel_id: str)
                 paths_to_delete.append(os.path.join(repo_root, added_file.path))
 
         if len(relative_selected_paths) > 0:
-            repo.restore_files(list(relative_selected_paths), entry_id + "~", progress=helper.FetchProgress(progress))
+            repo.restore_files(
+                list(relative_selected_paths),
+                entry_id + "~",
+                progress=helper.FetchProgress(progress),
+            )
         for path in paths_to_delete:
             os.remove(path)
 
@@ -173,7 +233,14 @@ def undo_files(repo_path: str, files: list[str], entry_id: str, channel_id: str)
             logging.info(str(e))
             ui.show_error("Undo Failed", str(e))
 
-def restore_files(repo_path: str, files: list[str], entry_id: str, channel_id: str, keep_original: bool):
+
+def restore_files(
+    repo_path: str,
+    files: list[str],
+    entry_id: str,
+    channel_id: str,
+    keep_original: bool,
+):
     ui = ap.UI()
     if len(files) == 0:
         ap.UI().show_success("No Files Selected")
@@ -193,9 +260,13 @@ def restore_files(repo_path: str, files: list[str], entry_id: str, channel_id: s
             if not keep_original and not utility.is_file_writable(path):
                 error = f"error: unable to unlink '{relpath}':"
                 if not git_errors.handle_error(error, repo_path):
-                    ui.show_info("Could not restore files", f"A file is not writable: {relpath}", duration=6000)
+                    ui.show_info(
+                        "Could not restore files",
+                        f"A file is not writable: {relpath}",
+                        duration=6000,
+                    )
                 return True
-                
+
         changes = repo.get_changes_for_changelist(entry_id)
         for deleted_file in changes.deleted_files:
             if deleted_file.path in relative_selected_paths:
@@ -207,29 +278,38 @@ def restore_files(repo_path: str, files: list[str], entry_id: str, channel_id: s
 
         changes = repo.get_all_pending_changes()
         pending_changes_count = changes.size()
-        repo.restore_files(list(relative_selected_paths), entry_id, keep_original, progress=helper.FetchProgress(progress))
+        repo.restore_files(
+            list(relative_selected_paths),
+            entry_id,
+            keep_original,
+            progress=helper.FetchProgress(progress),
+        )
 
         changes = repo.get_all_pending_changes()
         if keep_original:
             restored_files = len(relative_selected_paths)
         else:
             restored_files = changes.size() - pending_changes_count
-            
+
         if restored_files == 1:
             ui.show_success("Restore Successful", "One file has been restored")
         elif restored_files > 1:
-            ui.show_success("Restore Successful", f"{restored_files} files have been restored")
+            ui.show_success(
+                "Restore Successful", f"{restored_files} files have been restored"
+            )
         else:
-            ui.show_info("Nothing to restore", "The files are already the selected version")
+            ui.show_info(
+                "Nothing to restore", "The files are already the selected version"
+            )
 
         ap.vc_load_pending_changes(channel_id)
         ap.refresh_timeline_channel(channel_id)
-
 
     except Exception as e:
         if not git_errors.handle_error(e, repo_path):
             logging.info(str(e))
             ui.show_error("Restore Failed", str(e))
+
 
 def reset_commit(path, commit: HistoryEntry, channel_id, force):
     ui = ap.UI()
@@ -237,16 +317,24 @@ def reset_commit(path, commit: HistoryEntry, channel_id, force):
         progress = ap.Progress("Resetting Project", show_loading_screen=True)
         repo = GitRepository.load(path)
         if not force and repo.has_pending_changes(False):
-            ui.show_error("Cannot reset project", "You have changed files. Commit them and try again")
-            return 
-        
+            ui.show_error(
+                "Cannot reset project",
+                "You have changed files. Commit them and try again",
+            )
+            return
+
         if not repo.has_remote():
-            ui.show_error("Cannot reset project", "Reset Project cannot be used with local repositories")
-            return 
+            ui.show_error(
+                "Cannot reset project",
+                "Reset Project cannot be used with local repositories",
+            )
+            return
 
         changes = repo.diff_changelist(commit.id)
-        if len(changes) > 0 and changes[0] != '':
-            repo.fetch_lfs_files([commit.id], changes, progress=helper.FetchProgress(progress))
+        if len(changes) > 0 and changes[0] != "":
+            repo.fetch_lfs_files(
+                [commit.id], changes, progress=helper.FetchProgress(progress)
+            )
 
         repo.reset(commit.id, True)
 
@@ -262,15 +350,19 @@ def reset_commit(path, commit: HistoryEntry, channel_id, force):
     finally:
         ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
 
+
 def async_wrapper(func, dialog, *args, **kwargs):
     dialog.close()
     ap.get_context().run_async(func, *args, **kwargs)
 
-def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channel_id: str):
+
+def show_restore_files_dialog(
+    path: str, files: list[str], entry_id: str, channel_id: str
+):
     if len(files) == 0:
         ap.UI().show_success("No Files Selected")
         return
-    
+
     first_file_name = os.path.basename(files[0])
     file_name_split = os.path.splitext(first_file_name)
     if len(file_name_split) >= 1:
@@ -278,41 +370,82 @@ def show_restore_files_dialog(path: str, files: list[str], entry_id: str, channe
     else:
         file_restored = first_file_name + "_restored"
 
-    
     dialog = ap.Dialog()
     dialog.title = "Restore Files"
     dialog.icon = ":/icons/restore.svg"
-    dialog.add_text("Restored files show up as changed files. <br> They can overwrite the original version.")
-    dialog.add_info(f"If you keep the original, <b>{first_file_name}</b> <br>will be restored as <b>{file_restored}</b>")
-    dialog.add_button("Overwrite", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, False)).add_button("Keep Original", primary=False, callback=lambda d: async_wrapper(restore_files, d, path, files, entry_id, channel_id, True))
+    dialog.add_text(
+        "Restored files show up as changed files. <br> They can overwrite the original version."
+    )
+    dialog.add_info(
+        f"If you keep the original, <b>{first_file_name}</b> <br>will be restored as <b>{file_restored}</b>"
+    )
+    dialog.add_button(
+        "Overwrite",
+        primary=False,
+        callback=lambda d: async_wrapper(
+            restore_files, d, path, files, entry_id, channel_id, False
+        ),
+    ).add_button(
+        "Keep Original",
+        primary=False,
+        callback=lambda d: async_wrapper(
+            restore_files, d, path, files, entry_id, channel_id, True
+        ),
+    )
     dialog.show()
+
 
 def cancel_restore_project(dialog, channel_id: str):
     ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
     dialog.close()
 
-def show_restore_project_dialog(path: str, commit: HistoryEntry, channel_id: str, has_changes: bool):
-    continue_button = "Continue" if not has_changes else "Continue and discard your changes"
+
+def show_restore_project_dialog(
+    path: str, commit: HistoryEntry, channel_id: str, has_changes: bool
+):
+    continue_button = (
+        "Continue" if not has_changes else "Continue and discard your changes"
+    )
     dialog = ap.Dialog()
     dialog.title = "Reset Project"
     dialog.icon = ":/icons/restoreproject.svg"
     if has_changes:
         dialog.add_text("<b>Caution</b>: All your changed files will be lost")
-    dialog.add_text("This command will set all files in your project to this commit. You can <br>go back to the latest state by pulling from the remote repository.")
-    dialog.add_button(continue_button, callback=lambda d: async_wrapper(reset_commit, d, path, commit, channel_id, has_changes)).add_button("Cancel", callback=lambda d: cancel_restore_project(d, channel_id), primary=False)
+    dialog.add_text(
+        "This command will set all files in your project to this commit. You can <br>go back to the latest state by pulling from the remote repository."
+    )
+    dialog.add_button(
+        continue_button,
+        callback=lambda d: async_wrapper(
+            reset_commit, d, path, commit, channel_id, has_changes
+        ),
+    ).add_button(
+        "Cancel",
+        callback=lambda d: cancel_restore_project(d, channel_id),
+        primary=False,
+    )
     dialog.show()
 
-def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ctx: ap.Context):
+
+def on_timeline_detail_action(
+    channel_id: str, action_id: str, entry_id: str, ctx: ap.Context
+):
     ui = ap.UI()
     if action_id == "gitrevertcommit":
         path = get_repo_path(channel_id, ctx.project_path)
         try:
-            ap.timeline_channel_action_processing(channel_id, "gitrevertcommit", "Undoing Commit...")
+            ap.timeline_channel_action_processing(
+                channel_id, "gitrevertcommit", "Undoing Commit..."
+            )
             repo = GitRepository.load(path)
-            if not repo: return
+            if not repo:
+                return
 
             if repo.has_pending_changes(True):
-                ui.show_info("Cannot undo commit", "You have changed files. Commit them and try again")
+                ui.show_info(
+                    "Cannot undo commit",
+                    "You have changed files. Commit them and try again",
+                )
                 return True
             else:
                 undo(path, entry_id, channel_id)
@@ -325,34 +458,45 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
         finally:
             ap.stop_timeline_channel_action_processing(channel_id, "gitrevertcommit")
             return True
-    
+
     if action_id == "gitrestorecommitfiles":
         path = get_repo_path(channel_id, ctx.project_path)
         show_restore_files_dialog(path, ctx.selected_files, entry_id, channel_id)
         return True
-    
+
     if action_id == "gitcopycommitid":
         import pyperclip as pc
-        short_id = entry_id[:20] + '...' if len(entry_id) > 20 else entry_id
+
+        short_id = entry_id[:20] + "..." if len(entry_id) > 20 else entry_id
         pc.copy(entry_id)
         ui.show_success("Commit ID copied to clipboard", description=short_id)
         return True
-    
+
     if action_id == "gitresetproject":
         path = get_repo_path(channel_id, ctx.project_path)
         try:
-            ap.timeline_channel_action_processing(channel_id, "gitresetproject", "Resetting Project...")
+            ap.timeline_channel_action_processing(
+                channel_id, "gitresetproject", "Resetting Project..."
+            )
             repo = GitRepository.load(path)
-            if not repo: return
+            if not repo:
+                return
 
             has_changes = repo.has_pending_changes(False)
             if platform.system() == "Windows":
                 from vc.apgit.utility import is_executable_running
                 from git_lfs_helper import LFSExtensionTracker
+
                 if is_executable_running(["unrealeditor.exe"]):
                     lfsExtensions = LFSExtensionTracker(repo)
-                    if lfsExtensions.is_extension_tracked("umap") or lfsExtensions.is_extension_tracked("uasset"):
-                        ap.UI().show_info("Cannot reset project", "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again", duration = 10000)
+                    if lfsExtensions.is_extension_tracked(
+                        "umap"
+                    ) or lfsExtensions.is_extension_tracked("uasset"):
+                        ap.UI().show_info(
+                            "Cannot reset project",
+                            "Unreal Engine prevents resetting the project. Please close Unreal Engine and try again",
+                            duration=10000,
+                        )
                         return True
 
             commit = repo.get_history_entry(entry_id)
@@ -362,19 +506,22 @@ def on_timeline_detail_action(channel_id: str, action_id: str, entry_id: str, ct
             if not git_errors.handle_error(e, path):
                 logging.info(str(e))
                 ui.show_error("Reset Failed", str(e))
-        finally:    
+        finally:
             ap.stop_timeline_channel_action_processing(channel_id, "gitresetproject")
             return True
 
-    
     if action_id == "gitrevertcommitfiles":
         path = get_repo_path(channel_id, ctx.project_path)
         try:
             repo = GitRepository.load(path)
-            if not repo: return
+            if not repo:
+                return
 
             if repo.has_pending_changes(True):
-                ui.show_info("Cannot undo files", "You have changed files. Commit them and try again")
+                ui.show_info(
+                    "Cannot undo files",
+                    "You have changed files. Commit them and try again",
+                )
                 return True
             else:
                 undo_files(path, ctx.selected_files, entry_id, channel_id)

@@ -9,6 +9,7 @@ ui = ap.UI()
 
 drive_var = "drive"
 
+
 def get_unused_drives():
     import string
     from ctypes import windll
@@ -22,22 +23,20 @@ def get_unused_drives():
 
     return drives
 
-def create_bat_file(command,drive):    
-    app_data = os.getenv('APPDATA')
-    startup_path = f'{app_data}/Microsoft/Windows/Start Menu/Programs/Startup/ap_mount_{drive}.bat'
-    with open(startup_path,'w') as f:
+
+def create_bat_file(command, drive):
+    app_data = os.getenv("APPDATA")
+    startup_path = (
+        f"{app_data}/Microsoft/Windows/Start Menu/Programs/Startup/ap_mount_{drive}.bat"
+    )
+    with open(startup_path, "w") as f:
         f.write(command)
+
 
 def mount(dialog):
     drive = dialog.get_value(drive_var)
 
-    subst = subprocess.run(
-        [
-            "subst",
-            f"{drive}:",
-            f"{ctx.path}"
-        ]
-    )
+    subst = subprocess.run(["subst", f"{drive}:", f"{ctx.path}"])
 
     if subst.returncode != 0:
         print(subst.stderr)
@@ -46,8 +45,9 @@ def mount(dialog):
         print(subst.stdout)
         ui.show_success("Mount Successful")
 
-    create_bat_file("subst "+f'{drive}: "'+f'{ctx.path}"',drive)
+    create_bat_file("subst " + f'{drive}: "' + f'{ctx.path}"', drive)
     dialog.close()
+
 
 def show_options():
     drives = get_unused_drives()
@@ -65,6 +65,7 @@ def show_options():
     dialog.add_button("Map", callback=mount)
 
     dialog.show()
+
 
 if platform.system() == "Darwin":
     ui.show_error("Unsupported Action", "This action is only supported on Windows :-(")

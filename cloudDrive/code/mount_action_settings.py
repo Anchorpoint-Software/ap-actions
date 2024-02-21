@@ -12,28 +12,34 @@ ui = ap.UI()
 try:
     settings = aps.Settings("rclone")
 except:
-    ui.show_error("Cannot load settings","Please refer to the <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/cloud-drive/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.")
+    ui.show_error(
+        "Cannot load settings",
+        "Please refer to the <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/cloud-drive/#cannot-load-settings'>troubleshooting page</a> to resolve this issue.",
+    )
     sys.exit()
+
 
 def isWin():
     if platform.system() == "Windows":
         return True
     return False
 
-def store_settings(dialog : ap.Dialog):
+
+def store_settings(dialog: ap.Dialog):
     cache_path = dialog.get_value("cache_var")
-    if(cache_path!=settings.get("cachepath")):
-        settings.set("cachepath",cache_path)
+    if cache_path != settings.get("cachepath"):
+        settings.set("cachepath", cache_path)
         settings.store()
         ui.show_success("Cache location changed")
         dialog.close()
 
-def clear_cache(dialog : ap.Dialog):
-    settings = aps.Settings("rclone")    
-    cache_path = settings.get("cachepath",default=get_default_cache_path())
 
-    vfs_path = os.path.join(cache_path,"vfs")
-    vfs_metaPath = os.path.join(cache_path,"vfsMeta")
+def clear_cache(dialog: ap.Dialog):
+    settings = aps.Settings("rclone")
+    cache_path = settings.get("cachepath", default=get_default_cache_path())
+
+    vfs_path = os.path.join(cache_path, "vfs")
+    vfs_metaPath = os.path.join(cache_path, "vfsMeta")
 
     if os.path.isdir(vfs_path):
         shutil.rmtree(vfs_path)
@@ -44,18 +50,24 @@ def clear_cache(dialog : ap.Dialog):
     ui.show_success("Cache cleared")
     dialog.close()
 
+
 def get_default_cache_path():
     if isWin():
-        app_data_roaming = os.getenv('APPDATA')
+        app_data_roaming = os.getenv("APPDATA")
         app_data = os.path.abspath(os.path.join(app_data_roaming, os.pardir))
-        return os.path.join(app_data,"Local/rclone").replace("/","\\")
-    else: 
-        cache_path = os.path.normpath(os.path.expanduser("~/library/caches/anchorpoint software/anchorpoint/rclone"))
-        if not os.path.exists(cache_path): 
+        return os.path.join(app_data, "Local/rclone").replace("/", "\\")
+    else:
+        cache_path = os.path.normpath(
+            os.path.expanduser(
+                "~/library/caches/anchorpoint software/anchorpoint/rclone"
+            )
+        )
+        if not os.path.exists(cache_path):
             os.mkdir(cache_path)
         return cache_path
 
-def open_dialog():    
+
+def open_dialog():
     cache_path = settings.get("cachepath")
 
     if cache_path == "":
@@ -68,12 +80,16 @@ def open_dialog():
 
     dialog = ap.Dialog()
     dialog.title = "Cloud Drive Settings"
-    dialog.add_text("Cache Location").add_input(cache_path, browse=ap.BrowseType.Folder, var="cache_var")
+    dialog.add_text("Cache Location").add_input(
+        cache_path, browse=ap.BrowseType.Folder, var="cache_var"
+    )
 
     if ctx.icon:
-        dialog.icon = ctx.icon    
+        dialog.icon = ctx.icon
 
-    dialog.add_button("Apply", callback=store_settings).add_button("Clear Cache", callback=clear_cache, enabled = is_not_empty, primary=False)
+    dialog.add_button("Apply", callback=store_settings).add_button(
+        "Clear Cache", callback=clear_cache, enabled=is_not_empty, primary=False
+    )
     dialog.show()
 
 

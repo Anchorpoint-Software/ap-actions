@@ -18,6 +18,7 @@ import platform
 from datetime import datetime
 import anchorpoint as ap
 
+
 def _map_op_code(op_code: int) -> str:
     if op_code == 32:
         return "downloading"
@@ -33,22 +34,25 @@ def _map_op_code(op_code: int) -> str:
         return "compressing"
     return str(op_code)
 
+
 def _parse_lfs_status(progress, line: str):
     try:
         import re
-        
+
         def report_lfs_progress(text_identifier, op_code):
             count_match = re.search("\(\d+\/\d+\)", line)
             if count_match:
                 cur_count = re.search("\d+\/", count_match.group()).group()[:-1]
                 max_count = re.search("\d+\)", count_match.group()).group()[:-1]
                 progress_text = line.replace(text_identifier, "").strip()
-                progress.update(_map_op_code(op_code), int(cur_count), int(max_count), progress_text)
+                progress.update(
+                    _map_op_code(op_code), int(cur_count), int(max_count), progress_text
+                )
 
         # Filtering content: 100% (23/23), 59.33 MiB | 8.63 MiB/s
-        if "Filtering content:" in line:     
+        if "Filtering content:" in line:
             report_lfs_progress("Filtering content: ", 32)
-        
+
         # Uploading LFS objects: 100% (1/1), 3.6 KB | 0 B/s, done.
         if "Uploading LFS objects:" in line:
             report_lfs_progress("Uploading LFS objects: ", 16)
@@ -61,24 +65,31 @@ def _parse_lfs_status(progress, line: str):
             index = line.find("batch response: ")
             if index >= 0:
                 import anchorpoint
+
                 if "This repository is over its data quota" in line:
                     title = "The GitHub LFS limit has been reached"
                     error_message = "To solve the problem open your GitHub Billing and Plans page and buy more Git LFS Data."
-                else :
+                else:
                     title = "Git LFS Error"
                     error_message = line[index:]
                 anchorpoint.UI().show_error(title, error_message, duration=10000)
 
     except Exception as e:
         print(e)
-    
+
+
 class _InternalProgress(git.RemoteProgress):
     def __init__(self, progress) -> None:
         super().__init__()
         self.progress = progress
 
-    def update(self, op_code, cur_count, max_count=None, message=''):
-        self.progress.update(_map_op_code(op_code), cur_count, max_count, message if len(message) > 0 else None)
+    def update(self, op_code, cur_count, max_count=None, message=""):
+        self.progress.update(
+            _map_op_code(op_code),
+            cur_count,
+            max_count,
+            message if len(message) > 0 else None,
+        )
 
     def line_dropped(self, line: str) -> None:
         _parse_lfs_status(self, line)
@@ -86,7 +97,8 @@ class _InternalProgress(git.RemoteProgress):
 
     def canceled(self):
         return self.progress.canceled()
-    
+
+
 class _InternalProgressFromFile(git.RemoteProgress):
     def __init__(self, progress) -> None:
         super().__init__()
@@ -105,13 +117,20 @@ class _InternalProgressFromFile(git.RemoteProgress):
                 file_path = match.group(5)
 
                 progress_text = os.path.basename(file_path)
-                self.update(_map_op_code(32), int(cur_bytes), int(max_bytes), progress_text)
+                self.update(
+                    _map_op_code(32), int(cur_bytes), int(max_bytes), progress_text
+                )
 
         except Exception as e:
             print(e)
 
-    def update(self, op_code, cur_count, max_count=None, message=''):
-        self.progress.update(_map_op_code(op_code), cur_count, max_count, message if len(message) > 0 else None)
+    def update(self, op_code, cur_count, max_count=None, message=""):
+        self.progress.update(
+            _map_op_code(op_code),
+            cur_count,
+            max_count,
+            message if len(message) > 0 else None,
+        )
 
     def line_dropped(self, line: str) -> None:
         self._parse_lfs_from_file(line)
@@ -127,10 +146,10 @@ class GitRepository(VCRepository):
     def __del__(self) -> None:
         # GitPython tends to leak memory / keeps git.exe processes dangling
         if self.repo:
-            del self.repo 
-        
+            del self.repo
+
         gc.collect()
-        
+
         # print("\n\nDELETING git repo. If this message does not show up we are leaking memory\n\n")
 
     @staticmethod
@@ -138,10 +157,15 @@ class GitRepository(VCRepository):
         return os.path.exists(os.path.join(path, ".git"))
 
     @staticmethod
-    def is_authenticated(url: str) -> bool: 
+    def is_authenticated(url: str) -> bool:
         try:
             import subprocess
-            install_git.run_git_command([install_git.get_git_cmd_path(), "ls-remote", url], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+            install_git.run_git_command(
+                [install_git.get_git_cmd_path(), "ls-remote", url],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+            )
         except Exception:
             return False
         return True
@@ -150,12 +174,17 @@ class GitRepository(VCRepository):
     def authenticate(url: str, username: str, password: str):
         from subprocess import run
         from urllib.parse import urlparse
+
         parsedurl = urlparse(url)
         host = parsedurl.hostname
         protocol = parsedurl.scheme
-        
+
         cmd = [install_git.get_gcm_path(), "store"]
-        p = run(cmd, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True)
+        p = run(
+            cmd,
+            input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}",
+            text=True,
+        )
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
 
@@ -163,6 +192,7 @@ class GitRepository(VCRepository):
         def _set_username():
             self.repo.git.config("user.name", username)
             self.repo.git.config("user.email", email)
+
         try:
             _set_username()
         except Exception:
@@ -170,33 +200,52 @@ class GitRepository(VCRepository):
             _set_username()
 
     def set_safe_directory(self, path):
-        path = path.replace(os.sep, '/')
-        if platform.system() == 'Windows' and path.startswith('//'):
+        path = path.replace(os.sep, "/")
+        if platform.system() == "Windows" and path.startswith("//"):
             # git needs prefix for UNC paths and uppercase resolve on windows
             from pathlib import Path
-            path = '%(prefix)/' + str(Path(path).resolve()).replace(os.sep, '/')
+
+            path = "%(prefix)/" + str(Path(path).resolve()).replace(os.sep, "/")
         # set safe.directory to allow git on 'unsafe' paths such as FAT32 drives
         self.repo.git.config("--global", "--add", "safe.directory", path)
         print("Added Safe Directory")
 
     @classmethod
     def create(cls, path: str, username: str, email: str):
-        install_git.run_git_command([install_git.get_git_cmd_path(), "init", "-b", "main"], cwd=path)
+        install_git.run_git_command(
+            [install_git.get_git_cmd_path(), "init", "-b", "main"], cwd=path
+        )
         repo = GitRepository.load(path)
         repo.set_username(username, email, path)
         return repo
 
     @classmethod
-    def clone(cls, remote_url: str, local_path: str, username: str, email: str, progress: Optional[Progress] = None, sparse = False):
+    def clone(
+        cls,
+        remote_url: str,
+        local_path: str,
+        username: str,
+        email: str,
+        progress: Optional[Progress] = None,
+        sparse=False,
+    ):
         env = GitRepository.get_git_environment(remote_url)
         try:
             multi_options = []
             if sparse:
                 multi_options.append("--sparse")
             if progress is not None:
-                git.Repo.clone_from(remote_url, local_path,  progress = _InternalProgress(progress), env=env, multi_options=multi_options)
+                git.Repo.clone_from(
+                    remote_url,
+                    local_path,
+                    progress=_InternalProgress(progress),
+                    env=env,
+                    multi_options=multi_options,
+                )
             else:
-                git.Repo.clone_from(remote_url, local_path, env=env, multi_options=multi_options)
+                git.Repo.clone_from(
+                    remote_url, local_path, env=env, multi_options=multi_options
+                )
         except GitCommandError as e:
             print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
             raise e
@@ -227,22 +276,27 @@ class GitRepository(VCRepository):
     @staticmethod
     def get_git_environment(remote_url: Optional[str] = None):
         import platform
+
         def add_config_env(config, key, value, config_count):
             config[f"GIT_CONFIG_KEY_{config_count}"] = key
-            config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\","/")
+            config[f"GIT_CONFIG_VALUE_{config_count}"] = value.replace("\\", "/")
             config["GIT_CONFIG_COUNT"] = str(config_count + 1)
 
         env = {
-            "GIT_EXEC_PATH": install_git.get_git_exec_path().replace("\\","/"),
-            "GIT_LFS_FORCE_PROGRESS": "1" 
+            "GIT_EXEC_PATH": install_git.get_git_exec_path().replace("\\", "/"),
+            "GIT_LFS_FORCE_PROGRESS": "1",
         }
 
         config_counter = 0
-        add_config_env(env, "credential.helper", install_git.get_gcm_path(), config_counter)
+        add_config_env(
+            env, "credential.helper", install_git.get_gcm_path(), config_counter
+        )
         config_counter = config_counter + 1
-        add_config_env(env, "credential.https://dev.azure.com.usehttppath", "1", config_counter)
+        add_config_env(
+            env, "credential.https://dev.azure.com.usehttppath", "1", config_counter
+        )
         config_counter = config_counter + 1
-        
+
         if remote_url and ("azure" in remote_url or "visualstudio" in remote_url):
             add_config_env(env, "http.version", "HTTP/1.1", config_counter)
             config_counter = config_counter + 1
@@ -255,7 +309,7 @@ class GitRepository(VCRepository):
         return env
 
     def _setup_environment(self):
-        self.repo.git.update_environment(**GitRepository.get_git_environment()) 
+        self.repo.git.update_environment(**GitRepository.get_git_environment())
 
     def _has_upstream(self):
         try:
@@ -264,16 +318,17 @@ class GitRepository(VCRepository):
         except:
             return False
 
-    def set_upstream(self, branch, remote = "origin"):
+    def set_upstream(self, branch, remote="origin"):
         self.repo.git.branch("-u", f"{remote}/{branch}")
 
-    def track_branch(self, branch, remote = "origin"):
+    def track_branch(self, branch, remote="origin"):
         self.repo.git.branch("-u", f"{remote}/{branch}")
 
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if remote is None: remote = "origin"
+        if remote is None:
+            remote = "origin"
         remote_url = self._get_remote_url(remote)
 
         kwargs = {}
@@ -284,13 +339,18 @@ class GitRepository(VCRepository):
             current_env = os.environ.copy()
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
-            lfs.lfs_push(self.get_root_path(), remote, branch, progress_wrapper, current_env)
-            if progress_wrapper.canceled(): return UpdateState.CANCEL
+            lfs.lfs_push(
+                self.get_root_path(), remote, branch, progress_wrapper, current_env
+            )
+            if progress_wrapper.canceled():
+                return UpdateState.CANCEL
             state = UpdateState.OK
-            for info in self.repo.remote(remote).push(refspec=branch, progress = progress_wrapper, **kwargs):
+            for info in self.repo.remote(remote).push(
+                refspec=branch, progress=progress_wrapper, **kwargs
+            ):
                 if info.flags & git.PushInfo.ERROR:
                     raise Exception(f"Push failed: {info.summary}")
-                    
+
             return state
         except Exception as e:
             raise e
@@ -303,11 +363,12 @@ class GitRepository(VCRepository):
             raise Exception(f"Fetch failed: {stdout} stderr: {stderr}")
         return len(stdout) > 0 or len(stderr) > 0
 
-    def update(self, progress: Optional[Progress] = None, rebase = True) -> UpdateState:
+    def update(self, progress: Optional[Progress] = None, rebase=True) -> UpdateState:
         self.check_index_lock()
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if remote is None: return UpdateState.NO_REMOTE
+        if remote is None:
+            return UpdateState.NO_REMOTE
         remote_url = self._get_remote_url(remote)
 
         kwargs = {"allow-unrelated-histories": True}
@@ -332,17 +393,35 @@ class GitRepository(VCRepository):
             try:
                 lfs_version = self.get_lfs_version()
                 if "Anchorpoint" in lfs_version:
-                    branches = ["@{u}",f"^{branch}"]
-                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch, branches=branches)
+                    branches = ["@{u}", f"^{branch}"]
+                    lfs.lfs_fetch(
+                        self.get_root_path(),
+                        remote,
+                        progress_wrapper,
+                        current_env,
+                        files=folders_to_fetch,
+                        branches=branches,
+                    )
                 else:
-                    print(f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}.")
-                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=folders_to_fetch)
+                    print(
+                        f"Using unoptimized git lfs fetch as it is not supported by the version of LFS {lfs_version}."
+                    )
+                    lfs.lfs_fetch(
+                        self.get_root_path(),
+                        remote,
+                        progress_wrapper,
+                        current_env,
+                        files=folders_to_fetch,
+                    )
             except Exception as e:
                 print(f"Failed to fetch LFS files, continuing: {str(e)}")
-                
-            if progress_wrapper.canceled(): return UpdateState.CANCEL
-            
-            for info in self.repo.remote(remote).pull(progress = progress_wrapper, refspec=branch, **kwargs):
+
+            if progress_wrapper.canceled():
+                return UpdateState.CANCEL
+
+            for info in self.repo.remote(remote).pull(
+                progress=progress_wrapper, refspec=branch, **kwargs
+            ):
                 if info.flags & git.FetchInfo.ERROR:
                     raise Exception(f"Pull failed: {info.note}")
 
@@ -357,7 +436,7 @@ class GitRepository(VCRepository):
         self.check_index_lock()
         try:
             self.repo.git.revert(changelist_id, "-n")
-            
+
             try:
                 # don't revert top-level gitattributes
                 self.repo.git.restore("--staged", ".gitattributes")
@@ -374,7 +453,7 @@ class GitRepository(VCRepository):
 
                 ap.log_error(f"Revert failed: {error}")
                 raise e
-        
+
         self.repo.git.revert("--quit")
 
     def undo_last_commit(self):
@@ -384,13 +463,21 @@ class GitRepository(VCRepository):
         self.check_index_lock()
         self.repo.git.restore(".", "--ours", "--overlay", "--source", changelist_id)
 
-    def restore_files(self, files: list[str], changelist_id: Optional[str] = None, keep_original: bool = False, progress: Optional[Progress] = None):
+    def restore_files(
+        self,
+        files: list[str],
+        changelist_id: Optional[str] = None,
+        keep_original: bool = False,
+        progress: Optional[Progress] = None,
+    ):
         logging.info(f"Restoring files: {files}")
         if not changelist_id:
             changelist_id = "HEAD"
 
         if progress:
-            self.fetch_lfs_files(branches=[changelist_id], paths=files, progress=progress)
+            self.fetch_lfs_files(
+                branches=[changelist_id], paths=files, progress=progress
+            )
 
         if not keep_original:
             self.check_index_lock()
@@ -404,18 +491,23 @@ class GitRepository(VCRepository):
                 kwargs = {}
                 if platform.system() == "Windows":
                     from subprocess import CREATE_NO_WINDOW
+
                     kwargs["creationflags"] = CREATE_NO_WINDOW
 
                 current_env = os.environ.copy()
                 current_env.update(GitRepository.get_git_environment())
-                
+
                 if platform.system() == "Windows":
                     # Set Path to git installation folder so that Git LFS can find git.exe
                     env_path = current_env["PATH"]
-                    current_env["PATH"] = f"{os.path.dirname(install_git.get_git_cmd_path())};{env_path}"
-                    
+                    current_env[
+                        "PATH"
+                    ] = f"{os.path.dirname(install_git.get_git_cmd_path())};{env_path}"
+
                 for file in files:
-                    git_cat_file: subprocess.Popen = self.repo.git.cat_file("blob", f"{changelist_id}:{file}", as_process=True)
+                    git_cat_file: subprocess.Popen = self.repo.git.cat_file(
+                        "blob", f"{changelist_id}:{file}", as_process=True
+                    )
                     apply_filter = subprocess.Popen(
                         [install_git.get_lfs_path(), "smudge"],
                         stdin=git_cat_file.stdout,
@@ -423,7 +515,8 @@ class GitRepository(VCRepository):
                         stderr=subprocess.PIPE,
                         cwd=self.get_root_path(),
                         env=current_env,
-                        **kwargs)
+                        **kwargs,
+                    )
 
                     # get extension of file if it has any
                     split = os.path.splitext(file)
@@ -437,8 +530,12 @@ class GitRepository(VCRepository):
                         f.write(apply_filter.stdout.read())
 
                     # Check for errors
-                    git_cat_file_error = git_cat_file.stderr.read().decode("utf-8").strip()
-                    apply_filter_error = apply_filter.stderr.read().decode("utf-8").strip()
+                    git_cat_file_error = (
+                        git_cat_file.stderr.read().decode("utf-8").strip()
+                    )
+                    apply_filter_error = (
+                        apply_filter.stderr.read().decode("utf-8").strip()
+                    )
 
                     if git_cat_file_error:
                         print(f"Error in git cat-file: {git_cat_file_error}")
@@ -452,14 +549,15 @@ class GitRepository(VCRepository):
                             # This is not an error, it just prints progress
                             pass
                         else:
-                            print(f"Error in smudge filter command: {apply_filter_error}")
+                            print(
+                                f"Error in smudge filter command: {apply_filter_error}"
+                            )
                             raise Exception(apply_filter_error)
             except Exception as e:
                 print(f"Error restoring files {e}")
                 raise e
-                
+
             pass
-            
 
     def clean(self, directories: bool = True):
         if directories:
@@ -479,7 +577,7 @@ class GitRepository(VCRepository):
         if commit_id:
             args.append(commit_id)
         self.repo.git.reset(*args)
-        
+
     def switch_branch(self, branch_name: str, progress: Optional[Progress] = None):
         self.check_index_lock()
 
@@ -492,7 +590,7 @@ class GitRepository(VCRepository):
             except Exception:
                 # Not an error as it is very possible that the branch is called wip/feature and not origin/branch
                 pass
-        
+
         if self.has_pending_changes(True):
             self.stash(True)
 
@@ -510,19 +608,20 @@ class GitRepository(VCRepository):
         kwargs = {}
         if platform.system() == "Windows":
             from subprocess import CREATE_NO_WINDOW
+
             kwargs["creationflags"] = CREATE_NO_WINDOW
 
         process = subprocess.Popen(
-                                args, 
-                                env=current_env,
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.STDOUT,
-                                universal_newlines=True,
-                                bufsize=1, 
-                                cwd=self.get_root_path(),
-                                **kwargs)
+            args,
+            env=current_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+            cwd=self.get_root_path(),
+            **kwargs,
+        )
 
-        
         for line in process.stdout:
             if line is None:
                 break
@@ -535,7 +634,9 @@ class GitRepository(VCRepository):
         if process.returncode != 0:
             raise RuntimeError("Git Switch error: " + str(process.returncode))
 
-    def merge_branch(self, branch_name: str, progress: Optional[Progress] = None) -> bool:
+    def merge_branch(
+        self, branch_name: str, progress: Optional[Progress] = None
+    ) -> bool:
         self.check_index_lock()
 
         current_env = os.environ.copy()
@@ -551,26 +652,28 @@ class GitRepository(VCRepository):
         gpg = shutil.which("gpg")
         if not gpg:
             args.insert(1, "commit.gpgsign=false")
-            args.insert(1, "-c") 
+            args.insert(1, "-c")
 
         kwargs = {}
         if platform.system() == "Windows":
             from subprocess import CREATE_NO_WINDOW
+
             kwargs["creationflags"] = CREATE_NO_WINDOW
 
         process = subprocess.Popen(
-                                args, 
-                                env=current_env,
-                                stdout=subprocess.PIPE, 
-                                stderr=subprocess.STDOUT,
-                                universal_newlines=True,
-                                bufsize=1, 
-                                cwd=self.get_root_path(),
-                                **kwargs)
+            args,
+            env=current_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            bufsize=1,
+            cwd=self.get_root_path(),
+            **kwargs,
+        )
 
         already_merged = False
         has_conflict = False
-        
+
         for line in process.stdout:
             if line is None:
                 break
@@ -593,25 +696,34 @@ class GitRepository(VCRepository):
 
         return not already_merged
 
-        
     def create_branch(self, branch_name: str):
         self.repo.git.switch("-c", branch_name.replace(" ", "-"))
 
     def _get_stash_message(self):
         branch = self.get_current_branch_name()
         return f"!!Anchorpoint<{branch}>"
-    
+
     def _get_stashes(self):
         import re
-        stashes_raw = self.repo.git(no_pager=True).stash("list", "-z").split('\x00')
+
+        stashes_raw = self.repo.git(no_pager=True).stash("list", "-z").split("\x00")
         stashes = []
         for raw_stash in stashes_raw:
             try:
-                id = re.search("\{\d+\}", raw_stash).group().replace("}","").replace("{","")
+                id = (
+                    re.search("\{\d+\}", raw_stash)
+                    .group()
+                    .replace("}", "")
+                    .replace("{", "")
+                )
                 msg = re.search(": .*", raw_stash).group().replace(": ", "")
                 branch_result = re.search("!!Anchorpoint<.*>", raw_stash)
                 if branch_result:
-                    branch = branch_result.group().replace("!!Anchorpoint<", "").replace(">", "")
+                    branch = (
+                        branch_result.group()
+                        .replace("!!Anchorpoint<", "")
+                        .replace(">", "")
+                    )
                 else:
                     branch = None
 
@@ -627,9 +739,7 @@ class GitRepository(VCRepository):
 
         self.check_index_lock()
         message = self._get_stash_message()
-        kwargs = {
-            "message": message
-            }
+        kwargs = {"message": message}
         if include_untracked:
             kwargs["include_untracked"] = True
 
@@ -664,23 +774,31 @@ class GitRepository(VCRepository):
         branch = self.get_current_branch_name()
         stashes = self._get_stashes()
         for stash in stashes:
-            if stash.branch == branch: 
+            if stash.branch == branch:
                 return stash
         return None
-    
+
     def drop_stash(self, stash: Stash):
         self.repo.git.stash("drop", stash.id)
 
     def branch_has_stash(self):
         return self.get_branch_stash() is not None
-    
+
     def get_stash_change_count(self, stash: Stash):
-        changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "--name-status").split('\n')
+        changes = (
+            self.repo.git(no_pager=True)
+            .stash("show", stash.id, "-u", "--name-status")
+            .split("\n")
+        )
         return len(changes)
 
     def get_stash_changes(self, stash: Stash):
-        status_and_changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "-z", "--name-status").split('\x00')
-      
+        status_and_changes = (
+            self.repo.git(no_pager=True)
+            .stash("show", stash.id, "-u", "-z", "--name-status")
+            .split("\x00")
+        )
+
         changes = Changes()
         i = 0
         while i < len(status_and_changes):
@@ -688,13 +806,13 @@ class GitRepository(VCRepository):
                 kind = status_and_changes[i]
                 if kind == "":
                     break
-                filename = status_and_changes[i+1]
-                
-                if len(kind) > 1: #<X><score>
-                    renamed_filename = status_and_changes[i+2]
-                    i = i+3
+                filename = status_and_changes[i + 1]
+
+                if len(kind) > 1:  # <X><score>
+                    renamed_filename = status_and_changes[i + 2]
+                    i = i + 3
                 else:
-                    i = i+2
+                    i = i + 2
                     renamed_filename = None
 
                 if renamed_filename:
@@ -709,11 +827,11 @@ class GitRepository(VCRepository):
                     changes.renamed_files.append(change)
                 else:
                     changes.modified_files.append(change)
-                
+
             except Exception as e:
                 print(f"error in list_stash_changes: {str(e)}")
                 break
-            
+
         return changes
 
     def get_remote_url(self):
@@ -722,9 +840,9 @@ class GitRepository(VCRepository):
             remote = self._get_default_remote(branch)
             urls = self.repo.remote(remote).urls
             return next(urls)
-            
+
         return None
-    
+
     def update_remote_url(self, url):
         if not self.has_remote():
             self.add_remote(url)
@@ -739,7 +857,9 @@ class GitRepository(VCRepository):
                         self.repo.git.checkout("-b", "master", "origin/master")
                         break
             else:
-                raise Exception("Cannot change remote URL because there are pending changes")
+                raise Exception(
+                    "Cannot change remote URL because there are pending changes"
+                )
         else:
             try:
                 branch = self._get_current_branch()
@@ -752,8 +872,7 @@ class GitRepository(VCRepository):
 
             # Make a prune fetch to remove outdated refs from the old remote
             self.repo.git.fetch("--all", "-p")
-        
-    
+
     def is_unborn(self):
         try:
             self.repo.rev_parse("HEAD")
@@ -773,13 +892,18 @@ class GitRepository(VCRepository):
             return "6ef19b41225c5369f1c104d45d8d85efa9b057b53b14b4b9b939dd74decc5321"
 
     def has_pending_changes(self, include_untracked):
-        if include_untracked: return self.get_pending_changes().size() > 0 or self.get_pending_changes(True).size() > 0
-        diff = self.repo.index.diff(None) 
+        if include_untracked:
+            return (
+                self.get_pending_changes().size() > 0
+                or self.get_pending_changes(True).size() > 0
+            )
+        diff = self.repo.index.diff(None)
         return len(diff) > 0 or self.get_pending_changes(True).size() > 0
 
     def _get_pending_changes(self, staged: bool, *args, **kwargs):
         from git.util import finalize_process
         import sys
+
         defenc = sys.getfilesystemencoding()
 
         self.check_index_lock()
@@ -788,44 +912,46 @@ class GitRepository(VCRepository):
         root = self.get_root_path()
 
         # make sure we get all files, not only untracked directories
-        proc = self.repo.git(no_pager=True).status(*args, "-z",
-                               porcelain=True,
-                               untracked_files=True,
-                               as_process=True,
-                               **kwargs)
-        
+        proc = self.repo.git(no_pager=True).status(
+            *args, "-z", porcelain=True, untracked_files=True, as_process=True, **kwargs
+        )
+
         for output in proc.stdout:
             line_decoded = output.decode(defenc)
-            lines_decoded = line_decoded.split('\x00')
+            lines_decoded = line_decoded.split("\x00")
             for line in lines_decoded:
                 statii = line[:2]
                 if len(statii) != 2:
                     continue
-                filename = line[3:].rstrip('\x00')
-                
-                if filename.endswith("/") and os.path.exists(os.path.join(root,filename,".git")):
-                    raise Exception(f"Another Git repository found in {filename}. Please remove it and try again.")
-                
+                filename = line[3:].rstrip("\x00")
+
+                if filename.endswith("/") and os.path.exists(
+                    os.path.join(root, filename, ".git")
+                ):
+                    raise Exception(
+                        f"Another Git repository found in {filename}. Please remove it and try again."
+                    )
+
                 if staged:
                     status = statii[0]
                 else:
                     status = statii[1]
-                
+
                 if status == " ":
                     continue
 
                 if status == "M":
-                    changes.modified_files.append(Change(path = filename))
+                    changes.modified_files.append(Change(path=filename))
 
                 elif status == "A" or (status == "?" and not staged):
-                    changes.new_files.append(Change(path = filename))
+                    changes.new_files.append(Change(path=filename))
 
                 elif status == "R":
-                    changes.renamed_files.append(Change(path = filename))
+                    changes.renamed_files.append(Change(path=filename))
 
                 elif status == "D":
-                    changes.deleted_files.append(Change(path = filename))
-                
+                    changes.deleted_files.append(Change(path=filename))
+
         finalize_process(proc)
         return changes
 
@@ -837,26 +963,30 @@ class GitRepository(VCRepository):
         changes.modified_files.extend(staged_changes.modified_files)
         changes.renamed_files.extend(staged_changes.renamed_files)
         return changes
-    
+
     def get_ignored_files(self, paths: list[str] = []):
         ignored_files = []
-        status_lines = self.repo.git(no_pager=True).status(*paths, porcelain=True, untracked_files=True, ignored=True).splitlines()
+        status_lines = (
+            self.repo.git(no_pager=True)
+            .status(*paths, porcelain=True, untracked_files=True, ignored=True)
+            .splitlines()
+        )
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
                 marker = split[0]
                 if marker == "!!":
-                    file = " ".join(split[1:]).replace("\"", "")
+                    file = " ".join(split[1:]).replace('"', "")
                     ignored_files.append(file)
         return ignored_files
 
     def get_pending_changes(self, staged: bool = False) -> Changes:
         self.check_index_lock()
         changes = Changes()
-        
+
         try:
             changes = self._get_pending_changes(staged, "-uall")
-           
+
         except ValueError as e:
             print(e)
             pass
@@ -877,14 +1007,14 @@ class GitRepository(VCRepository):
             self._get_file_changes(diff, changes)
 
         except Exception as e:
-            print (e)
+            print(e)
 
         return changes
-    
+
     def diff_changelist(self, id: str) -> list[str]:
         try:
             changes = self.repo.git.diff("--name-only", "-z", id)
-            return changes.split('\x00')
+            return changes.split("\x00")
 
         except Exception as e:
             print(e)
@@ -893,6 +1023,7 @@ class GitRepository(VCRepository):
 
     def _normalize_string(self, path):
         import unicodedata
+
         if not unicodedata.is_normalized("NFC", path):
             return unicodedata.normalize("NFC", path)
         else:
@@ -902,7 +1033,7 @@ class GitRepository(VCRepository):
         with open(file, "w", encoding="utf-8") as f:
             f.writelines("{}\n".format(self._normalize_string(x)) for x in paths)
 
-    def git_status(self, show_progress = False):
+    def git_status(self, show_progress=False):
         process = None
         try:
             if not show_progress:
@@ -913,19 +1044,21 @@ class GitRepository(VCRepository):
             kwargs = {}
             if platform.system() == "Windows":
                 from subprocess import CREATE_NO_WINDOW
+
                 kwargs["creationflags"] = CREATE_NO_WINDOW
 
             current_env = os.environ.copy()
             current_env.update(GitRepository.get_git_environment())
             process = subprocess.Popen(
-                                    args, 
-                                    env=current_env,
-                                    stdout=subprocess.PIPE, 
-                                    stderr=subprocess.STDOUT,
-                                    universal_newlines=True,
-                                    bufsize=1, 
-                                    cwd=self.get_root_path(),
-                                    **kwargs)
+                args,
+                env=current_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                universal_newlines=True,
+                bufsize=1,
+                cwd=self.get_root_path(),
+                **kwargs,
+            )
 
             progress = None
             for line in process.stdout:
@@ -935,25 +1068,27 @@ class GitRepository(VCRepository):
                 if "Refresh index" in line:
                     if not progress:
                         progress = ap.Progress("Refreshing Git Index", infinite=False)
-                    
+
                     print(line)
-                    match = re.search(r'(\d+)/(\d+)', line)
+                    match = re.search(r"(\d+)/(\d+)", line)
                     if match:
                         from_value, to_value = map(int, match.groups())
-                        progress.report_progress(from_value / to_value if to_value != 0 else 0)
-                    
+                        progress.report_progress(
+                            from_value / to_value if to_value != 0 else 0
+                        )
+
         except Exception as e:
             print(f"Failed to call git status: {str(e)}")
         finally:
-            if process: 
+            if process:
                 process.wait()
-    
+
     def git_log(self):
         if self.has_remote() and not self.is_unborn():
             return self.repo.git(no_pager=True).log("-10", "@{u}")
         else:
             return self.repo.git(no_pager=True).log("-10")
-        
+
     def git_list_config(self):
         return self.repo.git.config("--list", "--show-origin")
 
@@ -970,20 +1105,33 @@ class GitRepository(VCRepository):
             self.repo.git.add("--sparse", *args, **kwargs)
         except Exception as e:
             import anchorpoint
+
             exception_string = str(e)
             print(f"Failed to call git add (no progress): {exception_string}")
-            if "no space left on device" in exception_string or "not enough space" in exception_string:
-                anchorpoint.UI().show_error("Could not Commit", "No space left on device", duration=10000)
+            if (
+                "no space left on device" in exception_string
+                or "not enough space" in exception_string
+            ):
+                anchorpoint.UI().show_error(
+                    "Could not Commit", "No space left on device", duration=10000
+                )
             if "fsync error on '.git/objects/" in exception_string:
-                anchorpoint.UI().show_error("Could not Commit", "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.", duration=10000)
+                anchorpoint.UI().show_error(
+                    "Could not Commit",
+                    "Git has problems with your project folder. Please make sure that you are not using Git on a network drive, mounted drive, or e.g. Dropbox.",
+                    duration=10000,
+                )
             raise e
 
     def _add_files(self, count, progress_callback, *args, **kwargs):
         from git.util import finalize_process
+
         self.check_index_lock()
         proc = None
         try:
-            proc: subprocess.Popen = self.repo.git.add(*args, "--verbose", "--sparse", **kwargs, as_process=True)
+            proc: subprocess.Popen = self.repo.git.add(
+                *args, "--verbose", "--sparse", **kwargs, as_process=True
+            )
             proc.stderr.close()
             if progress_callback:
                 i = 0
@@ -993,14 +1141,14 @@ class GitRepository(VCRepository):
                     if not output and proc.poll() is not None:
                         break
                     if output:
-                        cont = progress_callback(i,count-1)
+                        cont = progress_callback(i, count - 1)
                         if not cont:
                             if platform.system() == "Windows":
                                 os.system(f"taskkill /F /T /PID {proc.pid}")
                             else:
                                 proc.terminate()
                             return
-                
+
             if proc.returncode != 0:
                 print(f"Failed to call git add: {proc.returncode}")
                 self._run_git_status()
@@ -1012,7 +1160,7 @@ class GitRepository(VCRepository):
 
         except Exception as e:
             raise e
-            
+
         finally:
             if proc:
                 try:
@@ -1028,12 +1176,14 @@ class GitRepository(VCRepository):
         self.check_index_lock()
         self.repo.git.restore("--staged", ".")
 
-    def stage_files(self, paths: list[str], progress_callback = None):
+    def stage_files(self, paths: list[str], progress_callback=None):
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "stage_spec")
                 self._write_pathspec_file(paths, pathspec)
-                self._add_files(len(paths), progress_callback, pathspec_from_file=pathspec)
+                self._add_files(
+                    len(paths), progress_callback, pathspec_from_file=pathspec
+                )
         else:
             self._add_files(len(paths), progress_callback, *paths)
 
@@ -1043,13 +1193,17 @@ class GitRepository(VCRepository):
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "unstage_spec")
                 self._write_pathspec_file(paths, pathspec)
-                self.repo.git.restore("--staged", pathspec_from_file=pathspec)        
+                self.repo.git.restore("--staged", pathspec_from_file=pathspec)
         else:
             self.repo.git.restore("--staged", *paths)
 
-    def sync_staged_files(self, paths: list[str], add_all, progress_callback = None):
+    def sync_staged_files(self, paths: list[str], add_all, progress_callback=None):
         if not self.is_unborn():
-            staged_files = self.repo.git(no_pager=True).diff("--name-only", "--staged", "-z").split('\x00')
+            staged_files = (
+                self.repo.git(no_pager=True)
+                .diff("--name-only", "--staged", "-z")
+                .split("\x00")
+            )
             staged_files[:] = (file for file in staged_files if file != "")
             if len(staged_files) > 0:
                 self.unstage_files(staged_files)
@@ -1064,7 +1218,7 @@ class GitRepository(VCRepository):
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "rm_spec")
                 self._write_pathspec_file(paths, pathspec)
-                self.repo.git.rm(pathspec_from_file=pathspec)        
+                self.repo.git.rm(pathspec_from_file=pathspec)
         else:
             self.repo.git.rm(*paths)
 
@@ -1074,8 +1228,8 @@ class GitRepository(VCRepository):
         gpg = shutil.which("gpg")
         if not gpg:
             args.insert(1, "commit.gpgsign=false")
-            args.insert(1, "-c") 
-            
+            args.insert(1, "-c")
+
         install_git.run_git_command(args, cwd=self.get_root_path())
 
     def get_git_dir(self):
@@ -1093,45 +1247,55 @@ class GitRepository(VCRepository):
         rel_paths = [os.path.relpath(path, repo_dir) for path in paths]
         # take slices of up to 20 paths and call track
         for i in range(0, len(rel_paths), 20):
-            self.repo.git.lfs("track", rel_paths[i:i+20])
+            self.repo.git.lfs("track", rel_paths[i : i + 20])
 
     def get_deleted_files(self):
         self.check_index_lock()
         unstaged_files = []
         staged_files = []
-        status_lines = self.repo.git(no_pager=True).status(porcelain=True, untracked_files=True).splitlines()
+        status_lines = (
+            self.repo.git(no_pager=True)
+            .status(porcelain=True, untracked_files=True)
+            .splitlines()
+        )
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
                 marker = split[0]
                 marker_length = len(marker)
-                if marker_length == 0: 
+                if marker_length == 0:
                     continue
 
-                file = " ".join(split[1:]).replace("\"", "")
+                file = " ".join(split[1:]).replace('"', "")
                 if marker[0] == "D":
                     unstaged_files.append(file)
 
                 if marker_length > 1 and marker[1] == "D":
                     staged_files.append(file)
-                
+
         return unstaged_files, staged_files
 
     def _is_conflict(self, status_ids: str):
-        if len(status_ids) <= 1: return False
-        if "U" in status_ids: return True
+        if len(status_ids) <= 1:
+            return False
+        if "U" in status_ids:
+            return True
         return status_ids in ["DD", "AA"]
-    
+
     def is_file_conflicting(self, path: str):
         return len(self.get_conflicts(path)) != 0
 
     def get_file_conflict_status(self, rel_path: str):
         self.check_index_lock()
-        status_lines = self.repo.git(no_pager=True).status("-z", rel_path, porcelain=True, untracked_files=True).split('\x00')
-        
+        status_lines = (
+            self.repo.git(no_pager=True)
+            .status("-z", rel_path, porcelain=True, untracked_files=True)
+            .split("\x00")
+        )
+
         if len(status_lines) == 1:
             return None, None
-        
+
         marker = status_lines[0].split()[0]
         if marker == "UU":
             return ap.VCFileStatus.Modified, ap.VCFileStatus.Modified
@@ -1155,15 +1319,23 @@ class GitRepository(VCRepository):
 
         conflicts = []
         if path:
-            status_lines = self.repo.git(no_pager=True).status(path, "--untracked-files=all", porcelain=True).splitlines()
+            status_lines = (
+                self.repo.git(no_pager=True)
+                .status(path, "--untracked-files=all", porcelain=True)
+                .splitlines()
+            )
         else:
-            status_lines = self.repo.git(no_pager=True).status("--untracked-files=all", porcelain=True).splitlines()
+            status_lines = (
+                self.repo.git(no_pager=True)
+                .status("--untracked-files=all", porcelain=True)
+                .splitlines()
+            )
         for status in status_lines:
             split = status.split()
             if len(split) > 1:
                 status_ids = split[0]
                 if self._is_conflict(status_ids):
-                    conflicts.append(" ".join(split[1:]).replace("\"", ""))    
+                    conflicts.append(" ".join(split[1:]).replace('"', ""))
 
         return conflicts
 
@@ -1176,9 +1348,10 @@ class GitRepository(VCRepository):
         repodir = self._get_repo_internal_dir()
         rebase_dirs = ["rebase-merge", "rebase-apply"]
         for dir in rebase_dirs:
-            if os.path.exists(os.path.join(repodir, dir)): return True
+            if os.path.exists(os.path.join(repodir, dir)):
+                return True
         return False
-        
+
     def continue_rebasing(self):
         self.check_index_lock()
         configs = ["core.editor=true"]
@@ -1193,7 +1366,7 @@ class GitRepository(VCRepository):
     def is_merging(self):
         repodir = self._get_repo_internal_dir()
         return os.path.exists(os.path.join(repodir, "MERGE_HEAD"))
-        
+
     def continue_merge(self):
         self.check_index_lock()
         configs = ["core.editor=true"]
@@ -1211,11 +1384,15 @@ class GitRepository(VCRepository):
         with open(file, "r", encoding="utf-8") as f:
             while True:
                 line = f.readline()
-                if not line: break
+                if not line:
+                    break
 
-                if line.startswith("<<<<<<<"): continue
-                if line.startswith(">>>>>>>"): continue
-                if line.startswith("======="): continue
+                if line.startswith("<<<<<<<"):
+                    continue
+                if line.startswith(">>>>>>>"):
+                    continue
+                if line.startswith("======="):
+                    continue
 
                 attribute_set.add(line)
 
@@ -1223,7 +1400,9 @@ class GitRepository(VCRepository):
             for attr in attribute_set:
                 f.write(attr)
 
-    def conflict_resolved(self, state: ConflictResolveState, paths: Optional[list[str]] = None):
+    def conflict_resolved(
+        self, state: ConflictResolveState, paths: Optional[list[str]] = None
+    ):
         self.check_index_lock()
 
         checkout_ours = []
@@ -1233,12 +1412,18 @@ class GitRepository(VCRepository):
         relative_paths = set()
         if paths:
             for path in paths:
-                relative_paths.add(os.path.relpath(path, self.get_root_path()).replace("\\", "/"))
+                relative_paths.add(
+                    os.path.relpath(path, self.get_root_path()).replace("\\", "/")
+                )
 
-        file_status = self.repo.git(no_pager=True).status("--porcelain", "--untracked-files=all", "-z").split('\x00')
+        file_status = (
+            self.repo.git(no_pager=True)
+            .status("--porcelain", "--untracked-files=all", "-z")
+            .split("\x00")
+        )
         for entry in file_status:
             try:
-                status, file = entry.split(' ', 1)
+                status, file = entry.split(" ", 1)
             except:
                 continue
 
@@ -1277,7 +1462,7 @@ class GitRepository(VCRepository):
                     checkout_ours.append(file)
                 elif state is ConflictResolveState.TAKE_THEIRS:
                     checkout_theirs.append(file)
-        
+
             # DU: The file has been deleted in the current branch but updated in the merging branch.
             if status == "DU":
                 if state is ConflictResolveState.TAKE_OURS:
@@ -1297,6 +1482,7 @@ class GitRepository(VCRepository):
                 remove.append(file)
 
         lock_disabler = ap.LockDisabler()
+
         def make_writable(paths: list[str]):
             for path in paths:
                 utility.make_file_writable(path)
@@ -1309,25 +1495,46 @@ class GitRepository(VCRepository):
 
         if len(checkout_ours) > 0:
             make_writable(checkout_ours)
-            run_with_pathspec(checkout_ours,
-                                lambda pathspec: self.repo.git.checkout("--ours", pathspec_from_file=pathspec))
-            run_with_pathspec(checkout_ours,
-                                lambda pathspec: self.repo.git.add("--sparse", pathspec_from_file=pathspec))
+            run_with_pathspec(
+                checkout_ours,
+                lambda pathspec: self.repo.git.checkout(
+                    "--ours", pathspec_from_file=pathspec
+                ),
+            )
+            run_with_pathspec(
+                checkout_ours,
+                lambda pathspec: self.repo.git.add(
+                    "--sparse", pathspec_from_file=pathspec
+                ),
+            )
 
         if len(checkout_theirs) > 0:
             make_writable(checkout_theirs)
-            run_with_pathspec(checkout_theirs,
-                                lambda pathspec: self.repo.git.checkout("--theirs", pathspec_from_file=pathspec))
-            run_with_pathspec(checkout_theirs,
-                                lambda pathspec: self.repo.git.add("--sparse", pathspec_from_file=pathspec))
+            run_with_pathspec(
+                checkout_theirs,
+                lambda pathspec: self.repo.git.checkout(
+                    "--theirs", pathspec_from_file=pathspec
+                ),
+            )
+            run_with_pathspec(
+                checkout_theirs,
+                lambda pathspec: self.repo.git.add(
+                    "--sparse", pathspec_from_file=pathspec
+                ),
+            )
 
         if len(remove) > 0:
             make_writable(remove)
-            run_with_pathspec(remove,
-                                lambda pathspec: self.repo.git.rm("--sparse", pathspec_from_file=pathspec))
-            
+            run_with_pathspec(
+                remove,
+                lambda pathspec: self.repo.git.rm(
+                    "--sparse", pathspec_from_file=pathspec
+                ),
+            )
 
-    def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+    def launch_external_merge(
+        self, tool: Optional[str] = None, paths: Optional[list[str]] = None
+    ):
         if tool == "vscode" or tool == "code":
             if self._command_exists("code") is False:
                 raise Exception("Could not find external Diff Tool")
@@ -1338,25 +1545,29 @@ class GitRepository(VCRepository):
         if tool is None:
             raise Exception("No tool configured")
         if paths is not None:
-            self.repo.git(c = "mergetool.keepBackup=false").mergetool(tool = tool, *paths)
+            self.repo.git(c="mergetool.keepBackup=false").mergetool(tool=tool, *paths)
         else:
-            self.repo.git(c = "mergetool.keepBackup=false").mergetool(tool = tool)
+            self.repo.git(c="mergetool.keepBackup=false").mergetool(tool=tool)
 
-    def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
+    def launch_external_diff(
+        self, tool: Optional[str] = None, paths: Optional[list[str]] = None
+    ):
         if tool == "vscode" or tool == "code":
             if self._command_exists("code") is False:
                 raise Exception("Could not find external Diff Tool")
             self.repo.git.config("diff.tool", "vscode")
-            self.repo.git.config("difftool.vscode.cmd", "code -n --wait --diff $LOCAL $REMOTE")
+            self.repo.git.config(
+                "difftool.vscode.cmd", "code -n --wait --diff $LOCAL $REMOTE"
+            )
             tool = "vscode"
         if tool is None:
             raise Exception("No tool configured")
         if paths is not None:
-            self.repo.git.difftool("--no-prompt", tool = tool, *paths)
-            self.repo.git.difftool("--no-prompt", "--cached", tool = tool, *paths)
+            self.repo.git.difftool("--no-prompt", tool=tool, *paths)
+            self.repo.git.difftool("--no-prompt", "--cached", tool=tool, *paths)
         else:
-            self.repo.git.difftool("--no-prompt", tool = tool)
-            self.repo.git.difftool("--no-prompt", "--cached", tool = tool)
+            self.repo.git.difftool("--no-prompt", tool=tool)
+            self.repo.git.difftool("--no-prompt", "--cached", tool=tool)
 
     def get_current_branch_name(self) -> str:
         return self.repo.git.branch("--show-current")
@@ -1365,7 +1576,7 @@ class GitRepository(VCRepository):
         merge_head = os.path.join(self._get_repo_internal_dir(), "MERGE_HEAD")
         if not os.path.exists(merge_head):
             return None
-        
+
         try:
             with open(merge_head, "r", encoding="utf-8") as f:
                 return f.readline().replace("\n", "").strip()
@@ -1384,12 +1595,17 @@ class GitRepository(VCRepository):
         try:
             if id is None:
                 return id
-            
-            merge_branch = self.repo.git(no_pager=True).branch("-a", "--points-at", id).split('\n')[0].strip()
+
+            merge_branch = (
+                self.repo.git(no_pager=True)
+                .branch("-a", "--points-at", id)
+                .split("\n")[0]
+                .strip()
+            )
             if "->" in merge_branch:
                 merge_branch = merge_branch.split("->")[1].strip()
             if merge_branch.startswith("remotes/"):
-                merge_branch = merge_branch[len("remotes/"):]
+                merge_branch = merge_branch[len("remotes/") :]
             return merge_branch
         except Exception as e:
             print(f"Error getting merge branch: {e}")
@@ -1408,86 +1624,107 @@ class GitRepository(VCRepository):
         branches = []
         local_branches = set()
         for ref in self.repo.branches:
-            if ref.name == "HEAD": continue
+            if ref.name == "HEAD":
+                continue
             model = _map_ref(ref)
             branches.append(model)
             local_branches.add(model.name)
         for remote in self.repo.remotes:
             for ref in remote.refs:
-                if "HEAD" in ref.name: continue
+                if "HEAD" in ref.name:
+                    continue
                 model = _map_ref(ref)
                 remote_prefix = f"{remote}/"
                 if model.name.startswith(remote_prefix):
-                    branch_name = model.name[len(remote_prefix):]
+                    branch_name = model.name[len(remote_prefix) :]
                     if branch_name in local_branches:
                         continue
 
                 branches.append(model)
 
         return branches
-    
+
     def get_folders_from_tree(self, recursive: bool = True) -> list[str]:
         if self.is_unborn():
             return []
         try:
             if recursive:
-                return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split("\n")
+                return self.repo.git.ls_tree("-r", "-d", "--name-only", "HEAD").split(
+                    "\n"
+                )
             else:
                 return self.repo.git.ls_tree("-d", "--name-only", "HEAD").split("\n")
         except Exception as e:
-            if("Not a valid object name HEAD" in str(e)):
+            if "Not a valid object name HEAD" in str(e):
                 return []
-    
+
     def is_file_in_tree(self, file_path):
         try:
-            relative_path = os.path.relpath(file_path, self.repo.working_tree_dir).replace("\\","/")
+            relative_path = os.path.relpath(
+                file_path, self.repo.working_tree_dir
+            ).replace("\\", "/")
             head_commit = self.repo.head.commit
             tree = head_commit.tree
             blob = tree[relative_path]
-            is_blob = blob is not None and blob.type == 'blob'
+            is_blob = blob is not None and blob.type == "blob"
             return is_blob
         except Exception:
             return False
-        
+
     def _check_sparse_checkout_lock(self):
         # check if the sparse checkout is already locked
-        sparse_checkout_lock = os.path.join(self.get_git_dir(), "info", "sparse-checkout.lock")
+        sparse_checkout_lock = os.path.join(
+            self.get_git_dir(), "info", "sparse-checkout.lock"
+        )
         if os.path.exists(sparse_checkout_lock):
             # check if git is running. If not, the sparse-checkout.lock is a leftover of a crashed git command
             if utility.is_git_running():
-                raise PermissionError("Git process already running and the sparse-checkout is locked")
-            
+                raise PermissionError(
+                    "Git process already running and the sparse-checkout is locked"
+                )
+
             # remove the leftover lock
             try:
                 os.remove(sparse_checkout_lock)
                 logging.info(f"removed sparse-checkout.lock: {sparse_checkout_lock}")
             except Exception as e:
-                logging.info(f"failed to remove sparse-checkout.lock: {sparse_checkout_lock}. Error: {str(e)}")    
+                logging.info(
+                    f"failed to remove sparse-checkout.lock: {sparse_checkout_lock}. Error: {str(e)}"
+                )
                 raise e
-    
-    def handle_sparse_checkout_after_commit(self, changes, progress: Optional[Progress] = None):
+
+    def handle_sparse_checkout_after_commit(
+        self, changes, progress: Optional[Progress] = None
+    ):
         if not self.has_remote():
             return
         self._check_sparse_checkout_lock()
         try:
             sparse_checkout_folders = self.get_sparse_checkout_folder_set()
-            sparse_checkout_folders = {folder + '/' if not folder.endswith('/') else folder for folder in sparse_checkout_folders}
+            sparse_checkout_folders = {
+                folder + "/" if not folder.endswith("/") else folder
+                for folder in sparse_checkout_folders
+            }
         except Exception as e:
-            if("is not sparse" in str(e)):
+            if "is not sparse" in str(e):
                 return
             raise e
         potential_sparse_checkout_folders = set()
-
 
         def process_changes(changes):
             for change in changes:
                 change_path = change.path
 
-                if any(change_path.startswith(sparse_folder) for sparse_folder in sparse_checkout_folders):
-                    continue 
+                if any(
+                    change_path.startswith(sparse_folder)
+                    for sparse_folder in sparse_checkout_folders
+                ):
+                    continue
 
-                folder = '/'.join(change_path.split('/')[:-1]) + '/'
-                if any(sparse_folder == folder for sparse_folder in sparse_checkout_folders):
+                folder = "/".join(change_path.split("/")[:-1]) + "/"
+                if any(
+                    sparse_folder == folder for sparse_folder in sparse_checkout_folders
+                ):
                     continue
                 potential_sparse_checkout_folders.add(folder)
 
@@ -1498,21 +1735,31 @@ class GitRepository(VCRepository):
 
         new_sparse_checkout_folders = set()
         for folder in potential_sparse_checkout_folders:
-            if any(folder.startswith(other) for other in potential_sparse_checkout_folders if other != folder):
+            if any(
+                folder.startswith(other)
+                for other in potential_sparse_checkout_folders
+                if other != folder
+            ):
                 continue
             new_sparse_checkout_folders.add(folder)
 
-        sparse_checkout_folders = sparse_checkout_folders.union(new_sparse_checkout_folders)
+        sparse_checkout_folders = sparse_checkout_folders.union(
+            new_sparse_checkout_folders
+        )
         progress_wrapper = None if not progress else _InternalProgressFromFile(progress)
-        self._sparse_checkout_folders(sparse_checkout_folders, new_sparse_checkout_folders, progress=progress_wrapper)
-    
+        self._sparse_checkout_folders(
+            sparse_checkout_folders,
+            new_sparse_checkout_folders,
+            progress=progress_wrapper,
+        )
+
     def get_sparse_checkout_folder_set(self):
         if not self.has_remote():
             return set()
         self._check_sparse_checkout_lock()
         try:
             sparse_folder_set = set(self.repo.git.sparse_checkout("list").split("\n"))
-            sparse_folder_set.add('.ap')
+            sparse_folder_set.add(".ap")
             return sparse_folder_set
         except Exception as e:
             message = str(e)
@@ -1531,44 +1778,70 @@ class GitRepository(VCRepository):
                 return False
             raise e
 
-    def _sparse_checkout_folders(self, folder_set, new_sparse_checkout_folders, progress: git.RemoteProgress):
+    def _sparse_checkout_folders(
+        self, folder_set, new_sparse_checkout_folders, progress: git.RemoteProgress
+    ):
         self._check_sparse_checkout_lock()
         try:
             branch = self._get_current_branch()
             remote = self._get_default_remote(branch)
-            if remote is None: return UpdateState.NO_REMOTE
+            if remote is None:
+                return UpdateState.NO_REMOTE
             remote_url = self._get_remote_url(remote)
 
             current_env = os.environ.copy()
             current_env.update(GitRepository.get_git_environment(remote_url))
             progress_wrapper = None if not progress else _InternalProgress(progress)
-            
+
             if len(new_sparse_checkout_folders) != 0 and self._has_upstream():
-                lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=list(new_sparse_checkout_folders))
-            
+                lfs.lfs_fetch(
+                    self.get_root_path(),
+                    remote,
+                    progress_wrapper,
+                    current_env,
+                    files=list(new_sparse_checkout_folders),
+                )
+
             try:
-                if progress_wrapper and progress_wrapper.canceled(): return True
-                if progress_wrapper and progress_wrapper.progress and progress_wrapper.progress.progress:
-                    progress_wrapper.progress.progress.ap_progress.set_text("Checking out Files")
+                if progress_wrapper and progress_wrapper.canceled():
+                    return True
+                if (
+                    progress_wrapper
+                    and progress_wrapper.progress
+                    and progress_wrapper.progress.progress
+                ):
+                    progress_wrapper.progress.progress.ap_progress.set_text(
+                        "Checking out Files"
+                    )
                     progress_wrapper.progress.progress.ap_progress.stop_progress()
                     progress_wrapper.progress.progress.ap_progress.set_cancelable(False)
             except:
                 pass
-            proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
-            bytes_data = "\n".join(folder_set).encode('utf-8')
+            proc = self.repo.git.sparse_checkout(
+                "set",
+                "--sparse-index",
+                "--stdin",
+                as_process=True,
+                istream=subprocess.PIPE,
+            )
+            bytes_data = "\n".join(folder_set).encode("utf-8")
             proc.stdin.write(bytes_data)
             proc.stdin.close()
             proc.wait()
             if proc.returncode != 0:
-                raise Exception(f"Failed to call git sparse checkout: {proc.returncode}")
+                raise Exception(
+                    f"Failed to call git sparse checkout: {proc.returncode}"
+                )
 
         except Exception as e:
             raise Exception(f"Failed to call git sparse checkout: {str(e)}")
-    
-    def sparse_checkout_folder(self, relative_folder_path: str, progress: Optional[Progress] = None) -> bool:
+
+    def sparse_checkout_folder(
+        self, relative_folder_path: str, progress: Optional[Progress] = None
+    ) -> bool:
         if not self.has_remote():
             return False
-        
+
         progress_wrapper = None if not progress else _InternalProgressFromFile(progress)
 
         def disable_sparse():
@@ -1585,8 +1858,16 @@ class GitRepository(VCRepository):
                 current_env.update(GitRepository.get_git_environment(remote_url))
                 progress_wrapper = None if not progress else _InternalProgress(progress)
                 if self._has_upstream():
-                    lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, files=sparse_folder_list, exclude_files=True)
-                if progress_wrapper and progress_wrapper.canceled(): return True
+                    lfs.lfs_fetch(
+                        self.get_root_path(),
+                        remote,
+                        progress_wrapper,
+                        current_env,
+                        files=sparse_folder_list,
+                        exclude_files=True,
+                    )
+                if progress_wrapper and progress_wrapper.canceled():
+                    return True
                 self.repo.git.sparse_checkout("disable")
 
             except Exception as e:
@@ -1616,32 +1897,37 @@ class GitRepository(VCRepository):
             if all_root_folders_sparse_roots:
                 disable_sparse()
             else:
-                self._sparse_checkout_folders(folder_set, new_sparse_checkout_folders, progress_wrapper)
+                self._sparse_checkout_folders(
+                    folder_set, new_sparse_checkout_folders, progress_wrapper
+                )
 
         return True
-        
+
     def _get_root_folder_set(self, folders):
         root_folder_set = set()
         for folder in folders:
-            if len(folder.split('/')) == 1:
+            if len(folder.split("/")) == 1:
                 root_folder_set.add(folder)
         return root_folder_set
 
     def _filter_sparse_roots(self, sparse_root_set):
-            filtered_sparse_root_set = set()
+        filtered_sparse_root_set = set()
 
-            for root in sparse_root_set:
-                if not any(compare != root and root.startswith(compare) for compare in sparse_root_set):
-                    filtered_sparse_root_set.add(root)
+        for root in sparse_root_set:
+            if not any(
+                compare != root and root.startswith(compare)
+                for compare in sparse_root_set
+            ):
+                filtered_sparse_root_set.add(root)
 
-            return filtered_sparse_root_set
+        return filtered_sparse_root_set
 
     def _generate_sparse_root_set(self, folders, sparse_root_set, relative_folder_path):
         if len(sparse_root_set) == 0:
             filtered_sparse_roots = self._get_root_folder_set(folders)
         else:
             filtered_sparse_roots = self._filter_sparse_roots(sparse_root_set)
-        parent_folder = '/'.join(relative_folder_path.split('/')[:-1])
+        parent_folder = "/".join(relative_folder_path.split("/")[:-1])
         initial_parent_folder = parent_folder
 
         if not parent_folder:
@@ -1656,14 +1942,16 @@ class GitRepository(VCRepository):
             if is_sparse_root:
                 filtered_sparse_roots.remove(parent_folder)
             for folder in folders:
-                if (folder.startswith(parent_folder) and 
-                    not folder == relative_folder_path and 
-                    not initial_parent_folder.startswith(folder) and
-                    len(folder.split('/')) == len(parent_folder.split('/')) + 1):
+                if (
+                    folder.startswith(parent_folder)
+                    and not folder == relative_folder_path
+                    and not initial_parent_folder.startswith(folder)
+                    and len(folder.split("/")) == len(parent_folder.split("/")) + 1
+                ):
                     filtered_sparse_roots.add(folder)
             if is_sparse_root:
                 break
-            parent_folder = '/'.join(parent_folder.split('/')[:-1])
+            parent_folder = "/".join(parent_folder.split("/")[:-1])
         return filtered_sparse_roots
 
     def sparse_unload_folder(self, relative_folder_path: str) -> bool:
@@ -1671,9 +1959,16 @@ class GitRepository(VCRepository):
             return False
         changes = self.get_all_pending_changes()
         relative_folder_path_slash = relative_folder_path + "/"
-        for change in changes.new_files + changes.modified_files + changes.renamed_files + changes.deleted_files:
+        for change in (
+            changes.new_files
+            + changes.modified_files
+            + changes.renamed_files
+            + changes.deleted_files
+        ):
             if change.path.startswith(relative_folder_path_slash):
-                raise Exception(f"Cannot unload folder {relative_folder_path} because it contains uncommitted changes")
+                raise Exception(
+                    f"Cannot unload folder {relative_folder_path} because it contains uncommitted changes"
+                )
 
         self.check_index_lock()
         self._check_sparse_checkout_lock()
@@ -1681,13 +1976,15 @@ class GitRepository(VCRepository):
             try:
                 sparse_root_set = self.get_sparse_checkout_folder_set()
             except Exception as e:
-                if("is not sparse" in str(e)):
+                if "is not sparse" in str(e):
                     sparse_root_set = set()
                 else:
                     raise e
             try:
                 if len(sparse_root_set) == 1 and ".ap" in sparse_root_set:
-                    raise(Exception("Cannot unload root when it is the only sparse root"))
+                    raise (
+                        Exception("Cannot unload root when it is the only sparse root")
+                    )
                 self.repo.git.sparse_checkout("set", "--sparse-index", ".ap")
             except Exception as e:
                 raise e
@@ -1695,39 +1992,53 @@ class GitRepository(VCRepository):
             try:
                 sparse_root_set = self.get_sparse_checkout_folder_set()
             except Exception as e:
-                if("is not sparse" in str(e)):
+                if "is not sparse" in str(e):
                     sparse_root_set = set()
                 else:
                     raise e
 
             if relative_folder_path and relative_folder_path not in sparse_root_set:
                 folders = self.get_folders_from_tree()
-                sparse_root_set = self._generate_sparse_root_set(folders, sparse_root_set, relative_folder_path)
+                sparse_root_set = self._generate_sparse_root_set(
+                    folders, sparse_root_set, relative_folder_path
+                )
             elif relative_folder_path:
                 sparse_root_set.remove(relative_folder_path)
             try:
                 if relative_folder_path:
-                    proc = self.repo.git.sparse_checkout("set", "--sparse-index", "--stdin", as_process=True, istream=subprocess.PIPE)
-                    bytes_data = "\n".join(sparse_root_set).encode('utf-8')
+                    proc = self.repo.git.sparse_checkout(
+                        "set",
+                        "--sparse-index",
+                        "--stdin",
+                        as_process=True,
+                        istream=subprocess.PIPE,
+                    )
+                    bytes_data = "\n".join(sparse_root_set).encode("utf-8")
                     proc.stdin.write(bytes_data)
                     proc.stdin.close()
                 else:
-                    proc = self.repo.git.sparse_checkout("set", "--sparse-index", as_process=True)
+                    proc = self.repo.git.sparse_checkout(
+                        "set", "--sparse-index", as_process=True
+                    )
                 proc.wait()
                 if proc.returncode != 0:
-                    raise Exception(f"Failed to call git sparse checkout: {proc.returncode}")
-                
+                    raise Exception(
+                        f"Failed to call git sparse checkout: {proc.returncode}"
+                    )
+
             except subprocess.CalledProcessError as e:
-                raise Exception(f"Failed to call git sparse checkout: {e.cmd} {e.output}")
+                raise Exception(
+                    f"Failed to call git sparse checkout: {e.cmd} {e.output}"
+                )
 
         return True
-    
+
     def sparse_reapply(self):
         self._check_sparse_checkout_lock()
         try:
             self.repo.git.sparse_checkout("reapply")
         except Exception as e:
-            if("must be in a sparse-checkout" in str(e)):
+            if "must be in a sparse-checkout" in str(e):
                 return
             print(str(e))
             raise e
@@ -1769,20 +2080,29 @@ class GitRepository(VCRepository):
 
     def _get_local_commits(self, has_upstream):
         if has_upstream:
-            if self.is_unborn(): 
+            if self.is_unborn():
                 return []
             return list(self.repo.iter_commits(rev="@{u}..HEAD"))
         else:
             if self.is_unborn():
                 return []
             return list(self.repo.iter_commits())
-        
+
     def get_local_commits(self):
         history = []
         local_commits = self._get_local_commits(self._has_upstream())
-        
+
         for commit in local_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.LOCAL, parents=self._get_commit_parents(commit,HistoryType.LOCAL)))
+            history.append(
+                HistoryEntry(
+                    author=commit.author.email,
+                    id=commit.hexsha,
+                    message=commit.message,
+                    date=commit.authored_date,
+                    type=HistoryType.LOCAL,
+                    parents=self._get_commit_parents(commit, HistoryType.LOCAL),
+                )
+            )
         return history
 
     def get_new_commits(self, base, target):
@@ -1794,26 +2114,40 @@ class GitRepository(VCRepository):
         remote = self._get_default_remote(base)
         if remote:
             base = remote + "/" + base
-            commits = list(self.repo.iter_commits(rev=f"{target}..{base}"))    
+            commits = list(self.repo.iter_commits(rev=f"{target}..{base}"))
             for commit in commits:
                 ids.add(commit.hexsha)
-        
+
         return ids
-    
+
     def _get_commit_parents(self, commit, type):
         parents = []
         if commit.parents:
             for commit in commit.parents:
-                parents.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents = []))        
+                parents.append(
+                    HistoryEntry(
+                        author=commit.author.email,
+                        id=commit.hexsha,
+                        message=commit.message,
+                        date=commit.authored_date,
+                        type=type,
+                        parents=[],
+                    )
+                )
         return parents
 
-    def get_history(self, time_start: Optional[datetime] = None, time_end: Optional[datetime] = None, remote_only = False):
+    def get_history(
+        self,
+        time_start: Optional[datetime] = None,
+        time_end: Optional[datetime] = None,
+        remote_only=False,
+    ):
         history = []
         args = {}
         if time_start:
-            args["until"] = f'\"{time_start.strftime("%Y-%m-%d %H:%M:%S")}\"'
+            args["until"] = f'"{time_start.strftime("%Y-%m-%d %H:%M:%S")}"'
         if time_end:
-            args["since"] = f'\"{time_end.strftime("%Y-%m-%d %H:%M:%S")}\"'
+            args["since"] = f'"{time_end.strftime("%Y-%m-%d %H:%M:%S")}"'
 
         unborn = self.is_unborn()
         if not unborn and not remote_only:
@@ -1831,7 +2165,7 @@ class GitRepository(VCRepository):
                         remote_commits = list(self.repo.iter_commits(rev="@{u}"))
                     else:
                         remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
-                
+
                 if not unborn:
                     local_commits = self._get_local_commits(has_upstream)
                     for commit in local_commits:
@@ -1839,24 +2173,50 @@ class GitRepository(VCRepository):
 
         except Exception:
             pass
-     
+
         for commit in base_commits:
             if self.is_head_detached():
                 type = HistoryType.SYNCED
             else:
-                type = HistoryType.LOCAL if commit.hexsha in local_commit_set else HistoryType.SYNCED
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type)))
+                type = (
+                    HistoryType.LOCAL
+                    if commit.hexsha in local_commit_set
+                    else HistoryType.SYNCED
+                )
+            history.append(
+                HistoryEntry(
+                    author=commit.author.email,
+                    id=commit.hexsha,
+                    message=commit.message,
+                    date=commit.authored_date,
+                    type=type,
+                    parents=self._get_commit_parents(commit, type),
+                )
+            )
 
         for commit in remote_commits:
-            history.append(HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=HistoryType.REMOTE, parents=self._get_commit_parents(commit,HistoryType.REMOTE)))
-        
+            history.append(
+                HistoryEntry(
+                    author=commit.author.email,
+                    id=commit.hexsha,
+                    message=commit.message,
+                    date=commit.authored_date,
+                    type=HistoryType.REMOTE,
+                    parents=self._get_commit_parents(commit, HistoryType.REMOTE),
+                )
+            )
+
         return history
-    
+
     def get_last_history_entry_for_file(self, path: str, ref: str = None):
         if not ref:
             ref = "HEAD"
         try:
-            commit = self.repo.git.log("-1", ref, "--format=\"%H\"", "--", path).replace("\"", "").strip()
+            commit = (
+                self.repo.git.log("-1", ref, '--format="%H"', "--", path)
+                .replace('"', "")
+                .strip()
+            )
             return self.get_history_entry(commit)
         except Exception as e:
             print(f"error in get_last_history_entry_for_file: {str(e)}")
@@ -1869,22 +2229,54 @@ class GitRepository(VCRepository):
             if len(remote_branches) == 0:
                 type = HistoryType.LOCAL
             else:
-                type = HistoryType.SYNCED if not self.commit_not_pulled(entry_id) else HistoryType.REMOTE
-            return HistoryEntry(author=commit.author.email, id=commit.hexsha, message=commit.message, date=commit.authored_date, type=type, parents=self._get_commit_parents(commit,type))
+                type = (
+                    HistoryType.SYNCED
+                    if not self.commit_not_pulled(entry_id)
+                    else HistoryType.REMOTE
+                )
+            return HistoryEntry(
+                author=commit.author.email,
+                id=commit.hexsha,
+                message=commit.message,
+                date=commit.authored_date,
+                type=type,
+                parents=self._get_commit_parents(commit, type),
+            )
         return None
 
-    def get_files_to_pull(self, include_added: bool = True, include_modified: bool = True, include_deleted: bool = True) -> Changes:
-        if self.is_unborn() or not self.has_remote() or self.is_head_detached(): return None
-    
+    def get_files_to_pull(
+        self,
+        include_added: bool = True,
+        include_modified: bool = True,
+        include_deleted: bool = True,
+    ) -> Changes:
+        if self.is_unborn() or not self.has_remote() or self.is_head_detached():
+            return None
+
         diff_filter = []
-        if include_added: diff_filter.append("--diff-filter=A")
-        if include_modified: diff_filter.append("--diff-filter=M")
-        if include_deleted: diff_filter.append("--diff-filter=D")
-        
-        if len(diff_filter) == 0: return None
+        if include_added:
+            diff_filter.append("--diff-filter=A")
+        if include_modified:
+            diff_filter.append("--diff-filter=M")
+        if include_deleted:
+            diff_filter.append("--diff-filter=D")
+
+        if len(diff_filter) == 0:
+            return None
 
         try:
-            status_and_changes = self.repo.git(no_pager=True).log("--name-status", "--no-renames", "--no-commit-id", "-z", *diff_filter, "HEAD..@{u}").split('\x00')
+            status_and_changes = (
+                self.repo.git(no_pager=True)
+                .log(
+                    "--name-status",
+                    "--no-renames",
+                    "--no-commit-id",
+                    "-z",
+                    *diff_filter,
+                    "HEAD..@{u}",
+                )
+                .split("\x00")
+            )
         except:
             return None
         changes = Changes()
@@ -1896,9 +2288,9 @@ class GitRepository(VCRepository):
                 kind = status_and_changes[i]
                 if kind == "":
                     break
-                filename = status_and_changes[i+1]
-                i = i+2
-                
+                filename = status_and_changes[i + 1]
+                i = i + 2
+
                 if filename not in seen_files:
                     change = Change(filename)
                     if kind.startswith("A"):
@@ -1907,7 +2299,7 @@ class GitRepository(VCRepository):
                         changes.deleted_files.append(change)
                     else:
                         changes.modified_files.append(change)
-                    
+
                     seen_files.add(filename)
 
             except Exception as e:
@@ -1918,7 +2310,8 @@ class GitRepository(VCRepository):
 
     def commit_not_pulled(self, changelist_id: str):
         # Don't use branch --contains as it becomes very slow for big repos
-        if not self.has_remote(): return False
+        if not self.has_remote():
+            return False
         try:
             commits = self.repo.git(no_pager=True).log("HEAD..@{u}", format="%H")
         except:
@@ -1927,44 +2320,54 @@ class GitRepository(VCRepository):
 
     def branch_contains(self, changelist_id: str):
         branch_name = self.get_current_branch_name()
-        if not branch_name: return False
+        if not branch_name:
+            return False
 
         result = self.repo.git.branch(branch_name, "--contains", changelist_id)
         return result != ""
-    
+
     def is_ignored(self, path: str) -> bool:
         try:
             return self.repo.git.check_ignore(path) != ""
         except:
             return False
 
-    def ignore(self, pattern: str, local_only = False):
-        if local_only is False: 
+    def ignore(self, pattern: str, local_only=False):
+        if local_only is False:
             raise NotImplementedError()
-        
+
         dir = os.path.join(self.repo.git_dir, "info")
         if not os.path.exists(dir):
             os.makedirs(dir)
-        
+
         with open(os.path.join(dir, "exclude"), "a") as f:
             f.write(f"\n{pattern}")
-            
-    def fetch_lfs_files(self, branches: list[str], paths: list[str] = None, progress: Optional[Progress] = None):
-        if paths is not None and len(paths) == 0: return
+
+    def fetch_lfs_files(
+        self,
+        branches: list[str],
+        paths: list[str] = None,
+        progress: Optional[Progress] = None,
+    ):
+        if paths is not None and len(paths) == 0:
+            return
 
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if remote is None: return UpdateState.NO_REMOTE
+        if remote is None:
+            return UpdateState.NO_REMOTE
         remote_url = self._get_remote_url(remote)
 
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment(remote_url))
         progress_wrapper = None if not progress else _InternalProgress(progress)
-        lfs.lfs_fetch(self.get_root_path(), remote, progress_wrapper, current_env, branches, paths)
+        lfs.lfs_fetch(
+            self.get_root_path(), remote, progress_wrapper, current_env, branches, paths
+        )
 
     def get_all_files(self, ref: str = None) -> list[str]:
         try:
-            return self.repo.git.ls_files("-z", ref).split('\x00')
+            return self.repo.git.ls_files("-z", ref).split("\x00")
         except Exception as e:
             print(f"error in get_all_files: {str(e)}")
             return []
@@ -1972,8 +2375,8 @@ class GitRepository(VCRepository):
     def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
         if paths is not None and len(paths) == 0:
             return {}
-               
-        args = ["ls-files"] 
+
+        args = ["ls-files"]
         if ref:
             args.append(ref)
         args.append("-l")
@@ -1982,14 +2385,14 @@ class GitRepository(VCRepository):
         try:
             output = self.repo.git.lfs(*args)
             result = {}
-            hashes_and_files = re.findall(r'([a-f0-9]+) [-*] (.+)', output)
+            hashes_and_files = re.findall(r"([a-f0-9]+) [-*] (.+)", output)
             for hash_value, file_path in hashes_and_files:
                 result[file_path] = hash_value
             return result
         except Exception as e:
             print(f"error in get_lfs_filehash: {str(e)}")
             return {}
-        
+
     def get_lfs_version(self):
         try:
             return self.repo.git.lfs("version")
@@ -1997,13 +2400,20 @@ class GitRepository(VCRepository):
             print(f"error in get_lfs_version: {str(e)}")
             return ""
 
-    def prune_lfs(self, force: bool = False, recent_refs_days = 0, recent_commits_days = 7):
+    def prune_lfs(self, force: bool = False, recent_refs_days=0, recent_commits_days=7):
         lfs_version = self.get_lfs_version()
         if "Anchorpoint" not in lfs_version:
             print("clear cache disabled temporarily")
             return 0
-        
-        args = [install_git.get_git_cmd_path(), "lfs", "prune", "--verify-remote", "--verify-unreachable", "--when-unverified=continue"]
+
+        args = [
+            install_git.get_git_cmd_path(),
+            "lfs",
+            "prune",
+            "--verify-remote",
+            "--verify-unreachable",
+            "--when-unverified=continue",
+        ]
         if force:
             args.append("--force")
         else:
@@ -2018,16 +2428,20 @@ class GitRepository(VCRepository):
 
         output = install_git.run_git_command(args, cwd=self.get_root_path())
 
-        if "Deleting objects: 100%" not in output: return 0
+        if "Deleting objects: 100%" not in output:
+            return 0
 
         import re
+
         try:
-            pruned_match = re.search("Deleting objects: 100% \(\d+\/\d+\), done", output)
+            pruned_match = re.search(
+                "Deleting objects: 100% \(\d+\/\d+\), done", output
+            )
             if pruned_match:
                 return int(re.search("\d+\)", pruned_match.group()).group()[:-1])
         except:
-            return 0        
-        
+            return 0
+
     # Returns True if a corruption occurred and was fixed
     def fix_lfs_corruption(self):
         def _run_lfs_fsck():
@@ -2046,7 +2460,9 @@ class GitRepository(VCRepository):
                 if "corruptObject" in line:
                     corrupt_objects.append(line)
 
-            print(f"Found {len(corrupt_objects)} corrupt LFS objects. Attempting to fix them.")
+            print(
+                f"Found {len(corrupt_objects)} corrupt LFS objects. Attempting to fix them."
+            )
             print(f"Corrupt objects: {corrupt_objects}")
 
             self.repo.git.add("--renormalize", ".")
@@ -2080,7 +2496,7 @@ class GitRepository(VCRepository):
         except Exception as e:
             # No Upstream
             remotes = self.repo.git.remote().split("\n")
-            if (len(remotes) == 0):
+            if len(remotes) == 0:
                 raise e
 
             return remotes[0]
@@ -2090,13 +2506,15 @@ class GitRepository(VCRepository):
 
     def _get_file_changes(self, diff: git.Diff, changes: Changes):
         for change in diff.iter_change_type("M"):
-            changes.modified_files.append(Change(path = change.a_path)) 
+            changes.modified_files.append(Change(path=change.a_path))
         for change in diff.iter_change_type("A"):
-            changes.new_files.append(Change(path = change.a_path)) 
+            changes.new_files.append(Change(path=change.a_path))
         for change in diff.iter_change_type("R"):
-            changes.renamed_files.append(Change(path = change.b_path, old_path = change.a_path)) 
+            changes.renamed_files.append(
+                Change(path=change.b_path, old_path=change.a_path)
+            )
         for change in diff.iter_change_type("D"):
-            changes.deleted_files.append(Change(path = change.a_path)) 
+            changes.deleted_files.append(Change(path=change.a_path))
 
     def _make_relative_to_repo(self, path: str):
         if os.path.isabs(path):
@@ -2113,15 +2531,19 @@ class GitRepository(VCRepository):
         if os.path.exists(index_lock):
             # check if git is running. If not, the index.lock is a leftover of a crashed git command
             if utility.is_git_running():
-                raise PermissionError("Git process already running and the index is locked")
-            
+                raise PermissionError(
+                    "Git process already running and the index is locked"
+                )
+
             # remove the leftover lock
             try:
                 os.remove(index_lock)
                 logging.info(f"removed index.lock: {index_lock}")
             except Exception as e:
-                logging.info(f"failed to remove index.lock: {index_lock}. Error: {str(e)}")    
-    
+                logging.info(
+                    f"failed to remove index.lock: {index_lock}. Error: {str(e)}"
+                )
+
     def get_file_content(self, path: str, entry_id: Optional[str] = None):
         try:
             if entry_id:
@@ -2130,7 +2552,7 @@ class GitRepository(VCRepository):
         except Exception:
             logging.info(f"Error getting file content for {path} at {entry_id}")
             return ""
-        
+
     def get_stash_content(self, path: str, stash: Stash):
         try:
             stash_id = f"stash@{{{stash.id}}}"
@@ -2139,90 +2561,143 @@ class GitRepository(VCRepository):
             logging.info(f"Error getting file content for {path} at stash {stash_id}")
             return ""
 
-    @staticmethod    
-    def store_credentials(host: str, protocol: str, username: str, password: str, path: str = None):
+    @staticmethod
+    def store_credentials(
+        host: str, protocol: str, username: str, password: str, path: str = None
+    ):
         from subprocess import run
         import platform
+
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
         git_path = install_git.get_git_cmd_path()
         if git_path:
-            current_env["PATH"] += os.pathsep + os.path.dirname(install_git.get_git_cmd_path())
+            current_env["PATH"] += os.pathsep + os.path.dirname(
+                install_git.get_git_cmd_path()
+            )
 
         kwargs = {}
         if platform.system() == "Windows":
             from subprocess import CREATE_NO_WINDOW
+
             kwargs["creationflags"] = CREATE_NO_WINDOW
-        
+
         cmd = [install_git.get_gcm_path(), "store"]
         if path:
-            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\npath={path}\nusername={username}\npassword={password}", text=True, **kwargs)
+            p = run(
+                cmd,
+                env=current_env,
+                input=f"host={host}\nprotocol={protocol}\npath={path}\nusername={username}\npassword={password}",
+                text=True,
+                **kwargs,
+            )
         else:
-            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}", text=True, **kwargs)
+            p = run(
+                cmd,
+                env=current_env,
+                input=f"host={host}\nprotocol={protocol}\nusername={username}\npassword={password}",
+                text=True,
+                **kwargs,
+            )
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
-        
+
     @staticmethod
     def get_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
         import platform
+
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
         git_path = install_git.get_git_cmd_path()
         if git_path:
-            current_env["PATH"] += os.pathsep + os.path.dirname(install_git.get_git_cmd_path())
+            current_env["PATH"] += os.pathsep + os.path.dirname(
+                install_git.get_git_cmd_path()
+            )
 
         kwargs = {}
         if platform.system() == "Windows":
             from subprocess import CREATE_NO_WINDOW
+
             kwargs["creationflags"] = CREATE_NO_WINDOW
 
         cmd = [install_git.get_gcm_path(), "get"]
         if path:
-            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, capture_output=True, **kwargs)
+            p = run(
+                cmd,
+                env=current_env,
+                input=f"host={host}\nprotocol={protocol}\npath={path}",
+                text=True,
+                capture_output=True,
+                **kwargs,
+            )
         else:
-            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}", text=True, capture_output=True, **kwargs)
+            p = run(
+                cmd,
+                env=current_env,
+                input=f"host={host}\nprotocol={protocol}",
+                text=True,
+                capture_output=True,
+                **kwargs,
+            )
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
-        
+
         result = {}
         for line in p.stdout.splitlines():
             if "=" in line:
                 key, value = line.split("=", 1)
                 result[key] = value
         return result
-        
+
     @staticmethod
     def erase_credentials(host: str, protocol: str, path: str = None):
         from subprocess import run
+
         current_env = os.environ.copy()
         current_env.update(GitRepository.get_git_environment())
         git_path = install_git.get_git_cmd_path()
         if git_path:
-            current_env["PATH"] += os.pathsep + os.path.dirname(install_git.get_git_cmd_path())
+            current_env["PATH"] += os.pathsep + os.path.dirname(
+                install_git.get_git_cmd_path()
+            )
 
         kwargs = {}
         if platform.system() == "Windows":
             from subprocess import CREATE_NO_WINDOW
+
             kwargs["creationflags"] = CREATE_NO_WINDOW
-        
+
         cmd = [install_git.get_gcm_path(), "erase"]
-        
+
         if path:
-            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}\npath={path}", text=True, **kwargs)
+            p = run(
+                cmd,
+                env=current_env,
+                input=f"host={host}\nprotocol={protocol}\npath={path}",
+                text=True,
+                **kwargs,
+            )
         else:
-            p = run(cmd, env=current_env, input=f"host={host}\nprotocol={protocol}", text=True, **kwargs)
+            p = run(
+                cmd,
+                env=current_env,
+                input=f"host={host}\nprotocol={protocol}",
+                text=True,
+                **kwargs,
+            )
         if p.returncode != 0:
             raise GitCommandError(cmd, p.returncode, p.stderr, p.stdout)
-        
+
     @staticmethod
     def get_git_url_info(url):
         from urllib.parse import urlparse
+
         # Parse the URL to get the host
         parsed_url = urlparse(url)
         if not parsed_url.netloc:
             raise ValueError("Invalid URL format")
-        
+
         host = parsed_url.netloc.lower()  # Ensure host is lowercase
         path = parsed_url.path.lower()
         if path.startswith("/"):
@@ -2230,20 +2705,22 @@ class GitRepository(VCRepository):
 
         if "@" in host:
             host = host.split("@")[1]
-        
+
         return host, path
 
     def clear_credentials(self):
-
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
-        if remote is None: remote = "origin"
+        if remote is None:
+            remote = "origin"
         remote_url = self._get_remote_url(remote)
 
         host, path = GitRepository.get_git_url_info(remote_url)
 
         try:
-            GitRepository.erase_credentials(host, "https", path if "azure" in host else None)
+            GitRepository.erase_credentials(
+                host, "https", path if "azure" in host else None
+            )
         except Exception as e:
             print(e)
             return False

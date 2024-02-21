@@ -13,7 +13,8 @@ no_remote_dropdown_entry_name = "No Remote"
 remote_entry_url_input = "remote_entry_url_input"
 remote_entry_download_all_checkbox = "download_all"
 setup_integration_btn = "setup_integration_btn"
-remote_entry_login_info_text= "remote_entry_login_info_text"
+remote_entry_login_info_text = "remote_entry_login_info_text"
+
 
 def validate_path(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
@@ -23,18 +24,21 @@ def validate_path(dialog: ap.Dialog, value):
     else:
         return
 
+
 def validate_url(dialog: ap.Dialog, value):
     if not value or len(value) == 0:
         return "Please add a link to a remote Git repository"
     else:
         return
-    
+
+
 def validate_dropdown(dialog: ap.Dialog, value, setup_integration_visible):
     if setup_integration_visible:
         return "Please setup integration"
     else:
         return
-    
+
+
 def get_repo_url(git, path):
     try:
         repo = git.GitRepository.load(path)
@@ -43,7 +47,8 @@ def get_repo_url(git, path):
         return None
     except:
         return None
-    
+
+
 def url_changed(dialog: ap.Dialog, value):
     git_provider = "your Git Server"
     if "dev.azure" in value:
@@ -56,26 +61,34 @@ def url_changed(dialog: ap.Dialog, value):
         git_provider = "GitLab"
     elif "bitbucket" in value:
         git_provider = "Bitbucket"
-        
-    dialog.set_value(remote_entry_login_info_text, f"You eventually need to <b>log into</b> {git_provider} after the final step")
-    
+
+    dialog.set_value(
+        remote_entry_login_info_text,
+        f"You eventually need to <b>log into</b> {git_provider} after the final step",
+    )
+
+
 def add_additional_scripts(yaml_dir, project_path, ignore_value):
     import shutil
+
     if ignore_value.lower() == "unity":
         assets_path = os.path.join(project_path, "Assets")
         if os.path.exists(assets_path):
             file = os.path.join(yaml_dir, "inscripts", "Unity", "RespectReadOnly.cs")
             if os.path.exists(file):
-                target_dir = os.path.join(assets_path, "Scripts","Editor")
+                target_dir = os.path.join(assets_path, "Scripts", "Editor")
                 if not os.path.exists(target_dir):
                     os.makedirs(target_dir)
                 shutil.copy(file, target_dir)
 
-def add_git_ignore(repo, context, project_path, ignore_value = None):
+
+def add_git_ignore(repo, context, project_path, ignore_value=None):
     script_dir = os.path.dirname(__file__)
     sys.path.insert(0, script_dir)
     import add_ignore_config
-    if script_dir in sys.path: sys.path.remove(script_dir)
+
+    if script_dir in sys.path:
+        sys.path.remove(script_dir)
     repo.ignore(".ap/project.json", local_only=True)
     repo.ignore("*.approj", local_only=True)
     if platform.system() == "Darwin":
@@ -83,21 +96,31 @@ def add_git_ignore(repo, context, project_path, ignore_value = None):
     if ignore_value and ignore_value != add_ignore_config.NO_IGNORE:
         add_ignore_config.add_git_ignore(ignore_value, project_path, context.yaml_dir)
         add_additional_scripts(context.yaml_dir, project_path, ignore_value)
-    
+
+
 def open_folder_and_retry(d, ctx, project_path):
     d.close()
     folder_to_open = os.path.join(project_path, ".git")
-    
+
     if platform.system() == "Darwin":
         os.system(f"open {folder_to_open}")
     else:
         os.startfile(folder_to_open)
 
     ap.show_create_project_dialog()
-    
+
+
 try:
+
     class GitProjectType(ap.ProjectType):
-        def __init__(self, path: str, remote: str, tags, ctx: ap.Context, integrations: ap.IntegrationList):
+        def __init__(
+            self,
+            path: str,
+            remote: str,
+            tags,
+            ctx: ap.Context,
+            integrations: ap.IntegrationList,
+        ):
             super().__init__()
             self.context = ctx
             self.path = path
@@ -108,7 +131,9 @@ try:
             sys.path.insert(0, script_dir)
 
             import git_repository_helper as githelper
-            if script_dir in sys.path: sys.path.remove(script_dir)
+
+            if script_dir in sys.path:
+                sys.path.remove(script_dir)
 
             self.dialog = ap.Dialog()
             self.git = None
@@ -118,6 +143,7 @@ try:
 
             try:
                 import vc.apgit.repository as git
+
                 self.git = git
             except Warning:
                 sys.exit(0)
@@ -135,18 +161,27 @@ try:
                     self.tags = tags
             except:
                 pass
-            
-            if not repo_url: repo_url = ""
+
+            if not repo_url:
+                repo_url = ""
 
             path_placeholder = "Z:\\Projects\\ACME_Commercial"
             if platform.system() == "Darwin":
-                path_placeholder = "/Projects/ACME_Commercial"            
-
+                path_placeholder = "/Projects/ACME_Commercial"
 
             self.setup_integration_visible = False
-            self.dialog.add_input(var="project_path", default=path, placeholder=path_placeholder, width = 420, browse=ap.BrowseType.Folder, validate_callback=validate_path, callback=lambda d,v: self.path_changed(d,self.git,v,ctx))
+            self.dialog.add_input(
+                var="project_path",
+                default=path,
+                placeholder=path_placeholder,
+                width=420,
+                browse=ap.BrowseType.Folder,
+                validate_callback=validate_path,
+                callback=lambda d, v: self.path_changed(d, self.git, v, ctx),
+            )
 
             from add_ignore_config import get_ignore_file_dropdown_entries, NO_IGNORE
+
             dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
 
             self.dialog.add_text("<b>Template for .gitignore</b>", var="gitignoretext")
@@ -154,18 +189,21 @@ try:
             no_entry.name = NO_IGNORE
             no_entry.icon = ":icons/none.svg"
             dropdown_values.insert(0, no_entry)
-            self.dialog.add_dropdown(no_entry.name, dropdown_values, var="ignore_dropdown")
-            self.dialog.add_info("A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result).")
+            self.dialog.add_dropdown(
+                no_entry.name, dropdown_values, var="ignore_dropdown"
+            )
+            self.dialog.add_info(
+                "A <b>gitignore</b> excludes certain files from version control (e.g. <b>Unreal Engine</b>'s build result)."
+            )
             self.dialog.add_text("<b>Remote Settings</b>", var="remoteSettings")
             self.create_dropdown_entries(repo_url)
             self.path_changed(self.dialog, self.git, self.path, ctx)
-
 
         def create_dropdown_entries(self, repo_url: str):
             self.create_project_dropdown_entries = []
             self.dialog_var_map = {}
 
-            #create dropdown entries
+            # create dropdown entries
             if repo_url == "":
                 for integration in self.git_integrations:
                     for action in integration.get_create_project_actions():
@@ -187,59 +225,111 @@ try:
                 self.dialog_var_map[local_entry.name] = []
 
             self.setup_integration_visible = False
-            self.dialog.add_dropdown(self.create_project_dropdown_entries[0].name, self.create_project_dropdown_entries, var=create_project_dropdown, callback = self.on_dropdown_change, validate_callback=lambda d,v: validate_dropdown(d,v,self.setup_integration_visible))
+            self.dialog.add_dropdown(
+                self.create_project_dropdown_entries[0].name,
+                self.create_project_dropdown_entries,
+                var=create_project_dropdown,
+                callback=self.on_dropdown_change,
+                validate_callback=lambda d, v: validate_dropdown(
+                    d, v, self.setup_integration_visible
+                ),
+            )
 
-            #create dialog entries for each dropdown entry
+            # create dialog entries for each dropdown entry
             if repo_url == "":
                 for integration in self.git_integrations:
                     for action in integration.get_create_project_actions():
-                        self.dialog_var_map[action.name] = integration.setup_create_project_dialog_entries(action.identifier, self.dialog)
+                        self.dialog_var_map[
+                            action.name
+                        ] = integration.setup_create_project_dialog_entries(
+                            action.identifier, self.dialog
+                        )
 
-            self.dialog.add_info("You may need to <b>log into</b> your Git server after the final step.", var=remote_entry_login_info_text)
-            self.dialog.add_input(default=repo_url, placeholder="https://github.com/Anchorpoint-Software/ap-actions.git", var=remote_entry_url_input, width = 525, validate_callback=validate_url, callback=url_changed)
-            
+            self.dialog.add_info(
+                "You may need to <b>log into</b> your Git server after the final step.",
+                var=remote_entry_login_info_text,
+            )
+            self.dialog.add_input(
+                default=repo_url,
+                placeholder="https://github.com/Anchorpoint-Software/ap-actions.git",
+                var=remote_entry_url_input,
+                width=525,
+                validate_callback=validate_url,
+                callback=url_changed,
+            )
+
             if self.context.has_team_features():
-                self.dialog.add_checkbox(True, text="Download Everything", var=remote_entry_download_all_checkbox)
-            self.dialog.add_button("Setup Integration", var=setup_integration_btn, callback=self.on_setup_integration_btn_clicked, primary=True)
-            
-            self.dialog.hide_row(setup_integration_btn,True)
-            self.dialog_var_map[remote_entry.name] = [remote_entry_url_input, remote_entry_login_info_text]
+                self.dialog.add_checkbox(
+                    True,
+                    text="Download Everything",
+                    var=remote_entry_download_all_checkbox,
+                )
+            self.dialog.add_button(
+                "Setup Integration",
+                var=setup_integration_btn,
+                callback=self.on_setup_integration_btn_clicked,
+                primary=True,
+            )
+
+            self.dialog.hide_row(setup_integration_btn, True)
+            self.dialog_var_map[remote_entry.name] = [
+                remote_entry_url_input,
+                remote_entry_login_info_text,
+            ]
             if self.context.has_team_features():
-                self.dialog_var_map[remote_entry.name].append(remote_entry_download_all_checkbox)
+                self.dialog_var_map[remote_entry.name].append(
+                    remote_entry_download_all_checkbox
+                )
             if repo_url == "":
-                self.toggle_row_visibility(self.dialog,self.create_project_dropdown_entries[0].name)
-                self.dialog.set_value(create_project_dropdown, self.create_project_dropdown_entries[0].name)
-                self.on_dropdown_change(self.dialog, self.create_project_dropdown_entries[0].name)
+                self.toggle_row_visibility(
+                    self.dialog, self.create_project_dropdown_entries[0].name
+                )
+                self.dialog.set_value(
+                    create_project_dropdown,
+                    self.create_project_dropdown_entries[0].name,
+                )
+                self.on_dropdown_change(
+                    self.dialog, self.create_project_dropdown_entries[0].name
+                )
             else:
                 self.dialog.set_value(remote_entry_url_input, repo_url)
-                self.toggle_row_visibility(self.dialog,remote_dropdown_entry_name)
-                self.dialog.set_value(create_project_dropdown, remote_dropdown_entry_name)
+                self.toggle_row_visibility(self.dialog, remote_dropdown_entry_name)
+                self.dialog.set_value(
+                    create_project_dropdown, remote_dropdown_entry_name
+                )
 
         def on_dropdown_change(self, dialog, value):
             self.setup_integration_visible = False
-            self.toggle_row_visibility(dialog,value)
+            self.toggle_row_visibility(dialog, value)
             if value != remote_dropdown_entry_name:
-                dialog.set_value(remote_entry_download_all_checkbox,True)
+                dialog.set_value(remote_entry_download_all_checkbox, True)
             for integration in self.git_integrations:
                 action_found = False
                 for action in integration.get_create_project_actions():
                     if action.name == value:
                         action_found = True
-                        if(not integration.is_setup or not integration.is_connected):
+                        if not integration.is_setup or not integration.is_connected:
                             dialog.set_value(setup_integration_btn, "Setup Integration")
                             self.setup_integration_name = integration.name
-                            dialog.hide_row(setup_integration_btn,False)
+                            dialog.hide_row(setup_integration_btn, False)
                             self.setup_integration_visible = True
                         else:
-                            integration.on_create_project_dialog_entry_selected(action.identifier, dialog)
+                            integration.on_create_project_dialog_entry_selected(
+                                action.identifier, dialog
+                            )
                         break
                 if action_found:
                     break
             if not self.setup_integration_visible:
-                dialog.hide_row(setup_integration_btn,True)
+                dialog.hide_row(setup_integration_btn, True)
 
         def path_changed(self, dialog: ap.Dialog, git, path, ctx):
-            from add_ignore_config import get_ignore_file_dropdown_entries, get_ignore_file_default, NO_IGNORE
+            from add_ignore_config import (
+                get_ignore_file_dropdown_entries,
+                get_ignore_file_default,
+                NO_IGNORE,
+            )
+
             dropdown_values = get_ignore_file_dropdown_entries(ctx.yaml_dir)
 
             git_ignore = dialog.get_value("ignore_dropdown")
@@ -254,7 +344,7 @@ try:
                 dialog.set_value("url", url)
 
             self.is_local_repo = is_git.is_git_repo(path)
-            if(self.is_local_repo):
+            if self.is_local_repo:
                 dialog.hide_row(remote_entry_download_all_checkbox, True)
                 dialog.set_value(remote_entry_download_all_checkbox, True)
 
@@ -262,36 +352,44 @@ try:
                     repo = git.GitRepository.load(path)
                     repo_url = repo.get_remote_url()
                     if repo_url and repo_url != "":
-                        dialog.set_value(create_project_dropdown, remote_dropdown_entry_name)
+                        dialog.set_value(
+                            create_project_dropdown, remote_dropdown_entry_name
+                        )
                         dialog.set_value(remote_entry_url_input, repo_url)
                 except:
                     self.is_local_repo = False
-                
 
-        def toggle_row_visibility(self, dialog,value):
-                row_vars = self.dialog_var_map[value]
-                #show all rows of the selected integration action
-                for row_var in row_vars:
-                    if not self.is_local_repo or row_var != remote_entry_download_all_checkbox:
-                        dialog.hide_row(row_var,False)
-                #hide all other rows
-                for key, row_vars in self.dialog_var_map.items():
-                    if key != value:
-                        for row_var in row_vars:
-                            dialog.hide_row(row_var,True)
+        def toggle_row_visibility(self, dialog, value):
+            row_vars = self.dialog_var_map[value]
+            # show all rows of the selected integration action
+            for row_var in row_vars:
+                if (
+                    not self.is_local_repo
+                    or row_var != remote_entry_download_all_checkbox
+                ):
+                    dialog.hide_row(row_var, False)
+            # hide all other rows
+            for key, row_vars in self.dialog_var_map.items():
+                if key != value:
+                    for row_var in row_vars:
+                        dialog.hide_row(row_var, True)
 
         def remote_changed(self, dialog: ap.Dialog, value):
             for integration in self.git_integrations:
                 if not integration.is_setup:
                     if integration.supports_create_project(value):
-                        dialog.set_value(setup_integration_btn, f"Setup {integration.name} Integration")
+                        dialog.set_value(
+                            setup_integration_btn,
+                            f"Setup {integration.name} Integration",
+                        )
                         self.setup_integration_name = integration.name
-                        dialog.hide_row(setup_integration_btn,False)
+                        dialog.hide_row(setup_integration_btn, False)
                         return
-            dialog.hide_row(setup_integration_btn,True)
+            dialog.hide_row(setup_integration_btn, True)
 
         def on_setup_integration_btn_clicked(self, dialog: ap.Dialog):
-            if not self.setup_integration_name: return
+            if not self.setup_integration_name:
+                return
             for integration in self.git_integrations:
                 if integration.name == self.setup_integration_name:
                     ap.open_integration_preferences(integration.name)
@@ -302,8 +400,8 @@ try:
 
         def get_project_path(self):
             return self.dialog.get_value("project_path")
-        
-        def get_dialog(self):         
+
+        def get_dialog(self):
             return self.dialog
 
         def setup_project(self, project_id: str, progress):
@@ -332,7 +430,13 @@ try:
                 for integration in self.git_integrations:
                     for action in integration.get_create_project_actions():
                         if action.name == action_id:
-                            repo_url = integration.setup_project(action.identifier, self.dialog, project_id, self.project.name, progress)
+                            repo_url = integration.setup_project(
+                                action.identifier,
+                                self.dialog,
+                                project_id,
+                                self.project.name,
+                                progress,
+                            )
                             integration_tags = integration.tags
                             remote_enabled = True
                             break
@@ -344,13 +448,22 @@ try:
                 sys.exit(0)
 
             if integration_tags is not None:
-                settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
+                settings = aps.SharedSettings(
+                    project_id, self.context.workspace_id, "integration_info"
+                )
                 settings.set("integration_tags", ";".join(integration_tags))
                 settings.store()
 
             if folder_is_empty and remote_enabled:
                 # Case 1: Empty Folder & Remote URL -> Clone
-                self._clone(repo_url, project_path, self.project, git_ignore, progress, download_all)
+                self._clone(
+                    repo_url,
+                    project_path,
+                    self.project,
+                    git_ignore,
+                    progress,
+                    download_all,
+                )
                 return
 
             if not git_parent_dir:
@@ -365,13 +478,19 @@ try:
                 self._open_repo(project_path, self.project, git_ignore, url)
                 return
 
-            if git_parent_dir is not None and not self._is_path_equal(git_parent_dir, project_path):
+            if git_parent_dir is not None and not self._is_path_equal(
+                git_parent_dir, project_path
+            ):
                 # Case 4: Folder Contains Git in Subdir -> Error
-                ap.UI().show_error("Could not setup project", f"Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
+                ap.UI().show_error(
+                    "Could not setup project",
+                    f"Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}",
+                    duration=10000,
+                )
                 sys.exit(0)
 
             print(f"project_path {project_path}")
-            print(f"git_ignore {git_ignore}")   
+            print(f"git_ignore {git_ignore}")
             print(f"remote_enabled {remote_enabled}")
             print(f"repo_url {repo_url}")
             print(f"folder_is_empty {folder_is_empty}")
@@ -387,8 +506,10 @@ try:
                 metadata["gitPathId"] = folder_id
                 channel.metadata = metadata
                 aps.update_timeline_channel(self.project, channel)
-                        
-            aps.set_folder_icon(self.path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582"))
+
+            aps.set_folder_icon(
+                self.path, aps.Icon(":/icons/versioncontrol.svg", "#f3d582")
+            )
 
         def _get_branch_names(self, repo):
             branches = repo.get_branches()
@@ -397,9 +518,11 @@ try:
                 names.append(branch.name)
 
             return names
-        
+
         def _init_repo(self, url, project_path, project, git_ignore, progress):
-            repo = self.git.GitRepository.create(project_path, self.context.username, self.context.email)
+            repo = self.git.GitRepository.create(
+                project_path, self.context.username, self.context.email
+            )
             self.githelper.update_project(project_path, url, False, None, project)
             if url:
                 repo.add_remote(url)
@@ -408,12 +531,17 @@ try:
                 except Exception as e:
                     ap.close_create_project_dialog()
                     import time
+
                     time.sleep(0.25)
                     git_errors.handle_error(e, project_path)
                     raise e
                 branches = self._get_branch_names(repo)
                 if len(branches) > 0:
-                    ap.UI().show_error("Could not setup project", "You need to pick an empty folder because the remote repository already contains files.", duration=10000)
+                    ap.UI().show_error(
+                        "Could not setup project",
+                        "You need to pick an empty folder because the remote repository already contains files.",
+                        duration=10000,
+                    )
                     sys.exit(0)
 
             self._add_git_ignore(repo, git_ignore, project_path)
@@ -422,23 +550,34 @@ try:
         def _handle_project_overwrite(self, project_path):
             import time
 
-            print("Create Project: Existing Git Repository detected that needs to be deleted manually")            
+            print(
+                "Create Project: Existing Git Repository detected that needs to be deleted manually"
+            )
             ap.close_create_project_dialog()
             time.sleep(0.25)
 
             dialog = ap.Dialog()
             dialog.title = "Existing Git Repository detected"
             dialog.icon = self.context.icon
-            dialog.add_text("Anchorpoint has found another Git repository that<br>needs to be removed before you can create a new project.")
-            dialog.add_info("Removing a Git repository will <b>delete</b> your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can remove it manually by deleting the hidden .git folder in your project.")
-            dialog.add_button("Open Git Repository Folder", callback=lambda d: open_folder_and_retry(d, self.context, project_path), primary=False).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+            dialog.add_text(
+                "Anchorpoint has found another Git repository that<br>needs to be removed before you can create a new project."
+            )
+            dialog.add_info(
+                "Removing a Git repository will <b>delete</b> your previous version history. It will <b> not affect<br>your current project files</b>.<br>You can remove it manually by deleting the hidden .git folder in your project."
+            )
+            dialog.add_button(
+                "Open Git Repository Folder",
+                callback=lambda d: open_folder_and_retry(d, self.context, project_path),
+                primary=False,
+            ).add_button("Cancel", callback=lambda d: d.close(), primary=False)
             dialog.show()
-        
+
         def _open_repo(self, project_path, project, git_ignore, user_url):
             repo = self.git.GitRepository.load(project_path)
 
             url = repo.get_remote_url()
-            if url == "": url = None
+            if url == "":
+                url = None
 
             if url is None and user_url is not None:
                 url = user_url
@@ -457,23 +596,38 @@ try:
                     repo.set_upstream("main")
                 except:
                     pass
-                
 
-        def _clone(self, url, project_path, project, git_ignore, progress, download_all):
+        def _clone(
+            self, url, project_path, project, git_ignore, progress, download_all
+        ):
             try:
-                repo = self.git.GitRepository.clone(url, project_path, self.context.username, self.context.email, progress=self.githelper.CloneProgress(progress), sparse = not download_all)
+                repo = self.git.GitRepository.clone(
+                    url,
+                    project_path,
+                    self.context.username,
+                    self.context.email,
+                    progress=self.githelper.CloneProgress(progress),
+                    sparse=not download_all,
+                )
                 ap.evaluate_locks(project.workspace_id, project.id)
                 progress.finish()
-            
-                self.githelper.update_project(project_path, url, False, None, project, True)
+
+                self.githelper.update_project(
+                    project_path, url, False, None, project, True
+                )
                 self._add_git_ignore(repo, git_ignore, project_path)
-            except Exception as e:            
+            except Exception as e:
                 print(e)
                 ap.close_create_project_dialog()
                 import time
+
                 time.sleep(0.25)
                 if not git_errors.handle_error(e, project_path):
-                    ap.UI().show_error("Could not setup project", "You might have entered a wrong username / password, or you don't have access to the repository.", duration=10000)
+                    ap.UI().show_error(
+                        "Could not setup project",
+                        "You might have entered a wrong username / password, or you don't have access to the repository.",
+                        duration=10000,
+                    )
                 sys.exit(0)
 
         def _add_git_ignore(self, repo, ignore_value, project_path):
@@ -485,7 +639,7 @@ try:
                     for dir in dirs:
                         if dir == ".git":
                             try:
-                                if len(os.listdir(os.path.join(root,dir))) <= 1:
+                                if len(os.listdir(os.path.join(root, dir))) <= 1:
                                     return None, False
                                 is_valid = self.git.GitRepository.load(root) is not None
                                 return root, is_valid
@@ -496,42 +650,49 @@ try:
             return None, False
 
         def _is_path_equal(self, path1: str, path2: str):
-            if path1 is None or path2 is None: return False
-            
+            if path1 is None or path2 is None:
+                return False
+
             norm1 = os.path.normpath(os.path.normcase(path1))
             norm2 = os.path.normpath(os.path.normcase(path2))
             return norm1 == norm2
 
-    def on_show_create_project(project_types, integrations, path: str, remote:str, tags, ctx: ap.Context):
+    def on_show_create_project(
+        project_types, integrations, path: str, remote: str, tags, ctx: ap.Context
+    ):
         import os
+
         iconPath = os.path.join(ctx.yaml_dir, "icons/project_type_git.svg")
         gitProjectType = GitProjectType(path, remote, tags, ctx, integrations)
-        gitProjectType.name = 'Git Repository'
-        gitProjectType.description = 'Open or create a Git repository for your <font color=#FFFFFF>Unreal</font> or <font color=#FFFFFF>Unity</font> project. Connect it to Git providers such as GitHub, Azure Devops or self-hosted Git servers.'
+        gitProjectType.name = "Git Repository"
+        gitProjectType.description = "Open or create a Git repository for your <font color=#FFFFFF>Unreal</font> or <font color=#FFFFFF>Unity</font> project. Connect it to Git providers such as GitHub, Azure Devops or self-hosted Git servers."
         gitProjectType.priority = 100
         if path:
             git_path = os.path.join(path, ".git")
             gitProjectType.pre_selected = os.path.exists(git_path)
-        
+
         gitProjectType.icon = iconPath
         print("Adding Git Project Type")
         project_types.add(gitProjectType)
 
-    
+
 except AttributeError as e:
     if aps.get_api_version() <= aps.ApiVersion("1.5.0"):
         pass
     else:
         raise e
 
+
 def connect_repo(dialog: ap.Dialog, path):
     dialog.close()
     ap.show_create_project_dialog(path)
+
 
 def update_open_settings(dialog: ap.Dialog, value, path):
     settings = aps.Settings("connect_git_repo")
     settings.set(path, value)
     settings.store()
+
 
 def on_folder_opened(ctx: ap.Context):
     path = ctx.path
@@ -541,7 +702,7 @@ def on_folder_opened(ctx: ap.Context):
 
     if len(ctx.project_id) > 0:
         return
-    
+
     try:
         project = aps.get_project(path)
         if project:
@@ -551,15 +712,23 @@ def on_folder_opened(ctx: ap.Context):
 
     settings = aps.Settings("connect_git_repo")
     never_ask_again = settings.get(path, False)
-    if never_ask_again: 
+    if never_ask_again:
         return
 
     dialog = ap.Dialog()
     dialog.title = "Open Git Repository"
     dialog.icon = ctx.icon
 
-    dialog.add_info("Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href=\"https://docs.anchorpoint.app/docs/version-control/first-steps/\">Git.</a>")
-    dialog.add_checkbox(callback=lambda d,v: update_open_settings(d,v,path), var="neveraskagain", text="Never ask again")
-    dialog.add_button("Continue", var="yes", callback=lambda d: connect_repo(d,path)).add_button("Cancel", callback=lambda d: d.close(), primary=False)
-    
+    dialog.add_info(
+        'Opening a Git repository as a project in Anchorpoint enables <br> certain actions in the project timeline. Learn more about <a href="https://docs.anchorpoint.app/docs/version-control/first-steps/">Git.</a>'
+    )
+    dialog.add_checkbox(
+        callback=lambda d, v: update_open_settings(d, v, path),
+        var="neveraskagain",
+        text="Never ask again",
+    )
+    dialog.add_button(
+        "Continue", var="yes", callback=lambda d: connect_repo(d, path)
+    ).add_button("Cancel", callback=lambda d: d.close(), primary=False)
+
     dialog.show()
