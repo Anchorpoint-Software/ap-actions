@@ -1514,10 +1514,7 @@ class GitRepository(VCRepository):
             sparse_folder_set.add('.ap')
             return sparse_folder_set
         except Exception as e:
-            try:
-                message = e.stderr
-            except:
-                message = str(e)
+            message = str(e)
             if "this worktree is not sparse" in message:
                 raise Exception("This worktree is not sparse")
             raise e
@@ -1528,10 +1525,7 @@ class GitRepository(VCRepository):
             self.repo.git.sparse_checkout("list")
             return True
         except Exception as e:
-            try:
-                message = e.stderr
-            except:
-                message = str(e)
+            message = str(e)
             if "this worktree is not sparse" in message:
                 return False
             raise e

@@ -243,10 +243,7 @@ def create_test_repo_async(client: AzureDevOpsClient):
     except Exception as e:
         def get_dialog_clone_message(reason: str):
             return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://dev.azure.com/{current_org}'>Azure DevOps website</a> and have access to your organization.<br>2. Check that Third-party application access via OAuth is enabled in the <a href='https://dev.azure.com/{current_org}/_settings/organizationPolicy'>policies</a>.<br>3. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/azure-devops/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the Azure DevOps website and clone it via https."
-        try:
-            message = e.stderr
-        except:
-            message = str(e)
+        message = str(e)
         print(f"Failed to clone test repo: {message}")
         if "fatal: repository" in message and "not found" in message:
             show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))

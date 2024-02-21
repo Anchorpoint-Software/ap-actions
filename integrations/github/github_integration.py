@@ -220,10 +220,7 @@ def create_test_repo_async(client: GitHubClient):
     except Exception as e:
         def get_dialog_clone_message(reason: str):
             return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you can open the <a href='https://github.com/{current_org.login}'>GitHub website</a> and have access to the organization.<br>2. Disconnect and connect the GitHub integration in Anchorpoint and retry the test.<br>3. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/github/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work, then create a<br>repository on the <a href='https://github.com/{current_org.login}'>GitHub website</a> and clone it via https."
-        try:
-            message = e.stderr
-        except:
-            message = str(e)
+        message = str(e)
         print(f"Failed to clone test repo: {message}")
         ap.log_error(f"Github - Unknown Clone Test Repo Error: {message}")
         show_test_repo_error_dialog(client, get_dialog_clone_message("of an unknown error"))

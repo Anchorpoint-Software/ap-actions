@@ -238,10 +238,7 @@ def create_test_repo_async(client: GitlabClient):
     except Exception as e:
         def get_dialog_clone_message(reason: str):
             return f"The Anchorpoint-Test repository could not be cloned, because {reason}.<br><br>Try the following:<br><br>1. Make sure, that you have access to your group / user account on the <a href='https://gitlab.com'>GitLab website</a>.<br>2. Check if your credentials are correct by clicking on the Update Credentials button below.<br>4. Check our <a href='https://docs.anchorpoint.app/docs/general/integrations/gitlab/#troubleshooting'>troubleshooting page</a> for more information.<br><br>If you have tried everything and the integration does not work,<br> then create a repository on the <a href='https://gitlab.com'>GitLab website</a> and clone it via https."
-        try:
-            message = e.stderr
-        except:
-            message = str(e)
+        message = str(e)
         print(f"Failed to clone test repo: {message}")
         if "fatal: repository" in message and "not found" in message:
             show_test_repo_error_dialog(client, get_dialog_clone_message("you do not have permission to clone the repository"))
