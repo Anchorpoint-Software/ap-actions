@@ -55,22 +55,12 @@ def show_push_failed(repo, error: str, channel_id, ctx):
         d.add_text("Could not connect to the Git server, maybe you are offline?")
         d.add_info("Please check your internet connection and try again.")
     else:
-        corrupt_lfs = False
-        try:
-            corrupt_lfs = repo.fix_lfs_corruption()
-        except Exception as e:
-            print(f"An error occurred while fixing LFS corruption: {e}")
-            pass
-
-        if corrupt_lfs:
-            d.add_text("Anchorpoint has detected an inconsistency in the Git LFS cache and has fixed it.\nPlease try pushing again.")
-        else:
-            from textwrap import TextWrapper
-            d.add_text("Something went wrong, the Git push did not work correctly")
-            d.add_info("In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail.")
-            error = "\n".join(TextWrapper(width=100).wrap(error))
-            if error != "":
-                d.add_text(f"Error: <i>{error}</i>")
+        from textwrap import TextWrapper
+        d.add_text("Something went wrong, the Git push did not work correctly")
+        d.add_info("In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail.")
+        error = "\n".join(TextWrapper(width=100).wrap(error))
+        if error != "":
+            d.add_text(f"Error: <i>{error}</i>")
 
     def retry():
         ctx = ap.get_context()
