@@ -372,6 +372,7 @@ class GitRepository(VCRepository):
                 except Exception as e:
                     print(f"Error aborting revert_changelist: {str(e)}")
 
+                ap.log_error(f"Revert failed: {error}")
                 raise e
         
         self.repo.git.revert("--quit")
