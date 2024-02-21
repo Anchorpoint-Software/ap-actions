@@ -11,7 +11,16 @@ from vc.versioncontrol_interface import VCRepository, Progress
 import vc.apgit.utility as utility
 import vc.apgit_utility.install_git as install_git
 import vc.apgit.lfs as lfs
-from vc.models import HistoryType, UpdateState, Changes, Change, Stash, Branch, HistoryEntry, ConflictResolveState
+from vc.models import (
+    HistoryType,
+    UpdateState,
+    Changes,
+    Change,
+    Stash,
+    Branch,
+    HistoryEntry,
+    ConflictResolveState,
+)
 import logging
 import re
 import gc
