@@ -1,5 +1,6 @@
 from typing import Optional
-from vc.models import *
+
+from versioncontrol.vc.models import Changes, UpdateState
 
 
 class Progress:

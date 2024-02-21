@@ -1,10 +1,11 @@
 import anchorpoint as ap
 import apsync as aps
 import webbrowser
-from gitea_client import *
 import os
 import re
 from urllib.parse import urlparse, urlunparse
+
+from gitea_client import GiteaClient
 
 integration_tags = ["git", "gitea_self_hosted"]
 connect_action_id = "gitea_connect"

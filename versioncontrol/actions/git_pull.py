@@ -1,3 +1,4 @@
+from typing import Optional
 import anchorpoint as ap
 import git_errors
 import itertools
@@ -9,7 +10,10 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
-from vc.apgit.repository import *
+from vc.models import HistoryType, UpdateState
+from vc.apgit import utility
+from vc.versioncontrol_interface import Progress
+from vc.apgit.repository import GitRepository
 from vc.apgit.utility import get_repo_path
 from git_timeline import map_commit
 

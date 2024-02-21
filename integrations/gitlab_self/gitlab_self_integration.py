@@ -1,9 +1,11 @@
+import re
 import anchorpoint as ap
 import apsync as aps
 import webbrowser
-from gitlab_self_client import *
 from urllib.parse import urlparse, urlunparse
 import os
+
+from gitlab_self_client import GitlabSelfClient
 
 integration_tags = ["git", "self_gitlab"]
 connect_action_id = "self_gitlab_connect"

@@ -1,8 +1,9 @@
 import anchorpoint as ap
 import apsync as aps
-from gitlab_client import *
 import webbrowser
 import os
+
+from gitlab_client import GitlabClient
 
 integration_tags = ["git", "gitlab"]
 gitlab_root = "gitlab.com"

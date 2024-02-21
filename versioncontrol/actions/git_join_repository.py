@@ -25,7 +25,7 @@ if __name__ == "__main__":
     sys.path.insert(0, script_dir)
 
     try:
-        from vc.apgit.repository import *
+        from vc.apgit.repository import GitRepository
     except Warning:
         sys.exit(0)
 

@@ -1,3 +1,4 @@
+from typing import Optional
 import anchorpoint as ap
 
 import sys
@@ -13,8 +14,10 @@ from git_timeline import clear_forced_unlocked_config
 
 importlib.invalidate_caches()
 import git_errors
-from vc.apgit.repository import *
+from vc.apgit.repository import GitRepository
 from vc.apgit.utility import get_repo_path
+from vc.models import UpdateState
+from vc.versioncontrol_interface import Progress
 
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)

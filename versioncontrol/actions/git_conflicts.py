@@ -1,3 +1,4 @@
+from typing import Optional
 import anchorpoint as ap
 import git_errors
 
@@ -7,7 +8,7 @@ import os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 
-from vc.apgit.repository import *
+from vc.apgit.repository import GitRepository
 from vc.apgit.utility import get_repo_path
 from vc.models import ConflictResolveState
 from git_lfs_helper import LFSExtensionTracker

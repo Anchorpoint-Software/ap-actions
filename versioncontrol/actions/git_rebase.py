@@ -6,8 +6,6 @@ import os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 
-from vc.apgit.repository import *
-
 if script_dir in sys.path:
     sys.path.remove(script_dir)
 

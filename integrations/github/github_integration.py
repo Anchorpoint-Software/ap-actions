@@ -1,8 +1,9 @@
 import anchorpoint as ap
 import apsync as aps
 import webbrowser
-from github_client import *
 import os
+
+from github_client import GitHubClient
 
 integration_tags = ["git", "github"]
 connect_action_id = "github_connect"

@@ -1,6 +1,6 @@
 import os
 import platform
-from vc.apgit.repository import *
+from vc.apgit.repository import GitRepository
 from git_settings import GitProjectSettings
 
 

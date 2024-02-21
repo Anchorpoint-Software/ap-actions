@@ -1,3 +1,4 @@
+import logging
 import anchorpoint as ap
 import git_errors
 import itertools
@@ -8,8 +9,9 @@ import os
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 
-from vc.apgit.repository import *
+from vc.apgit.repository import GitRepository
 from vc.apgit.utility import get_repo_path
+import vc.apgit.utility as utility
 
 if script_dir in sys.path:
     sys.path.remove(script_dir)

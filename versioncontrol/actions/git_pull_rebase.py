@@ -1,3 +1,4 @@
+from typing import Optional
 import anchorpoint as ap
 import git_errors
 
@@ -8,8 +9,10 @@ current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
-from vc.apgit.repository import *
+from vc.apgit.repository import GitRepository
 from vc.apgit.utility import get_repo_path
+from vc.versioncontrol_interface import Progress
+from vc.models import UpdateState
 
 if parent_dir in sys.path:
     sys.path.remove(parent_dir)

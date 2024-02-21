@@ -1,9 +1,11 @@
+import re
 import anchorpoint as ap
 import apsync as aps
 import webbrowser
 import urllib.parse
-from azure_devops_client import *
 import os
+
+from azure_devops_client import AzureDevOpsClient, BillingSetupRequiredException
 
 integration_tags = ["git", "azure_devops"]
 devops_root = "dev.azure.com"

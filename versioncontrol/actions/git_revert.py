@@ -1,3 +1,6 @@
+import logging
+import platform
+import time
 import anchorpoint as ap
 import git_errors
 
@@ -5,13 +8,16 @@ import sys
 import os
 import itertools
 
+
 script_dir = os.path.join(os.path.dirname(__file__), "..")
 current_dir = os.path.dirname(__file__)
 sys.path.insert(0, current_dir)
 sys.path.insert(0, script_dir)
 
-from vc.apgit.repository import *
+from vc.models import HistoryEntry
+from vc.apgit.repository import GitRepository
 from vc.apgit.utility import get_repo_path
+import vc.apgit.utility as utility
 import git_repository_helper as helper
 
 if script_dir in sys.path:

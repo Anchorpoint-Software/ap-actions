@@ -4,12 +4,13 @@ import apsync as aps
 import sys
 import os
 
+from vc.apgit.repository import GitRepository
+
 current_dir = os.path.dirname(__file__)
 parent_dir = os.path.join(current_dir, "..")
 sys.path.insert(0, parent_dir)
 
 from git_push import sync_changes
-from vc.apgit.repository import *
 from vc.apgit.utility import get_repo_path
 import git_repository_helper as helper
 
