@@ -103,7 +103,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
         if 'drop_frames=' in line: 
             drop_frame = re.search('(\d+)', line).group()
              
-        if 'frame=' in line and progress_infinite==False:
+        if 'frame=' in line and progress_infinite is False:
             current_frame = re.search('(\d+)', line).group()
             percentage = (int(current_frame)+int(drop_frame))/(len(selected_files)+1)
             progress.report_progress(percentage)

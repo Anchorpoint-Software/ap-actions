@@ -211,7 +211,7 @@ def load_last_seen_fetched_commit(project_id: str):
         project_commit = pickle.load(f)
         if project_id in project_commit:
             commit = project_commit[project_id]
-            if type(commit) != str:
+            if not isinstance(commit, str):
                 return None
             return commit
     return None

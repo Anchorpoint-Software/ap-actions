@@ -170,7 +170,7 @@ def init_dialog():
         create_dialog()
     else:
         password = local_settings.get("encryption_password")
-        if password == None:
+        if password is None:
             create_pw_dialog()
         else:
             encrypted_configuration = settings.get("Config")

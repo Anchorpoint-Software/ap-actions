@@ -296,7 +296,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
         if upload_succeeded_msg in line:
             count_uploaded = add_to_count(count_uploaded, 1)
 
-        if myjson != None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
+        if myjson is not None and myjson["level"] == "error" and myjson["msg"] == "Mount failed":
             ui.show_error("Something went wrong")
             store_auto_mount(False, drive, workspace_id)
             return
@@ -320,7 +320,7 @@ def run_rclone(arguments, drive, workspace_id, startupinfo=None):
         if not global_progress and myjson and "Transferred" in myjson["msg"]:
             progress = check_upload(myjson, progress, count, count_uploaded)
             
-        if progress == None:
+        if progress is None:
             count = set_count_to(count, 0)
             count_uploaded = set_count_to(count_uploaded, 0)
 
@@ -411,7 +411,7 @@ def get_settings(workspace_id: str):
             ui.show_info("No cloud drive configured", description="Ask your workspace owner to setup a cloud drive")
     else:
         password = local_settings.get("encryption_password")
-        if password == None:
+        if password is None:
             create_pw_dialog(workspace_id)
         else:
             try:
@@ -511,7 +511,7 @@ def on_application_started(ctx: ap.Context):
         local_settings = aps.Settings("rclone")
         configuration = rclone_config.get_config()
         password = local_settings.get("encryption_password")
-        if password == None: 
+        if password is None: 
             return
         try:
             resolve_configuration(shared_settings, configuration, password)

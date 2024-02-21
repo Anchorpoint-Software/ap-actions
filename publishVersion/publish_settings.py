@@ -14,7 +14,7 @@ settings = project.get_metadata()
 def store_settings(dialog):
     settings["publish_version_appendix"] = dialog.get_value("appendix_var")
     settings["checkbox"] = str(dialog.get_value("checkbox_var"))
-    if(dialog.get_value("checkbox_var") == True):
+    if(dialog.get_value("checkbox_var") is True):
         settings["publish_file_location"] = dialog.get_value("location_var")
     else:
         settings["publish_file_location"] = ""

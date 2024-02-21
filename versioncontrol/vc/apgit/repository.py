@@ -672,7 +672,7 @@ class GitRepository(VCRepository):
         self.repo.git.stash("drop", stash.id)
 
     def branch_has_stash(self):
-        return self.get_branch_stash() != None
+        return self.get_branch_stash() is not None
     
     def get_stash_change_count(self, stash: Stash):
         changes = self.repo.git(no_pager=True).stash("show", stash.id, "-u", "--name-status").split('\n')
@@ -1170,7 +1170,7 @@ class GitRepository(VCRepository):
     def has_conflicts(self):
         self.check_index_lock()
         conflicts = self.repo.git(no_pager=True).diff("--name-only", "--diff-filter=U")
-        return conflicts != None and len(conflicts) > 0
+        return conflicts is not None and len(conflicts) > 0
 
     def is_rebasing(self):
         repodir = self._get_repo_internal_dir()
@@ -1329,7 +1329,7 @@ class GitRepository(VCRepository):
 
     def launch_external_merge(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
-            if self._command_exists("code") == False:
+            if self._command_exists("code") is False:
                 raise Exception("Could not find external Diff Tool")
             self.repo.git.config("merge.tool", "vscode")
             self.repo.git.config("mergetool.vscode.cmd", "code -n --wait $MERGED")
@@ -1344,7 +1344,7 @@ class GitRepository(VCRepository):
 
     def launch_external_diff(self, tool: Optional[str] = None, paths: Optional[list[str]] = None):
         if tool == "vscode" or tool == "code":
-            if self._command_exists("code") == False:
+            if self._command_exists("code") is False:
                 raise Exception("Could not find external Diff Tool")
             self.repo.git.config("diff.tool", "vscode")
             self.repo.git.config("difftool.vscode.cmd", "code -n --wait --diff $LOCAL $REMOTE")
@@ -1382,7 +1382,7 @@ class GitRepository(VCRepository):
 
     def get_branch_name_from_id(self, id: str) -> str:
         try:
-            if id == None:
+            if id is None:
                 return id
             
             merge_branch = self.repo.git(no_pager=True).branch("-a", "--points-at", id).split('\n')[0].strip()
@@ -1401,7 +1401,7 @@ class GitRepository(VCRepository):
             model = Branch(ref.name)
             model.id = commit.hexsha
             model.last_changed = commit.authored_datetime
-            model.is_local = ref.is_remote == False
+            model.is_local = ref.is_remote is False
             model.author = commit.author.email
             return model
 
@@ -1759,7 +1759,7 @@ class GitRepository(VCRepository):
             changes = self.repo.iter_commits(rev="@{u}..HEAD", max_count=1)
             return next(changes, -1) != -1
         except:
-            return self.is_unborn() == False
+            return self.is_unborn() is False
 
     def has_remote(self) -> bool:
         return len(self.repo.remotes) > 0
@@ -1939,7 +1939,7 @@ class GitRepository(VCRepository):
             return False
 
     def ignore(self, pattern: str, local_only = False):
-        if local_only == False: 
+        if local_only is False: 
             raise NotImplementedError()
         
         dir = os.path.join(self.repo.git_dir, "info")
@@ -1970,14 +1970,14 @@ class GitRepository(VCRepository):
             return []
 
     def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
-        if paths != None and len(paths) == 0:
+        if paths is not None and len(paths) == 0:
             return {}
                
         args = ["ls-files"] 
         if ref:
             args.append(ref)
         args.append("-l")
-        if paths != None and len(paths) < 31:
+        if paths is not None and len(paths) < 31:
             args.extend(["-I", ",".join(paths)])
         try:
             output = self.repo.git.lfs(*args)

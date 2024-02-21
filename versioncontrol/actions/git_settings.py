@@ -261,7 +261,7 @@ class GitProjectSettings(ap.AnchorpointSettings):
             url = get_repo_url_from_channel("Git", ctx.workspace_id, ctx.project_id)
 
         self.dialog.add_text("<b>Repository URL</b>")
-        self.dialog.add_input(url if url != None else "", var="url", width=400).add_button("Visit",var="visit",callback = open_repository_on_web, primary=False)
+        self.dialog.add_input(url if url is not None else "", var="url", width=400).add_button("Visit",var="visit",callback = open_repository_on_web, primary=False)
         self.dialog.add_info("This changes the remote URL of your Git repository, use with caution")
         self.dialog.add_button("Apply URL", var="applyurl", callback=lambda d: apply_git_url_async(d, self.ctx, path), primary=False)
         self.dialog.add_empty()

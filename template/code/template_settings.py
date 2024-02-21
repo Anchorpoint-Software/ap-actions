@@ -48,9 +48,9 @@ def apply_callback(dialog : ap.Dialog):
     template_dir = _get_workspace_template_dir_impl(template_dir_win, template_dir_mac, template_dir_win)
     callback_file = _get_callback_location_impl(dir, template_dir)
     if callback_file and len(callback_file) > 0:
-        if os.path.exists(callback_file) == False:
+        if os.path.exists(callback_file) is False:
             callback_dir = os.path.dirname(callback_file)
-            if os.path.exists(callback_dir) == False:
+            if os.path.exists(callback_dir) is False:
                 os.makedirs(callback_dir)
             copyfile(events_stub_dir, callback_file)
     

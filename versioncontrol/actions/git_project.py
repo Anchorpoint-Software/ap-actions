@@ -343,7 +343,7 @@ try:
                 self._handle_project_overwrite(project_path)
                 sys.exit(0)
 
-            if integration_tags != None:
+            if integration_tags is not None:
                 settings = aps.SharedSettings(project_id, self.context.workspace_id, "integration_info")
                 settings.set("integration_tags", ";".join(integration_tags))
                 settings.store()
@@ -365,7 +365,7 @@ try:
                 self._open_repo(project_path, self.project, git_ignore, url)
                 return
 
-            if git_parent_dir != None and not self._is_path_equal(git_parent_dir, project_path):
+            if git_parent_dir is not None and not self._is_path_equal(git_parent_dir, project_path):
                 # Case 4: Folder Contains Git in Subdir -> Error
                 ap.UI().show_error("Could not setup project", f"Found a Git repository in a subfolder, this is currently not supported: {git_parent_dir}", duration=10000)
                 sys.exit(0)
@@ -440,10 +440,10 @@ try:
             url = repo.get_remote_url()
             if url == "": url = None
 
-            if url == None and user_url != None:
+            if url is None and user_url is not None:
                 url = user_url
 
-            if user_url != None and user_url != url:
+            if user_url is not None and user_url != url:
                 self._handle_project_overwrite(project_path)
                 sys.exit(0)
 
@@ -487,7 +487,7 @@ try:
                             try:
                                 if len(os.listdir(os.path.join(root,dir))) <= 1:
                                     return None, False
-                                is_valid = self.git.GitRepository.load(root) != None
+                                is_valid = self.git.GitRepository.load(root) is not None
                                 return root, is_valid
                             except:
                                 return root, False
@@ -496,7 +496,7 @@ try:
             return None, False
 
         def _is_path_equal(self, path1: str, path2: str):
-            if path1 == None or path2 == None: return False
+            if path1 is None or path2 is None: return False
             
             norm1 = os.path.normpath(os.path.normcase(path1))
             norm2 = os.path.normpath(os.path.normcase(path2))

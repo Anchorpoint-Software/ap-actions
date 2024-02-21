@@ -87,7 +87,7 @@ def on_vc_resolve_conflicts(channel_id: str, conflict_handling: ap.VCConflictHan
         if not git_errors.handle_error(e, path):
             raise e
     
-    if repo.has_conflicts() == False: 
+    if repo.has_conflicts() is False: 
         try:
             if repo.is_rebasing():
                 repo.continue_rebasing()
@@ -159,7 +159,7 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
     branch_incoming = repo.get_branch_name_from_id(merge_head_id)
     is_conflict_from_stash = False
 
-    if repo.is_merging() == False and repo.is_rebasing() == False:
+    if repo.is_merging() is False and repo.is_rebasing() is False:
         # When not merging or rebasing, we have conflicts from the stash application
         # Swap entries when conflict is from stash
         branch_incoming = branch_current # Incoming branch is pulled commit aka current branch

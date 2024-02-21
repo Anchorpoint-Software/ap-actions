@@ -103,7 +103,7 @@ def run_git_command_with_progress(args: list, callback, cwd = None, **kwargs):
         line_counter = line_counter + 1
         callback(line_counter, line.decode("utf-8").strip())
 
-    return 0 if p.returncode == None else p.returncode
+    return 0 if p.returncode is None else p.returncode
 
 def setup_git():
     _setup_git_lfs()

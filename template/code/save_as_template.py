@@ -41,7 +41,7 @@ def get_target(name: str, save_in_project: bool):
 def create_template_async(name, source, target, ctx):
     try:
         progress = ap.Progress("Create Template", "Copying Files", infinite=True)
-        if is_file_template == False:
+        if is_file_template is False:
             if aps.is_project(source, True):
                 ui.show_info("Could not create template", "The folder contains a project. This is not yet supported, unfortunately.")
                 dialog.close()

@@ -459,7 +459,7 @@ class GiteaIntegration(ap.ApIntegration):
         )
         
         # Use the pattern to match the URL
-        if url_pattern.match(value) == None:
+        if url_pattern.match(value) is None:
             dialog.set_value(client_values_info_entry, "Please insert your valid Gitea url first.")
             return "Please insert a valid url"
         extracted_url = self.extract_server_url(value)
@@ -481,7 +481,7 @@ class GiteaIntegration(ap.ApIntegration):
         client_id_pattern = re.compile(
             r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
         )
-        if client_id_pattern.match(value) == None:
+        if client_id_pattern.match(value) is None:
             return "Please add a client id with pattern xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         return
     

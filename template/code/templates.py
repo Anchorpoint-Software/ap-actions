@@ -65,7 +65,7 @@ if os.path.exists(callback_file):
 else:
     callbacks = None
 
-if os.path.exists(template_dir) == False and os.path.exists(project_template_dir) == False:
+if os.path.exists(template_dir) is False and os.path.exists(project_template_dir) is False:
     ui.show_info("No templates available", "Please add a proper template using the Save as Template action")
     sys.exit(0)
 
@@ -244,7 +244,7 @@ def create_dialog():
     # Grey out certain inputs if there is no token in the file/ folder name which is currently choosen in the dropdown
     set_variable_availability(dialog,dialog.get_value("dropdown"))
 
-    if file_mode == False and allow_project_creation:
+    if file_mode is False and allow_project_creation:
         dialog.add_checkbox(var="create_project", text="This is a project")
         dialog.add_info("Select this option if it is a project template. <br> Anchorpoint will create a project in the project list.")
 
