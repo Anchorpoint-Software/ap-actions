@@ -404,13 +404,14 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         error = extract_first_fatal_error(message)
         msg = "In order to help you as quickly as possible, you can <a href=\"ap://sendfeedback\">send us a message</a>. We will get back to you by e-mail."
         if error:
+            ap.log_error(error)
             if len(error) > 50:
                 error = error[:50] + "..."
             ap.UI().show_error("An issue has occured", f"{error}<br><br>{msg}", duration=10000)
         else:
+            ap.log_error(message)
             ap.UI().show_error("An issue has occured", msg, duration=10000)
         
-        ap.log_error(message)
         return True
     
     return False
