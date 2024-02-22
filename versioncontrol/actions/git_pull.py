@@ -215,6 +215,7 @@ def pull(repo: GitRepository, channel_id: str, ctx):
             repo.pop_stash()
 
         update_pulled_commits()
+        ap.UI().reload_tree()
         ctx.run_async(clear_cache, repo.get_root_path(), ctx)
 
     return True
