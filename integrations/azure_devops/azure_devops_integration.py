@@ -28,6 +28,7 @@ def on_load_integrations(integrations, ctx: ap.Context):
     integration = DevopsIntegration(ctx)
     integrations.add(integration)
 
+
 def on_add_user_to_workspace(email, ctx: ap.Context):
     client = AzureDevOpsClient(ctx.workspace_id)
 
