@@ -28,7 +28,6 @@ def on_load_integrations(integrations, ctx: ap.Context):
     integration = DevopsIntegration(ctx)
     integrations.add(integration)
 
-
 def on_add_user_to_workspace(email, ctx: ap.Context):
     client = AzureDevOpsClient(ctx.workspace_id)
 
@@ -60,16 +59,18 @@ def on_add_user_to_workspace(email, ctx: ap.Context):
             description=f"User {email} added to organization {current_org}.",
         )
     except BillingSetupRequiredException as bsre:
-        ap.UI().show_error(
-            title="Cannot add user to Azure DevOps",
-            duration=10000,
-            description=f'You need to setup <a href="{bsre.href_url}">billing</a> to invite more members.',
+        show_add_member_error_dialog(
+            "Cannot add user to Azure DevOps",
+            "You need to setup billing to invite more members.",
+            bsre.href_url,
+            "Setup Billing",
         )
     except Exception as e:
-        ap.UI().show_error(
-            title="Cannot add user to Azure DevOps",
-            duration=10000,
-            description=f'Failed to add user to organization, because "{str(e)}". Please add manually <a href="https://{devops_root}/{current_org}/_settings/users">here</a>.',
+        show_add_member_error_dialog(
+            "Cannot add user to Azure DevOps",
+            f'Failed to add user, because "{str(e)}".<br>Please add user manually.',
+            f"https://{devops_root}/{current_org}",
+            "Add User on Azure DevOps",
         )
 
 
