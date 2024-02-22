@@ -227,12 +227,19 @@ def show_invalid_credentials_error(title, message, repo_path, url):
             'Most likely you are logged in with a wrong Git account.<br>Update credentials or check our <a href="https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/">troubleshooting</a> for help.'
         )
 
-    d.add_button(
-        "Update Credentials",
-        var="updatecreds",
-        callback=lambda d: clear_credentials(d, repo_path),
-        primary=False,
-    )
+    try:
+        repo = GitRepository.load(repo_path)
+        if repo:
+            d.add_button(
+                "Update Credentials",
+                var="updatecreds",
+                callback=lambda d: clear_credentials(d, repo_path),
+                primary=False,
+            )
+        else:
+            d.add_button("OK", callback=lambda d: d.close())
+    except:
+        d.add_button("OK", callback=lambda d: d.close())
     d.show()
 
 
