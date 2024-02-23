@@ -62,6 +62,7 @@ def show_push_failed(repo, error: str, channel_id, ctx):
         or "non-fast-forward" in error
         or "Updates were rejected because the tip of your current branch is behind"
         in error
+        or "has already been updated" in error
     ):
         d.add_text("There are newer changes on the server.")
         d.add_info(
