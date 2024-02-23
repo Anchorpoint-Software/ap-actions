@@ -239,22 +239,16 @@ def on_vc_load_conflict_details(channel_id: str, file_path: str, ctx):
 
         conflict_model.is_text = False
         if is_conflict_from_stash:
-            stash = repo.get_branch_stash()
-            if stash:
-                stash_id = f"stash@{{{stash.id}}}"
-                if status_current == ap.VCFileStatus.Deleted:
-                    stash_id = stash_id + "^"
-                hash_current = repo.get_lfs_filehash([rel_filepath], stash_id)
-            else:
-                try:
-                    with open(file_path, "r") as file:
-                        conflict_str = file.read()
-                        # Incoming is current from a user perspective
-                        _, incoming = extract_info_from_conflict(conflict_str)
-                        hash_current = {rel_filepath: incoming["sha256"]}
-                except Exception as e:
-                    print(f"get_lfs_filehash exception: {str(e)}")
-                    hash_current = []
+            try:
+                with open(file_path, "r") as file:
+                    conflict_str = file.read()
+                    # Incoming is current from a user perspective
+                    _, incoming = extract_info_from_conflict(conflict_str)
+                    hash_current = {rel_filepath: incoming["sha256"]}
+            except Exception as e:
+                print(f"get_lfs_filehash exception: {str(e)}")
+                hash_current = []
+
         else:
             hash_current = repo.get_lfs_filehash([rel_filepath], lfs_ref_current)
 

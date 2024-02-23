@@ -77,7 +77,10 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
             return info
 
         # Fixes a bug where the index of git needs refreshing which makes all other commands slow
-        repo.git_status(True)
+        try:
+            repo.git_status(True)
+        except Exception as e:
+            print(f"Could not refresh index: {e}")
 
         has_conflicts = repo.has_conflicts()
         is_merging = repo.is_rebasing() or repo.is_merging()

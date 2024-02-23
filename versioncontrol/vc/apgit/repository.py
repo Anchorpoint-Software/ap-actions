@@ -241,6 +241,7 @@ class GitRepository(VCRepository):
         sparse=False,
     ):
         env = GitRepository.get_git_environment(remote_url)
+        internal_progress = _InternalProgress(progress) if progress else None
         try:
             multi_options = []
             if sparse:
@@ -249,7 +250,7 @@ class GitRepository(VCRepository):
                 git.Repo.clone_from(
                     remote_url,
                     local_path,
-                    progress=_InternalProgress(progress),
+                    progress=internal_progress,
                     env=env,
                     multi_options=multi_options,
                 )
@@ -257,12 +258,12 @@ class GitRepository(VCRepository):
                 git.Repo.clone_from(
                     remote_url, local_path, env=env, multi_options=multi_options
                 )
-        except GitCommandError as e:
-            print("GitError: ", str(e.status), str(e.stderr), str(e.stdout), str(e))
-            raise e
         except Exception as e:
-            print(str(e))
-            raise e
+            exception_message = str(e)
+            if internal_progress and internal_progress.error_lines:
+                exception_message += "\n" + "\n".join(internal_progress.error_lines)
+            print("GitError: " + exception_message)
+            raise Exception(exception_message)
 
         repo = GitRepository.load(local_path)
         repo.set_username(username, email, local_path)
