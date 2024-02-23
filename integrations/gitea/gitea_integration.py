@@ -639,7 +639,7 @@ class GiteaIntegration(ap.ApIntegration):
         extracted_url = self.extract_server_url(value)
         dialog.set_value(
             client_values_info_entry,
-            f"Create a <a href='{extracted_url}/admin/applications'>Gitea OAuth app</a> with following settings:<br><br>1. Application Name: <b>Anchorpoint</b><br>2. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>3. Check <b>Confidential Client</b> checkbox <br> 4. Press <b> Create Application</b> and enter the client keys below",
+            f"<span style='color:#eeeeee;'>Create a <a href='{extracted_url}/admin/applications'>Gitea OAuth app</a> with following settings:<br><br>1. Application Name: <b>Anchorpoint</b><br>2. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>3. Check <b>Confidential Client</b> checkbox <br> 4. Press <b> Create Application</b> and enter the client keys below</span>",
         )
         return
 

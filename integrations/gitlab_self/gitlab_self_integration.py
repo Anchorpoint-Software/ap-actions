@@ -641,7 +641,7 @@ class GitlabSelfIntegration(ap.ApIntegration):
         extracted_url = self.extract_server_url(value)
         dialog.set_value(
             client_values_info_entry,
-            f"Create a <a href='{extracted_url}/-/user_settings/applications'>GitLab OAuth app</a> with following settings:<br><br>1. Press <b>Add new application</b><br>2. Application Name: <b>Anchorpoint</b><br>3. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>4. Uncheck <b>Confidential</b> checkbox<br>5. Check api, read_user, read_repository, write_repository, profile and email scopes<br>6. Press <b>Save Application</b> and enter the <b>Application ID</b> below<br><br> If you cannot create an GitLab OAuth app, please ask your<br>GitLab admin to create one for you.",
+            f"<span style='color:#eeeeee;'>Create a <a href='{extracted_url}/-/user_settings/applications'>GitLab OAuth app</a> with following settings:<br><br>1. Press <b>Add new application</b><br>2. Application Name: <b>Anchorpoint</b><br>3. Redirect URI: <b>https://www.anchorpoint.app/app/integration/auth</b><br>4. Uncheck <b>Confidential</b> checkbox<br>5. Check api, read_user, read_repository, write_repository, profile and email scopes<br>6. Press <b>Save Application</b> and enter the <b>Application ID</b> below<br><br></span>If you cannot create an GitLab OAuth app, please ask your<br>GitLab admin to create one for you.",
         )
         return
 
