@@ -1,7 +1,7 @@
 # Anchorpoint Markup Language
 # Predefined Variables: e.g. ${path}
 # Environment Variables: e.g. ${MY_VARIABLE}
-# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
 
 version: 1.0
 action:
@@ -22,4 +22,5 @@ action:
     - ap::integrations::azure_devops
     - ap::integrations::github
     - ap::integrations::gitlab
+    - ap::integrations::gitlab_self
     - ap::integrations::gitea

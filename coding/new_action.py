@@ -24,23 +24,29 @@ registration_folder_var = "regfolder"
 registration_filefilter_var = "regfilefilter"
 registration_folderfilter_var = "regfolderfilter"
 
+
 def create_random_id():
-    ran = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))    
+    ran = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
     return f"user::{str(ran)}"
+
 
 def cb_name(dialog, value):
     dialog.set_enabled(create_button_var, len(value) != 0)
     filename = get_filename(value)
     dialog.set_value(action_filename_var, filename + ".yaml")
-    
+
+
 def cb_reg_file(dialog, value):
     dialog.set_enabled(registration_filefilter_var, value)
-    
+
+
 def cb_reg_folder(dialog, value):
     dialog.set_enabled(registration_folderfilter_var, value)
 
+
 def get_filename(action_name):
     return action_name.lower().replace(" ", "_")
+
 
 def create_action(dialog):
     action = ap.Action()
@@ -62,9 +68,9 @@ def create_action(dialog):
     filename = dialog.get_value(action_filename_var)
     filepath = os.path.join(current_folder, filename)
     if action.is_python:
-        action.script  = filepath.replace(".yaml", ".py")
+        action.script = filepath.replace(".yaml", ".py")
 
-    ap.create_action(filepath, action)    
+    ap.create_action(filepath, action)
 
     dialog.close()
     ui.show_success("Action created")
@@ -86,19 +92,31 @@ dialog = ap.Dialog()
 dialog.title = "Create New Action"
 dialog.icon = ctx.icon
 
-dialog.add_text("Name:\t").add_input(placeholder="My Action", var=action_name_var, callback=cb_name)
+dialog.add_text("Name:\t").add_input(
+    placeholder="My Action", var=action_name_var, callback=cb_name
+)
 dialog.add_text("File:\t").add_input(".yaml", var=action_filename_var, enabled=False)
-dialog.add_text("Description:\t").add_input(placeholder="Describe your action", var=action_desc_var)
+dialog.add_text("Description:\t").add_input(
+    placeholder="Describe your action", var=action_desc_var
+)
 dialog.add_checkbox(True, var=action_python_var, text="Use Python")
-dialog.add_info("Create a <b>python</b> action or create a <b>command</b> action that runs an exectuable")
+dialog.add_info(
+    "Create a <b>python</b> action or create a <b>command</b> action that runs an exectuable"
+)
 dialog.add_empty()
 
 dialog.start_section("Registration", foldable=False)
-dialog.add_checkbox(True, var=registration_file_var, callback=cb_reg_file) \
-    .add_text("File\tFilter:").add_input(placeholder="*.png;*.jpeg", var=registration_filefilter_var)
-dialog.add_checkbox(False, var=registration_folder_var, callback=cb_reg_folder) \
-    .add_text("Folder\tFilter:").add_input(placeholder="assets", var=registration_folderfilter_var, enabled=False)
-dialog.add_info("Controls whether or not the action is available in the file and folder context menus")
+dialog.add_checkbox(True, var=registration_file_var, callback=cb_reg_file).add_text(
+    "File\tFilter:"
+).add_input(placeholder="*.png;*.jpeg", var=registration_filefilter_var)
+dialog.add_checkbox(
+    False, var=registration_folder_var, callback=cb_reg_folder
+).add_text("Folder\tFilter:").add_input(
+    placeholder="assets", var=registration_folderfilter_var, enabled=False
+)
+dialog.add_info(
+    "Controls whether or not the action is available in the file and folder context menus"
+)
 dialog.end_section()
 
 dialog.start_section("Advanced")
@@ -108,6 +126,6 @@ dialog.add_text("Category:\t").add_input(category_default, var=action_cat_var)
 dialog.add_text("Icon:\t").add_input(icon_default, var=action_icon_var)
 dialog.end_section()
 
-dialog.add_button("Create", create_action, var = create_button_var, enabled = False)
+dialog.add_button("Create", create_action, var=create_button_var, enabled=False)
 
 dialog.show()

@@ -4,11 +4,12 @@ import apsync as aps
 ctx = ap.get_context()
 ui = ap.UI()
 
+
 def set_settings(settings, setting_name, increment):
     # Get a setting with a default value. Each Setting is identified by a name, here "my setting".
     # The default parameter is optional. If a setting cannot be found and no default is provided, None is returned.
-    value = settings.get(setting_name, default = 0)
-    
+    value = settings.get(setting_name, default=0)
+
     # Do some changes
     value = value + increment
 
@@ -25,33 +26,36 @@ def set_settings(settings, setting_name, increment):
     settings.store()
 
     # Print the setting to the console
-    print(f"Setting \"{setting_name}\" has new value: {value}")
-    
+    print(f'Setting "{setting_name}" has new value: {value}')
+
 
 def action_settings():
     # Create a Settings object for this python script
     settings = aps.Settings(__file__)
     set_settings(settings, "my action setting", 1)
-    
+
+
 def user_settings():
     # Create a Settings object for the current user
     settings = aps.Settings()
     set_settings(settings, "my user setting", 2)
+
 
 def named_settings():
     # Create a Settings object with a name
     settings = aps.Settings("my named settings")
     set_settings(settings, "my named setting", 3)
 
+
 def workspace_settings():
     # Get the current project
     project = aps.get_project(ctx.path)
     if not project:
         print("Skipped workspace settings example: No active Project")
-        return 
+        return
 
     # Create a Settings object and identify it with the current active workspace
-    settings = aps.Settings(identifier = project.workspace_id)
+    settings = aps.Settings(identifier=project.workspace_id)
     set_settings(settings, "my workspace setting", 4)
 
 
@@ -60,14 +64,14 @@ def project_settings():
     project = aps.get_project(ctx.path)
     if not project:
         print("Skipped project settings example: No active Project")
-        return 
+        return
 
     # Create a Settings object and identify it with the project id
-    settings = aps.Settings(identifier = project.id)
+    settings = aps.Settings(identifier=project.id)
     set_settings(settings, "my project setting", 5)
 
 
-# Note: All settings demonstrated here are stored locally per user account. 
+# Note: All settings demonstrated here are stored locally per user account.
 # They are not shared through the cloud with your teammates
 # When signing out from your account, another user will not overwrite your settings.
 

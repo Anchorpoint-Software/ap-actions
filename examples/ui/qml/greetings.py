@@ -5,7 +5,6 @@
 
 import anchorpoint as ap
 from PySide2.QtWidgets import QApplication
-from PySide2.QtQuick import QQuickWindow
 from PySide2.QtCore import QUrl, QObject, QMetaObject, Slot
 from PySide2.QtQml import QQmlComponent
 
@@ -15,6 +14,7 @@ ui = ap.UI()
 # The Anchorpoint context object provides the predefined variables and the inputs from the YAML file.
 ap_context = ap.get_context()
 yaml_dir = ap_context.yaml_dir
+
 
 # We create a controller class that inhertis from QObject.
 # The controller class is providing 'slots' that can be called from the QML file

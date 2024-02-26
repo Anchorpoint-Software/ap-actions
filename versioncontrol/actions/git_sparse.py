@@ -11,10 +11,11 @@ script_dir = os.path.join(os.path.dirname(__file__), "..")
 
 sys.path.insert(0, script_dir)
 
-from vc.apgit.repository import * 
+from vc.apgit.repository import GitRepository
 
 if script_dir in sys.path:
     sys.path.remove(script_dir)
+
 
 def disable_sparse_checkout(dialog, ctx):
     settings = aps.Settings("sparse_checkout_dialog_seen")
@@ -23,6 +24,7 @@ def disable_sparse_checkout(dialog, ctx):
     dialog.close()
     ctx.run_async(on_download_remote_folder, "", ctx)
 
+
 def navigate_to_pricing(dialog, ctx):
     settings = aps.Settings("sparse_checkout_dialog_seen")
     settings.set(ctx.project_id, True)
@@ -30,22 +32,29 @@ def navigate_to_pricing(dialog, ctx):
     webbrowser.open("https://www.anchorpoint.app/pricing")
     dialog.close()
 
+
 def show_sparse_checkout_feature_dialog(ctx):
     settings = aps.Settings("sparse_checkout_dialog_seen")
     already_seen = settings.get(ctx.project_id, False)
-    if already_seen: 
+    if already_seen:
         return
 
     dialog = ap.Dialog()
     dialog.title = "Download feature required"
     dialog.icon = ctx.icon
-    dialog.add_info("You are using partial folder download in this project.<br>This feature is only available in the Team plan of Anchorpoint.<br>Please upgrade your plan or disable the feature.")
-    dialog.add_button("Disable", callback=lambda d: disable_sparse_checkout(d, ctx)).add_button("Upgrade", callback=lambda d: navigate_to_pricing(d, ctx))
+    dialog.add_info(
+        "You are using partial folder download in this project.<br>This feature is only available in the Team plan of Anchorpoint.<br>Please upgrade your plan or disable the feature."
+    )
+    dialog.add_button(
+        "Disable", callback=lambda d: disable_sparse_checkout(d, ctx)
+    ).add_button("Upgrade", callback=lambda d: navigate_to_pricing(d, ctx))
     dialog.show()
+
 
 def on_load_remote_folders(ctx):
     try:
         import sys
+
         sys.path.insert(0, script_dir)
         # from vc.apgit.utility import get_repo_path
         # from git_push import push_in_progress
@@ -61,7 +70,7 @@ def on_load_remote_folders(ctx):
                 return False
             path_parts = path.split("/")
             for i in range(len(path_parts)):
-                if "/".join(path_parts[:i + 1]) in sparse_checkout_set:
+                if "/".join(path_parts[: i + 1]) in sparse_checkout_set:
                     return False
             return True
 
@@ -77,7 +86,7 @@ def on_load_remote_folders(ctx):
             sparse_checkout_set = repo.get_sparse_checkout_folder_set()
         except Exception as e:
             sparse_checkout_set = set()
-            if("is not sparse" in str(e)):
+            if "is not sparse" in str(e):
                 entry = ap.RemoteFolderEntry()
                 entry.path = ""
                 entry.is_remote = False
@@ -111,14 +120,18 @@ def on_load_remote_folders(ctx):
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+
+        git_errors.handle_error(e, ctx.project_path)
         raise e
     finally:
-        if script_dir in sys.path: sys.path.remove(script_dir)
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
 
 def on_download_remote_folder(relative_folder_path: str, ctx):
     try:
         import sys
+
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
 
@@ -128,7 +141,9 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
             raise Exception("project_path is None")
 
         repo = GitRepository.load(ctx.project_path)
-        needed_download = repo.sparse_checkout_folder(relative_folder_path, progress=helper.SparseProgress(progress))
+        needed_download = repo.sparse_checkout_folder(
+            relative_folder_path, progress=helper.SparseProgress(progress)
+        )
         if needed_download:
             ap.evaluate_locks(ctx.workspace_id, ctx.project_id)
             ui = ap.UI()
@@ -138,20 +153,28 @@ def on_download_remote_folder(relative_folder_path: str, ctx):
         progress.finish()
         if not needed_download:
             ui = ap.UI()
-            ui.show_info(title="No remote repository available", duration=5000, description="Selective download / unload only works in combination with a remote repository.")
+            ui.show_info(
+                title="No remote repository available",
+                duration=5000,
+                description="Selective download / unload only works in combination with a remote repository.",
+            )
 
         return True
 
     except Exception as e:
         import git_errors
-        git_errors.handle_error(e)
+
+        git_errors.handle_error(e, ctx.project_path)
         raise e
     finally:
-        if script_dir in sys.path: sys.path.remove(script_dir)
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
 
 def continue_unload(dialog, ctx, relative_folder_path):
     dialog.close()
     ctx.run_async(unload_remote_folder, relative_folder_path, True, ctx)
+
 
 def show_unload_warning_dialog(relative_folder_path, ignored_files_in_folder, ctx):
     dialog = ap.Dialog()
@@ -159,15 +182,24 @@ def show_unload_warning_dialog(relative_folder_path, ignored_files_in_folder, ct
     dialog.title = "Ignored Files"
     dialog.icon = ctx.icon
 
-    dialog.add_text("The folder you are unloading contains ignored files.<br>If you continue, these files will be <b>permamently deleted</b>.")
+    dialog.add_text(
+        "The folder you are unloading contains ignored files.<br>If you continue, these files will be <b>permamently deleted</b>."
+    )
     dialog.add_info(f"Example: <b>{ignored_files_in_folder[0]}</b>")
-    dialog.add_button("Unload and Delete", var="continue", callback=lambda d: continue_unload(d, ctx, relative_folder_path), primary=False).add_button("Cancel", var="cancel", callback=lambda d: d.close(), primary=False)
-    
+    dialog.add_button(
+        "Unload and Delete",
+        var="continue",
+        callback=lambda d: continue_unload(d, ctx, relative_folder_path),
+        primary=False,
+    ).add_button("Cancel", var="cancel", callback=lambda d: d.close(), primary=False)
+
     dialog.show()
+
 
 def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
     try:
         import sys
+
         sys.path.insert(0, script_dir)
         from vc.apgit.repository import GitRepository
 
@@ -181,9 +213,13 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
         if repo.is_unborn():
             progress.finish()
             ui = ap.UI()
-            ui.show_info(title="Cannot unload folder", duration=5000, description="This repository is not initialized.")
+            ui.show_info(
+                title="Cannot unload folder",
+                duration=5000,
+                description="This repository is not initialized.",
+            )
             return True
-        
+
         if not forced:
             ignore_check_path = relative_folder_path
             if ignore_check_path == "":
@@ -191,7 +227,9 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
             ignored_files_in_folder = repo.get_ignored_files([ignore_check_path])
             if len(ignored_files_in_folder) > 0:
                 progress.finish()
-                show_unload_warning_dialog(relative_folder_path, ignored_files_in_folder, ctx)
+                show_unload_warning_dialog(
+                    relative_folder_path, ignored_files_in_folder, ctx
+                )
                 return False
 
         needed_unload = repo.sparse_unload_folder(relative_folder_path)
@@ -203,27 +241,42 @@ def unload_remote_folder(relative_folder_path: str, forced: bool, ctx):
         progress.finish()
         if not needed_unload:
             ui = ap.UI()
-            ui.show_info(title="No remote repository available", duration=5000, description="Selective download / unload only works in combination with a remote repository.")
+            ui.show_info(
+                title="No remote repository available",
+                duration=5000,
+                description="Selective download / unload only works in combination with a remote repository.",
+            )
 
         return True
 
     except Exception as e:
         import git_errors
-        if not git_errors.handle_error(e):
+
+        if not git_errors.handle_error(e, ctx.project_path):
             message = str(e)
             if "it contains uncommitted changes" in message:
                 print("Failed to unload folder because it contains uncommitted changes")
                 ui = ap.UI()
-                ui.show_info(title="Cannot unload folder", duration=5000, description="This folder contains changed files. Commit them first.")
+                ui.show_info(
+                    title="Cannot unload folder",
+                    duration=5000,
+                    description="This folder contains changed files. Commit them first.",
+                )
                 ui.navigate_to_channel_detail("Git", "vcPendingChanges")
             elif "Cannot unload root when it is the only sparse root" in message:
                 ui = ap.UI()
-                ui.show_info(title="Cannot unload folder", duration=5000, description="The root folder is already unloaded.")
+                ui.show_info(
+                    title="Cannot unload folder",
+                    duration=5000,
+                    description="The root folder is already unloaded.",
+                )
             else:
                 raise e
         return False
     finally:
-        if script_dir in sys.path: sys.path.remove(script_dir)
+        if script_dir in sys.path:
+            sys.path.remove(script_dir)
+
 
 def on_unload_remote_folder(relative_folder_path: str, ctx):
     return unload_remote_folder(relative_folder_path, False, ctx)

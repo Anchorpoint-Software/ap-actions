@@ -8,11 +8,14 @@ ui = ap.UI()
 selected_files = ctx.selected_files
 selected_folders = ctx.selected_folders
 
+
 def create_attribute_example():
     # This example shows how to access attributes and update the set of tags
     attribute = api.attributes.get_attribute("Python Example")
     if not attribute:
-        attribute = api.attributes.create_attribute("Python Example", aps.AttributeType.single_choice_tag)
+        attribute = api.attributes.create_attribute(
+            "Python Example", aps.AttributeType.single_choice_tag
+        )
 
     new_tag_name = f"Example Tag {len(attribute.tags) + 1}"
     tags = attribute.tags
@@ -20,6 +23,7 @@ def create_attribute_example():
     api.attributes.set_attribute_tags(attribute, tags)
 
     return attribute
+
 
 def create_attribute(object, example_attribute):
     # We can either use the attribute that we have created before ...
@@ -33,8 +37,10 @@ def create_attribute(object, example_attribute):
 
     # To set a date, use datetime.dateime or a unix timestamp
     from datetime import datetime
+
     api.attributes.set_attribute_value(object, "Created At", datetime.now())
     print(api.attributes.get_attribute_value(object, "Created At"))
+
 
 attribute = create_attribute_example()
 
