@@ -387,6 +387,15 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         )
         return True
 
+    if "organization has enabled or enforced SAML SSO" in message:
+        show_invalid_credentials_error(
+            "Please re-authenticate",
+            "Your organization has enabled or enforced SAML SSO. Please re-authenticate.",
+            repo_path,
+            None,
+        )
+        return True
+
     if "Another Git repository found in" in message:
         ap.UI().show_error("Another Git repository found", message, duration=10000)
         return True
