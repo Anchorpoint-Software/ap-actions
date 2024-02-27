@@ -236,6 +236,7 @@ def prune(dialog, project_path):
         ui.show_info("Cache is already cleared")
     else:
         ui.show_info(f"Cleared {count} objects")
+        print(f"Manually cleared {count} LFS objects from the cache")
 
 
 def prune_pressed(dialog, ctx: ap.Context):

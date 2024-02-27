@@ -54,8 +54,6 @@ def show_push_failed(repo, error: str, channel_id, ctx):
     d.title = "Could not Push"
     d.icon = ":/icons/versioncontrol.svg"
 
-    ap.log_error(f"Could not push: {error}")
-
     if (
         "Updates were rejected because the remote contains work that you do" in error
         or "failed to push some refs to" in error
@@ -93,6 +91,7 @@ def show_push_failed(repo, error: str, channel_id, ctx):
     else:
         from textwrap import TextWrapper
 
+        ap.log_error(f"Could not push: {error}")
         d.add_text("Something went wrong, the Git push did not work correctly")
         d.add_info(
             'In order to help you as quickly as possible, you can <a href="ap://sendfeedback">send us a message</a>. We will get back to you by e-mail.'
