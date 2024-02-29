@@ -336,6 +336,74 @@ class GitRepository(VCRepository):
     def track_branch(self, branch, remote="origin"):
         self.repo.git.branch("-u", f"{remote}/{branch}")
 
+    def create_push_log(self, log_name="azure_bug.log"):
+        branch = self._get_current_branch()
+        remote = self._get_default_remote(branch)
+        if remote is None:
+            remote = "origin"
+        remote_url = self._get_remote_url(remote)
+
+        current_env = os.environ.copy()
+        current_env.update(GitRepository.get_git_environment(remote_url))
+
+        kwargs = {}
+        if platform.system() == "Windows":
+            from subprocess import CREATE_NO_WINDOW
+
+            kwargs["creationflags"] = CREATE_NO_WINDOW
+
+        p = subprocess.run(
+            [
+                install_git.get_git_cmd_path(),
+                "--no-pager",
+                "config",
+                "--list",
+                "--show-origin",
+            ],
+            env=current_env,
+            cwd=self.get_root_path(),
+            capture_output=True,
+        )
+        config_out = p.stdout.decode("utf-8").strip()
+        config_err = p.stderr.decode("utf-8").strip()
+
+        if p.returncode != 0:
+            raise Exception(
+                f"create_push_log: Failed to run git config: \nerr: {config_err}"
+            )
+
+        current_env["GIT_TRACE"] = "1"
+        current_env["GIT_TRACE_PACKET"] = "1"
+        current_env["GIT_CURL_VERBOSE"] = "1"
+
+        p = subprocess.run(
+            [
+                install_git.get_git_cmd_path(),
+                "-c",
+                "lfs.transfer.maxretries=1",
+                "lfs",
+                "push",
+                remote,
+                branch,
+            ],
+            env=current_env,
+            cwd=self.get_root_path(),
+            capture_output=True,
+        )
+
+        push_out = p.stdout.decode("utf-8").strip()
+        push_err = p.stderr.decode("utf-8").strip()
+
+        if p.returncode == 0:
+            raise Exception(
+                f"create_push_log: git lfs push successful (unexpected): \nout: {push_out}\nerr: {push_err}"
+            )
+
+        # Write output to a file
+        with open(os.path.join(self.get_root_path(), log_name), "w") as f:
+            f.write(f"git config --list --show-origin\n{config_out}\n\n")
+            f.write(f"git lfs push --all {remote} {branch}\n{push_out}\n{push_err}\n\n")
+
     def push(self, progress: Optional[Progress] = None) -> UpdateState:
         branch = self._get_current_branch()
         remote = self._get_default_remote(branch)
@@ -1224,19 +1292,28 @@ class GitRepository(VCRepository):
         else:
             self._add_files(len(paths), progress_callback, ".")
 
-    def remove_files(self, paths: list[str]):
+    def remove_files(self, paths: list[str], cache_only=False):
         self.check_index_lock()
+        args = []
+        if cache_only:
+            args.append("--cached")
         if len(paths) > 20:
             with tempfile.TemporaryDirectory() as dirpath:
                 pathspec = os.path.join(dirpath, "rm_spec")
                 self._write_pathspec_file(paths, pathspec)
-                self.repo.git.rm(pathspec_from_file=pathspec)
+                self.repo.git.rm(pathspec_from_file=pathspec, *args)
         else:
-            self.repo.git.rm(*paths)
+            self.repo.git.rm(*paths, *args)
 
-    def commit(self, message: str):
+    def commit(self, message: Optional[str], amend: bool = False):
         self.check_index_lock()
-        args = [install_git.get_git_cmd_path(), "commit", "-m", message]
+        args = [install_git.get_git_cmd_path(), "commit"]
+        if message:
+            args.append("-m")
+            args.append(message)
+        if amend:
+            args.append("--amend")
+            args.append("--no-edit")
         gpg = shutil.which("gpg")
         if not gpg:
             args.insert(1, "commit.gpgsign=false")
@@ -2090,15 +2167,15 @@ class GitRepository(VCRepository):
     def add_remote(self, url: str, name: str = "origin"):
         self.repo.git.remote("add", name, url)
 
-    def _get_local_commits(self, has_upstream):
+    def _get_local_commits(self, has_upstream, path: Optional[str] = None):
         if has_upstream:
             if self.is_unborn():
                 return []
-            return list(self.repo.iter_commits(rev="@{u}..HEAD"))
+            return list(self.repo.iter_commits(rev="@{u}..HEAD", paths=path))
         else:
             if self.is_unborn():
                 return []
-            return list(self.repo.iter_commits())
+            return list(self.repo.iter_commits(paths=path))
 
     def get_local_commits(self):
         history = []
@@ -2153,17 +2230,22 @@ class GitRepository(VCRepository):
         time_start: Optional[datetime] = None,
         time_end: Optional[datetime] = None,
         remote_only=False,
+        path: Optional[str] = None,
     ):
         history = []
-        args = {}
+        kwargs = {}
+        args = []
         if time_start:
-            args["until"] = f'"{time_start.strftime("%Y-%m-%d %H:%M:%S")}"'
+            kwargs["until"] = f'"{time_start.strftime("%Y-%m-%d %H:%M:%S")}"'
         if time_end:
-            args["since"] = f'"{time_end.strftime("%Y-%m-%d %H:%M:%S")}"'
+            kwargs["since"] = f'"{time_end.strftime("%Y-%m-%d %H:%M:%S")}"'
+
+        if len(kwargs) == 0:
+            args = ["--all"]
 
         unborn = self.is_unborn()
         if not unborn and not remote_only:
-            base_commits = list(self.repo.iter_commits(**args))
+            base_commits = list(self.repo.iter_commits(*args, paths=path, **kwargs))
         else:
             base_commits = []
 
@@ -2174,12 +2256,16 @@ class GitRepository(VCRepository):
                 has_upstream = self._has_upstream()
                 if has_upstream:
                     if unborn:
-                        remote_commits = list(self.repo.iter_commits(rev="@{u}"))
+                        remote_commits = list(
+                            self.repo.iter_commits(rev="@{u}", paths=path)
+                        )
                     else:
-                        remote_commits = list(self.repo.iter_commits(rev="HEAD..@{u}"))
+                        remote_commits = list(
+                            self.repo.iter_commits(rev="HEAD..@{u}", paths=path)
+                        )
 
                 if not unborn:
-                    local_commits = self._get_local_commits(has_upstream)
+                    local_commits = self._get_local_commits(has_upstream, path)
                     for commit in local_commits:
                         local_commit_set.add(commit.hexsha)
 
@@ -2383,6 +2469,14 @@ class GitRepository(VCRepository):
         except Exception as e:
             print(f"error in get_all_files: {str(e)}")
             return []
+
+    def get_file_from_hash(self, hash: str) -> Optional[str]:
+        output = self.repo.git.lfs("ls-files", "-l")
+        hashes_and_files = re.findall(r"([a-f0-9]+) [-*] (.+)", output)
+        for hash_value, file_path in hashes_and_files:
+            if hash_value == hash:
+                return file_path
+        return None
 
     def get_lfs_filehash(self, paths: list[str] = None, ref: str = None):
         if paths is not None and len(paths) == 0:

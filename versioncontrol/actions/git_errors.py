@@ -8,6 +8,7 @@ script_dir = os.path.join(os.path.dirname(__file__), "..")
 sys.path.insert(0, script_dir)
 import vc.apgit.utility as utility
 from vc.apgit.repository import GitRepository
+from vc.models import HistoryType
 
 if script_dir in sys.path:
     sys.path.remove(script_dir)
@@ -286,9 +287,226 @@ def fix_username(repo_path):
     return True
 
 
+def create_push_logfiles_async(repo_path, dialog):
+    try:
+        repo = GitRepository.load(repo_path)
+        if not repo:
+            print(f"create_push_logfiles: Failed to load repository {repo_path}")
+            return
+
+        progress = ap.Progress(
+            "Creating Log File", "This can take a while", show_loading_screen=True
+        )
+        repo.create_push_log()
+        ap.UI().show_success(
+            "Log file created",
+            duration=10000,
+        )
+    except Exception as e:
+        msg = str(e)
+        if "git lfs push successful" in msg:
+            print("create_push_logfiles: LFS push successful (unexpected)")
+            ap.UI().show_success(
+                "LFS push successful",
+                "Please try pushing to AzureDevOps again",
+                duration=50000,
+            )
+            dialog.close()
+            return
+        print(f"Failed to create push log files: {msg}")
+        ap.UI().show_error(
+            "Failed to create push log files",
+            'Please <a href="ap://sendfeedback">send us a message</a>',
+            duration=50000,
+        )
+
+
+def create_push_logfiles(repo_path, dialog):
+    ctx = ap.get_context()
+    ctx.run_async(create_push_logfiles_async, repo_path, dialog)
+
+
+def remove_file_from_commit_async(rel_filepath, repo_path, dialog):
+    try:
+        repo = GitRepository.load(repo_path)
+        if not repo:
+            print(f"remove_file_from_commit: Failed to load repository {repo_path}")
+            return
+
+        changes = repo.get_pending_changes(staged=True)
+        if changes.size() != 0:
+            print(f"remove_file_from_commit: Staged changes found {changes.size()}")
+            ap.UI().show_error(
+                "Failed to remove file from commit",
+                "You have staged changes, please unstage them and try again.",
+                duration=10000,
+            )
+            return
+
+        history = repo.get_history(path=rel_filepath)
+        if len(history) == 0:
+            print(f"remove_file_from_commit: No history found for {rel_filepath}")
+            return
+
+        first_commit = history[0]
+        head = repo.get_current_change_id()
+        if first_commit.id != head:
+            print(
+                f"remove_file_from_commit: File {rel_filepath} is not in the current commit"
+            )
+            ap.UI().show_error(
+                "Failed to remove file from commit",
+                "The file is not in the current commit, please try a different approach.",
+                duration=10000,
+            )
+
+            return
+
+        if first_commit.type != HistoryType.LOCAL:
+            print(
+                f"remove_file_from_commit: File {rel_filepath} is already pushed {first_commit.type}"
+            )
+            ap.UI().show_error(
+                "Failed to remove file from commit",
+                "The file is already pushed, please try a different approach.",
+                duration=10000,
+            )
+
+            return
+
+        repo.remove_files([rel_filepath], cache_only=True)
+
+        try:
+            repo.commit(message=None, amend=True)
+        except Exception as e:
+            msg = str(e)
+            if (
+                "You asked to amend the most recent commit, but doing so would make"
+                in msg
+            ):
+                repo.reset(commit_id="HEAD^")
+            else:
+                raise e
+
+        dialog.close()
+        ap.reload_timeline_entries()
+        ap.vc_load_pending_changes("Git", True)
+        ap.UI().show_success(
+            "Removed file from commit",
+            "Please try pushing again",
+            duration=10000,
+        )
+
+    except Exception as e:
+        print(f"Failed to remove file from commit: {str(e)}")
+        ap.UI().show_error(
+            "Failed to remove file from commit",
+            duration=50000,
+        )
+
+
+def remove_file_from_commit(rel_filepath, repo_path, dialog):
+    ctx = ap.get_context()
+    ctx.run_async(remove_file_from_commit_async, rel_filepath, repo_path, dialog)
+
+
+def handle_azure_upload_bug(repo_path, error_message):
+    import webbrowser
+
+    ap.log_error(f"handle_azure_upload_bug: {error_message}")
+
+    def extract_filehash():
+        import re
+
+        pattern = r"lfs/objects/([0-9a-f]+)"
+        matches = re.findall(pattern, error_message)
+        if matches:
+            return matches[0]
+        return None
+
+    filehash = extract_filehash()
+    if not filehash:
+        print(
+            f"handle_azure_upload_bug: Could not extract filehash from {error_message}"
+        )
+        return False
+
+    lfs_file = os.path.join(
+        repo_path, ".git", "lfs", "objects", filehash[:2], filehash[2:4], filehash
+    )
+    if not os.path.exists(lfs_file):
+        print(f"handle_azure_upload_bug: Could not find LFS file {lfs_file}")
+        return False
+
+    file_size = os.path.getsize(lfs_file)
+    file_size_gb = file_size / 1024 / 1024 / 1024
+
+    repo = GitRepository.load(repo_path)
+    if not repo:
+        print(f"handle_azure_upload_bug: Could not load repository {repo_path}")
+        return False
+
+    rel_file = repo.get_file_from_hash(filehash)
+    if not rel_file:
+        print(f"handle_azure_upload_bug: Could not find file for hash {filehash}")
+        return False
+
+    log_path = os.path.join(repo_path, "azure_bug.log")
+
+    dialog = ap.Dialog()
+    dialog.title = "Azure DevOps Upload Failed"
+    dialog.icon = ":/icons/versioncontrol.svg"
+    dialog.add_text(
+        f"The file <b>{rel_file}</b> could not be uploaded to Azure DevOps."
+    )
+    dialog.add_text(
+        "This is a known issue with Azure DevOps. To help them fix this, please create a bug report."
+    )
+
+    dialog.start_section("How to create a bug report", folded=True)
+    dialog.add_text("1. Create log files for Microsoft Support (can take a while)")
+    dialog.add_button(
+        "Create Log Files",
+        primary=False,
+        callback=lambda d: create_push_logfiles(repo_path, d),
+    )
+    dialog.add_text("2. Create a bug report on Azure DevOps")
+    dialog.add_button(
+        "Create Bug Report",
+        primary=False,
+        callback=lambda d: webbrowser.open_new(
+            "https://developercommunity.visualstudio.com/AzureDevOps/report"
+        ),
+    )
+    dialog.add_text(
+        "3. Provide a clear title: <b>Git LFS push fails with error code 503 'MISSING'</b>"
+    )
+    dialog.add_text(
+        f"4. Describe that you cannot push a git LFS file of {file_size_gb:.2f} GB.<br>Refer to this related support request ID: <b>2302070050000873</b>"
+    )
+    dialog.add_text("5. Attach the log files you created in step 1")
+    dialog.add_info(f"You can find the log file here:<br>{log_path}")
+    dialog.end_section()
+
+    dialog.add_text("To unblock you from working, you can try to:")
+    dialog.add_empty().add_text("• Create a new project and exclude the file")
+    dialog.add_empty().add_text("• Create a new Azure DevOps organization")
+    dialog.add_empty().add_text(
+        "• Let Anchorpoint try to remove the file from your commit"
+    )
+
+    dialog.add_empty().add_button(
+        "Remove file from commit",
+        callback=lambda d: remove_file_from_commit(rel_file, repo_path, d),
+    )
+    dialog.show()
+
+    return True
+
+
 def handle_error(e: Exception, repo_path: Optional[str] = None):
     message = str(e)
-    print(message)
+    print(f"handle_error: {message}")
 
     if (
         "warning: failed to remove" in message
@@ -406,19 +624,26 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         or "out of disk space" in message
         or "not enough memory" in message
         or "could not write config file" in message
+        or "Out of memory" in message
     ):
         ap.UI().show_error("No space left on device", message, duration=10000)
         return True
 
-    if "LFS object not found" in message or (
-        "lfs/objects/" in message and "MISSING" in message
-    ):
+    if "LFS object not found" in message:
         ap.UI().show_error(
             "Missing File",
             'An object is missing on the server, learn <a href="https://docs.anchorpoint.app/docs/version-control/troubleshooting/#missing-file">how to fix</a> this.',
             duration=10000,
         )
         return True
+
+    if (
+        "lfs/objects/" in message
+        and "(MISSING) from HTTP 503" in message
+        and "Fatal error: Server error" in message
+    ):
+        if handle_azure_upload_bug(repo_path, message):
+            return True
 
     if "detected dubious ownership in repository" in message:
         if repo_path:
@@ -545,12 +770,19 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         or "has no refspec set" in message
         or "clean filter 'lfs' failed" in message
         or "bad config line" in message
+        or "(MISSING) from HTTP 503" in message
     ):
 
         def extract_first_fatal_error(error_message):
             try:
                 lines = error_message.split("\n")
                 for line in lines:
+                    if (
+                        "git-credential-manager-core was renamed to git-credential-manager"
+                        in line
+                    ):
+                        continue
+
                     if "fatal: " in line:
                         return line.split("fatal: ")[-1].strip()
 
