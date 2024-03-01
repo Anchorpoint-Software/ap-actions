@@ -2831,3 +2831,10 @@ class GitRepository(VCRepository):
             print(e)
             return False
         return True
+
+    def get_lfs_logs(self):
+        try:
+            return self.repo.git.lfs("logs", "last")
+        except Exception as e:
+            print(f"error in get_lfs_logs: {str(e)}")
+            return ""

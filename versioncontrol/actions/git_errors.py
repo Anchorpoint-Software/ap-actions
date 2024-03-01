@@ -797,6 +797,17 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
                     return False
 
     if (
+        "git-lfs filter-process" in message
+        and "git lfs logs last" in message
+        and repo_path
+    ):
+        repo = GitRepository.load(repo_path)
+        if repo:
+            log = repo.create_lfs_log()
+            print(f"git lfs logs last: {log}")
+            pass  # Continue to show the original error
+
+    if (
         "failed due to: exit code" in message
         or "has no refspec set" in message
         or "clean filter 'lfs' failed" in message
