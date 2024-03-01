@@ -807,6 +807,17 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             print(f"git lfs logs last: {log}")
             pass  # Continue to show the original error
 
+    if "pathspec" in message and "did not match any file" in message:
+        match = re.match(r"error: pathspec '(.*)' did not match any file", message)
+        if match:
+            file = match.group(1)
+            ap.UI().show_error(
+                "File not found",
+                f"The file <b>{file}</b> could not be found.",
+                duration=10000,
+            )
+            return True
+
     if (
         "failed due to: exit code" in message
         or "has no refspec set" in message
