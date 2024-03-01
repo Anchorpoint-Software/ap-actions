@@ -706,6 +706,7 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         or "Timed out" in message
         or "Connection refused" in message
         or "no such host" in message
+        or "Timeout was reached" in message
     ):
         # Extract the repo URL
         import re
