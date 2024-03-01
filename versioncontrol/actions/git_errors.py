@@ -641,6 +641,15 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         )
         return True
 
+    if "Could not read from remote repository" in message:
+        show_invalid_credentials_error(
+            "Could not read from remote repository",
+            "Please make sure you have the correct access rights and the repository exists.",
+            repo_path,
+            None,
+        )
+        return True
+
     if "unable to access" in message:
         if show_unable_to_access_error(message, repo_path):
             return True
