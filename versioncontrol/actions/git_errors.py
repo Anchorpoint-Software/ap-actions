@@ -666,11 +666,17 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         "no space left on device" in message
         or "not enough space" in message
         or "out of disk space" in message
-        or "not enough memory" in message
         or "could not write config file" in message
-        or "Out of memory" in message
     ):
         ap.UI().show_error("No space left on device", message, duration=10000)
+        return True
+
+    if (
+        "The paging file is too small for this operation to complete" in message
+        or "Out of memory" in message
+        or "not enough memory" in message
+    ):
+        ap.UI().show_error("Out of memory", message, duration=10000)
         return True
 
     if "LFS object not found" in message:
