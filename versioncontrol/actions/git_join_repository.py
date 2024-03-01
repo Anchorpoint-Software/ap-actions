@@ -95,7 +95,13 @@ if __name__ == "__main__":
             ap.refresh_timeline_channel(timeline_channel.id)
 
         except Exception as e:
-            ap.log_error(f"Cannot join Git Repository: {str(e)}")
+            error_msg = str(e)
+            if (
+                "User cancelled dialog" not in error_msg
+                and "User canceled dialog" not in error_msg
+            ):
+                ap.log_error(f"Cannot join Git Repository: {error_msg}")
+
             d = ap.Dialog()
             d.title = "Cannot join Git Repository"
             d.icon = ":/icons/versioncontrol.svg"
