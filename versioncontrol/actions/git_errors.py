@@ -793,6 +793,15 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         fix_username(repo_path)
         return False  # Still show original error to user
 
+    if "paths are ignored by one of your .gitignore" in message:
+        ap.vc_load_pending_changes("Git")
+        ap.UI().show_error(
+            "Paths are ignored by .gitignore",
+            "Please try again",
+            duration=10000,
+        )
+        return True
+
     if ".git/index.lock" in message:
         if repo_path:
             repo = GitRepository.load(repo_path)
