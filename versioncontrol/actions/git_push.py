@@ -159,7 +159,10 @@ def handle_git_autolock(ctx, repo):
             paths_to_unlock.append(lock.path)
 
     ap.unlock(ctx.workspace_id, ctx.project_id, paths_to_unlock)
-    clear_forced_unlocked_config()
+    try:
+        clear_forced_unlocked_config()
+    except Exception:
+        pass
 
 
 def get_push_lockfile(repo_git_dir):

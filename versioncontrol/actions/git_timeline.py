@@ -587,7 +587,10 @@ def handle_git_autolock(repo, ctx, changes):
                 path_mod_status = pickle.load(file)
         except Exception as e:
             print(f"Could not load forced unlocked files: {e}")
-            clear_forced_unlocked_config()
+            try:
+                clear_forced_unlocked_config()
+            except Exception:
+                pass
 
     for change in changes:
         if (
