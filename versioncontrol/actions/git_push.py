@@ -88,6 +88,13 @@ def show_push_failed(repo, error: str, channel_id, ctx):
     ):
         d.add_text("Could not connect to the Git server, maybe you are offline?")
         d.add_info("Please check your internet connection and try again.")
+    elif (
+        "lfs/objects/" in error
+        and "(MISSING) from HTTP 503" in error
+        and "Fatal error: Server error" in error
+    ):
+        git_errors.handle_azure_upload_bug(repo.get_root_path(), error)
+        return
     else:
         from textwrap import TextWrapper
 
