@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 "User cancelled dialog" not in error_msg
                 and "User canceled dialog" not in error_msg
             ):
-                ap.log_error(f"Cannot join Git Repository: {error_msg}")
+                ap.log_error(f"Cannot join Git Repository: {error_msg}", send_log=False)
 
             d = ap.Dialog()
             d.title = "Cannot join Git Repository"
