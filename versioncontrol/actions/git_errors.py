@@ -225,7 +225,7 @@ def show_invalid_credentials_error(title, message, repo_path, url):
         )
     else:
         d.add_info(
-            'Most likely you are logged in with a wrong Git account.<br>Update credentials or check our <a href="https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/">troubleshooting</a> for help.'
+            'Most likely you are logged in with a wrong Git account or do not have access.<br>Update credentials or check our <a href="https://docs.anchorpoint.app/docs/3-work-in-a-team/git/5-Git-troubleshooting/">troubleshooting</a> for help.'
         )
 
     try:
@@ -263,6 +263,33 @@ def show_repository_not_found_error(message, repo_path):
         show_invalid_credentials_error(
             "Your repository was not found",
             f"The URL {url}<br>cannot be found under your account.",
+            repo_path,
+            url,
+        )
+        return True
+
+    return False
+
+
+def show_unable_to_access_error(message, repo_path):
+    def extract_repository_url(input_string):
+        import re
+
+        pattern = r"unable to access '([^']+)'"
+        matches = re.findall(pattern, input_string)
+        if matches:
+            return matches[0]
+        return None
+
+    url = extract_repository_url(message)
+    context = ap.get_context()
+    if not context:
+        return False
+
+    if url:
+        show_invalid_credentials_error(
+            "Could not access repository",
+            f"The URL {url} cannot be accessed.",
             repo_path,
             url,
         )
@@ -613,6 +640,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
             None,
         )
         return True
+
+    if "unable to access" in message:
+        if show_unable_to_access_error(message, repo_path):
+            return True
 
     if "Another Git repository found in" in message:
         ap.UI().show_error("Another Git repository found", message, duration=10000)
