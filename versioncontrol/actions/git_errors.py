@@ -650,6 +650,10 @@ def handle_error(e: Exception, repo_path: Optional[str] = None):
         )
         return True
 
+    if "stash entry is kept" in message:
+        # ignore
+        return False
+
     if "unable to access" in message:
         if show_unable_to_access_error(message, repo_path):
             return True
