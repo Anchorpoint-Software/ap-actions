@@ -1191,7 +1191,7 @@ def refresh_async(channel_id: str, project_path):
     import sys
 
     sys.path.insert(0, script_dir)
-    git_dir = None
+    # git_dir = None
     try:
         from vc.apgit.repository import GitRepository
         from vc.apgit.utility import get_repo_path
@@ -1208,9 +1208,8 @@ def refresh_async(channel_id: str, project_path):
             ap.refresh_timeline_channel(channel_id)
 
     except Exception as e:
-        import git_errors
-
-        git_errors.handle_error(e, git_dir)
+        # import git_errors
+        # git_errors.handle_error(e, git_dir)
         if "didn't exist" not in str(e):
             print("refresh_async exception: " + str(e))
         pass
