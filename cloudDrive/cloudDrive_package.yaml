@@ -11,20 +11,20 @@ action:
   id: ap::package::cloudDrive
   category: infrastructure/cloudDrive
   type: package
-  enable: true
+  enable: false
   author: Anchorpoint Software GmbH
-  description: Create a <a href'https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/'>network drive</a> that can connect to an S3 compatible cloud. (legacy feature)
+  description: Create a <a href'https://docs.anchorpoint.app/docs/2-manage-files/2-Cloud-NAS/'>network drive</a> that can connect to an S3 compatible cloud (experimental)
   icon:
     path: icons/driveCloud.svg
-  
+
   platforms:
     - win
     - mac
-    
+
   dependencies:
     - code/rclone_install_helper.py
     - code/rclone_config_helper.py
-    
+
   settings: code/package_settings.py
   actions:
     - ap::cloudDrive::mount
