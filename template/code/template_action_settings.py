@@ -1,9 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 import os
-import sys
 
-sys.path.insert(0, os.path.dirname(__file__))
 import template_utility
 from template_settings import get_workspace_template_dir
 
