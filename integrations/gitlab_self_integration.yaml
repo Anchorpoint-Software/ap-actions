@@ -1,18 +1,1 @@
-# Anchorpoint Markup Languageintegrations
-# Predefined Variables: e.g. ${path}
-# Environment Variables: e.g. ${MY_VARIABLE}
-# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
-
-version: 1.0
-action:
-  name: Gitlab (Self-Hosted) Integration
-
-  version: 1
-  id: ap::integrations::gitlab_self
-  category: integrations
-  type: python
-  enable: true
-  author: Anchorpoint Software GmbH
-  description: Integration for Gitlab (Self-Hosted)
-
-  script: gitlab_self/gitlab_self_integration.py
+# Unavailable

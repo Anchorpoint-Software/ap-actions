@@ -27,7 +27,6 @@ def remove_auto_mount(ctx: ap.Context):
 
 
 def on_removed_from_workspace(ctx: ap.Context):
-    kill_rclone()
     remove_auto_mount(ctx)
     local_settings = aps.Settings("rclone")
     local_settings.clear()
