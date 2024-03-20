@@ -19,6 +19,7 @@ button_var = "button"
 attr_wip_var = "wip"
 attr_link_var = "link"
 
+
 # Dialog Callbacks
 # The changed challback is called whenever the item has changed (e.g. when the user types something in the text input)
 # The first paramter is the dialog itself, the second parameter is the changed value
@@ -27,6 +28,7 @@ def cb_name_changed(dialog, value):
     enable = len(value) != 0
     dialog.set_enabled(button_var, enable)
     print(f"button enable: {enable}")
+
 
 # The button pressed callback takes only one parameter: the dialog itself
 def button_pressed(dialog):
@@ -101,7 +103,9 @@ def showDialog():
     dialog.callback_closed = cb_closed
 
     dialog.add_text("Name:\t").add_input(
-        placeholder="provide a folder name", var=folder_name_var, callback=cb_name_changed
+        placeholder="provide a folder name",
+        var=folder_name_var,
+        callback=cb_name_changed,
     )
     dialog.add_text("Count:\t").add_input("2", var=folder_count_var)
     dialog.add_separator()
