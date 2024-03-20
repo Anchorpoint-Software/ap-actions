@@ -175,6 +175,8 @@ def resolve_tokens(variable_list):
             variables["YYYYMMDD"] = datetime.today().strftime("%Y%m%d")
         elif variable == "YYYY-MM-DD":
             variables["YYYY-MM-DD"] = datetime.today().strftime("%Y-%m-%d")
+        elif variable == "DD-MM-YYYY":
+            variables["DD-MM-YYYY"] = datetime.today().strftime("%d-%m-%Y")
         elif variable == "YY":
             variables["YY"] = datetime.today().strftime("%y")
         elif variable == "YYMM":
@@ -185,6 +187,8 @@ def resolve_tokens(variable_list):
             variables["YYMMDD"] = datetime.today().strftime("%y%m%d")
         elif variable == "YY-MM-DD":
             variables["YY-MM-DD"] = datetime.today().strftime("%y-%m-%d")
+        elif variable == "DD-MM-YY":
+            variables["DD-MM-YY"] = datetime.today().strftime("%d-%m-%y")
         elif variable == "ProjectFolder":
             projectFolder = os.path.basename(os.path.normpath(ctx.project_path))
             variables["ProjectFolder"] = str(projectFolder)
