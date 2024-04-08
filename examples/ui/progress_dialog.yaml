@@ -1,0 +1,29 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "UI / Progress Dialog"
+
+  #Optional Properties
+  version: 1
+  id: "ap::examples::progressdialog"
+  category: "utility/code/examples/dialog"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+  description: "Shows how to create a progress dialog in Anchorpoint."
+  icon:
+    path: ":icons/aplogo.svg"
+    color: "white"
+
+  script: "progress_dialog.py"
+
+  #Where to register this action: in all folders
+  register:
+    folder:
+      enable: true

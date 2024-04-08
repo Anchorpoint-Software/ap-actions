@@ -1,0 +1,29 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "UI / Pages Dialog"
+
+  #Optional Properties
+  version: 1
+  id: "ap::examples::pagesdialog"
+  category: "utility/code/examples/dialog"
+  type: python
+  enable: false
+  author: "Anchorpoint Software GmbH"
+  description: "This is an advanced example action that demonstrates how to create and control a more complex dialog in anchorpoint that uses pages"
+  icon:
+    path: ":icons/aplogo.svg"
+    color: "white"
+
+  script: "pages_dialog.py"
+
+  #Where to register this action: in all folders
+  register:
+    folder:
+      enable: true
