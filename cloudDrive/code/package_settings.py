@@ -58,7 +58,7 @@ def create_dialog():
     )
 
     # S3 AWS
-    dialog.add_text("Access Key\t\t").add_input(
+    dialog.add_text("Access Key\t").add_input(
         configuration["s3aws_access_key_id"],
         placeholder="XXXBTBISU...",
         var="s3aws_access_key_id_var",
@@ -73,7 +73,7 @@ def create_dialog():
         placeholder="eu-central-1 (Optional)",
         var="s3aws_region_var",
     )
-    dialog.add_text("Location Constraint\t").add_input(
+    dialog.add_text("Location Constraint").add_input(
         configuration["s3aws_location_constraint"],
         placeholder="EU (Optional)",
         var="s3aws_location_constraint_var",
@@ -85,7 +85,7 @@ def create_dialog():
     )
 
     # s3 Wasabi
-    dialog.add_text("Access Key\t\t").add_input(
+    dialog.add_text("Access Key\t").add_input(
         configuration["s3wasabi_access_key_id"],
         placeholder="XXXBTBISU...",
         var="s3wasabi_access_key_id_var",
@@ -124,14 +124,14 @@ def create_dialog():
         placeholder="myBucket/myFolder...",
         var="gcs_bucket_name_var",
     )
-    dialog.add_text("Service Account Json\t").add_input(
+    dialog.add_text("Service Account Json").add_input(
         configuration["gcs_service_account"],
         placeholder='{"type": "service_account", ...}',
         var="gcs_service_account_var",
     )
 
     # s3 Other
-    dialog.add_text("Access Key\t\t").add_input(
+    dialog.add_text("Access Key\t").add_input(
         configuration["s3other_access_key_id"],
         placeholder="XXXBTBISU...",
         var="s3other_access_key_id_var",
