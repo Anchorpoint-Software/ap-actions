@@ -11,11 +11,14 @@ drive_var = "drive"
 
 
 def remove_bat_file(drive):
-    app_data = os.getenv("APPDATA")
-    startup_path = f"{app_data}/Microsoft/Windows/Start Menu/Programs/Startup"
-    path_to_bat = path.join(startup_path, "ap_mount_" + drive[:-1] + ".bat")
-    if path.isfile(path_to_bat):
-        os.remove(path_to_bat)
+    try:
+        app_data = os.getenv("APPDATA")
+        startup_path = f"{app_data}/Microsoft/Windows/Start Menu/Programs/Startup"
+        path_to_bat = path.join(startup_path, "ap_mount_" + drive[:-1] + ".bat")
+        if path.isfile(path_to_bat):
+            os.remove(path_to_bat)
+    except Exception as e:
+        print(e)
 
 
 def get_used_drives():
@@ -37,9 +40,10 @@ def unmount(dialog):
         ui.show_error("Failed to Unmount!")
     else:
         print(subst.stdout)
+        remove_bat_file(drive)
         ui.show_success("Unmount Successful")
+        ui.reload_drives()
 
-    remove_bat_file(drive)
     dialog.close()
 
 
