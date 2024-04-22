@@ -37,3 +37,5 @@ action:
     - ap::examples::trigger::actionenabled
     - ap::examples::trigger::attributeschanged
     - ap::examples::workspace
+    - ap::examples::pagesdialog
+    - ap::examples::progressdialog

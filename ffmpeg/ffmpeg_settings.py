@@ -62,8 +62,8 @@ def open_dialog():
     dialog = ap.Dialog()
     input_callback(dialog, location_var)
     dialog.title = "Conversion Settings"
-    dialog.add_text("Framerate \t").add_input(fps, var=framerate_var)
-    dialog.add_text("Location \t").add_dropdown(
+    dialog.add_text("Framerate ").add_input(fps, var=framerate_var)
+    dialog.add_text("Location \t ").add_dropdown(
         location,
         ["Same Folder", "Custom Folder"],
         var=location_var,
@@ -72,7 +72,7 @@ def open_dialog():
     dialog.add_text("Folder \t").add_input(
         path, browse=ap.BrowseType.Folder, var=path_var
     )
-    dialog.add_text("Resolution \t").add_dropdown(
+    dialog.add_text("Resolution ").add_dropdown(
         resolution,
         [
             "Original",

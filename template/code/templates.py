@@ -52,13 +52,15 @@ template_dir = os.path.join(template_root_dir, template_subdir)
 callback_file = get_callback_location(settings, template_root_dir)
 
 if project:
-    project_templates_location = template_utility.get_template_dir(project.path)
+    project_templates_location = template_utility.get_template_dir(
+        project.path)
     project_callbacks = template_utility.get_template_callbacks(
         project_templates_location
     )
     if os.path.exists(project_callbacks):
         callback_file = project_callbacks
-    project_template_dir = os.path.join(project_templates_location, template_subdir)
+    project_template_dir = os.path.join(
+        project_templates_location, template_subdir)
 else:
     project_template_dir = ""
 
@@ -175,6 +177,8 @@ def resolve_tokens(variable_list):
             variables["YYYYMMDD"] = datetime.today().strftime("%Y%m%d")
         elif variable == "YYYY-MM-DD":
             variables["YYYY-MM-DD"] = datetime.today().strftime("%Y-%m-%d")
+        elif variable == "DD-MM-YYYY":
+            variables["DD-MM-YYYY"] = datetime.today().strftime("%d-%m-%Y")
         elif variable == "YY":
             variables["YY"] = datetime.today().strftime("%y")
         elif variable == "YYMM":
@@ -185,11 +189,15 @@ def resolve_tokens(variable_list):
             variables["YYMMDD"] = datetime.today().strftime("%y%m%d")
         elif variable == "YY-MM-DD":
             variables["YY-MM-DD"] = datetime.today().strftime("%y-%m-%d")
+        elif variable == "DD-MM-YY":
+            variables["DD-MM-YY"] = datetime.today().strftime("%d-%m-%y")
         elif variable == "ProjectFolder":
-            projectFolder = os.path.basename(os.path.normpath(ctx.project_path))
+            projectFolder = os.path.basename(
+                os.path.normpath(ctx.project_path))
             variables["ProjectFolder"] = str(projectFolder)
         elif variable == "User":
-            username_underscore = username.replace(" ", "_").replace(".", "_").lower()
+            username_underscore = username.replace(
+                " ", "_").replace(".", "_").lower()
             variables["User"] = str(username_underscore)
         elif variable == "UserInitials":
             username_split = username.split(" ")
@@ -197,7 +205,14 @@ def resolve_tokens(variable_list):
             for name in username_split:
                 initials += name[0].lower()
             variables["UserInitials"] = str(initials)
-
+        elif variable == "ParentFolder":
+            variables["ParentFolder"] = os.path.basename(ctx.path)
+        elif variable == "ParentParentFolder":
+            variables["ParentParentFolder"] = os.path.basename(
+                os.path.dirname(ctx.path))
+        elif variable == "ParentParentParentFolder":
+            variables["ParentParentParentFolder"] = os.path.basename(
+                os.path.dirname(os.path.dirname(ctx.path)))
         elif variable not in variables:
             variables[variable] = ""
 
@@ -216,7 +231,8 @@ def create_template(dialog):
 
     # Load the user input and pass it to the dictionaries
     for key in user_inputs.keys():
-        user_inputs[str(key)] = variables[str(key)] = dialog.get_value(str(key))
+        user_inputs[str(key)] = variables[str(
+            key)] = dialog.get_value(str(key))
 
     template_path = get_template_path(template_name)
 
@@ -235,7 +251,8 @@ def create_template(dialog):
                 create_documents_from_template_async, template_path, target_folder, ctx
             )
     else:
-        ui.show_error("Template does not exist", "Please add a proper template")
+        ui.show_error("Template does not exist",
+                      "Please add a proper template")
 
     dialog.close()
 
@@ -312,7 +329,8 @@ def create_project_from_template_async(
     source = os.path.join(template_path, foldername)
 
     # Set the root folder in the project. Use the resolved tokens e.g. [Client_Name] -> ACME
-    target = os.path.join(target_folder, aps.resolve_variables(foldername, variables))
+    target = os.path.join(
+        target_folder, aps.resolve_variables(foldername, variables))
 
     if os.path.exists(target):
         ui.show_error("Folder exists", f"The folder {target} already exists")
@@ -322,14 +340,16 @@ def create_project_from_template_async(
     tokens = {}
     get_tokens(source, tokens)
     project_display_name = os.path.split(target)[1]
-    project_display_name = project_display_name.replace("-", " ").replace("_", " ")
+    project_display_name = project_display_name.replace(
+        "-", " ").replace("_", " ")
 
     # Create the actual project and write it in the database
     project = ctx.create_project(
         target, strip_spaces(project_display_name), workspace_id=ctx.workspace_id
     )
     # Copy the whole folder structure and resolve all tokens using the variables dict
-    aps.copy_from_template(source, target, variables, workspace_id=ctx.workspace_id)
+    aps.copy_from_template(source, target, variables,
+                           workspace_id=ctx.workspace_id)
 
     # Add the resolved tokens as metadata to the project
     # This metadata can be used for any file and subfolder templates
@@ -339,7 +359,8 @@ def create_project_from_template_async(
         project.update_metadata(user_inputs_for_template)
 
     if callbacks and "project_from_template_created" in dir(callbacks):
-        callbacks.project_from_template_created(target, source, variables, project)
+        callbacks.project_from_template_created(
+            target, source, variables, project)
 
     ui.show_success("Project successfully created")
 
@@ -370,7 +391,8 @@ def create_documents_from_template_async(template_path, target_folder, ctx):
         ui.show_success("Document(s) successfully created")
     except Exception as e:
         if "exists" in str(e):
-            ui.show_info("Document(s) already exist", "Please choose a different name")
+            ui.show_info("Document(s) already exist",
+                         "Please choose a different name")
         else:
             ui.show_error("Document(s) could not be created")
 
