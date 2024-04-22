@@ -25,12 +25,13 @@ def get_unused_drives():
 
 
 def create_bat_file(command, drive):
-    app_data = os.getenv("APPDATA")
-    startup_path = (
-        f"{app_data}/Microsoft/Windows/Start Menu/Programs/Startup/ap_mount_{drive}.bat"
-    )
-    with open(startup_path, "w") as f:
-        f.write(command)
+    try:
+        app_data = os.getenv("APPDATA")
+        startup_path = f"{app_data}/Microsoft/Windows/Start Menu/Programs/Startup/ap_mount_{drive}.bat"
+        with open(startup_path, "w") as f:
+            f.write(command)
+    except Exception as e:
+        print(e)
 
 
 def mount(dialog):
@@ -43,9 +44,10 @@ def mount(dialog):
         ui.show_error("Failed to Mount!")
     else:
         print(subst.stdout)
+        create_bat_file("subst " + f'{drive}: "' + f'{ctx.path}"', drive)
         ui.show_success("Mount Successful")
+        ui.reload_drives()
 
-    create_bat_file("subst " + f'{drive}: "' + f'{ctx.path}"', drive)
     dialog.close()
 
 
