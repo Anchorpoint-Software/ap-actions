@@ -1,0 +1,29 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Unzip
+
+  version: 1
+  id: ap::unzip
+  category: user
+  type: python
+  enable: true
+  author: Anchorpoint Software GmbH
+  description: Unpacks archives
+  icon:
+    path: folder_unzip.svg
+
+  script: "unzip.py"
+  settings: "unzip_settings.py"
+  python_packages:
+  - py7zr
+  - rarfile
+  
+  register:
+    file:
+      enable: true
+      filter: "*.zip;*.rar;*.7z"
