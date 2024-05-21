@@ -31,9 +31,11 @@ def main():
     dialog.add_text("Ignore Folders \t").add_tag_input(
         ignore_folders, placeholder="temp", var="ignore_folders", callback=store_settings)
     dialog.add_text("Archive Name \t").add_input(
-        archive_name, var="archive_name", callback=store_settings)
+        archive_name, var="archive_name", callback=store_settings, width=300, placeholder="archive")
     dialog.add_switch(
         text="Exclude old incremental saves", var="exclude_incremental_saves", default=exclude_incremental_saves, callback=store_settings)
+    dialog.add_info(
+        "Adds only the latest version, e.g. asset_v023.blend, to the archive and <br>ignores incremental saves below it")
     dialog.show()
 
 

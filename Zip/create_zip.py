@@ -36,7 +36,7 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
                 if exclude_incremental_saves:
                     # Extract the base name and version number
                     match = re.match(r"(.*)(_v\d+)(\.\w+)",
-                                     file, re.IGNORECASE)
+                                     os.path.basename(file), re.IGNORECASE)
                     if match:
                         base_name = match.group(1)
                         version = int(match.group(2)[2:])
@@ -94,9 +94,12 @@ def main():
     settings = aps.Settings()
     ignore_extensions = settings.get("ignore_extensions", ["blend1"])
     ignore_folders = settings.get("ignore_folders", [])
-    archive_name = settings.get("archive_name", "archive")
+    archive_name = settings.get("archive_name", "archive").strip()
     exclude_incremental_saves = settings.get(
         "exclude_incremental_saves", False)
+
+    if not archive_name:
+        archive_name = "archive"
 
     if selected_files:
         output_dir = os.path.dirname(selected_files[0])
