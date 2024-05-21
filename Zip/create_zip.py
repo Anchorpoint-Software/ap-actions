@@ -15,6 +15,9 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
     temp_output_path = f"{output_path}.part"
     archive = None
 
+    ignore_extensions = [ext.lower() for ext in ignore_extensions]
+    ignore_folders = [folder.lower() for folder in ignore_folders]
+
     try:
         archive = zipfile.ZipFile(temp_output_path, 'w', zipfile.ZIP_DEFLATED)
         total_files = len(files)
@@ -23,8 +26,9 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
             if progress.canceled:
                 raise ZippingCanceledException
 
-            if not any(file.endswith(ext) for ext in ignore_extensions) and \
-               not any(ignored_folder in file for ignored_folder in ignore_folders):
+            file_lower = file.lower()
+            if not any(file_lower.endswith(ext) for ext in ignore_extensions) and \
+               not any(ignored_folder in file_lower for ignored_folder in ignore_folders):
                 relative_path = os.path.relpath(file, base_folder)
                 archive.write(file, relative_path)
                 # Update progress with only the filename
@@ -85,7 +89,7 @@ def main():
     for folder in selected_folders:
         for root, dirs, files in os.walk(folder):
             # Remove ignored folders from the search
-            dirs[:] = [d for d in dirs if d not in ignore_folders]
+            dirs[:] = [d for d in dirs if d.lower() not in ignore_folders]
             for file in files:
                 full_path = os.path.join(root, file)
                 all_files.append(full_path)
