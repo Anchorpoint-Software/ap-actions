@@ -34,19 +34,16 @@ def concat_demuxer(selected_files, fps):
     output = os.path.join(ctx.folder, f"{create_random_text()}.txt")
 
     # See https://trac.ffmpeg.org/wiki/Concatenate
-    file = open(output, "a")
-    duration = 1 / int(fps)
-    for selected_file in selected_files:
-        file.write("file '" + selected_file + f"'\nduration {duration}\n")
+    with open(output, "a") as file:
+        duration = 1 / int(fps)
+        for selected_file in selected_files:
+            file.write("file '" + selected_file + f"'\nduration {duration}\n")
 
-    file.close()
     return output
 
 
 def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
-    if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[
-        0
-    ].startswith("video"):
+    if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[0].startswith("video"):
         progress_infinite = True
         global filename
         filename = ctx.filename
@@ -71,8 +68,6 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
         "-i",
         concat_file,
         "-hide_banner",
-        "-progress",
-        "pipe:{self.pipe_write}",
         "-vf",
         "pad=ceil(iw/2)*2:ceil(ih/2)*2",
         "-fps_mode",
@@ -80,7 +75,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
         "-pix_fmt",
         "yuv420p",
         "-vf",
-        scale + " ,pad=ceil(iw/2)*2:ceil(ih/2)*2",
+        scale + ",pad=ceil(iw/2)*2:ceil(ih/2)*2",
         os.path.join(target_folder, f"{filename}.mp4"),
     ]
     if is_exr:
@@ -90,7 +85,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
     args = {
         "args": arguments,
         "stdout": subprocess.PIPE,
-        "stderr": subprocess.STDOUT,
+        "stderr": subprocess.PIPE,
         "stdin": subprocess.PIPE,
         "bufsize": 1,
         "universal_newlines": True,
@@ -99,7 +94,6 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
     if platform.system() == "Windows":
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
         args["startupinfo"] = startupinfo
 
     ffmpeg = subprocess.Popen(**args)
@@ -110,38 +104,37 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
 
     # progress bar
     output = ""
-    for line in ffmpeg.stdout:
-        output = output + line
+    for line in ffmpeg.stderr:
+        output += line
         if not output.endswith("\n"):
-            output = output + "\n"
+            output += "\n"
 
         if "drop_frames=" in line:
-            drop_frame = re.search("(\d+)", line).group()
+            drop_frame = re.search(r"(\d+)", line).group()
 
-        if "frame=" in line and progress_infinite is False:
-            current_frame = re.search("(\d+)", line).group()
-            percentage = (int(current_frame) + int(drop_frame)) / (
-                len(selected_files) + 1
-            )
+        if "frame=" in line and not progress_infinite:
+            current_frame = re.search(r"(\d+)", line).group()
+            percentage = (int(current_frame) + int(drop_frame)) / \
+                (len(selected_files) + 1)
             progress.report_progress(percentage)
             progress.set_text(f"{int(percentage*100)}% encoded")
 
         if progress.canceled:
             ui.show_info("Canceled")
-            os.system("taskkill /PID {}".format(ffmpeg.pid))
-            # wait until subprocess terminates, then delete txt file
-            ffmpeg.communicate()
+            ffmpeg.terminate()
+            ffmpeg.wait()
             os.remove(concat_file)
             return
 
-    # wait for subprocess to terminate
-    ffmpeg.communicate()
+    ffmpeg.wait()
 
     if ffmpeg.returncode != 0:
         print(output)
-        ui.show_error("Failed to export video", description="Check Anchorpoint Console")
+        ui.show_error("Failed to export video",
+                      description="Check Anchorpoint Console")
     else:
-        ui.show_success("Export Successful", description=f"Created {filename}.mp4")
+        ui.show_success("Export Successful",
+                        description=f"Created {filename}.mp4")
 
     # Do some cleanup
     os.remove(concat_file)
@@ -173,5 +166,6 @@ if len(ctx.selected_files) > 0:
 
     ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
     ffmpeg_helper.guarantee_ffmpeg(
-        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files), scale
+        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(
+            ctx.selected_files), scale
     )
