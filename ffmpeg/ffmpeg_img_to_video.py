@@ -7,6 +7,7 @@ import random
 import string
 import mimetypes
 import platform
+import tempfile
 
 import ffmpeg_helper
 
@@ -29,15 +30,15 @@ def create_random_text():
 
 
 def concat_demuxer(selected_files, fps):
-    # Create a temporary file for ffmpeg within the directory.
-    # Use a random name so that we do not conflict with any other file
-    output = os.path.join(ctx.folder, f"{create_random_text()}.txt")
+    # Create a temporary file for ffmpeg
+    temp_dir = tempfile.gettempdir()
+    output = os.path.join(temp_dir, f"{create_random_text()}.txt")
 
     # See https://trac.ffmpeg.org/wiki/Concatenate
     with open(output, "a") as file:
         duration = 1 / int(fps)
         for selected_file in selected_files:
-            file.write("file '" + selected_file + f"'\nduration {duration}\n")
+            file.write(f"file '{selected_file}'\nduration {duration}\n")
 
     return output
 
