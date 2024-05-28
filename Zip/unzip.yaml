@@ -26,4 +26,4 @@ action:
   register:
     file:
       enable: true
-      filter: "*.zip;*.rar;*.7z"
+      filter: "*.zip;*.rar;"

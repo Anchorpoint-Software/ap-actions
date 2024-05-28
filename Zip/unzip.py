@@ -11,19 +11,7 @@ def unzip_file(file_path, output_dir, delete_after_unpacking):
     progress.set_cancelable(True)
 
     try:
-        if file_path.endswith('.7z'):
-            with py7zr.SevenZipFile(file_path, 'r') as archive:
-                file_list = archive.getnames()
-                total_files = len(file_list)
-                for index, file in enumerate(file_list):
-                    if progress.canceled:
-                        print("Unzipping process was canceled.")
-                        progress.finish()
-                        return False
-                    archive.extract(path=output_dir, targets=[file])
-                    progress.set_text(f"Unzipping {file}")
-                    progress.report_progress((index + 1) / total_files)
-        elif file_path.endswith('.zip'):
+        if file_path.endswith('.zip'):
             with zipfile.ZipFile(file_path, 'r') as archive:
                 file_list = archive.namelist()
                 total_files = len(file_list)
