@@ -1,6 +1,5 @@
 import anchorpoint as ap
 import apsync as aps
-import os
 
 
 def store_settings(dialog, _):
