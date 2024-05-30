@@ -35,7 +35,7 @@ def concat_demuxer(selected_files, fps):
     output = os.path.join(temp_dir, f"{create_random_text()}.txt")
 
     # See https://trac.ffmpeg.org/wiki/Concatenate
-    with open(output, "a") as file:
+    with open(output, "a", encoding="utf-8") as file:
         duration = 1 / int(fps)
         for selected_file in selected_files:
             file.write(f"file '{selected_file}'\nduration {duration}\n")
@@ -97,7 +97,7 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
         args["startupinfo"] = startupinfo
 
-    ffmpeg = subprocess.Popen(**args)
+    ffmpeg = subprocess.Popen(**args, encoding="utf-8")
 
     # progress bar calculation
     percentage = 0
