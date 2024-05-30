@@ -35,11 +35,11 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
                not any(ignored_folder in file_lower for ignored_folder in ignore_folders):
                 if exclude_incremental_saves:
                     # Extract the base name and version number
-                    match = re.match(r"(.*)(_v\d+)(\.\w+)",
+                    match = re.match(r"(.*?)(?:_v|_)?(\d+)?(\.\w+)$",
                                      os.path.basename(file), re.IGNORECASE)
                     if match:
                         base_name = match.group(1)
-                        version = int(match.group(2)[2:])
+                        version = int(match.group(2)) if match.group(2) else 0
                         extension = match.group(3)
                         key = (base_name.lower(), extension.lower())
 
@@ -58,9 +58,14 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
                     progress.report_progress((index + 1) / total_files)
 
         if exclude_incremental_saves:
-            for file, _ in incremental_files.values():
+            total_files_to_zip = len(incremental_files)
+            for count, (file, _) in enumerate(incremental_files.values(), start=1):
                 relative_path = os.path.relpath(file, base_folder)
                 archive.write(file, relative_path)
+                progress.set_text(f"Zipping {relative_path}")
+                progress.report_progress(count / total_files_to_zip)
+        else:
+            progress.report_progress(1.0)
 
         archive.close()
         os.rename(temp_output_path, output_path)  # Rename to final output path
