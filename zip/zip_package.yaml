@@ -1,0 +1,29 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "ZIP"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::zip"
+  category: "zip"
+  type: package
+  enable: false
+  description: Archive your projects and filter out unwanted files and folders.
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "zip_package.svg"
+
+  actions:
+    - ap::unzip
+    - ap::zip
+
+
+    
