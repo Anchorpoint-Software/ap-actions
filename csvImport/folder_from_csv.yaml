@@ -1,0 +1,28 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/Actions/Reference
+
+version: 1.0
+action:
+  name: Folder from CSV
+
+  version: 1
+  id: ap::folderfromcsv
+  category: csv
+  type: python
+  author: Anchorpoint Software GmbH
+  description: ""
+  icon:
+    path: :/icons/action.svg
+  enable: true
+  inputs:
+    type: "folder"
+
+  python_packages:
+  - python-dateutil
+
+  script: objects_from_csv.py
+  register:
+    new_folder:
+      enable: true
