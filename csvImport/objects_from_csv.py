@@ -69,6 +69,8 @@ def show_dialog():
 
 
 def on_file_selected(dialog, value):
+    dialog = ap.Dialog()
+    dialog.title = os.path.basename(value)
     csv_path = value
     if not csv_path or not os.path.isfile(csv_path):
         ap.UI().show_error("Invalid File", "Please select a valid CSV file.")
@@ -84,7 +86,6 @@ def on_file_selected(dialog, value):
     dialog.add_text("Match Names ").add_dropdown(
         csv_headers[0], csv_headers, var="object_name")
     dialog.add_info(f"Which column to display the {object_type} name")
-    dialog.add_separator()
     dialog.add_text("<b>Match Attributes</b>")
     dialog.add_info(
         "Pick for which column an Attribute should be created. Leave it to <br><b>No Attribute</b> if you want to skip it.")
@@ -96,19 +97,18 @@ def on_file_selected(dialog, value):
 
     dialog.add_checkbox(
         text="Overwrite existing Attribute Values", var="overwrite")
-    dialog.add_button("Create Tasks", callback=create_objects_async,
+    dialog.add_button("Create Tasks", callback=lambda dialog: create_objects_async(dialog, csv_path),
                       var="create_objects_btn", enabled=True)
     dialog.show(settings)
 
 
-def create_objects_async(dialog):
+def create_objects_async(dialog, csv_path):
 
     dialog.close()
-    ctx.run_async(create_objects, dialog)
+    ctx.run_async(create_objects, dialog, csv_path)
 
 
-def create_objects(dialog):
-    csv_path = dialog.get_value("csv_path")
+def create_objects(dialog, csv_path):
     name_column = dialog.get_value("object_name")
 
     if not csv_path or not os.path.isfile(csv_path):
@@ -120,7 +120,7 @@ def create_objects(dialog):
         return
 
     if (object_type == "task"):
-        task_list_name = os.path.basename(dialog.get_value("csv_path"))
+        task_list_name = os.path.basename(csv_path)
 
         task_list = api.tasks.get_task_list(ctx.path, task_list_name)
 
