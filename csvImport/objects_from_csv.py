@@ -60,11 +60,11 @@ def convert_attribute_value(attribute_type, value):
 
 
 def show_dialog():
-    last_folder = settings.get("last_csv_folder", "")
+    last_csv_file = settings.get("last_csv_file", "")
     dialog = ap.Dialog()
     dialog.title = f"{object_type.capitalize()}s from CSV"
     dialog.add_text("CSV File Path:").add_input(browse=ap.BrowseType.File,
-                                                browse_path=last_folder, var="csv_path", callback=on_file_selected, placeholder="todos.csv")
+                                                browse_path=os.path.dirname(last_csv_file), var="csv_path", callback=on_file_selected, placeholder="todos.csv")
     dialog.show()
 
 
@@ -76,7 +76,9 @@ def on_file_selected(dialog, value):
         ap.UI().show_error("Invalid File", "Please select a valid CSV file.")
         return
 
-    settings.set("last_csv_folder", os.path.dirname(csv_path))
+    if settings.get("last_csv_file", "") != csv_path:
+        settings.clear()
+    settings.set("last_csv_file", csv_path)
     settings.store()
 
     with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
