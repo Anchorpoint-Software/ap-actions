@@ -1,0 +1,29 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "CSV Import"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::csv"
+  category: "csv"
+  type: package
+  enable: false
+  description: Creates folders or tasks from a CSV file including Attributes.
+
+  author: "Anchorpoint Software GmbH"
+  icon:
+    path: "csv_package.svg"
+
+  actions:
+    - ap::tasksfromcsv
+    - ap::folderfromcsv
+
+
+    

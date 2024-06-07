@@ -14,7 +14,7 @@ action:
   author: Anchorpoint Software GmbH
   description: ""
   icon:
-    path: :/icons/action.svg
+    path: :/icons/sum.svg
   enable: true
   inputs:
     type: "task"

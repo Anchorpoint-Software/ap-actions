@@ -63,14 +63,16 @@ def show_dialog():
     last_csv_file = settings.get("last_csv_file", "")
     dialog = ap.Dialog()
     dialog.title = f"{object_type.capitalize()}s from CSV"
-    dialog.add_text("CSV File Path:").add_input(browse=ap.BrowseType.File,
-                                                browse_path=os.path.dirname(last_csv_file), var="csv_path", callback=on_file_selected, placeholder="todos.csv")
+    dialog.icon = ctx.icon
+    dialog.add_text("CSV File").add_input(browse=ap.BrowseType.File,
+                                          browse_path=os.path.dirname(last_csv_file), var="csv_path", callback=on_file_selected, placeholder="todos.csv")
     dialog.show()
 
 
 def on_file_selected(dialog, value):
     dialog = ap.Dialog()
     dialog.title = os.path.basename(value)
+    dialog.icon = ctx.icon
     csv_path = value
     if not csv_path or not os.path.isfile(csv_path):
         ap.UI().show_error("Invalid File", "Please select a valid CSV file.")
