@@ -1,3 +1,35 @@
+"""
+CHAT GPT PROMPT (Use it only for guidance. It will not create you a perfect working Action)
+
+Create an action, that imports a CSV file and creates either a task list or a set of folders based on a dedicated column from the CSV file.
+It should read all the columns in the CSV, list then out and the user can pick a dedicated Attribute in Anchorpoint, that will display the content of the column.
+Include also an Option to either overwrite existing Attributes in Anchorpoint or ignore them.
+
+The info whether to create folders or tasks, will come from the YAML file via the input parameter. You can read this input parameter in python via anchorpoint.get_context().inputs["INPUTNAME_IN_YAML"]
+Anchorpoint has the following Attribute types: "Single Choice Tag", "Multiple Choice Tag", "Textfield", "Rating", "Link", "Members", "Date", "Checkbox"
+
+The first thing the action should do, is to create a dialog, named "Task/Folder from CSV". There, add a input field, with a browse button where the user can browse to the csv file on the hard drive.
+Remember the latest browse path, so if the user presses the browse button again, the browser dialog starts at the same folder where it was closed before.
+After the user has added a csv file, create a new dialog, which will overwrite the first one. This dialog should also store the input settings.
+In the new dialog, use the name of the csv file as the dialog name. Check all the columns in the csv, because you will need them for matching the folder/task name and the attributes.
+Add a dropdown with a label "Match Names". In the dropdown, list all possible columns from the csv. Take the first one as a default. 
+Below that, add an info description named "Which column to display the task/folder name"
+Then, add a set of dropdowns with labels, based on the columns in the csv file. Each label should be the exact same name like the column. In the attributes,
+list all anchorpoint attributes and add a "No Attribute" entry on top. This should be also the default. 
+Below that, add a description named "Pick for which column an Attribute should be created. Leave it to <br><b>No Attribute</b> if you want to skip it.")
+Below that, add a checkbox, named "Overwrite existing Attribute Values".
+Finally, add a button named "Create Tasks/Folders"
+
+When the user presses the button, start an asynchronous process with a process indicator that creates the tasks/folders with the attributes.
+For tasks, put them in a task list. This task list should have the same name as the csv file. If the task lists with this name exists, add all the tasks there, if not create a new one.
+Folders and the task list should be created in the folder, where the action is executed. You can access the current folder path via anchorpoint.get_context().path
+If the taskname/foldername does not exist, create a new task/folder. If the attributes of that task/folder already exist, check if the checkbox "Overwrite existing Attribute Values" is checked. 
+If it's enabled, overwrite the attribute value from the csv, if it's not enabled, skip the attribute.
+Only create the attributes, that the user has chosen in the dialog. 
+Show a success message when the operation is complete.
+
+"""
+
 import anchorpoint as ap
 import apsync as aps
 import csv
@@ -101,7 +133,7 @@ def on_file_selected(dialog, value):
 
     dialog.add_checkbox(
         text="Overwrite existing Attribute Values", var="overwrite")
-    dialog.add_button("Create Tasks", callback=lambda dialog: create_objects_async(dialog, csv_path),
+    dialog.add_button(f"Create {object_type.capitalize()}s", callback=lambda dialog: create_objects_async(dialog, csv_path),
                       var="create_objects_btn", enabled=True)
     dialog.show(settings)
 
