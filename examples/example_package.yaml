@@ -39,3 +39,5 @@ action:
     - ap::examples::workspace
     - ap::examples::pagesdialog
     - ap::examples::progressdialog
+    - ap::examples::marktasksdone
+    - ap::examples::setoftasks

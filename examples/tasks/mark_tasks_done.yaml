@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Example / Mark Tasks Done
+
+  version: 1
+  id: ap::examples::marktasksdone
+  category: utility/code/examples/tasks
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Example action to demonstrate how register actions on the tasks context menu
+  icon:
+    path: :/icons/action.svg
+
+  script: mark_tasks_done.py
+
+  register:
+    task:
+      enable: true
