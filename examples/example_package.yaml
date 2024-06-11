@@ -41,3 +41,4 @@ action:
     - ap::examples::progressdialog
     - ap::examples::marktasksdone
     - ap::examples::setoftasks
+    - ap::examples::projectmembers
