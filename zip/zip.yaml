@@ -19,9 +19,6 @@ action:
   script: "create_zip.py"
   settings: "zip_settings.py"
   
-  python_packages:
-  - py7zr
-
   register:
     file:
       enable: true

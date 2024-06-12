@@ -19,9 +19,6 @@ action:
   inputs:
     type: "folder"
 
-  python_packages:
-  - python-dateutil
-
   script: objects_from_csv.py
   register:
     new_folder:

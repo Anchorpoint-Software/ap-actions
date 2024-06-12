@@ -19,9 +19,6 @@ action:
   inputs:
     type: "task"
 
-  python_packages:
-  - python-dateutil
-
   script: objects_from_csv.py
   register:
     folder:
