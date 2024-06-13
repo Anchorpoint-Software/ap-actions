@@ -44,6 +44,7 @@ api = ap.get_api()
 csv_headers = []
 object_type = ctx.inputs["type"]
 
+
 # Define attribute types with beautified labels
 ATTRIBUTE_TYPES = ["No Attribute", "Single Choice Tag", "Multiple Choice Tag",
                    "Textfield", "Rating", "Link", "Members", "Date", "Checkbox"]
@@ -87,6 +88,25 @@ def convert_attribute_value(attribute_type, value):
         # Parsing the date string to a datetime object
         date_obj = dateutil.parser.parse(value)
         return date_obj
+    if attribute_type == "Members":
+        user = ""
+        if "[" in value and "]" in value:
+            user = value.replace("[", "").replace("]", "")
+        else:
+            user = value
+
+        if (not user):
+            return ""
+
+        if "@" not in user:
+            project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
+            users = aps.get_users(ctx.workspace_id, project)
+            for u in users:
+                if u.name.strip() == user.strip():
+                    return u.email
+            return ""
+        else:
+            return user
 
     return value
 
@@ -106,8 +126,8 @@ def on_file_selected(dialog, value):
     dialog.title = os.path.basename(value)
     dialog.icon = ctx.icon
     csv_path = value
-    if not csv_path or not os.path.isfile(csv_path):
-        ap.UI().show_error("Invalid File", "Please select a valid CSV file.")
+    if not csv_path or not os.path.isfile(csv_path) or not csv_path.lower().endswith('.csv'):
+        ui.show_error("Not a CSV File", "Please select a valid CSV file.")
         return
 
     if settings.get("last_csv_file", "") != csv_path:
@@ -115,9 +135,13 @@ def on_file_selected(dialog, value):
     settings.set("last_csv_file", csv_path)
     settings.store()
 
-    with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
-        reader = csv.reader(csvfile)
-        csv_headers = next(reader)
+    try:
+        with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
+            reader = csv.reader(csvfile)
+            csv_headers = next(reader)
+    except UnicodeDecodeError as e:
+        ui.show_error("Issue with the CSV file",
+                      "This file cannot be opened. Re-export it and open it again.")
 
     dialog.add_text("Match Names", width=94).add_dropdown(
         csv_headers[0], csv_headers, var="object_name", width=256)
