@@ -119,17 +119,17 @@ def on_file_selected(dialog, value):
         reader = csv.reader(csvfile)
         csv_headers = next(reader)
 
-    dialog.add_text("Match Names ").add_dropdown(
-        csv_headers[0], csv_headers, var="object_name")
+    dialog.add_text("Match Names", width=94).add_dropdown(
+        csv_headers[0], csv_headers, var="object_name", width=256)
     dialog.add_info(f"Which column to display the {object_type} name")
     dialog.add_text("<b>Match Attributes</b>")
     dialog.add_info(
-        "Pick for which column an Attribute should be created. Leave it to <br><b>No Attribute</b> if you want to skip it.")
+        "Pick for which column an Attribute should be created. Leave it<br>to <b>No Attribute</b> if you want to skip it.")
 
     for header in csv_headers:
         default_value = settings.get(f"{header}_dropdown", "No Attribute")
-        dialog.add_text(header).add_dropdown(
-            default_value, ATTRIBUTE_TYPES, var=f"{header}_dropdown")
+        dialog.add_text(header, width=94).add_dropdown(
+            default_value, ATTRIBUTE_TYPES, var=f"{header}_dropdown", width=256)
 
     dialog.add_checkbox(
         text="Overwrite existing Attribute Values", var="overwrite")
