@@ -14,7 +14,7 @@ action:
   author: Anchorpoint Software GmbH
   description: ""
   icon:
-    path: :/icons/sum.svg
+    path: addCardCSV.svg
   enable: true
   inputs:
     type: "task"
