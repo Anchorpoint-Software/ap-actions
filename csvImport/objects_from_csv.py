@@ -181,8 +181,11 @@ def create_objects(dialog, csv_path):
 
     if (object_type == "task"):
         task_list_name = os.path.basename(csv_path)
-
-        task_list = api.tasks.get_task_list(ctx.path, task_list_name)
+        block_id = ctx.block_id
+        if block_id:
+            task_list = api.tasks.get_task_list_by_id(ctx.block_id)
+        else:
+            task_list = api.tasks.get_task_list(ctx.path, task_list_name)
 
         if not task_list:
             task_list = api.tasks.create_task_list(
