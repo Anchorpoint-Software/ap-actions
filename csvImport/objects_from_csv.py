@@ -34,7 +34,6 @@ import anchorpoint as ap
 import apsync as aps
 import csv
 import os
-from datetime import datetime
 import dateutil.parser
 
 ctx = ap.get_context()
