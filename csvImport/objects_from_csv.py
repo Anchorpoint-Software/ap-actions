@@ -142,20 +142,21 @@ def on_file_selected(dialog, value):
         ui.show_error("Issue with the CSV file",
                       "This file cannot be opened. Re-export it and open it again.")
         
-    dialog.add_text("Match Names", width=94).add_dropdown(
-        csv_headers[0], csv_headers, var="object_name", width=256)
-    dialog.add_info(f"Which column to display the {object_type} name")
+    dialog.add_text("<b>Match Names</b>")
+    dialog.add_dropdown(
+        csv_headers[0], csv_headers, var="object_name", width=160).add_text("⮕").add_text(f"{object_type.capitalize()} Name", width=224)
+    dialog.add_info(f"Which column should display the {object_type} name")
     dialog.add_text("<b>Match Attributes</b>")
 
     for header in csv_headers:
         default_value = settings.get(f"{header}_dropdown", "No Attribute")
-        dialog.add_text(header, width=94).add_dropdown(
-            default_value, ATTRIBUTE_TYPES, var=f"{header}_dropdown", width=256)
-    dialog.add_info("Pick for which column an Attribute should be created. Leave it<br>to <b>No Attribute</b> if you want to skip it.")
+        dialog.add_text(header, width=160).add_text("⮕").add_dropdown(
+            default_value, ATTRIBUTE_TYPES, var=f"{header}_dropdown", width=224)
+    dialog.add_info("Pick for which column an Attribute should be created. Leave it to<br><b>No Attribute</b> if you want to skip it.")
 
     dialog.add_checkbox(
         text="Overwrite existing Attribute Values", var="overwrite")
-    dialog.add_info(f"Existing {object_type}s will be merged with new ones. If you override <br>existing Attributes, it will use the Attribute values from the<br>csv file. <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/import-csv/'>Learn more</a>")
+    dialog.add_info(f"Existing {object_type}s will be merged with new ones. If you override existing <br>Attributes, it will use the Attribute values from the csv file. <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/import-csv/'>Learn more</a>")
 
     dialog.add_button(f"Create {object_type.capitalize()}s", callback=lambda dialog: create_objects_async(dialog, csv_path),
                       var="create_objects_btn", enabled=True)
