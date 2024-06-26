@@ -79,6 +79,14 @@ def create_attribute(attribute_type, name):
             name, aps.AttributeType.checkbox)
     return attribute
 
+def get_csv_delimiter(csv_path):
+    with open(csv_path, 'r', encoding='utf-8-sig') as csvfile:
+        first_line = csvfile.readline()
+        delimiter = ';' if ';' in first_line else ','
+    return delimiter
+
+def remove_empty_entries(array):
+    return [entry for entry in array if entry]
 
 def convert_attribute_value(attribute_type, value):
     if attribute_type == "Date":
@@ -134,13 +142,16 @@ def on_file_selected(dialog, value):
     settings.set("last_csv_file", csv_path)
     settings.store()
 
+    delimiter = get_csv_delimiter(csv_path)
+
     try:
         with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
-            reader = csv.reader(csvfile)
+            reader = csv.reader(csvfile, delimiter=delimiter)
             csv_headers = next(reader)
+            csv_headers = remove_empty_entries(csv_headers)
     except UnicodeDecodeError as e:
-        ui.show_error("Issue with the CSV file",
-                      "This file cannot be opened. Re-export it and open it again.")
+        ui.show_error("Issue with the CSV file", "This file cannot be opened. Re-export it and open it again.")
+        return
         
     dialog.add_text("<b>Match Names</b>")
     dialog.add_dropdown(
@@ -198,9 +209,10 @@ def create_objects(dialog, csv_path):
     progress.report_progress(0.0)
 
     created_object_count = 0
+    delimiter = get_csv_delimiter(csv_path)
 
     with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
-        reader = csv.DictReader(csvfile)
+        reader = csv.DictReader(csvfile,delimiter=delimiter)
         rows = list(reader)
         total_rows = len(rows)
         for index, row in enumerate(rows):
