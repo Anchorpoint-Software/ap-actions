@@ -23,7 +23,7 @@ def _get_ffmpeg_dir():
 
 
 def get_ffmpeg_fullpath():
-    dir = os.path.expanduser(ffmpeg_folder_path)
+    dir = _get_ffmpeg_dir()
     if platform.system() == "Darwin":
         dir = os.path.join(dir, "ffmpeg")
     else:
@@ -33,25 +33,40 @@ def get_ffmpeg_fullpath():
 
 def _install_ffmpeg_async(callback, *args, **kwargs):
     ctx = ap.get_context()
-    if not os.path.isdir(_get_ffmpeg_dir()):
-        os.mkdir(_get_ffmpeg_dir())
+    ffmpeg_dir = _get_ffmpeg_dir()
 
-    # download zip
-    progress = ap.Progress("Installing FFmpeg", infinite=True)
-    r = requests.get(FFMPEG_INSTALL_URL)
+    try:
+        # Log directory path
+        ap.UI().show_info("FFmpeg Installation",
+                          f"FFmpeg directory: {ffmpeg_dir}")
 
-    # open zip file and extract ffmpeg.exe to the right folder
-    z = zipfile.ZipFile(io.BytesIO(r.content))
+        if not os.path.isdir(ffmpeg_dir):
+            os.makedirs(ffmpeg_dir, exist_ok=True)
 
-    with z.open(FFMPEG_ZIP_PATH) as source:
-        with open(get_ffmpeg_fullpath(), "wb") as target:
-            shutil.copyfileobj(source, target)
+        # Verify directory creation
+        if not os.path.isdir(ffmpeg_dir):
+            raise FileNotFoundError(
+                f"Failed to create directory: {ffmpeg_dir}")
 
-    if platform.system() == "Darwin":
-        os.chmod(get_ffmpeg_fullpath(), stat.S_IRWXU)
+        # download zip
+        progress = ap.Progress("Installing FFmpeg", infinite=True)
+        r = requests.get(FFMPEG_INSTALL_URL)
 
-    progress.finish()
-    ctx.run_async(callback, *args, **kwargs)
+        # open zip file and extract ffmpeg.exe to the right folder
+        z = zipfile.ZipFile(io.BytesIO(r.content))
+
+        with z.open(FFMPEG_ZIP_PATH) as source:
+            with open(get_ffmpeg_fullpath(), "wb") as target:
+                shutil.copyfileobj(source, target)
+
+        if platform.system() == "Darwin":
+            os.chmod(get_ffmpeg_fullpath(), stat.S_IRWXU)
+
+        progress.finish()
+        ctx.run_async(callback, *args, **kwargs)
+    except Exception as e:
+        ap.UI().show_error("FFmpeg Installation Error", str(e))
+        progress.finish()
 
 
 def _install_ffmpeg(dialog, callback, *args, **kwargs):
@@ -62,7 +77,8 @@ def _install_ffmpeg(dialog, callback, *args, **kwargs):
 def _ffmpeg_install_dialog(callback, *args, **kwargs):
     dialog = ap.Dialog()
     dialog.title = "Install Conversion Tools"
-    dialog.add_text("Anchorpoint's video conversion tools are based on FFmpeg.")
+    dialog.add_text(
+        "Anchorpoint's video conversion tools are based on FFmpeg.")
     dialog.add_info(
         'When installing <a href="http://ffmpeg.org">FFmpeg</a> you are accepting the <a href="http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html">license</a> of the owner.'
     )
