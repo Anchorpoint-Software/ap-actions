@@ -265,7 +265,7 @@ def create_dialog():
         dialog.icon = ctx.icon
 
     # Set a description and a dropdown. Use \t to create tab spaces
-    dialog.add_text("Template:").add_dropdown(
+    dialog.add_text("Template",width=72).add_dropdown(
         folder_templates[0],
         folder_templates,
         var="dropdown",
@@ -277,7 +277,7 @@ def create_dialog():
 
     if has_keys:
         for key in user_inputs.keys():
-            dialog.add_text(str(key).replace("_", " ") + ":\t").add_input(
+            dialog.add_text(str(key).replace("_", " "),width=72).add_input(
                 "", var=str(key)
             )
         dialog.add_info(

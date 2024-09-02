@@ -5,22 +5,20 @@
 
 version: 1.0
 action:
-  name: Zip
+  name: Example / Create Set of Tasks
 
   version: 1
-  id: ap::zip
-  category: user
+  id: ap::examples::setoftasks
+  category: utility/code/examples/tasks
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
-  description: Creates a ZIP archive
+  description: Example action to demonstrate how to create tasks using the "New Task" button
   icon:
-    path: folder_zip.svg
+    path: :/icons/action.svg
 
-  script: "create_zip.py"
-  settings: "zip_settings.py"
-  
+  script: create_task_set.py
+
   register:
-    file:
-      enable: true
-    folder:
+    new_task:
       enable: true

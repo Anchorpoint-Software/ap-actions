@@ -5,22 +5,20 @@
 
 version: 1.0
 action:
-  name: Zip
+  name: Example / Mark Tasks Done
 
   version: 1
-  id: ap::zip
-  category: user
+  id: ap::examples::marktasksdone
+  category: utility/code/examples/tasks
   type: python
+  enable: false
   author: Anchorpoint Software GmbH
-  description: Creates a ZIP archive
+  description: Example action to demonstrate how register actions on the tasks context menu
   icon:
-    path: folder_zip.svg
+    path: :/icons/action.svg
 
-  script: "create_zip.py"
-  settings: "zip_settings.py"
-  
+  script: mark_tasks_done.py
+
   register:
-    file:
-      enable: true
-    folder:
+    task:
       enable: true

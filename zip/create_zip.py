@@ -131,7 +131,6 @@ def main():
 
     # Run the zipping process asynchronously
     def zip_and_notify():
-        ui.show_info("Packing started...", f"Creating {archive_name}.zip")
         success = zip_files(all_files, base_folder, output_zip,
                             ignore_extensions, ignore_folders, exclude_incremental_saves)
         if success:

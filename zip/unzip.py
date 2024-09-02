@@ -76,8 +76,6 @@ def main():
     delete_after_unpacking = settings.get("delete_after_unpacking", False)
 
     def unzip_and_notify():
-        ui.show_info("Unpacking...",
-                     f"Unpacking {os.path.basename(archive_path)}")
         success = unzip_file(archive_path, output_dir, delete_after_unpacking)
         if success:
             ui.show_success(

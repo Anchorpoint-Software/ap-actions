@@ -5,22 +5,20 @@
 
 version: 1.0
 action:
-  name: Unzip
+  name: Print Project Members
 
   version: 1
-  id: ap::unzip
-  category: user
+  id: ap::examples::projectmembers
+  category: utility/code/examples/project
   type: python
-  enable: true
+  enable: false
   author: Anchorpoint Software GmbH
-  description: Unpacks archives
+  description: Prints the members of a project to the Console
   icon:
-    path: folder_unzip.svg
+    path: :/icons/aplogo.svg
 
-  script: "unzip.py"
-  settings: "unzip_settings.py"
-  
+  script: print_members.py
+
   register:
-    file:
+    folder:
       enable: true
-      filter: "*.zip;*.rar;"

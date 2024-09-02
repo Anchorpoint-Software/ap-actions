@@ -22,10 +22,6 @@ action:
     
   script: "copy_as_png.py"
 
-  python_packages: 
-  - pyperclip
-  - temp
-
   #Where to register this action: on specific filetypes
   register:
     file: 
