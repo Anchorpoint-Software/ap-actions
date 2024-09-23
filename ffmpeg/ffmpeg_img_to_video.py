@@ -44,7 +44,9 @@ def concat_demuxer(selected_files, fps):
 
 
 def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
-    if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[0].startswith("video"):
+    if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[
+        0
+    ].startswith("video"):
         progress_infinite = True
         global filename
         filename = ctx.filename
@@ -61,6 +63,8 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
 
     arguments = [
         ffmpeg_path,
+        "-r",
+        fps,
         "-y",
         "-f",
         "concat",
@@ -69,8 +73,6 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
         "-i",
         concat_file,
         "-hide_banner",
-        "-vf",
-        "pad=ceil(iw/2)*2:ceil(ih/2)*2",
         "-fps_mode",
         "vfr",
         "-pix_fmt",
@@ -115,8 +117,9 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
 
         if "frame=" in line and not progress_infinite:
             current_frame = re.search(r"(\d+)", line).group()
-            percentage = (int(current_frame) + int(drop_frame)) / \
-                (len(selected_files) + 1)
+            percentage = (int(current_frame) + int(drop_frame)) / (
+                len(selected_files) + 1
+            )
             progress.report_progress(percentage)
             progress.set_text(f"{int(percentage*100)}% encoded")
 
@@ -131,11 +134,9 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
 
     if ffmpeg.returncode != 0:
         print(output)
-        ui.show_error("Failed to export video",
-                      description="Check Anchorpoint Console")
+        ui.show_error("Failed to export video", description="Check Anchorpoint Console")
     else:
-        ui.show_success("Export Successful",
-                        description=f"Created {filename}.mp4")
+        ui.show_success("Export Successful", description=f"Created {filename}.mp4")
 
     # Do some cleanup
     os.remove(concat_file)
@@ -167,6 +168,5 @@ if len(ctx.selected_files) > 0:
 
     ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
     ffmpeg_helper.guarantee_ffmpeg(
-        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(
-            ctx.selected_files), scale
+        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files), scale
     )
