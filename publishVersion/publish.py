@@ -12,7 +12,6 @@ if project is None:
     ui.show_info("Action only works with projects")
     sys.exit(0)
 
-settings = project.get_metadata()
 
 
 def contains_number(value):
@@ -22,7 +21,7 @@ def contains_number(value):
     return False
 
 
-def copy():
+def copy(settings):
     splitted_name = ctx.filename.split("_")
     lastSplitPart = splitted_name[len(splitted_name) - 1]
     if contains_number(lastSplitPart):
@@ -83,5 +82,8 @@ def copy():
         ui.show_error("Not an increment", "This file has no v001 or similar")
         return
 
+if __name__ == "__main__":
+    ctx.run_async(copy,project.get_metadata())
 
-ctx.run_async(copy)
+def run_action(ctx,settings):
+    ctx.run_async(copy,settings)

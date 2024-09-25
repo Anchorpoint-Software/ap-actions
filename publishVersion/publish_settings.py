@@ -1,6 +1,7 @@
 import anchorpoint as ap
 import apsync as aps
 import sys
+import publish
 
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.path)
@@ -12,7 +13,7 @@ if project is None:
 settings = project.get_metadata()
 
 
-def store_settings(dialog):
+def store_settings_and_run(dialog):
     settings["publish_version_appendix"] = dialog.get_value("appendix_var")
     settings["checkbox"] = str(dialog.get_value("checkbox_var"))
     if dialog.get_value("checkbox_var") is True:
@@ -21,6 +22,7 @@ def store_settings(dialog):
         settings["publish_file_location"] = ""
 
     project.update_metadata(settings)
+    publish.run_action(ctx,settings)
     dialog.close()
 
 
@@ -48,7 +50,7 @@ def create_dialog():
         pass
 
     dialog = ap.Dialog()
-    dialog.title = "Referenced Model Settings"
+    dialog.title = "Create Referenced File"
     dialog.add_text("Copy into a dedicated Folder").add_checkbox(
         var="checkbox_var",
         callback=checkBoxChecked,
@@ -72,7 +74,7 @@ def create_dialog():
     if ctx.icon:
         dialog.icon = ctx.icon
 
-    dialog.add_button("Apply", callback=store_settings)
+    dialog.add_button("Create File", callback=store_settings_and_run)
     dialog.show()
 
 
