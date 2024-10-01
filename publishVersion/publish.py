@@ -2,37 +2,45 @@ import anchorpoint as ap
 import apsync as aps
 import os
 import sys
+import re
 
 ctx = ap.Context.instance()
 project = aps.get_project(ctx.project_path)
 ui = ap.UI()
 api = ap.get_api()
 
-if project is None:
-    ui.show_info("Action only works with projects")
-    sys.exit(0)
 
-
-
-def contains_number(value):
-    for character in value:
-        if character.isdigit():
-            return True
-    return False
-
+def split_name_and_version(filename):
+    # This regex matches any number of digits,
+    # optionally preceded by 'v' or '_v', and optionally separated by '_'
+    # It allows for additional content after the version number
+    match = re.search(r'(.*?)(?:_v?(\d+))(?:_|$)', filename, re.IGNORECASE)
+    if match:
+        return match.group(1), match.group(2)
+    
+    # If no match with underscore, try matching 'v' followed by digits at the end
+    match = re.search(r'(.*?v)(\d+)$', filename, re.IGNORECASE)
+    if match:
+        return match.group(1), match.group(2)
+    
+    # If still no match, try matching any digits at the end
+    match = re.search(r'(.*?)(\d+)$', filename)
+    if match:
+        return match.group(1), match.group(2)
+    
+    return filename, None
 
 def copy(settings):
-    splitted_name = ctx.filename.split("_")
-    lastSplitPart = splitted_name[len(splitted_name) - 1]
-    if contains_number(lastSplitPart):
-        progress = ap.Progress("Publishing", "Creating a copy")
-        splitted_name.pop()
+    if project is None:
+        ui.show_info("Action only works with projects")
+        sys.exit(0)
 
-        new_name = ""
-        for i in splitted_name:
-            new_name += i
-            new_name += "_"
-        new_name = new_name[:-1]
+    base_name, version = split_name_and_version(ctx.filename)
+    
+    if version is not None:
+        progress = ap.Progress("Publishing", "Creating a copy")
+
+        new_name = base_name
 
         new_name_appendix = new_name
 

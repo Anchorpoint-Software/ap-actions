@@ -21,7 +21,10 @@ def store_settings_and_run(dialog):
     else:
         settings["publish_file_location"] = ""
 
-    project.update_metadata(settings)
+    try:
+        project.update_metadata(settings)
+    except Exception as e:
+        ui.show_info(f"Cannot store settings","You need proper project permissions to store the settings")
     publish.run_action(ctx,settings)
     dialog.close()
 
