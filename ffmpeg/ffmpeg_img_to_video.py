@@ -43,7 +43,7 @@ def concat_demuxer(selected_files, fps):
     return output
 
 
-def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
+def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, audio_path=None):
     if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[
         0
     ].startswith("video"):
@@ -63,24 +63,28 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
 
     arguments = [
         ffmpeg_path,
-        "-r",
-        fps,
+        "-r", fps,
         "-y",
-        "-f",
-        "concat",
-        "-safe",
-        "0",
-        "-i",
-        concat_file,
-        "-hide_banner",
-        "-fps_mode",
-        "vfr",
-        "-pix_fmt",
-        "yuv420p",
-        "-vf",
-        scale + ",pad=ceil(iw/2)*2:ceil(ih/2)*2",
-        os.path.join(target_folder, f"{filename}.mp4"),
+        "-f", "concat",
+        "-safe", "0",
+        "-i", concat_file,
     ]
+
+    if audio_path:
+        arguments.extend(["-i", audio_path])
+
+    arguments.extend([
+        "-hide_banner",
+        "-fps_mode", "vfr",
+        "-pix_fmt", "yuv420p",
+        "-vf", scale + ",pad=ceil(iw/2)*2:ceil(ih/2)*2",
+    ])
+
+    if audio_path:
+        arguments.extend(["-c:a", "aac", "-shortest"])
+
+    arguments.append(os.path.join(target_folder, f"{filename}.mp4"))
+
     if is_exr:
         arguments.insert(1, "-apply_trc")
         arguments.insert(2, "iec61966_2_1")
@@ -112,6 +116,14 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
         if not output.endswith("\n"):
             output += "\n"
 
+        if "Error opening input file" in line and audio_path in line:
+            print(line)
+            ui.show_error("Unsupported Audio File", description="The specified audio file could not be opened. Please check the file path and format.")
+            ffmpeg.terminate()
+            ffmpeg.wait()
+            os.remove(concat_file)
+            return
+
         if "drop_frames=" in line:
             drop_frame = re.search(r"(\d+)", line).group()
 
@@ -133,8 +145,11 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale):
     ffmpeg.wait()
 
     if ffmpeg.returncode != 0:
-        print(output)
-        ui.show_error("Failed to export video", description="Check Anchorpoint Console")
+        if "Error opening input files: Invalid data found when processing input" in output:
+            ui.show_error("Unsupported Image or Audio File", description="The specified files could not be processed. Try another something else.")
+        else:
+            print(output)
+            ui.show_error("Failed to export video", description="Check Anchorpoint Console")
     else:
         ui.show_success("Export Successful", description=f"Created {filename}.mp4")
 
@@ -167,6 +182,11 @@ if len(ctx.selected_files) > 0:
         scale = "scale=-1:-1"
 
     ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
+    
+    # Get audio track from settings
+    add_audio = settings.get("add_audio", False)
+    audio_path = settings.get("audio_track", "") if add_audio else None
+    
     ffmpeg_helper.guarantee_ffmpeg(
-        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files), scale
+        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files), scale, audio_path
     )
