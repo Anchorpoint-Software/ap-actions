@@ -112,9 +112,11 @@ def open_dialog():
     )
 
     project_path = ""
-    if project:
+    if audio_track:
+        project_path = os.path.dirname(audio_track)
+    elif project:
         project_path = project.path
-        
+
     dialog.add_text("Audio Track", width=88).add_input(
         audio_track, placeholder=".../audio/shot_0010.wav", browse=ap.BrowseType.File,
         browse_path=project_path, var=audio_track_var, enabled=add_audio, width=223
