@@ -99,3 +99,4 @@ def guarantee_ffmpeg(callback, *args, **kwargs):
         _ffmpeg_install_dialog(callback, *args, **kwargs)
     else:
         ctx.run_async(callback, *args, **kwargs)
+

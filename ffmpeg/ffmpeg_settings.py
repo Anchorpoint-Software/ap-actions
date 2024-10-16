@@ -36,8 +36,8 @@ def button_clicked(dialog):
     settings.set("add_audio", add_audio)
 
     settings.store()
-    ffmpeg_img_to_video.run_action(ctx,ap.UI())
     dialog.close()
+    ffmpeg_img_to_video.run_action(ctx,ap.UI())
 
 
 def input_callback(dialog, value):
@@ -131,5 +131,8 @@ def open_dialog():
 
     dialog.show()
 
+def main():  
+    open_dialog()
 
-open_dialog()
+if __name__ == "__main__":
+    main()
