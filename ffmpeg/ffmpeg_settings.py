@@ -110,9 +110,14 @@ def open_dialog():
         default=add_audio,
         callback=add_audio_callback
     )
+
+    project_path = ""
+    if project:
+        project_path = project.path
+        
     dialog.add_text("Audio Track", width=88).add_input(
         audio_track, placeholder=".../audio/shot_0010.wav", browse=ap.BrowseType.File,
-        browse_path=project.path, var=audio_track_var, enabled=add_audio, width=223
+        browse_path=project_path, var=audio_track_var, enabled=add_audio, width=223
     )
     
     dialog.add_info("Adds an audio track and adjusts it to the length of the sequence")
