@@ -36,7 +36,7 @@ def button_clicked(dialog):
     settings.set("add_audio", add_audio)
 
     settings.store()
-    #ffmpeg_img_to_video.run_action(ctx,settings)
+    ffmpeg_img_to_video.run_action(ctx,ap.UI())
     dialog.close()
 
 
@@ -116,7 +116,7 @@ def open_dialog():
     )
     
     dialog.add_info("Adds an audio track and adjusts it to the length of the sequence")
-    dialog.add_button("Apply", callback=button_clicked)
+    dialog.add_button("Convert", callback=button_clicked)
     dialog.hide_row(path_var, location_bool)
 
     if ctx.icon:

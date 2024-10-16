@@ -14,20 +14,10 @@ import ffmpeg_helper
 ui = ap.UI()
 ctx = ap.get_context()
 
-try:
-    filename = ctx.filename.rstrip(string.digits).rstrip("-,.")
-    if filename == "":
-        filename = ctx.filename
-except:
-    filename = ctx.filename
-
-is_exr = "exr" in ctx.suffix
-
 
 def create_random_text():
     ran = "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
     return str(ran)
-
 
 def concat_demuxer(selected_files, fps):
     # Create a temporary file for ffmpeg
@@ -41,7 +31,6 @@ def concat_demuxer(selected_files, fps):
             file.write(f"file '{selected_file}'\nduration {duration}\n")
 
     return output
-
 
 def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, audio_path=None):
     if len(selected_files) == 1 and mimetypes.guess_type(selected_files[0])[
@@ -84,6 +73,8 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, 
         arguments.extend(["-c:a", "aac", "-shortest"])
 
     arguments.append(os.path.join(target_folder, f"{filename}.mp4"))
+
+    is_exr = "exr" in ctx.suffix
 
     if is_exr:
         arguments.insert(1, "-apply_trc")
@@ -156,37 +147,59 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, 
     # Do some cleanup
     os.remove(concat_file)
 
+def get_filename():
+    try:
+        filename = ctx.filename.rstrip(string.digits).rstrip("-,.")
+        if filename == "":
+            filename = ctx.filename
+    except:
+        filename = ctx.filename
+    return filename
 
-if len(ctx.selected_files) > 0:
-    settings = aps.Settings("ffmpeg_settings")
+def main():
+    global filename
+    filename = get_filename()
 
-    # get settings from the ffmpeg settings menu
-    fps = settings.get("fps")
-    if fps == "":
-        fps = ctx.inputs["fps"]
+    if len(ctx.selected_files) > 0:
+        settings = aps.Settings("ffmpeg_settings")
 
-    path = settings.get("path")
-    if path == "":
-        path = ctx.folder
+        # get settings from the ffmpeg settings menu
+        fps = settings.get("fps")
+        if fps == "":
+            fps = ctx.inputs["fps"]
 
-    resolution = str(settings.get("resolution"))
-    if resolution == "HD (1280x720)":
-        scale = "scale=w=1280:h=720:force_original_aspect_ratio=decrease"
-    elif resolution == "Full HD (1920x1080)":
-        scale = "scale=w=1920:h=1080:force_original_aspect_ratio=decrease"
-    elif resolution == "2K (2048x1556)":
-        scale = "scale=w=2048:h=1556:force_original_aspect_ratio=decrease"
-    elif resolution == "4K (4096x3112)":
-        scale = "scale=w=4096:h=3112:force_original_aspect_ratio=decrease"
-    else:
-        scale = "scale=-1:-1"
+        path = settings.get("path")
+        if path == "":
+            path = ctx.folder
 
-    ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
-    
-    # Get audio track from settings
-    add_audio = settings.get("add_audio", False)
-    audio_path = settings.get("audio_track", "") if add_audio else None
-    
-    ffmpeg_helper.guarantee_ffmpeg(
-        ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files), scale, audio_path
-    )
+        resolution = str(settings.get("resolution"))
+        if resolution == "HD (1280x720)":
+            scale = "scale=w=1280:h=720:force_original_aspect_ratio=decrease"
+        elif resolution == "Full HD (1920x1080)":
+            scale = "scale=w=1920:h=1080:force_original_aspect_ratio=decrease"
+        elif resolution == "2K (2048x1556)":
+            scale = "scale=w=2048:h=1556:force_original_aspect_ratio=decrease"
+        elif resolution == "4K (4096x3112)":
+            scale = "scale=w=4096:h=3112:force_original_aspect_ratio=decrease"
+        else:
+            scale = "scale=-1:-1"
+
+        ffmpeg_path = ffmpeg_helper.get_ffmpeg_fullpath()
+        
+        # Get audio track from settings
+        add_audio = settings.get("add_audio", False)
+        audio_path = settings.get("audio_track", "") if add_audio else None
+        
+        ffmpeg_helper.guarantee_ffmpeg(
+            ffmpeg_seq_to_video, ffmpeg_path, path, fps, sorted(ctx.selected_files), scale, audio_path
+        )
+
+def run_action(ext_ctx,ext_ui):
+    global ctx 
+    ctx = ext_ctx
+    global ui
+    ui = ext_ui
+    main()
+
+if __name__ == "__main__":
+    main()
