@@ -54,10 +54,11 @@ def create_dialog():
 
     dialog = ap.Dialog()
     dialog.title = "Create Referenced File"
-    dialog.add_text("Copy into a dedicated Folder").add_checkbox(
+    dialog.add_switch(
+        text="Copy into a dedicated Folder",
         var="checkbox_var",
         callback=checkBoxChecked,
-        default=(checkbox_default == "True"),
+        default=(checkbox_default == "True")
     )
     dialog.add_text("Folder\t    ").add_input(
         path,
