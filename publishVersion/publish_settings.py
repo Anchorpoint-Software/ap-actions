@@ -24,7 +24,7 @@ def store_settings_and_run(dialog):
     try:
         project.update_metadata(settings)
     except Exception as e:
-        ui.show_info(f"Cannot store settings","You need proper project permissions to store the settings")
+        ui.show_info("Cannot store settings","You need proper project permissions to store the settings")
     publish.run_action(ctx,settings)
     dialog.close()
 
