@@ -53,7 +53,9 @@ def unzip_file(file_path, output_dir, delete_after_unpacking):
         print(f"An error occurred: {e}")
         return False
 
-
+def run_action():
+    main()
+    
 def main():
     ctx = ap.get_context()
     ui = ap.UI()

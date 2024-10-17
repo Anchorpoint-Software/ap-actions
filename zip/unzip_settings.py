@@ -1,6 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
-
+import unzip
 
 def store_settings(dialog, _):
     settings = aps.Settings()
@@ -8,6 +8,9 @@ def store_settings(dialog, _):
                  dialog.get_value("delete_after_unpacking"))
     settings.store()
 
+def button_clicked(dialog):
+    dialog.close()
+    unzip.run_action()
 
 def main():
     settings = aps.Settings()
@@ -18,8 +21,9 @@ def main():
     if ctx.icon:
         dialog.icon = ctx.icon
     dialog.title = "Unzip Settings"
-    dialog.add_switch(
+    dialog.add_checkbox(
         text="Delete Archive after unpacking", var="delete_after_unpacking", default=delete_after_unpacking, callback=store_settings)
+    dialog.add_button("Unzip", callback=button_clicked)
     dialog.show()
 
 

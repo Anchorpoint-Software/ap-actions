@@ -1,5 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
+import create_zip
 
 
 def store_settings(dialog, _):
@@ -11,6 +12,9 @@ def store_settings(dialog, _):
                  dialog.get_value("exclude_incremental_saves"))
     settings.store()
 
+def button_clicked(dialog):
+    dialog.close()
+    create_zip.run_action()
 
 def main():
     settings = aps.Settings()
@@ -35,6 +39,7 @@ def main():
         text="Exclude old incremental saves", var="exclude_incremental_saves", default=exclude_incremental_saves, callback=store_settings)
     dialog.add_info(
         "Adds only the latest version, e.g. asset_v023.blend, to the archive and <br>ignores incremental saves below it")
+    dialog.add_button("Zip", callback=button_clicked)
     dialog.show()
 
 

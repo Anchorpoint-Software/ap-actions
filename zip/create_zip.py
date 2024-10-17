@@ -83,6 +83,8 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
         progress.finish()
         return False
 
+def run_action():
+    main()
 
 def main():
     ctx = ap.get_context()
