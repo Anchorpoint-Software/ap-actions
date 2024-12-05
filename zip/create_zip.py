@@ -105,8 +105,10 @@ def main():
 
     if selected_files:
         output_dir = os.path.dirname(selected_files[0])
-    else:
+    elif selected_folders:
         output_dir = os.path.dirname(selected_folders[0])
+    else:
+        output_dir = ctx.path
 
     # Ensure the output directory is valid
     if not os.path.isdir(output_dir):
@@ -117,19 +119,31 @@ def main():
     all_files = []
     base_folder = output_dir
 
-    for file in selected_files:
-        all_files.append(file)
+    if (selected_files or selected_folders):
+        for file in selected_files:
+            all_files.append(file)
 
-    for folder in selected_folders:
-        for root, dirs, files in os.walk(folder):
+        for folder in selected_folders:
+            for root, dirs, files in os.walk(folder):
+                # Remove ignored folders from the search
+                dirs[:] = [d for d in dirs if d.lower() not in ignore_folders]
+                for file in files:
+                    full_path = os.path.join(root, file)
+                    all_files.append(full_path)
+
+            if folder and base_folder not in folder:
+                base_folder = os.path.commonpath([base_folder, folder])
+
+    else:
+        for root, dirs, files in os.walk(ctx.path):
             # Remove ignored folders from the search
             dirs[:] = [d for d in dirs if d.lower() not in ignore_folders]
             for file in files:
                 full_path = os.path.join(root, file)
                 all_files.append(full_path)
+        if ctx.path and base_folder not in ctx.path:
+                base_folder = os.path.commonpath([base_folder, ctx.path])
 
-        if folder and base_folder not in folder:
-            base_folder = os.path.commonpath([base_folder, folder])
 
     # Run the zipping process asynchronously
     def zip_and_notify():
