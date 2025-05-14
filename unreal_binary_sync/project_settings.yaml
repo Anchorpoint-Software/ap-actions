@@ -1,0 +1,17 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Unreal
+
+  version: 1
+  id: ap::unreal::settings
+  category: user
+  type: python
+  author: Anchorpoint Software GmbH
+  description: ""
+
+  script: "project_settings.py"

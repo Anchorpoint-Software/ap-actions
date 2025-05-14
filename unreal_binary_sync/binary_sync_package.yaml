@@ -1,0 +1,30 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: "Unreal Binary Sync"
+
+  #Optional Properties
+  version: 1
+  id: "ap::package::unreal-sync"
+  category: unreal
+  type: package
+  enable: false
+  description: Sync the engine and game binaries from an external source to your project. Find out how to <a href ="https://docs.anchorpoint.app/docs/version-control/features/binary-sync/">set it up</a>.
+
+  author: "Anchorpoint Software GmbH"
+
+  icon:
+    path: :/icons/unrealEngine.svg
+
+  actions:
+    - ap::unreal::sync
+    - ap::unreal::settings
+
+
+    
