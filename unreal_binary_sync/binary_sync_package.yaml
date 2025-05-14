@@ -21,6 +21,9 @@ action:
 
   icon:
     path: :/icons/unrealEngine.svg
+    
+  platforms:
+    - win
 
   actions:
     - ap::unreal::sync
