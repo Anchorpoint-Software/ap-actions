@@ -20,4 +20,4 @@ action:
 
   register:
       drive:
-        enable: True
+        enable: False

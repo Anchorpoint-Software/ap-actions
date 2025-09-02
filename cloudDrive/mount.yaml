@@ -21,4 +21,4 @@ action:
 
   register:
     new_drive:
-      enable: true
+      enable: False
