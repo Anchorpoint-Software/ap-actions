@@ -11,8 +11,8 @@ action:
 
   #Optional Properties
   version: 1
-  id: "ap::package::versioncontrol"
-  category: "versioncontrol"
+  id: ap::package::referenced::file
+  category: user
   type: package
   enable: false
   description: Creates <a href='https://docs.anchorpoint.app/docs/3-work-in-a-team/4-Version-Control%20using%20inc%20save/#creating-referenced-files'>(publishes)</a> a copy of the latest version in the incremental stack and removes the increment. Useful for importing an asset into a shot or assembling scenes.
@@ -22,7 +22,7 @@ action:
     path: "extract.svg"
 
   actions:
-    - ap::vc::publish
+    - ap::referenced::file
 
 
     
