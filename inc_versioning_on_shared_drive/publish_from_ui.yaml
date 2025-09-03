@@ -1,0 +1,24 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Publish to Timeline
+
+  version: 1
+  id: ap::inc::ui-publish
+  category: vc
+  type: python
+  enable: false
+  author: Anchorpoint Software GmbH
+  description: Publishes any file using a context menu
+  icon:
+    path: :/icons/Misc/single Version.svg
+
+  script: publish_from_ui.py
+
+  register:
+    file:
+      enable: true
