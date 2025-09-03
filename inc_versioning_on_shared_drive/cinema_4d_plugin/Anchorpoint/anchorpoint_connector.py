@@ -1,0 +1,50 @@
+import sys
+import json
+import os
+
+# Summary
+# This script is called by the Anchorpoint plugin for Cinema 4D to publish a file.
+# It takes a look at the file path and the message provided by the the cinema 4D plugin and initiates the publish process.
+
+# This function is called form the C4D plugin
+
+
+def main():
+    # add the parent directory to the sys.path to be able to import inc_publish_utils
+    action_dir = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), "../.."))
+    sys.path.append(action_dir)
+
+    import inc_publish
+
+    arguments = sys.argv[1]
+    arguments = arguments.replace("\\", "\\\\")
+    msg = ""
+    path = ""
+    type = "cinema4d"
+
+    # Parse the JSON string
+    try:
+        parsed_arguments = json.loads(arguments)
+        # raise Exception("The output could not be read")
+        # Access and print the "msg" object
+        if "msg" in parsed_arguments:
+            msg = parsed_arguments["msg"]
+        if "path" in parsed_arguments:
+            path = parsed_arguments["path"]
+        else:
+            raise Exception("The output could not be read")
+    except json.JSONDecodeError:
+        raise Exception("Cannot decode JSON.")
+
+    publish_process = inc_publish.publish_file(msg, path, type)
+
+    if publish_process:
+        # Print a success to stdout so the C4D plugin can read it
+        sys.__stdout__.write("The file has been published")
+    else:
+        raise Exception("Cannot publish the file")
+
+
+if __name__ == "__main__":
+    main()

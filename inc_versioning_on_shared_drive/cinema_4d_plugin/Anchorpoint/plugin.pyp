@@ -39,7 +39,7 @@ def run_executable(msg, path):
             }
             json_string = json.dumps(json_object)
             script_path = os.path.join(os.path.dirname(
-                __file__), "inc_create_object.py")
+                __file__), "anchorpoint_connector.py")
             command = [
                 executable_path,
                 '--cwd', os.path.dirname(path),

@@ -1,25 +1,13 @@
 import apsync as aps
 import anchorpoint as ap
-import sys
 import json
 import os
 from datetime import datetime
 import uuid
 
-# Summary
-# This script is called by the Anchorpoint plugin for Cinema 4D to publish a file.
-# It takes a look at the file path and the message provided by the the cinema 4D plugin,
-# and creates a new timeline entry using the shared settings of the workspace and project.
-# It also creates a master file by copying the published file and appending "_master" to the filename.
 
-# This function is called form the C4D plugin
+def publish_file(msg, path, type):
 
-
-def main():
-    arguments = sys.argv[1]
-    arguments = arguments.replace("\\", "\\\\")
-    msg = ""
-    path = ""
     ctx = ap.get_context()
 
     # load the existing history from shared settings
@@ -32,20 +20,6 @@ def main():
     # Default appendix for the master file
     appendix = "master"
 
-    # Parse the JSON string
-    try:
-        parsed_arguments = json.loads(arguments)
-        # raise Exception("The output could not be read")
-        # Access and print the "msg" object
-        if "msg" in parsed_arguments:
-            msg = parsed_arguments["msg"]
-        if "path" in parsed_arguments:
-            path = parsed_arguments["path"]
-        else:
-            raise Exception("The output could not be read")
-    except json.JSONDecodeError:
-        raise Exception("Failed to decode JSON.")
-
     # Set the file status to Modified
     file_status = "Modified"
     # Create a random id
@@ -57,7 +31,7 @@ def main():
         "message": msg,
         "time": str(datetime.now()),
         "id": version_id,
-        "type": "cinema4d",
+        "type": type,
         "files": [
             {"path": path,
              "status": file_status}
@@ -116,9 +90,4 @@ def main():
         except Exception as e:
             raise Exception(f"Failed to send webhook: {e}")
 
-    # Print a success to stdout so the C4D plugin can read it
-    sys.__stdout__.write("The file has been published")
-
-
-if __name__ == "__main__":
-    main()
+    return True
