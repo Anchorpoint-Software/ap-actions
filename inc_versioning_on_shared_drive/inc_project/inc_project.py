@@ -31,12 +31,10 @@ class IncProjectType(ap.ProjectType):
         super().__init__()
         self.context = ctx
         self.path = path
-        self.icon = os.path.join(os.path.dirname(__file__), "../sku.svg")
+        self.icon = os.path.join(os.path.dirname(__file__), "dcc_project.svg")
         self.pre_selected = True
 
         self.dialog = ap.Dialog("CreateIncProjectDialog")
-        self.dialog.add_text("<b>Projects Folder</b>")
-
         self.settings = aps.Settings("inc_local_settings")
 
         self.dialog.add_input(
@@ -112,7 +110,7 @@ class IncProjectType(ap.ProjectType):
 def on_show_create_project(project_types, integrations, path: str, remote: str, tags, ctx: ap.Context):
     inc_project_type = IncProjectType(path, remote, tags, ctx)
     inc_project_type.name = "Shared Folder with Publish Workflow"
-    inc_project_type.description = "Store files on a shared folder with incremental file saves and publish versions to the timeline via DCC plugins."
+    inc_project_type.description = "Store files on a <span style='color:white'>shared folder</span> with incremental file saves and publish versions to the timeline via DCC plugins."
     inc_project_type.priority = 200
     inc_project_type.pre_selected = True
     project_types.add(inc_project_type)

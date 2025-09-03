@@ -17,7 +17,7 @@ action:
   enable: true
   description: Use incremental versioning for your project files and publish then to the timeline
   icon:
-    path: sku.svg
+    path: dccs.svg
 
   settings: "inc_action_settings.py"
   author: "Anchorpoint Software GmbH"
