@@ -14,7 +14,7 @@ action:
   id:  ap::package::inc-project
   category: vc
   type: package
-  enable: true
+  enable: false
   description: Use incremental versioning for your project files and publish then to the timeline
   icon:
     path: dccs.svg
