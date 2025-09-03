@@ -94,7 +94,25 @@ def main():
     if webhook_url:
         try:
             import requests
-            requests.post(webhook_url, json=json_object)
+
+            project = aps.get_project(path)
+
+            payload = {
+                "project_name": project.name,
+                # an app link to the anchorpoint timeline
+                "project_app_link": f"https://anchorpoint.app/link?p=projects%2F{project.id}%2F%3FswTime%3D",
+                "user_email": ctx.email,
+                "message": msg,
+                "time": str(datetime.now()),
+                "id": version_id,
+                "type": "cinema4d",
+                "files": [
+                    {"path": path,
+                     "status": file_status},
+                ]
+            }
+
+            requests.post(webhook_url, json=payload)
         except Exception as e:
             raise Exception(f"Failed to send webhook: {e}")
 
