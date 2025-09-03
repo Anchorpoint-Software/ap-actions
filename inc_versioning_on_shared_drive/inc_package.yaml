@@ -1,0 +1,30 @@
+#Anchorpoint Markup Language
+#Predefined Variables: e.g. ${path}
+#Environment Variables: e.g. ${MY_VARIABLE}
+#Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: "1.0"
+
+action:
+  #Must Have Properties
+  name: Incremental-based Versioning
+
+  #Optional Properties
+  version: 1
+  id:  ap::package::inc-project
+  category: vc
+  type: package
+  enable: true
+  description: Use incremental versioning for your project files and publish then to the timeline
+  icon:
+    path: sku.svg
+
+  settings: "inc_action_settings.py"
+  author: "Anchorpoint Software GmbH"
+
+  actions:
+    -  ap::inc::timeline
+    -  ap::inc::project
+
+
+    
