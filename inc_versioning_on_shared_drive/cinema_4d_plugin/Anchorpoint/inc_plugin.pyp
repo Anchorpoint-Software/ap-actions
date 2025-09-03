@@ -7,7 +7,7 @@ import re
 import platform
 import threading
 
-PLUGIN_ID = 1064549  # Replace with a unique ID
+PLUGIN_ID = 1064547  # Is registered on plugin cafe
 
 # Summary
 # This plugin creates a menu entry called "Anchorpoint/ Publish" in the Cinema 4D main menu.
