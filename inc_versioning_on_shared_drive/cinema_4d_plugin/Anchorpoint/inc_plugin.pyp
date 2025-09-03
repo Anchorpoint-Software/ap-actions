@@ -196,10 +196,6 @@ if __name__ == "__main__":
     pub_icon_path = os.path.join(os.path.dirname(__file__), "publish.png")
     if pub_icon.InitWith(pub_icon_path)[0] != c4d.IMAGERESULT_OK:
         pub_icon = None  # Fallback if the icon fails to load
-    spl_icon = c4d.bitmaps.BaseBitmap()
-    spl_icon_path = os.path.join(os.path.dirname(__file__), "splinter.png")
-    if spl_icon.InitWith(spl_icon_path)[0] != c4d.IMAGERESULT_OK:
-        spl_icon = None  # Fallback if the icon fails to load
 
     # Register the command plugin for Publish
     plugins.RegisterCommandPlugin(
