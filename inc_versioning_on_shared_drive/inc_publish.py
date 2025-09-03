@@ -17,8 +17,8 @@ def publish_file(msg, path, type):
         ctx.workspace_id, "inc_workspace_settings")
     history_array = project_settings.get("inc_versions", [])
 
-    # Default appendix for the master file
-    appendix = "master"
+    # Check if we need to create a master file
+    create_master = project_settings.get("create_master_file", True)
 
     # Set the file status to Modified
     file_status = "Modified"
@@ -44,24 +44,25 @@ def publish_file(msg, path, type):
     project_settings.set("inc_versions", history_array)
     project_settings.store()
 
-    # Set some attributes on the master file
-    database = ap.get_api()
+    if create_master:
+        # Set some attributes on the master file
+        database = ap.get_api()
+        appendix = project_settings.get("master_file_appendix", "master")
+        # Update the master file
+        project_base_name = os.path.basename(ctx.project_path)
+        master_filename = f"{project_base_name}_{appendix}.c4d"
+        master_path = os.path.join(os.path.dirname(path), master_filename)
+        aps.copy_file(path, master_path, True)
 
-    # Update the master file
-    project_base_name = os.path.basename(ctx.project_path)
-    master_filename = f"{project_base_name}_{appendix}.c4d"
-    master_path = os.path.join(os.path.dirname(path), master_filename)
-    aps.copy_file(path, master_path, True)
+        file_base_name = os.path.basename(path).split(".")[0]
 
-    file_base_name = os.path.basename(path).split(".")[0]
+        # Set the source file name (the one with the increment)
+        database.attributes.set_attribute_value(
+            master_path, "Source File", file_base_name)
 
-    # Set the source file name (the one with the increment)
-    database.attributes.set_attribute_value(
-        master_path, "Source File", file_base_name)
-
-    # Mark it as a master with a tag for better visibility
-    tag = aps.AttributeTag("master", "yellow")
-    database.attributes.set_attribute_value(master_path, "Type", tag)
+        # Mark it as a master with a tag for better visibility
+        tag = aps.AttributeTag("master", "yellow")
+        database.attributes.set_attribute_value(master_path, "Type", tag)
 
     # Trigger webhook if set
     webhook_url = workspace_settings.get("webhook_url", "")

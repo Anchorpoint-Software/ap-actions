@@ -25,6 +25,8 @@ action:
   actions:
     -  ap::inc::timeline
     -  ap::inc::project
+    -  ap::inc::ui-publish
+    -  ap::inc::project-settings
 
 
     
