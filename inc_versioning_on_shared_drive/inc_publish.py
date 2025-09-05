@@ -1,9 +1,26 @@
 import apsync as aps
-import anchorpoint as ap
-import json
-import os
-from datetime import datetime
 import uuid
+from datetime import datetime
+import os
+import json
+import anchorpoint as ap
+import re
+
+
+def get_master_filename(path, appendix):
+    """
+    Given a file path and an appendix, return the master filename by removing initials and increments.
+    Example:
+        P25123-LIN_US_Autum_Toolkit_mn_v002.c4d -> P25123-LIN_US_Autum_Toolkit_master.c4d
+    """
+    filename = os.path.basename(path)
+    name, ext = os.path.splitext(filename)
+    # Remove initials and increments: match _[a-zA-Z]+_v[0-9]+$ or _v[0-9]+$ at the end
+    # Also handle _v0002, _v02, _mn_v002, etc.
+    # Remove trailing _[a-zA-Z]+_v\d+ or _v\d+
+    new_name = re.sub(r'(_[a-zA-Z]+)?_v\d+$', '', name)
+    master_name = f"{new_name}_{appendix}{ext}"
+    return master_name
 
 
 def publish_file(msg, path, type):
@@ -49,13 +66,11 @@ def publish_file(msg, path, type):
         database = ap.get_api()
         appendix = project_settings.get("master_file_appendix", "master")
         # Update the master file
-        project_base_name = os.path.basename(ctx.project_path)
-        master_filename = f"{project_base_name}_{appendix}.c4d"
+        master_filename = get_master_filename(path, appendix)
         master_path = os.path.join(os.path.dirname(path), master_filename)
         aps.copy_file(path, master_path, True)
 
         file_base_name = os.path.basename(path).split(".")[0]
-
         # Set the source file name (the one with the increment)
         database.attributes.set_attribute_value(
             master_path, "Source File", file_base_name)
