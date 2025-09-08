@@ -24,7 +24,7 @@ class IncProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_text("<b>Publishing Settings</b>")
 
         self.dialog.add_checkbox(
-            text="Create Master File",
+            text="Create Master File per default",
             var="create_master_file",
             default=self.shared_settings.get("create_master_file", True),
             callback=self.store_shared_settings

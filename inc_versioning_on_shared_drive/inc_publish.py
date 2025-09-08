@@ -11,7 +11,7 @@ def get_master_filename(path, appendix):
     """
     Given a file path and an appendix, return the master filename by removing initials and increments.
     Example:
-        P25123-LIN_US_Autum_Toolkit_mn_v002.c4d -> P25123-LIN_US_Autum_Toolkit_master.c4d
+        C4324-EN_Autum_Toolkit_mn_v002.c4d -> C4324-EN_Autum_Toolkit_master.c4d
     """
     filename = os.path.basename(path)
     name, ext = os.path.splitext(filename)
@@ -23,7 +23,7 @@ def get_master_filename(path, appendix):
     return master_name
 
 
-def publish_file(msg, path, type):
+def publish_file(msg, path, type, post_process=None):
 
     ctx = ap.get_context()
 
@@ -35,7 +35,8 @@ def publish_file(msg, path, type):
     history_array = project_settings.get("inc_versions", [])
 
     # Check if we need to create a master file
-    create_master = project_settings.get("create_master_file", True)
+    create_master = isinstance(
+        post_process, dict) and post_process.get("create_master", False)
 
     # Set the file status to Modified
     file_status = "Modified"

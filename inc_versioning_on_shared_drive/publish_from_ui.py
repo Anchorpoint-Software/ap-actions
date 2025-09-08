@@ -10,12 +10,10 @@ shared_settings = aps.SharedSettings(
 create_master = shared_settings.get("create_master_file", True)
 
 
-def trigger_publish(msg, path, type):
-    if create_master:
-        progress = ap.Progress("Publishing File", "Creating Master File...")
-    else:
-        progress = ap.Progress("Publishing File", "Please wait...")
-    publish_process = inc_publish.publish_file(msg, path, type)
+def trigger_publish(msg, path, type, post_process_object):
+    progress = ap.Progress("Publishing File", "Please wait...")
+    publish_process = inc_publish.publish_file(
+        msg, path, type, post_process_object)
     ui = ap.UI()
     if publish_process:
         ui.show_success("Publish Successful",
@@ -27,8 +25,9 @@ def trigger_publish(msg, path, type):
 
 
 def button_callback(dialog):
+    post_process_object = {"create_master": dialog.get_value("create_master")}
     comment = dialog.get_value("comment")
-    ctx.run_async(trigger_publish, comment, ctx.path, "")
+    ctx.run_async(trigger_publish, comment, ctx.path, "", post_process_object)
     dialog.close()
 
 
@@ -42,14 +41,13 @@ def main():
         placeholder="Add a comment to this version",
         width=400,
     )
-    if create_master:
-        dialog.add_info(
-            "Creates a timeline entry for this file and a master file")
-    else:
-        dialog.add_info(
-            "Creates a timeline entry for this file and a master file"
-        )
+    dialog.add_info(
+        "Creates a timeline entry for this file")
+    dialog.add_checkbox(
+        create_master, text="Create Master File", var="create_master")
     dialog.add_button("Create File", callback=button_callback)
+    dialog.add_info(
+        "This will create a file without increments in the file name")
     dialog.show()
 
 

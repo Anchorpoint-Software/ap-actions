@@ -1,6 +1,8 @@
 import sys
 import json
 import os
+import apsync as aps
+import anchorpoint as ap
 
 # Summary
 # This script is called by the Anchorpoint plugin for Cinema 4D to publish a file.
@@ -37,7 +39,15 @@ def main():
     except json.JSONDecodeError:
         raise Exception("Cannot decode JSON.")
 
-    publish_process = inc_publish.publish_file(msg, path, type)
+    ctx = ap.get_context()
+    project_settings = aps.SharedSettings(
+        ctx.project_id, ctx.workspace_id, "inc_settings")
+
+    post_process_object = {"create_master": project_settings.get(
+        "create_master_file", True)}
+
+    publish_process = inc_publish.publish_file(
+        msg, path, type, post_process=post_process_object)
 
     if publish_process:
         # Print a success to stdout so the C4D plugin can read it
