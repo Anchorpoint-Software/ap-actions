@@ -13,7 +13,8 @@ action:
   type: python
   author: Anchorpoint Software GmbH
   description: Renames a set of selected files
-  
+  icon:
+    path: :/icons/design-tools-photo-editing/pencil.svg
 
   script: batch_rename.py
   
