@@ -15,7 +15,7 @@ action:
   category: user
   type: package
   enable: false
-  description: A simple batch rename tool, that can be customized to your needs.
+  description: A simple batch rename tool, that can be customized to your needs
 
   author: Anchorpoint Software GmbH
   icon:

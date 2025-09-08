@@ -130,12 +130,15 @@ def main():
     dlg.title = "Batch Rename Files"
     if ctx.icon:
         dlg.icon = ctx.icon  # take the icon from the YAML file
+    # add the input field for the base name and add the dropdown for the number of digits
     dlg.add_input(placeholder="Base name",
                   default=DEFAULT_BASENAME, callback=update_preview, var="base_name_var").add_dropdown(digit_labels[0], digit_labels, var="digits_var",
                                                                                                        callback=update_preview)
-
+    # add a static text
     dlg.add_text("<b>Preview</b>")
+    # add a smaller info text field that will be updated with the preview content such as File_01.ext, File_02.ext, File_03.ext...
     dlg.add_info("", var="preview_var")
+    # add the main button to start the rename process
     dlg.add_button("Rename", callback=init_rename)
 
     # set the preview based on the default values
