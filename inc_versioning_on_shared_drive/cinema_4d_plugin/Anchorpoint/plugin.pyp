@@ -7,7 +7,8 @@ import re
 import platform
 import threading
 
-PLUGIN_ID = 1064547  # Is registered on plugin cafe
+PLUGIN_ID_0 = 1066244  # Is registered on plugin cafe
+PLUGIN_ID_1 = 1064547  # Is registered on plugin cafe
 
 # Summary
 # This plugin creates a menu entry called "Anchorpoint/ Publish" in the Cinema 4D main menu.
@@ -131,16 +132,67 @@ class PublishLatestVersionCommand(plugins.CommandData):
         }
 
 
+def open_anchorpoint_with_file():
+    doc = c4d.documents.GetActiveDocument()
+    doc_path = doc.GetDocumentPath()
+    doc_name = doc.GetDocumentName()
+    if not doc_path or not doc_name:
+        gui.MessageDialog("Document must be saved before opening Anchorpoint.")
+        return
+    file_path = os.path.join(doc_path, doc_name)
+    try:
+        if platform.system() == "Windows":
+            # Use the user's home directory for AppData
+            appdata = os.getenv('LOCALAPPDATA')
+            anchorpoint_exe = os.path.join(
+                appdata, "Anchorpoint", "anchorpoint.exe")
+            if not os.path.exists(anchorpoint_exe):
+                gui.MessageDialog("Anchorpoint executable not found!")
+                return
+            subprocess.Popen([anchorpoint_exe, file_path], shell=False)
+        elif platform.system() == "Darwin":
+            # On Mac, use the same directory as the CLI (see get_executable_path)
+            anchorpoint_app = "/Applications/Anchorpoint.app/Contents/MacOS/Anchorpoint"
+            if not os.path.exists(anchorpoint_app):
+                gui.MessageDialog("Anchorpoint app not found!")
+                return
+            subprocess.Popen([anchorpoint_app, file_path])
+        else:
+            gui.MessageDialog("Unsupported OS")
+    except Exception as e:
+        gui.MessageDialog(f"Failed to open Anchorpoint: {e}")
+
+
+class OpenAnchorpointCommand(plugins.CommandData):
+    def Execute(self, doc):
+        open_anchorpoint_with_file()
+        return True
+
+    def GetResourceString(self):
+        return {
+            "en": {
+                "name": "Open Anchorpoint",
+                "description": "Opens Anchorpoint application"
+            },
+            "de": {
+                "name": "Anchorpoint öffnen",
+                "description": "Öffnet die Anchorpoint Anwendung"
+            }
+        }
+
+
 def EnhanceMainMenu():
     mainMenu = gui.GetMenuResource("M_EDITOR")  # Get main menu resource
 
     # Create the Anchorpoint menu
     anchorpoint_menu = c4d.BaseContainer()
     anchorpoint_menu.InsData(c4d.MENURESOURCE_SUBTITLE, "Anchorpoint")
+    # Insert 'Open Anchorpoint' first
     anchorpoint_menu.InsData(c4d.MENURESOURCE_COMMAND,
-                             "PLUGIN_CMD_" + str(PLUGIN_ID))
+                             "PLUGIN_CMD_{}".format(PLUGIN_ID_0))
+    # Then the existing Publish command
     anchorpoint_menu.InsData(c4d.MENURESOURCE_COMMAND,
-                             "PLUGIN_CMD_" + str(PLUGIN_ID + 1))
+                             "PLUGIN_CMD_{}".format(PLUGIN_ID_1))
 
     # Add the Anchorpoint menu to the main menu
     if mainMenu:
@@ -197,9 +249,24 @@ if __name__ == "__main__":
     if pub_icon.InitWith(pub_icon_path)[0] != c4d.IMAGERESULT_OK:
         pub_icon = None  # Fallback if the icon fails to load
 
+    ap_icon = c4d.bitmaps.BaseBitmap()
+    ap_icon_path = os.path.join(os.path.dirname(__file__), "open.png")
+    if ap_icon.InitWith(ap_icon_path)[0] != c4d.IMAGERESULT_OK:
+        ap_icon = None  # Fallback if the icon fails to load
+
+    # Register the command plugin for Open Anchorpoint
+    plugins.RegisterCommandPlugin(
+        id=PLUGIN_ID_0,
+        str="Open Anchorpoint",
+        info=c4d.PLUGINFLAG_HIDE,
+        icon=ap_icon,
+        help="Opens Anchorpoint application",
+        dat=OpenAnchorpointCommand()
+    )
+
     # Register the command plugin for Publish
     plugins.RegisterCommandPlugin(
-        id=PLUGIN_ID,
+        id=PLUGIN_ID_1,
         str="Publish",
         info=c4d.PLUGINFLAG_HIDE,
         icon=pub_icon,
