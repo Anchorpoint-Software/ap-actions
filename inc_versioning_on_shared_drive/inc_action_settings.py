@@ -10,6 +10,7 @@ settings = aps.SharedSettings(ctx.workspace_id, "inc_workspace_settings")
 def apply_callback(dialog):
     template_dir_win = dialog.get_value("template_dir_win")
     template_dir_mac = dialog.get_value("template_dir_mac")
+    tokens = dialog.get_value("tokens_var")
     webhook_url = dialog.get_value("webhook_url")
 
     # Check if the directories are valid or empty
@@ -20,6 +21,7 @@ def apply_callback(dialog):
 
     settings.set("template_dir_win", template_dir_win)
     settings.set("template_dir_mac", template_dir_mac)
+    settings.set("tokens", tokens)
     settings.set("webhook_url", webhook_url)
     settings.store()
     dialog.close()
@@ -32,6 +34,8 @@ def main():
     dialog.title = "Template Settings"
     template_dir_win = settings.get("template_dir")
     template_dir_mac = settings.get("template_dir_mac")
+    tokens = settings.get("tokens", [])
+    webhook_url = settings.get("webhook_url", "")
 
     dialog.add_text("<b>Workspace Templates Location</b>")
     dialog.add_text("Windows", width=70).add_input(
@@ -43,9 +47,13 @@ def main():
     dialog.add_info(
         "Set a location that your team can access and that is the same for all Windows and macOS users"
     )
+    dialog.add_text("Tokens", width=70).add_tag_input(tokens,
+                                                      placeholder="client, project_id", width=400, var="tokens_var")
+    dialog.add_info(
+        "Tokens are placeholders marked with square brackets e.g. <b>[placeholder]</b> on files and folders that<br>can be replaced with user input during the creation from a template.")
     dialog.add_text("<b>Webhook</b>")
     dialog.add_text("Url", width=70).add_input(
-        settings.get("webhook_url", ""), var="webhook_url", width=400, placeholder="https://yourdomain.com/webhook"
+        webhook_url, var="webhook_url", width=400, placeholder="https://yourdomain.com/webhook"
     )
     dialog.add_info(
         "Optional: Set a webhook URL to trigger an automation when a new version is published"
