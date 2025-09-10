@@ -99,9 +99,13 @@ class IncProjectType(ap.ProjectType):
                 sys.exit(0)
 
             progress.set_text("Creating from template...")
-            # Copy from template and resolve token placeholders
 
-            variables = {}
+            # Copy from template and resolve token placeholders
+            project_name = aps.get_project_by_id(
+                project_id, self.context.workspace_id).name
+
+            variables = {"project_name": project_name}
+            # variable structure example: {"client_name": "some_client","country_code":"de"}
             for token in self.tokens:
                 variables[token] = self.dialog.get_value(
                     f"{token}_token_var").strip()

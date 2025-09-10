@@ -1,6 +1,5 @@
 import anchorpoint as ap
 import apsync as aps
-import os
 
 # Register the Project Settings type, so that it can be accessed from the Project Settings in Anchorpoint
 
