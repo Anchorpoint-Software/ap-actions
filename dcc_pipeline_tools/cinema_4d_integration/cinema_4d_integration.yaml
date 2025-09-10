@@ -1,0 +1,18 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Cinema 4D Integration
+
+  version: 1
+  id: ap::integrations::cinema-4d
+  category: integrations
+  type: python
+  enable: true
+  author: Anchorpoint Software GmbH
+  description: Integration for Cinema 4D
+
+  script: cinema_4d_integration.py

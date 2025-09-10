@@ -8,7 +8,7 @@ action:
   name: Publish to Timeline
 
   version: 1
-  id: ap::inc::ui-publish
+  id: ap::inc::publish
   category: vc
   type: python
   enable: false

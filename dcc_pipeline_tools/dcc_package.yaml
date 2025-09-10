@@ -7,26 +7,26 @@ version: "1.0"
 
 action:
   #Must Have Properties
-  name: Incremental-based Versioning
+  name: DCC Pipeline Tools
 
   #Optional Properties
   version: 1
-  id:  ap::package::inc-project
+  id:  ap::package::dcc
   category: vc
   type: package
   enable: false
-  description: Use incremental versioning for your project files and publish then to the timeline
+  description: Publish file versions based on incremental file versioning for digital content creation tools. Adds a new project type for shared folders and DCC integrations.
   icon:
     path: dccs.svg
 
-  settings: "inc_action_settings.py"
+  settings: "dcc_action_settings.py"
   author: "Anchorpoint Software GmbH"
 
   actions:
     -  ap::inc::timeline
     -  ap::inc::project
-    -  ap::inc::ui-publish
     -  ap::inc::project-settings
-
+    -  ap::inc::publish
+    -  ap::integrations::cinema-4d
 
     
