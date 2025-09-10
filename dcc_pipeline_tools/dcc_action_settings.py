@@ -12,7 +12,7 @@ settings = aps.SharedSettings(ctx.workspace_id, "inc_workspace_settings")
 # save the settings
 
 
-def apply_callback(dialog):
+def apply_callback(dialog, value):
     template_dir_win = dialog.get_value("template_dir_win")
     template_dir_mac = dialog.get_value("template_dir_mac")
     tokens = dialog.get_value("tokens_var")
@@ -30,8 +30,6 @@ def apply_callback(dialog):
     settings.set("tokens", tokens)
     settings.set("webhook_url", webhook_url)
     settings.store()
-    dialog.close()
-    ap.UI().show_success("Settings applied")
 
 
 def main():
@@ -45,27 +43,25 @@ def main():
 
     dialog.add_text("<b>Workspace Templates Location</b>")
     dialog.add_text("Windows", width=70).add_input(
-        template_dir_win, browse=ap.BrowseType.Folder, var="template_dir_win", width=400, placeholder="C:/Projects/Templates"
+        template_dir_win, browse=ap.BrowseType.Folder, var="template_dir_win", width=400, placeholder="C:/Projects/Templates", callback=apply_callback
     )
     dialog.add_text("macOS", width=70).add_input(
-        template_dir_mac, browse=ap.BrowseType.Folder, var="template_dir_mac", width=400, placeholder="/Users/John/Templates"
+        template_dir_mac, browse=ap.BrowseType.Folder, var="template_dir_mac", width=400, placeholder="/Users/John/Templates", callback=apply_callback
     )
     dialog.add_info(
         "Set a location that your team can access and that is the same for all Windows and macOS users"
     )
     dialog.add_text("Tokens", width=70).add_tag_input(tokens,
-                                                      placeholder="client, project_id", width=400, var="tokens_var")
+                                                      placeholder="client, project_id", width=400, var="tokens_var", callback=apply_callback)
     dialog.add_info(
         "Tokens are placeholders marked with square brackets e.g. <b>[placeholder]</b> on files and folders that<br>can be replaced with user input during the creation from a template.")
     dialog.add_text("<b>Webhook</b>")
     dialog.add_text("Url", width=70).add_input(
-        webhook_url, var="webhook_url", width=400, placeholder="https://yourdomain.com/webhook"
+        webhook_url, var="webhook_url", width=400, placeholder="https://yourdomain.com/webhook", callback=apply_callback
     )
     dialog.add_info(
         "Optional: Set a webhook URL to trigger an automation when a new version is published"
     )
-
-    dialog.add_button("Apply", callback=apply_callback)
 
     # Present the dialog to the user
     dialog.show(settings, store_settings_on_close=False)

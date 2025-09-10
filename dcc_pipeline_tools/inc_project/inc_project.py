@@ -91,6 +91,24 @@ class IncProjectType(ap.ProjectType):
         project_path = self.get_project_path()
         os.makedirs(project_path, exist_ok=True)
 
+        # Access the project settings for storing the tokens
+        project_settings = aps.SharedSettings(
+            project_id, self.context.workspace_id, "inc_settings")
+
+        # Copy from template and resolve token placeholders
+        project_name = aps.get_project_by_id(
+            project_id, self.context.workspace_id).name.replace(" ", "_")
+
+        variables = {"project_name": project_name}
+        # variable structure example: {"client_name": "some_client","country_code":"de"}
+        for token in self.tokens:
+            variables[token] = self.dialog.get_value(
+                f"{token}_token_var").strip()
+
+        # Store the tokens so that they can be used later
+        project_settings.set("tokens", variables)
+        project_settings.store()
+
         # Apply the template if the checkbox is checked
         if self.dialog.get_value("use_template"):
             template_dir = get_workspace_template_dir()
@@ -99,16 +117,6 @@ class IncProjectType(ap.ProjectType):
                 sys.exit(0)
 
             progress.set_text("Creating from template...")
-
-            # Copy from template and resolve token placeholders
-            project_name = aps.get_project_by_id(
-                project_id, self.context.workspace_id).name.replace(" ", "_")
-
-            variables = {"project_name": project_name}
-            # variable structure example: {"client_name": "some_client","country_code":"de"}
-            for token in self.tokens:
-                variables[token] = self.dialog.get_value(
-                    f"{token}_token_var").strip()
 
             try:
                 aps.copy_from_template(template_dir, project_path, variables)

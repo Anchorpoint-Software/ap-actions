@@ -41,6 +41,16 @@ class IncProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_info(
             "Creates a copy of the latest incremental file version that can be referenced in other files")
 
+        # Show tokens if they have been created during project creation
+        tokens = self.shared_settings.get("tokens")
+        if tokens:
+            self.dialog.add_text("<b>Project Tokens</b>")
+            for name, value in tokens.items():
+                self.dialog.add_text(
+                    name, width=100).add_text(value)
+            self.dialog.add_info(
+                "Tokens can replace [placeholders] in file names when creating from templates")
+
     def get_dialog(self):
         return self.dialog
 
@@ -68,7 +78,7 @@ def on_show_project_preferences(settings_list, ctx: ap.Context):
         return
 
     inc_project_settings = IncProjectSettings(ctx)
-    inc_project_settings.name = "Publishing"
+    inc_project_settings.name = "Workflow"
     inc_project_settings.priority = 90
     inc_project_settings.icon = ":/icons/Misc/single Version.svg"
     settings_list.add(inc_project_settings)
