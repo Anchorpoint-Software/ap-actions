@@ -15,7 +15,7 @@ action:
   category: vc
   type: package
   enable: false
-  description: Publish file versions based on incremental file versioning for digital content creation tools. Adds a new project type for shared folders and DCC integrations.
+  description: Publish file versions based on <a href='https://docs.anchorpoint.app/docs/asset-management/incremental-file-versioning/'>incremental file versioning</a> for digital content creation tools. Adds a new project type for shared folders and DCC integrations.
   icon:
     path: dccs.svg
 

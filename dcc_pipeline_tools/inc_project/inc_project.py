@@ -102,8 +102,10 @@ class IncProjectType(ap.ProjectType):
         variables = {"project_name": project_name}
         # variable structure example: {"client_name": "some_client","country_code":"de"}
         for token in self.tokens:
-            variables[token] = self.dialog.get_value(
+            value = self.dialog.get_value(
                 f"{token}_token_var").strip()
+            if value != "":
+                variables[token] = value
 
         # Store the tokens so that they can be used later
         project_settings.set("tokens", variables)
@@ -138,7 +140,7 @@ class IncProjectType(ap.ProjectType):
 def on_show_create_project(project_types, integrations, path: str, remote: str, tags, ctx: ap.Context):
     inc_project_type = IncProjectType(path, remote, tags, ctx)
     inc_project_type.name = "Shared Folder with Publish Workflow"
-    inc_project_type.description = "Store files on a <span style='color:white'>shared folder</span> with incremental file saves and publish versions to the timeline via DCC plugins."
+    inc_project_type.description = "Store files on a <span style='color:white'>shared folder</span> with <span style='color:white'>incremental file versioning</span> and publish versions to the timeline via DCC plugins."
     inc_project_type.priority = 200
     inc_project_type.pre_selected = True
     project_types.add(inc_project_type)

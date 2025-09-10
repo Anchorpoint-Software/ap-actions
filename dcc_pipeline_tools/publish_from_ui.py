@@ -12,7 +12,7 @@ project_id = ctx.project_id
 workspace_id = ctx.workspace_id
 shared_settings = aps.SharedSettings(
     project_id, workspace_id, "inc_settings")
-create_master = shared_settings.get("create_master_file", True)
+create_master = shared_settings.get("create_master_file", False)
 
 # send the data to the publish class that creates the timeline entry
 
