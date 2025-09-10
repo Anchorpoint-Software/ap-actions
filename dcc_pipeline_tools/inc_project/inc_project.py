@@ -61,7 +61,7 @@ class IncProjectType(ap.ProjectType):
                 self.dialog.add_text(token, width=70).add_input(
                     var=f"{token}_token_var", width=200, placeholder="Enter something")
             self.dialog.add_info(
-                "Tokens are used to manage additional project information")
+                "Tokens are used to manage additional project information and for naming conventions")
 
     def get_dialog(self):
         return self.dialog
