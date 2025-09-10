@@ -102,7 +102,7 @@ class IncProjectType(ap.ProjectType):
 
             # Copy from template and resolve token placeholders
             project_name = aps.get_project_by_id(
-                project_id, self.context.workspace_id).name
+                project_id, self.context.workspace_id).name.replace(" ", "_")
 
             variables = {"project_name": project_name}
             # variable structure example: {"client_name": "some_client","country_code":"de"}
