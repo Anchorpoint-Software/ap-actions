@@ -46,7 +46,7 @@ def run_executable(msg, path):
             # Use the file path relative to the ap.exe if the other one does not exist
             if not os.path.exists(script_path):
                 script_path = os.path.join(os.path.dirname(
-                    executable_path), "scripts", "ap-actions", "dcc_pipeline_tools", "cinema_4d_integration", "c4d_to_ap.py")
+                    executable_path), "scripts", "ap-actions", "dcc_pipeline_tools", "cinema_4d", "c4d_to_ap.py")
 
             # Prepare the command
             command = [

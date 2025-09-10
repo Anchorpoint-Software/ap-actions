@@ -2,6 +2,8 @@ import anchorpoint as ap
 import apsync as aps
 import os
 
+# Register the Project Settings type, so that it can be accessed from the Project Settings in Anchorpoint
+
 
 class IncProjectSettings(ap.AnchorpointSettings):
     def __init__(self, ctx: ap.Context):
@@ -43,6 +45,7 @@ class IncProjectSettings(ap.AnchorpointSettings):
     def get_dialog(self):
         return self.dialog
 
+    # Store settings on interface value changes
     def store_shared_settings(self, dialog, value):
 
         create_master_file = dialog.get_value("create_master_file")
@@ -59,6 +62,10 @@ class IncProjectSettings(ap.AnchorpointSettings):
 def on_show_project_preferences(settings_list, ctx: ap.Context):
     project = aps.get_project_by_id(ctx.project_id, ctx.workspace_id)
     if not project:
+        return
+    # Do not show the settings if it's not a inc versioning project, defined in inc_project.py
+    channel = aps.get_timeline_channel(project, "inc-vc-basic")
+    if not channel:
         return
 
     inc_project_settings = IncProjectSettings(ctx)

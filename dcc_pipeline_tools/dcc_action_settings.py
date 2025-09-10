@@ -2,9 +2,14 @@ import anchorpoint as ap
 import apsync as aps
 import os
 
+# Summary
+# These are settings for the action. They cover templates and the webhook that is triggered on the publish process
+
 ctx = ap.get_context()
 ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "inc_workspace_settings")
+
+# save the settings
 
 
 def apply_callback(dialog):
@@ -19,6 +24,7 @@ def apply_callback(dialog):
                       "Add an existing folder or leave it empty")
         return  # Exit the function if the paths are invalid
 
+    # Set and store the settings
     settings.set("template_dir_win", template_dir_win)
     settings.set("template_dir_mac", template_dir_mac)
     settings.set("tokens", tokens)

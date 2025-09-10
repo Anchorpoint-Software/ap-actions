@@ -7,6 +7,8 @@ import platform
 
 plugin_action_id = "open_plugin_directory"
 
+# Hook, triggered by Anchorpoint
+
 
 def on_load_integrations(integrations, ctx: ap.Context):
     integration = Cinema4DIntegration(ctx)
@@ -56,19 +58,3 @@ class Cinema4DIntegration(ap.ApIntegration):
                     subprocess.run(["open", path])
             else:  # Linux, fallback
                 subprocess.run(["xdg-open", path])
-
-    # def on_connections_changed(self):
-    #    settings = aps.Settings("cinema4D")
-
-    #    connected = is_connected()
-    #    if connected != self.is_connected:
-    #        self.is_connected = connected
-    #        state = "connected" if self.is_connected else "disconnected"
-    #        ap.UI().show_info(f"{self.name} plugin {state}",
-    #                          "Keep your project open in Anchorpoint for better performance" if self.is_connected else "You can continue syncing files in Anchorpoint")
-    #        if self.is_connected:
-    #            settings.set("beta_setup", True)
-    #            settings.plugin_folder()
-
-    #    self.is_setup = settings.get("beta_setup", False)
-    #    self.start_update()
