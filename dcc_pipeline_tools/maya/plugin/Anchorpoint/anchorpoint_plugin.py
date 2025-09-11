@@ -1,5 +1,6 @@
 import maya.cmds as cmds
 import maya.api.OpenMaya as om
+import maya.utils
 import subprocess
 import os
 import json
@@ -74,14 +75,14 @@ def get_executable_path():
 def run_executable(msg, path):
     def execute_command():
         try:
-            cmds.headsUpMessage("Talking to Anchorpoint")
+            maya.utils.executeInMainThreadWithResult(
+                lambda: cmds.headsUpMessage("Talking to Anchorpoint")
+            )
+
             executable_path = get_executable_path()
-            json_object = {
-                "msg": str(msg),
-                "path": str(path)
-            }
+            json_object = {"msg": str(msg), "path": str(path)}
             json_string = json.dumps(json_object)
-            # Get the path of the python script that access Anchorpoints metadata
+
             plugin_path = cmds.pluginInfo(
                 "anchorpoint_plugin", q=True, path=True)
             plugin_dir = os.path.dirname(plugin_path)
@@ -95,6 +96,7 @@ def run_executable(msg, path):
                     os.path.dirname(executable_path),
                     "scripts", "ap-actions", "dcc_pipeline_tools", "cmd_to_ap.py"
                 )
+
             command = [
                 executable_path,
                 '--cwd', os.path.dirname(path),
@@ -104,11 +106,13 @@ def run_executable(msg, path):
                 '--args',
                 json_string,
             ]
+
             startupinfo = None
             if platform.system() == "Windows":
                 startupinfo = subprocess.STARTUPINFO()
                 startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                 startupinfo.wShowWindow = subprocess.SW_HIDE
+
             result = subprocess.run(
                 command,
                 capture_output=True,
@@ -116,16 +120,26 @@ def run_executable(msg, path):
                 check=True,
                 startupinfo=startupinfo
             )
+
             if result.stderr:
                 print(result.stderr)
-                cmds.confirmDialog(
-                    title="Error", message="An issue has occurred")
+                maya.utils.executeInMainThreadWithResult(
+                    lambda: cmds.confirmDialog(
+                        title="Error", message="An issue has occurred")
+                )
             else:
-                cmds.confirmDialog(title="Success", message=result.stdout)
+                maya.utils.executeInMainThreadWithResult(
+                    lambda: cmds.confirmDialog(
+                        title="Success", message=result.stdout)
+                )
+
         except subprocess.CalledProcessError as e:
             print(f"An error occurred: {e}")
         finally:
-            cmds.headsUpMessage("")
+            maya.utils.executeInMainThreadWithResult(
+                lambda: cmds.headsUpMessage("")
+            )
+
     threading.Thread(target=execute_command).start()
 
 

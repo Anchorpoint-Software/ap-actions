@@ -52,5 +52,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.__stdout__.write("hallo")
     main()
