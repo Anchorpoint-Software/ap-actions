@@ -50,11 +50,11 @@ class IncProjectType(ap.ProjectType):
             browse=ap.BrowseType.Folder,
             validate_callback=validate_path,
         )
-        self.dialog.add_checkbox(False,
-                                 text="Use Folder Structure Template", var="use_template", enabled=not template_empty
-                                 )
-        self.dialog.add_info(
-            "Populates a folder structure from a template. The selected project folder has to be empty<br>in this case.")
+        if not template_empty:
+            self.dialog.add_checkbox(False,
+                                     text="Use Folder Structure Template", var="use_template")
+            self.dialog.add_info(
+                "Populates a folder structure from a template. The selected project folder has to be empty<br>in this case.")
         if self.tokens != []:
             self.dialog.add_text("<b>Tokens</b>")
             for token in self.tokens:
