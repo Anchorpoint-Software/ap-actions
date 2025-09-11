@@ -6,6 +6,7 @@ import json
 import re
 import platform
 import threading
+import glob
 
 PLUGIN_ID_0 = 1066244  # Is registered on plugin cafe
 PLUGIN_ID_1 = 1064547  # Is registered on plugin cafe
@@ -15,6 +16,31 @@ PLUGIN_ID_1 = 1064547  # Is registered on plugin cafe
 # It opens a dialog where the user can enter a comment and publish the current version of the Cinema 4D file to Anchorpoint.
 # It retrieves the path of the currently open document, constructs a command to the Anchorpoint CLI with an external Python script (which is in the same folder), that connects to the Anchorpoint metadata database,
 # and passes the user input as a JSON string.
+
+
+# Check if the file is in an Anchorpoint project
+def is_in_anchorpoint_project(file_path: str) -> bool:
+    if not file_path:
+        return False
+
+    # Start at the folder containing the file
+    current_dir = os.path.dirname(os.path.abspath(file_path))
+
+    while True:
+        # Look for any .approj file in this folder
+        if glob.glob(os.path.join(current_dir, "*.approj")):
+            return True
+
+        # Move one level up
+        parent_dir = os.path.dirname(current_dir)
+
+        # Stop if we've reached the root (no higher dir exists)
+        if parent_dir == current_dir:
+            break
+
+        current_dir = parent_dir
+
+    return False
 
 
 # Make run_executable available to all classes
@@ -40,13 +66,13 @@ def run_executable(msg, path):
             }
             json_string = json.dumps(json_object)
             # Try to get the script path if the plugin is relative to the Anchorpoint installation folder
-            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
-                __file__))), "c4d_to_ap.py")
+            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
+                __file__)))), "cmd_to_ap.py")
 
             # Use the file path relative to the ap.exe if the other one does not exist
             if not os.path.exists(script_path):
                 script_path = os.path.join(os.path.dirname(
-                    executable_path), "scripts", "ap-actions", "dcc_pipeline_tools", "cinema_4d", "c4d_to_ap.py")
+                    executable_path), "scripts", "ap-actions", "dcc_pipeline_tools", "cmd_to_ap.py")
 
             # Prepare the command
             command = [
@@ -213,6 +239,11 @@ class PublishLatestVersionCommand(plugins.CommandData):
         doc_path = doc.GetDocumentPath()
         if doc is None or not doc.GetDocumentPath():
             gui.MessageDialog("You have to save your file first")
+            return False
+
+        if not is_in_anchorpoint_project(doc_path):
+            gui.MessageDialog(
+                "This file is not part of an Anchorpoint project")
             return False
 
         dialog = PublishLatestVersion()

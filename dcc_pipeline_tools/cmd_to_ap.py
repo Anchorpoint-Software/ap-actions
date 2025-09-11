@@ -3,6 +3,7 @@ import json
 import os
 import apsync as aps
 import anchorpoint as ap
+import publish
 
 # Summary
 # This script is called by the Anchorpoint plugin for Cinema 4D to publish a file.
@@ -13,10 +14,6 @@ import anchorpoint as ap
 
 def main():
     # add the parent directory to the sys.path to be able to import inc_publish_utils
-    action_dir = os.path.dirname(os.path.dirname(__file__))
-    sys.path.append(action_dir)
-
-    import publish
 
     arguments = sys.argv[1]
     arguments = arguments.replace("\\", "\\\\")
@@ -55,4 +52,5 @@ def main():
 
 
 if __name__ == "__main__":
+    sys.__stdout__.write("hallo")
     main()
