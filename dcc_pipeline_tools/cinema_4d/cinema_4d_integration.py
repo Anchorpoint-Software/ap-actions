@@ -23,8 +23,8 @@ class Cinema4DIntegration(ap.ApIntegration):
         self.name = "Cinema 4D"
         self.description = "Publish incremental file versions from Cinema 4D and automate pipeline steps. Useful for product visualization and asset creation workflows."
         self.priority = 100
-        self.dashboard_icon = os.path.join(ctx.yaml_dir, "cinema_4d.png")
-        self.preferences_icon = os.path.join(ctx.yaml_dir, "cinema_4d.png")
+        self.dashboard_icon = os.path.join(ctx.yaml_dir, "cinema_4d.svg")
+        self.preferences_icon = os.path.join(ctx.yaml_dir, "cinema_4d.svg")
 
         # settings = aps.Settings("cinema4D")
 
