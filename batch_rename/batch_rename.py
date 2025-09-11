@@ -108,7 +108,8 @@ def rename(files, variable, digits, base_name):
         dir_path = os.path.dirname(file)
         new_path = os.path.join(dir_path, new_name)
         if file != new_path:
-            os.rename(file, new_path)
+            # Use Anchorpoint rename instead of Pythons native rename to keep Attributes
+            aps.rename_file(file, new_path)
         pass
 
     progress.finish()
