@@ -17,10 +17,10 @@ create_master = shared_settings.get("create_master_file", False)
 # send the data to the publish class that creates the timeline entry
 
 
-def trigger_publish(msg, path, type, post_process_object):
+def trigger_publish(msg, path, data_object):
     progress = ap.Progress("Publishing File", "Please wait...")
     publish_process = publish.publish_file(
-        msg, path, type, post_process_object)
+        msg, path, data_object)
     ui = ap.UI()
     if publish_process:
         ui.show_success("Publish Successful",
@@ -34,10 +34,10 @@ def trigger_publish(msg, path, type, post_process_object):
 
 
 def button_callback(dialog):
-    post_process_object = {"create_master": dialog.get_value("create_master")}
+    data_object = {"create_master": dialog.get_value("create_master")}
     comment = dialog.get_value("comment")
     # Run the publish process async because it could take a while
-    ctx.run_async(trigger_publish, comment, ctx.path, "", post_process_object)
+    ctx.run_async(trigger_publish, comment, ctx.path, data_object)
     dialog.close()
 
 # Make the button only clickable when the textfield is not empty

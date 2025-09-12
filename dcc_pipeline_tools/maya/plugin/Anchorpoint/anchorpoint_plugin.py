@@ -8,6 +8,7 @@ import re
 import platform
 import threading
 import glob
+import tempfile
 
 
 def maya_useNewAPI():
@@ -72,6 +73,45 @@ def get_executable_path():
         raise OSError("Unsupported OS")
 
 
+def capture_viewport_screenshot():
+    try:
+        # Use the system temp directory
+        temp_dir = tempfile.gettempdir()
+        output_path = os.path.join(temp_dir, "ap_maya_screenshot.png")
+
+        # Get the active model panel (viewport)
+        panel = cmds.getPanel(withFocus=True)
+        if not panel or not cmds.getPanel(typeOf=panel) == "modelPanel":
+            # Fallback: first available modelPanel
+            model_panels = cmds.getPanel(type="modelPanel")
+            panel = model_panels[0] if model_panels else None
+
+        if not panel:
+            raise RuntimeError("No active model panel found for screenshot")
+
+        # Capture viewport as an image (png)
+        cmds.playblast(
+            completeFilename=output_path,
+            forceOverwrite=True,
+            format="image",
+            compression="png",
+            width=960,
+            height=540,
+            quality=100,
+            showOrnaments=False,
+            viewer=False,
+            frame=cmds.currentTime(q=True),
+            offScreen=True,
+            percent=100,
+            clearCache=True
+        )
+
+        return output_path
+    except Exception as e:
+        print(f"Failed to capture viewport screenshot: {e}")
+        return None
+
+
 def run_executable(msg, path):
     def execute_command():
         try:
@@ -80,7 +120,14 @@ def run_executable(msg, path):
             )
 
             executable_path = get_executable_path()
-            json_object = {"msg": str(msg), "doc-path": str(path)}
+            screenshot_path = maya.utils.executeInMainThreadWithResult(
+                lambda: capture_viewport_screenshot()
+            )
+            json_object = {
+                "msg": str(msg),
+                "doc-path": str(path),
+                "screenshot": str(screenshot_path)
+            }
             payload = json.dumps(json_object, ensure_ascii=False)
 
             plugin_path = cmds.pluginInfo(

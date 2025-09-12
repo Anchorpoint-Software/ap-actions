@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import json
 import anchorpoint as ap
-import re
+from PIL import Image
 
 
 def get_master_filename(path, appendix):
@@ -54,7 +54,26 @@ def get_master_filename(path, appendix):
     return master_name
 
 
-def publish_file(msg, path, post_process=None, additional_file_objects=[]):
+def scale_png_by_half(input_path):
+    """
+    Scale a PNG image down by 2x and save it as '<filename>_low.png'
+    next to the original file.
+    """
+    if not os.path.exists(input_path):
+        raise FileNotFoundError(f"File not found: {input_path}")
+
+    base, ext = os.path.splitext(input_path)
+    output_path = f"{base}_low.png"
+
+    with Image.open(input_path) as img:
+        new_size = (max(1, img.width // 2), max(1, img.height // 2))
+        resized = img.resize(new_size, Image.LANCZOS)
+        resized.save(output_path, format="PNG")
+
+    return output_path
+
+
+def publish_file(msg, path, data_object=None):
 
     ctx = ap.get_context()
 
@@ -67,7 +86,12 @@ def publish_file(msg, path, post_process=None, additional_file_objects=[]):
 
     # Check if we need to create a master file
     create_master = isinstance(
-        post_process, dict) and post_process.get("create_master", False)
+        data_object, dict) and data_object.get("create_master", False)
+
+    # Check if we need to attach a thumbnail
+    thumbnail = isinstance(
+        data_object, dict) and data_object.get("attached_doc_thumbnail", False)
+    low_res_thumbnail = ""
 
     # Set the file status to Modified
     file_status = "Modified"
@@ -107,6 +131,11 @@ def publish_file(msg, path, post_process=None, additional_file_objects=[]):
     project_settings.set("inc_versions", history_array)
     project_settings.store()
 
+    # Attach a thumbnail to the increment
+    if thumbnail:
+        low_res_thumbnail = scale_png_by_half(thumbnail)
+        aps.attach_thumbnails(path, low_res_thumbnail, thumbnail)
+
     if create_master:
         # Set some attributes on the master file
         database = ap.get_api()
@@ -116,7 +145,11 @@ def publish_file(msg, path, post_process=None, additional_file_objects=[]):
         master_path = os.path.join(os.path.dirname(path), master_filename)
         aps.copy_file(path, master_path, True)
 
-        file_base_name = os.path.basename(path).split(".")[0]
+        # Attach a thumbnail to the master
+        if thumbnail:
+            aps.attach_thumbnails(master_path, low_res_thumbnail, thumbnail)
+
+        file_base_name = os.path.splitext(os.path.basename(path))[0]
         # Set the source file name (the one with the increment)
         database.attributes.set_attribute_value(
             master_path, "Source File", file_base_name)

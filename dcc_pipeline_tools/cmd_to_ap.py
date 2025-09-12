@@ -19,30 +19,33 @@ def main():
     msg = ""
     doc_path = ""
     additional_file_objects = []
+    thumbnail_path = ""
 
     # Parse the JSON string
     try:
         parsed_arguments = json.loads(arguments)
-        # raise Exception("The output could not be read")
         # Access and print the "msg" object
         if "msg" in parsed_arguments:
             msg = parsed_arguments["msg"]
         if "doc-path" in parsed_arguments:
             doc_path = parsed_arguments["doc-path"]
-        else:
-            raise Exception("The output could not be read")
+        if "screenshot" in parsed_arguments:
+            thumbnail_path = parsed_arguments["screenshot"]
     except json.JSONDecodeError:
         raise Exception("Cannot decode JSON.")
 
+    # check if post processing needs to be done
     ctx = ap.get_context()
     project_settings = aps.SharedSettings(
         ctx.project_id, ctx.workspace_id, "inc_settings")
+    data_object = {
+        "create_master": project_settings.get("create_master_file", True),
+        "attached_doc_thumbnail": thumbnail_path,
+        "additional_file_objects": additional_file_objects}
 
-    post_process_object = {"create_master": project_settings.get(
-        "create_master_file", True)}
-
+    # Trigger the publish process
     publish_process = publish.publish_file(
-        msg, doc_path, post_process=post_process_object, additional_file_objects=additional_file_objects)
+        msg, doc_path, data_object=data_object)
     if publish_process:
         # Print a success to stdout so the C4D plugin can read it
         sys.__stdout__.write("The file has been published")
