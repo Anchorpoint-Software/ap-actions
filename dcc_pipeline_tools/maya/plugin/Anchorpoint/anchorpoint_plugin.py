@@ -144,36 +144,9 @@ def run_executable(msg, path):
 
 
 def _env_for_clean_qt():
-    """Return a copy of the current env without Maya's Qt scaling vars,
-    and with sane defaults for Anchorpoint."""
     env = os.environ.copy()
-
-    # Remove all potentially inherited Qt vars from Maya
-    qt_vars_to_strip = {
-        "QT_DEVICE_PIXEL_RATIO",
-        "QT_AUTO_SCREEN_SCALE_FACTOR",
-        "QT_SCALE_FACTOR",
-        "QT_SCREEN_SCALE_FACTORS",
-        "QT_ENABLE_HIGHDPI_SCALING",
-        "QT_SCALE_FACTOR_ROUNDING_POLICY",
-        "QT_FONT_DPI",
-        "QT_STYLE_OVERRIDE",
-        "QT_QPA_PLATFORMTHEME",
-        "QT_QPA_PLATFORM_PLUGIN_PATH",
-    }
-    for k in list(env.keys()):
-        if k in qt_vars_to_strip or k.startswith("QT_"):
-            env.pop(k, None)
-
     # Apply neutral High-DPI settings for the child Qt app
-    # These are safe for Qt 5.6+; the rounding policy needs Qt 5.14+ (ignored otherwise).
     env["QT_ENABLE_HIGHDPI_SCALING"] = "1"
-    env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "1"
-    env["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough"
-
-    # If you prefer forcing 1:1 scaling instead, replace the two lines above with:
-    # env["QT_AUTO_SCREEN_SCALE_FACTOR"] = "0"
-    # env["QT_SCALE_FACTOR"] = "1"
 
     return env
 
