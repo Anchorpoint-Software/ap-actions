@@ -10,16 +10,47 @@ import re
 def get_master_filename(path, appendix):
     """
     Given a file path and an appendix, return the master filename by removing initials and increments.
-    Example:
+    Examples:
         C4324-EN_Autum_Toolkit_mn_v002.c4d -> C4324-EN_Autum_Toolkit_master.c4d
+        bla_v001.c4d -> bla_master.c4d
+        bla.001.c4d -> bla_master.c4d
+        object_mn_0002.c4d -> object_mn_master.c4d
     """
     filename = os.path.basename(path)
     name, ext = os.path.splitext(filename)
-    # Remove initials and increments: match _[a-zA-Z]+_v[0-9]+$ or _v[0-9]+$ at the end
-    # Also handle _v0002, _v02, _mn_v002, etc.
-    # Remove trailing _[a-zA-Z]+_v\d+ or _v\d+
-    new_name = re.sub(r'(_[a-zA-Z]+)?_v\d+$', '', name)
-    master_name = f"{new_name}_{appendix}{ext}"
+
+    new_name = name
+    sepparator = ""
+
+    # Case 1: filenames like bla_v001 or bla_mn_v002
+    if "_v" in name:
+        parts = name.split("_")
+        cleaned_parts = []
+        for part in parts:
+            if part.startswith("v") and part[1:].isdigit():  # v001, v23, etc.
+                break  # stop here, remove this and everything after
+            cleaned_parts.append(part)
+        new_name = "_".join(cleaned_parts)
+        sepparator = "_"
+
+    # Case 2: filenames like bla.001 (only checks the LAST dot)
+    elif "." in name:
+        base, last = name.rsplit(".", 1)  # split only once, from the right
+        if last.isdigit():  # last part is just numbers like 001
+            new_name = base
+        else:
+            new_name = name
+        sepparator = "."
+
+    # Case 3: filenames like object_mn_0002
+    elif "_" in name:
+        parts = name.split("_")
+        if parts[-1].isdigit():  # last part is just digits
+            parts = parts[:-1]   # drop the number
+            new_name = "_".join(parts)
+            sepparator = "_"
+
+    master_name = f"{new_name}{sepparator}{appendix}{ext}"
     return master_name
 
 
