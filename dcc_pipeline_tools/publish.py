@@ -54,7 +54,7 @@ def get_master_filename(path, appendix):
     return master_name
 
 
-def publish_file(msg, path, type, post_process=None):
+def publish_file(msg, path, post_process=None, additional_file_objects=[]):
 
     ctx = ap.get_context()
 
@@ -74,6 +74,23 @@ def publish_file(msg, path, type, post_process=None):
     # Create a random id
     version_id = uuid.uuid4().hex[:8]
 
+    files = [{"path": path,
+              "status": file_status}]
+
+    # Set the application type based on the file extension
+    type = ""
+    ext = os.path.splitext(path)[1].lower()  # get file extension
+
+    match ext:
+        case ".c4d":
+            type = "cinema4d"
+        case ".mb" | ".ma":
+            type = "maya"
+        case ".blend":
+            type = "blender"
+        case _:
+            type = ""
+
     # Build the json object that will be stored in the shared settings
     json_object = {
         "user_email": ctx.email,
@@ -81,10 +98,7 @@ def publish_file(msg, path, type, post_process=None):
         "time": str(datetime.now()),
         "id": version_id,
         "type": type,
-        "files": [
-            {"path": path,
-             "status": file_status}
-        ]
+        "files": files
     }
 
     # Add the new entry to the history and store it
@@ -138,4 +152,4 @@ def publish_file(msg, path, type, post_process=None):
         except Exception as e:
             raise Exception(f"Failed to send webhook: {e}")
 
-    return True
+        return True

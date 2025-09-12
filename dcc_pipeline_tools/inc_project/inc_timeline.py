@@ -77,6 +77,10 @@ def on_load_timeline_channel_entries(
             entry.icon = aps.Icon(
                 ":/icons/organizations-and-products/c4d.svg", "#F3D582")
             entry.tooltip = "Published from Cinema 4D"
+        elif history_item["type"] == "maya":
+            entry.icon = aps.Icon(
+                ":/icons/organizations-and-products/maya.svg", "#F3D582")
+            entry.tooltip = "Published from Maya"
         else:
             entry.icon = aps.Icon(
                 ":/icons/user-interface/information.svg", "#70717A")

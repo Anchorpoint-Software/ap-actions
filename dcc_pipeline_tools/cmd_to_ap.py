@@ -16,10 +16,9 @@ def main():
     # add the parent directory to the sys.path to be able to import inc_publish_utils
 
     arguments = sys.argv[1]
-    arguments = arguments.replace("\\", "\\\\")
     msg = ""
-    path = ""
-    type = "cinema4d"
+    doc_path = ""
+    additional_file_objects = []
 
     # Parse the JSON string
     try:
@@ -28,8 +27,8 @@ def main():
         # Access and print the "msg" object
         if "msg" in parsed_arguments:
             msg = parsed_arguments["msg"]
-        if "path" in parsed_arguments:
-            path = parsed_arguments["path"]
+        if "doc-path" in parsed_arguments:
+            doc_path = parsed_arguments["doc-path"]
         else:
             raise Exception("The output could not be read")
     except json.JSONDecodeError:
@@ -43,7 +42,7 @@ def main():
         "create_master_file", True)}
 
     publish_process = publish.publish_file(
-        msg, path, type, post_process=post_process_object)
+        msg, doc_path, post_process=post_process_object, additional_file_objects=additional_file_objects)
     if publish_process:
         # Print a success to stdout so the C4D plugin can read it
         sys.__stdout__.write("The file has been published")

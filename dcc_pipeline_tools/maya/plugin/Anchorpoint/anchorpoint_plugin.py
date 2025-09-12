@@ -80,8 +80,8 @@ def run_executable(msg, path):
             )
 
             executable_path = get_executable_path()
-            json_object = {"msg": str(msg), "path": str(path)}
-            json_string = json.dumps(json_object)
+            json_object = {"msg": str(msg), "doc-path": str(path)}
+            payload = json.dumps(json_object, ensure_ascii=False)
 
             plugin_path = cmds.pluginInfo(
                 "anchorpoint_plugin", q=True, path=True)
@@ -104,7 +104,7 @@ def run_executable(msg, path):
                 '-s',
                 script_path,
                 '--args',
-                json_string,
+                payload,
             ]
 
             startupinfo = None
