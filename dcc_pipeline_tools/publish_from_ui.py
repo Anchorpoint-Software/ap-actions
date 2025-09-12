@@ -40,6 +40,12 @@ def button_callback(dialog):
     ctx.run_async(trigger_publish, comment, ctx.path, "", post_process_object)
     dialog.close()
 
+# Make the button only clickable when the textfield is not empty
+
+
+def text_callback(dialog, value):
+    dialog.set_enabled("publish_button_var", value != "")
+
 
 def main():
     # Create the dialog
@@ -51,6 +57,7 @@ def main():
         var="comment",
         placeholder="Add a comment to this version",
         width=400,
+        callback=text_callback
     )
     dialog.add_info(
         "Creates a timeline entry for this file")
@@ -58,7 +65,8 @@ def main():
         create_master, text="Create Master File", var="create_master")
     dialog.add_info(
         "This will create a file without increments in the file name")
-    dialog.add_button("Publish", callback=button_callback)
+    dialog.add_button("Publish", var="publish_button_var",
+                      callback=button_callback, enabled=False)
     dialog.show()
 
 
