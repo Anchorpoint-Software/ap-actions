@@ -133,7 +133,7 @@ class IncProjectType(ap.ProjectType):
         channel = aps.TimelineChannel()
         channel.id = "inc-vc-basic"
         channel.name = "Published incremental saves"
-
+        channel.features.commit_details = True
         aps.add_timeline_channel(self.project, channel)
 
 
