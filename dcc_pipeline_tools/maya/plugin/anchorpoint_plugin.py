@@ -298,7 +298,12 @@ def create_anchorpoint_menu():
 
 
 def initializePlugin(mobject):
-    plugin = om.MFnPlugin(mobject)
+    plugin = om.MFnPlugin(
+        mobject,
+        "Anchorpoint Software GmbH",  # vendor
+        "1.0.0",                      # version string
+        "Any"                         # API version
+    )
     create_anchorpoint_menu()
 
 

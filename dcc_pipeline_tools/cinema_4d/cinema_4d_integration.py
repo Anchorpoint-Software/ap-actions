@@ -26,10 +26,6 @@ class Cinema4DIntegration(ap.ApIntegration):
         self.dashboard_icon = os.path.join(ctx.yaml_dir, "cinema_4d.svg")
         self.preferences_icon = os.path.join(ctx.yaml_dir, "cinema_4d.svg")
 
-        # settings = aps.Settings("cinema4D")
-
-        # self.is_connected = True  # is_connected()
-
         plugin_folder = ap.IntegrationAction()
         plugin_folder.name = "Open Plugin"
         plugin_folder.enabled = True
