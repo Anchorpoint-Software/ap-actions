@@ -66,8 +66,8 @@ def run_executable(msg, path):
             }
             payload = json.dumps(json_object, ensure_ascii=False)
             # Try to get the script path if the plugin is relative to the Anchorpoint installation folder
-            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(
-                __file__)))), "cmd_to_ap.py")
+            script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+                __file__))), "cmd_to_ap.py")
 
             # Use the file path relative to the ap.exe if the other one does not exist
             if not os.path.exists(script_path):

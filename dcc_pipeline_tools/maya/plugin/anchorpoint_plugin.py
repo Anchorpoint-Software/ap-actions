@@ -135,7 +135,7 @@ def run_executable(msg, path):
             plugin_dir = os.path.dirname(plugin_path)
 
             script_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.dirname(plugin_dir))),
+                os.path.dirname(os.path.dirname(plugin_dir)),
                 "cmd_to_ap.py"
             )
             if not os.path.exists(script_path):
