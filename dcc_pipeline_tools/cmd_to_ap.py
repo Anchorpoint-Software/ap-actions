@@ -1,6 +1,5 @@
 import sys
 import json
-import os
 import apsync as aps
 import anchorpoint as ap
 import publish
@@ -37,15 +36,16 @@ def main():
     # check if post processing needs to be done
     ctx = ap.get_context()
     project_settings = aps.SharedSettings(
-        ctx.project_id, ctx.workspace_id, "inc_settings")
+        ctx.project_id, ctx.workspace_id, "inc_settings"
+    )
     data_object = {
         "create_master": project_settings.get("create_master_file", True),
         "attached_doc_thumbnail": thumbnail_path,
-        "additional_file_objects": additional_file_objects}
+        "additional_file_objects": additional_file_objects,
+    }
 
     # Trigger the publish process
-    publish_process = publish.publish_file(
-        msg, doc_path, data_object=data_object)
+    publish_process = publish.publish_file(msg, doc_path, data_object=data_object)
     if publish_process:
         # Print a success to stdout so the C4D plugin can read it
         sys.__stdout__.write("The file has been published")

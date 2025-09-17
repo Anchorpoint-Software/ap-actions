@@ -1,5 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
+
 # Import the publish class, that is also triggered from the DCC plugins
 import publish
 
@@ -10,8 +11,7 @@ import publish
 ctx = ap.get_context()
 project_id = ctx.project_id
 workspace_id = ctx.workspace_id
-shared_settings = aps.SharedSettings(
-    project_id, workspace_id, "inc_settings")
+shared_settings = aps.SharedSettings(project_id, workspace_id, "inc_settings")
 create_master = shared_settings.get("create_master_file", False)
 
 # send the data to the publish class that creates the timeline entry
@@ -19,16 +19,17 @@ create_master = shared_settings.get("create_master_file", False)
 
 def trigger_publish(msg, path, data_object):
     progress = ap.Progress("Publishing File", "Please wait...")
-    publish_process = publish.publish_file(
-        msg, path, data_object)
+    publish_process = publish.publish_file(msg, path, data_object)
     ui = ap.UI()
     if publish_process:
-        ui.show_success("Publish Successful",
-                        "The file has been added to the timeline",)
+        ui.show_success(
+            "Publish Successful",
+            "The file has been added to the timeline",
+        )
     else:
-        ui.show_error("Cannot publish the file",
-                      "An error occurred during publishing")
+        ui.show_error("Cannot publish the file", "An error occurred during publishing")
     progress.finish()
+
 
 # The function that is triggered when the user clicks on the button
 
@@ -39,6 +40,7 @@ def button_callback(dialog):
     # Run the publish process async because it could take a while
     ctx.run_async(trigger_publish, comment, ctx.path, data_object)
     dialog.close()
+
 
 # Make the button only clickable when the textfield is not empty
 
@@ -57,16 +59,14 @@ def main():
         var="comment",
         placeholder="Add a comment to this version",
         width=400,
-        callback=text_callback
+        callback=text_callback,
     )
-    dialog.add_info(
-        "Creates a timeline entry for this file")
-    dialog.add_checkbox(
-        create_master, text="Create Master File", var="create_master")
-    dialog.add_info(
-        "This will create a file without increments in the file name")
-    dialog.add_button("Publish", var="publish_button_var",
-                      callback=button_callback, enabled=False)
+    dialog.add_info("Creates a timeline entry for this file")
+    dialog.add_checkbox(create_master, text="Create Master File", var="create_master")
+    dialog.add_info("This will create a file without increments in the file name")
+    dialog.add_button(
+        "Publish", var="publish_button_var", callback=button_callback, enabled=False
+    )
     dialog.show()
 
 
