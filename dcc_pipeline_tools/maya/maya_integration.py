@@ -29,22 +29,35 @@ class MayaIntegration(ap.ApIntegration):
         plugin_folder = ap.IntegrationAction()
         plugin_folder.name = "Open Plugin"
         plugin_folder.enabled = True
-        plugin_folder.icon = aps.Icon(os.path.join(
-            os.path.dirname(ctx.yaml_dir), "folder_grey.svg"))
+        plugin_folder.icon = aps.Icon(
+            os.path.join(os.path.dirname(ctx.yaml_dir), "folder_grey.svg")
+        )
         plugin_folder.identifier = plugin_action_id
-        plugin_folder.tooltip = "Copy and paste the plugin to your default Maya plugin directory"
+        plugin_folder.tooltip = (
+            "Copy and paste the plugin to your default Maya plugin directory"
+        )
         self.add_preferences_action(plugin_folder)
 
     def execute_preferences_action(self, action_id: str):
         if action_id == plugin_action_id:
             system = platform.system()
-            path = os.path.join(self.ctx.yaml_dir, "plugin")
+            path = os.path.join(
+                self.ctx.app_dir,
+                "scripts",
+                "ap-actions",
+                "dcc_pipeline_tools",
+                "maya",
+                "plugin",
+            )
+
+            # fallback e.g. for macOS
+            if not os.path.exists(path):
+                path = os.path.join(self.ctx.yaml_dir, "plugin")
 
             if system == "Windows":
                 # Open folder or select a file
                 if os.path.isfile(path):
-                    subprocess.run(
-                        ["explorer", "/select,", os.path.normpath(path)])
+                    subprocess.run(["explorer", "/select,", os.path.normpath(path)])
                 else:
                     subprocess.run(["explorer", os.path.normpath(path)])
             elif system == "Darwin":  # macOS
