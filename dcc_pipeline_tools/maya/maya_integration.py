@@ -26,10 +26,6 @@ class MayaIntegration(ap.ApIntegration):
         self.dashboard_icon = os.path.join(ctx.yaml_dir, "maya.svg")
         self.preferences_icon = os.path.join(ctx.yaml_dir, "maya.svg")
 
-        # settings = aps.Settings("Maya")
-
-        # self.is_connected = True  # is_connected()
-
         plugin_folder = ap.IntegrationAction()
         plugin_folder.name = "Open Plugin"
         plugin_folder.enabled = True
