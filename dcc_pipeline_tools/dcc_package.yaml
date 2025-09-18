@@ -28,5 +28,5 @@ action:
     -  ap::inc::project-settings
     -  ap::inc::publish
     -  ap::integrations::cinema-4d
-
+    -  ap::integrations::maya
     
