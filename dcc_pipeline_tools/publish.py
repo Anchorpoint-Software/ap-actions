@@ -46,7 +46,7 @@ def get_master_filename(path, appendix):
     elif "_" in name:
         parts = name.split("_")
         if parts[-1].isdigit():  # last part is just digits
-            parts = parts[:-1]   # drop the number
+            parts = parts[:-1]  # drop the number
             new_name = "_".join(parts)
             sepparator = "_"
 
@@ -74,23 +74,24 @@ def scale_png_by_half(input_path):
 
 
 def publish_file(msg, path, data_object=None):
-
     ctx = ap.get_context()
 
     # load the existing history from shared settings
     project_settings = aps.SharedSettings(
-        ctx.project_id, ctx.workspace_id, "inc_settings")
-    workspace_settings = aps.SharedSettings(
-        ctx.workspace_id, "inc_workspace_settings")
+        ctx.project_id, ctx.workspace_id, "inc_settings"
+    )
+    workspace_settings = aps.SharedSettings(ctx.workspace_id, "inc_workspace_settings")
     history_array = project_settings.get("inc_versions", [])
 
     # Check if we need to create a master file
-    create_master = isinstance(
-        data_object, dict) and data_object.get("create_master", False)
+    create_master = isinstance(data_object, dict) and data_object.get(
+        "create_master", False
+    )
 
     # Check if we need to attach a thumbnail
-    thumbnail = isinstance(
-        data_object, dict) and data_object.get("attached_doc_thumbnail", False)
+    thumbnail = isinstance(data_object, dict) and data_object.get(
+        "attached_doc_thumbnail", False
+    )
     low_res_thumbnail = ""
 
     # Set the file status to Modified
@@ -98,8 +99,7 @@ def publish_file(msg, path, data_object=None):
     # Create a random id
     version_id = uuid.uuid4().hex[:8]
 
-    files = [{"path": path,
-              "status": file_status}]
+    files = [{"path": path, "status": file_status}]
 
     # Set the application type based on the file extension
     type = ""
@@ -122,7 +122,7 @@ def publish_file(msg, path, data_object=None):
         "time": str(datetime.now()),
         "id": version_id,
         "type": type,
-        "files": files
+        "files": files,
     }
 
     # Add the new entry to the history and store it
@@ -152,7 +152,8 @@ def publish_file(msg, path, data_object=None):
         file_base_name = os.path.splitext(os.path.basename(path))[0]
         # Set the source file name (the one with the increment)
         database.attributes.set_attribute_value(
-            master_path, "Source File", file_base_name)
+            master_path, "Source File", file_base_name
+        )
 
         # Mark it as a master with a tag for better visibility
         tag = aps.AttributeTag("master", "yellow")
@@ -176,9 +177,8 @@ def publish_file(msg, path, data_object=None):
                 "id": version_id,
                 "type": "cinema4d",
                 "files": [
-                    {"path": path,
-                     "status": file_status},
-                ]
+                    {"path": path, "status": file_status},
+                ],
             }
 
             requests.post(webhook_url, json=payload)
