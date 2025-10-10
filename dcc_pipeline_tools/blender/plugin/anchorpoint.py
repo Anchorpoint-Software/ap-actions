@@ -120,16 +120,14 @@ def run_executable(msg, path):
             result = subprocess.run(
                 command, capture_output=True, text=True, check=True, startupinfo=startupinfo)
             if result.stderr:
-                print(result.stderr)
-                bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT', message="An issue has occurred")
+                print(f"Anchorpoint Error: {result.stderr}")
             else:
-                bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT', message=result.stdout)
+                output_msg = result.stdout.strip() if result.stdout.strip() else "Published successfully!"
+                print(f"Anchorpoint Success: {output_msg}")
         except subprocess.CalledProcessError as e:
-            print(f"An error occurred: {e}")
-            bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT', message="An error occurred during execution")
+            print(f"Anchorpoint Error: An error occurred during execution: {e}")
         except Exception as e:
-            print(f"Unexpected error: {e}")
-            bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT', message=f"Unexpected error: {str(e)}")
+            print(f"Anchorpoint Error: Unexpected error: {str(e)}")
     
     threading.Thread(target=execute_command).start()
 
