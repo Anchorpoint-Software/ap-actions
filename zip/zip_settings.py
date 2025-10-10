@@ -21,14 +21,15 @@ def main():
     ctx = ap.Context.instance()
     ignore_extensions = settings.get("ignore_extensions", ["blend1"])
     ignore_folders = settings.get("ignore_folders", [])
-    archive_name = settings.get("archive_name", "archive")
+    archive_name = create_zip.get_default_archive_name(
+        ctx.selected_files, ctx.selected_folders)
     exclude_incremental_saves = settings.get(
         "exclude_incremental_saves", False)
 
     dialog = ap.Dialog()
     if ctx.icon:
         dialog.icon = ctx.icon
-    dialog.title = "ZIP Settings"
+    dialog.title = "Create ZIP with Settings"
     dialog.add_text("Ignore Files \t").add_tag_input(
         ignore_extensions, placeholder="txt", var="ignore_extensions", callback=store_settings)
     dialog.add_text("Ignore Folders \t").add_tag_input(

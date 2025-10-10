@@ -86,6 +86,18 @@ def zip_files(files, base_folder, output_path, ignore_extensions, ignore_folders
 def run_action():
     main()
 
+def get_default_archive_name(selected_files, selected_folders):
+    if len(selected_files) + len(selected_folders) == 1:
+        path = selected_files[0] if selected_files else selected_folders[0]
+        return os.path.splitext(os.path.basename(path))[0] if os.path.isfile(path) else os.path.basename(os.path.normpath(path))
+    elif len(selected_files) + len(selected_folders) > 1:
+        # Use the parent directory of the first selected item
+        path = selected_files[0] if selected_files else selected_folders[0]
+        return os.path.basename(os.path.dirname(path))
+    else:
+        return "archive"
+
+
 def main():
     ctx = ap.get_context()
     ui = ap.UI()
@@ -96,12 +108,10 @@ def main():
     settings = aps.Settings()
     ignore_extensions = settings.get("ignore_extensions", ["blend1"])
     ignore_folders = settings.get("ignore_folders", [])
-    archive_name = settings.get("archive_name", "archive").strip()
+
+    suggested_archive_name = get_default_archive_name(selected_files, selected_folders)
     exclude_incremental_saves = settings.get(
         "exclude_incremental_saves", False)
-
-    if not archive_name:
-        archive_name = "archive"
 
     if selected_files:
         output_dir = os.path.dirname(selected_files[0])
@@ -113,8 +123,6 @@ def main():
     # Ensure the output directory is valid
     if not os.path.isdir(output_dir):
         output_dir = os.path.dirname(output_dir)
-
-    output_zip = os.path.join(output_dir, f"{archive_name}.zip")
 
     all_files = []
     base_folder = output_dir
@@ -144,17 +152,31 @@ def main():
         if ctx.path and base_folder not in ctx.path:
                 base_folder = os.path.commonpath([base_folder, ctx.path])
 
-
     # Run the zipping process asynchronously
-    def zip_and_notify():
+    def zip_and_notify(output_zip):
         success = zip_files(all_files, base_folder, output_zip,
                             ignore_extensions, ignore_folders, exclude_incremental_saves)
         if success:
             ui.show_success("Archive has been created",
                             f"Take a look at {os.path.basename(output_zip)}")
+        else:
+            ui.show_error("Zipping Failed or Canceled",
+                          "The archive could not be created.")
 
-    ctx.run_async(zip_and_notify)
-
+    def button_clicked(dialog):
+        archive_name = dialog.get_value("zip_name") or suggested_archive_name
+        output_zip = os.path.join(output_dir, f"{archive_name}.zip")
+        dialog.close()
+        ctx.run_async(zip_and_notify, output_zip)
+    
+    dialog = ap.Dialog()
+    if ctx.icon:
+        dialog.icon = ctx.icon
+    dialog.title = "Create ZIP Archive"
+    dialog.add_text("Name").add_input(
+        suggested_archive_name, placeholder="archive", var="zip_name")
+    dialog.add_button("Create ZIP", callback=button_clicked)
+    dialog.show()
 
 if __name__ == "__main__":
     main()
