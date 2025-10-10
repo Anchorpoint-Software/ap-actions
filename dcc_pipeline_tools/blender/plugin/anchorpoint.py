@@ -38,10 +38,10 @@ def show_pending_message():
     """Timer callback to show pending message"""
     global _pending_message, _message_type, _pending_title
     if _pending_message:
-        def draw(self, context):
-            self.layout.label(text=_pending_message)
-        
-        bpy.context.window_manager.popup_menu(draw, title=_pending_title, icon=_message_type)
+        # Use the dialog operator with OK button
+        bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT', 
+                                        message=_pending_message, 
+                                        dialog_title=_pending_title)
         _pending_message = None
     return None  # Don't repeat timer
 
@@ -174,8 +174,13 @@ class ANCHORPOINT_OT_show_message(Operator):
         default=""
     )
     
+    dialog_title: StringProperty(
+        name="Dialog Title",
+        description="Title for the dialog",
+        default="Anchorpoint"
+    )
+    
     def execute(self, context):
-        self.report({'INFO'}, self.message)
         return {'FINISHED'}
     
     def invoke(self, context, event):
@@ -186,7 +191,8 @@ class ANCHORPOINT_OT_show_message(Operator):
         # Split message into lines for better display
         lines = self.message.split('\n')
         for line in lines:
-            layout.label(text=line)
+            if line.strip():
+                layout.label(text=line)
 
 
 class ANCHORPOINT_OT_open_anchorpoint(Operator):
@@ -267,7 +273,7 @@ class ANCHORPOINT_OT_publish_version(Operator):
             self.report({'ERROR'}, "This file is not part of an Anchorpoint project")
             return {'CANCELLED'}
         
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self, width=400, confirm_text="Publish")
     
     def draw(self, context):
         layout = self.layout
