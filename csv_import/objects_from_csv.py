@@ -80,10 +80,21 @@ def create_attribute(attribute_type, name):
     return attribute
 
 def get_csv_delimiter(csv_path):
-    with open(csv_path, 'r', encoding='utf-8-sig') as csvfile:
-        first_line = csvfile.readline()
-        delimiter = ';' if ';' in first_line else ','
-    return delimiter
+    try:
+        with open(csv_path, 'r', encoding='utf-8-sig') as csvfile:
+            first_line = csvfile.readline()
+            delimiter = ';' if ';' in first_line else ','
+        return delimiter
+    except UnicodeDecodeError:
+        # Try alternative encodings
+        try:
+            with open(csv_path, 'r', encoding='latin-1') as csvfile:
+                first_line = csvfile.readline()
+                delimiter = ';' if ';' in first_line else ','
+            return delimiter
+        except Exception:
+            ui.show_error("Encoding Error", "Cannot read the CSV file. Please save it with UTF-8 encoding and try again.")
+            return None
 
 def remove_empty_entries(array):
     return [entry for entry in array if entry]
@@ -143,6 +154,8 @@ def on_file_selected(dialog, value):
     settings.store()
 
     delimiter = get_csv_delimiter(csv_path)
+    if delimiter is None:  # Handle encoding error
+        return
 
     try:
         with open(csv_path, newline='', encoding='utf-8-sig') as csvfile:
@@ -152,7 +165,7 @@ def on_file_selected(dialog, value):
     except UnicodeDecodeError as e:
         ui.show_error("Issue with the CSV file", "This file cannot be opened. Re-export it and open it again.")
         return
-        
+    
     dialog.add_text("<b>Match Names</b>")
     dialog.add_dropdown(
         csv_headers[0], csv_headers, var="object_name", width=160).add_text("⮕").add_text(f"{object_type.capitalize()} Name", width=224)
