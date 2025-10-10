@@ -20,6 +20,33 @@ import threading
 import glob
 
 
+# Global variables for UI message display
+_pending_message = None
+_pending_title = "Anchorpoint"
+_message_type = 'INFO'
+
+def show_message_delayed(message, title="Anchorpoint", icon='INFO'):
+    """Store message to be shown by timer callback"""
+    global _pending_message, _message_type, _pending_title
+    _pending_message = message
+    _pending_title = title
+    _message_type = icon
+    # Register timer to show message in main thread
+    bpy.app.timers.register(show_pending_message, first_interval=0.1)
+
+def show_pending_message():
+    """Timer callback to show pending message"""
+    global _pending_message, _message_type, _pending_title
+    if _pending_message:
+        def draw(self, context):
+            self.layout.label(text=_pending_message)
+        
+        bpy.context.window_manager.popup_menu(draw, title=_pending_title, icon=_message_type)
+        _pending_message = None
+    return None  # Don't repeat timer
+
+
+
 # Check if the file is in an Anchorpoint project
 def is_in_anchorpoint_project(file_path: str) -> bool:
     if not file_path:
@@ -121,14 +148,18 @@ def run_executable(msg, path):
                 command, capture_output=True, text=True, check=True, startupinfo=startupinfo)
             if result.stderr:
                 print(f"Anchorpoint Error: {result.stderr}")
+                show_message_delayed("An issue has occurred", "Anchorpoint Error", 'ERROR')
             else:
                 output_msg = result.stdout.strip() if result.stdout.strip() else "Published successfully!"
                 print(f"Anchorpoint Success: {output_msg}")
+                show_message_delayed(output_msg, "Anchorpoint Success", 'INFO')
         except subprocess.CalledProcessError as e:
             print(f"Anchorpoint Error: An error occurred during execution: {e}")
+            show_message_delayed("An error occurred during execution", "Anchorpoint Error", 'ERROR')
         except Exception as e:
             print(f"Anchorpoint Error: Unexpected error: {str(e)}")
-    
+            show_message_delayed(f"Unexpected error: {str(e)}", "Anchorpoint Error", 'ERROR')
+
     threading.Thread(target=execute_command).start()
 
 
