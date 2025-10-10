@@ -122,7 +122,7 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
     if channel_id != "inc-vc-basic":
         return None
 
-    info = ap.TimelineChannelInfo()
+    info = ap.TimelineChannelInfo(ctx.project_id)
     return info
 
 # listen to file change to refresh the timeline. It's not the best solution, but the easiest for now
