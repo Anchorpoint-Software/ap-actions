@@ -310,12 +310,12 @@ def register():
         bpy.utils.register_class(cls)
     
     # Add menu to the header
-    bpy.types.TOPBAR_HT_upper_bar.append(draw_anchorpoint_menu)
+    bpy.types.TOPBAR_MT_editor_menus.append(draw_anchorpoint_menu)
 
 
 def unregister():
     # Remove menu from the header
-    bpy.types.TOPBAR_HT_upper_bar.remove(draw_anchorpoint_menu)
+    bpy.types.TOPBAR_MT_editor_menus.remove(draw_anchorpoint_menu)
     
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
