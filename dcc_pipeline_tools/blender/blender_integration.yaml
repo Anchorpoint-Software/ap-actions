@@ -1,0 +1,18 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Blender Integration
+
+  version: 1
+  id: ap::integrations::blender
+  category: integrations
+  type: python
+  enable: true
+  author: Anchorpoint Software GmbH
+  description: Integration for Blender
+
+  script: blender_integration.py
