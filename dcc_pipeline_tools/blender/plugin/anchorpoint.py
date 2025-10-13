@@ -19,14 +19,13 @@ import platform
 import threading
 import glob
 
-
 # Global variables for UI message display
 _pending_message = None
 _pending_title = "Anchorpoint"
 _message_type = 'INFO'
 
 def show_message_delayed(message, title="Anchorpoint", icon='INFO'):
-    """Store message to be shown by timer callback"""
+    #Store message to be shown by timer callback
     global _pending_message, _message_type, _pending_title
     _pending_message = message
     _pending_title = title
@@ -35,7 +34,7 @@ def show_message_delayed(message, title="Anchorpoint", icon='INFO'):
     bpy.app.timers.register(show_pending_message, first_interval=0.1)
 
 def show_pending_message():
-    """Timer callback to show pending message"""
+    #Timer callback to show pending message
     global _pending_message, _message_type, _pending_title
     if _pending_message:
         # Use the dialog operator with OK button
@@ -150,7 +149,7 @@ def run_executable(msg, path):
                 print(f"Anchorpoint Error: {result.stderr}")
                 show_message_delayed("An issue has occurred", "Anchorpoint Error", 'ERROR')
             else:
-                output_msg = result.stdout.strip() if result.stdout.strip() else "Published successfully!"
+                output_msg = result.stdout.strip()
                 print(f"Anchorpoint Success: {output_msg}")
                 show_message_delayed(output_msg, "Anchorpoint Success", 'INFO')
         except subprocess.CalledProcessError as e:
@@ -162,11 +161,10 @@ def run_executable(msg, path):
 
     threading.Thread(target=execute_command).start()
 
-
 class ANCHORPOINT_OT_show_message(Operator):
     """Show a message dialog"""
     bl_idname = "anchorpoint.show_message"
-    bl_label = "Anchorpoint Message"
+    bl_label = "File published successfully"
     
     message: StringProperty(
         name="Message",
@@ -184,6 +182,9 @@ class ANCHORPOINT_OT_show_message(Operator):
         return {'FINISHED'}
     
     def invoke(self, context, event):
+        # restore cursor to default
+        context.window.cursor_modal_restore()
+        # show success dialog
         return context.window_manager.invoke_props_dialog(self, width=400)
     
     def draw(self, context):
@@ -260,6 +261,10 @@ class ANCHORPOINT_OT_publish_version(Operator):
             self.report({'ERROR'}, "This file is not part of an Anchorpoint project")
             return {'CANCELLED'}
         
+        # Set cursor to waiting/hourglass
+        context.window.cursor_modal_set('WAIT')
+        
+        # Start the publish process
         run_executable(self.comment, file_path)
         return {'FINISHED'}
     
