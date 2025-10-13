@@ -51,8 +51,11 @@ def is_in_anchorpoint_project(file_path: str) -> bool:
     if not file_path:
         return False
 
-    # Start at the folder containing the file
-    current_dir = os.path.dirname(os.path.abspath(file_path))
+    # Start at the folder containing the file (or the folder itself if it's a directory)
+    if os.path.isfile(file_path):
+        current_dir = os.path.dirname(os.path.abspath(file_path))
+    else:
+        current_dir = os.path.abspath(file_path)
 
     while True:
         # Look for any .approj file in this folder
@@ -73,40 +76,15 @@ def is_in_anchorpoint_project(file_path: str) -> bool:
 
 def get_executable_path():
     if platform.system() == "Windows":
-        base_path = os.path.join(os.getenv('LOCALAPPDATA'), "Anchorpoint")
-        pattern = r"app-(\d+\.\d+\.\d+)"
-        cli_executable_name = "ap.exe"
-
-        # Get directories matching the pattern
-        versioned_directories = [
-            d for d in os.listdir(base_path)
-            if re.match(pattern, d)
-        ]
-
-        # Sort directories by version
-        versioned_directories.sort(key=lambda d: tuple(
-            map(int, re.match(pattern, d).group(1).split('.'))), reverse=True)
-
-        if versioned_directories:
-            latest_version_path = os.path.join(
-                base_path, versioned_directories[0])
-            cli_path = os.path.join(latest_version_path, cli_executable_name)
-
-            if os.path.exists(cli_path):
-                return cli_path
-            else:
-                raise FileNotFoundError("CLI Not Installed!")
+        cli_path = os.path.join(os.getenv('APPDATA'), "Anchorpoint Software", "Anchorpoint","app","ap.exe")
 
     elif platform.system() == "Darwin":  # macOS
-        cli_path = "/Applications/Anchorpoint.app/Contents/Frameworks/ap"
+        cli_path = "/Applications/Anchorpoint.app/Contents/Frameworks/ap"        
 
-        if os.path.exists(cli_path):
-            return cli_path
-        else:
-            raise FileNotFoundError("CLI Not Installed!")
-
+    if os.path.exists(cli_path):
+        return cli_path
     else:
-        raise OSError("Unsupported OS")
+        raise FileNotFoundError("CLI Not Installed!")
 
 
 def run_executable(msg, path):

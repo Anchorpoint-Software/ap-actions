@@ -21,7 +21,7 @@ class Cinema4DIntegration(ap.ApIntegration):
 
         self.ctx = ctx
         self.name = "Blender"
-        self.description = "Publish incremental file versions from Blender and automate pipeline steps. Useful for product visualization and asset creation workflows."
+        self.description = "Publish incremental file versions from Blender and automate pipeline steps. Useful for product visualization and asset creation workflows. Requires Blender 4.5 or newer."
         self.priority = 100
         self.dashboard_icon = os.path.join(ctx.yaml_dir, "blender.svg")
         self.preferences_icon = os.path.join(ctx.yaml_dir, "blender.svg")
