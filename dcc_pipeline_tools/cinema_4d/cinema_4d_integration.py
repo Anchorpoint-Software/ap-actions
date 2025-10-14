@@ -10,9 +10,14 @@ plugin_action_id = "open_plugin_directory"
 # Hook, triggered by Anchorpoint
 
 
-def on_load_integrations(integrations, ctx: ap.Context):
+def load_integration(integrations, callback, ctx: ap.Context):
     integration = Cinema4DIntegration(ctx)
     integrations.add(integration)
+    callback(None)
+
+
+def on_load_integrations_async(integrations, callback, ctx: ap.Context):
+    ctx.run_async(load_integration, integrations, callback, ctx)
 
 
 class Cinema4DIntegration(ap.ApIntegration):
