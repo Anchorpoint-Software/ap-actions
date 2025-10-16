@@ -1,7 +1,17 @@
+from dataclasses import dataclass
 from datetime import datetime
+
 import anchorpoint as ap
 import apsync as aps
 import json
+
+
+# A cache object so that we can re-use the history data
+# without having to read it from shared settings every time
+@dataclass
+class IncCache:
+    history_data: list = None
+
 
 # Use the string version of the enum from c++
 
@@ -17,11 +27,9 @@ def get_vc_file_status_from_string(status_str: str):
     }
     return mapping.get(status_str, ap.VCFileStatus.Unknown)
 
+
 # Retrieve the history from shared settings
-
-
-def get_history():
-
+def get_history_data(ctx):
     # This is how the stored data is formatted
     # [
     # {
@@ -38,9 +46,7 @@ def get_history():
     # ]
 
     # Retrieve the history from shared settings
-    ctx = ap.get_context()
-    settings = aps.SharedSettings(
-        ctx.project_id, ctx.workspace_id, "inc_settings")
+    settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "inc_settings")
 
     # Get the array of strings and parse them as JSON objects
     history_array = settings.get("inc_versions", [])
@@ -53,57 +59,67 @@ def get_history():
 
     return history
 
-# Load the timeline channel entries
 
-
-def on_load_timeline_channel_entries(
-    channel_id: str, time_start: datetime, time_end: datetime, ctx
-):
-    if channel_id != "inc-vc-basic":
-        return None, False
+# Map the history data to timeline entries
+def get_history(ctx):
+    cache: IncCache = ap.get_cache("inc_cache" + ctx.project_id, default=IncCache())
+    cache.history_data = get_history_data(ctx)
 
     # Build the timeline entries from the JSON history that comes from get_history()
     history = []
-    for history_item in get_history():
+    for history_item in cache.history_data:
         entry = ap.TimelineChannelEntry()
         entry.id = history_item["id"]
-        entry.time = int(datetime.fromisoformat(
-            history_item["time"]).timestamp())
+        entry.time = int(datetime.fromisoformat(history_item["time"]).timestamp())
         entry.message = history_item["message"]
         entry.user_email = history_item["user_email"]
         entry.has_details = True
 
         if history_item["type"] == "cinema4d":
             entry.icon = aps.Icon(
-                ":/icons/organizations-and-products/c4d.svg", "#F3D582")
+                ":/icons/organizations-and-products/c4d.svg", "#F3D582"
+            )
             entry.tooltip = "Published from Cinema 4D"
         elif history_item["type"] == "maya":
             entry.icon = aps.Icon(
-                ":/icons/organizations-and-products/maya.svg", "#F3D582")
+                ":/icons/organizations-and-products/maya.svg", "#F3D582"
+            )
             entry.tooltip = "Published from Maya"
         elif history_item["type"] == "blender":
             entry.icon = aps.Icon(
-                ":/icons/organizations-and-products/blender.svg", "#F3D582")
+                ":/icons/organizations-and-products/blender.svg", "#F3D582"
+            )
             entry.tooltip = "Published from Blender"
         else:
-            entry.icon = aps.Icon(
-                ":/icons/user-interface/information.svg", "#70717A")
+            entry.icon = aps.Icon(":/icons/user-interface/information.svg", "#70717A")
             entry.tooltip = "Created a new file"
 
         history.append(entry)
+    return history
 
+
+# Load the timeline channel entries
+def on_load_timeline_channel_entries(channel_id: str, page_size: int, page: int, ctx):
+    if channel_id != "inc-vc-basic":
+        return None, False
+    history = get_history(ctx)
     return history, False
 
+
 # load the files when the user clicks on a timeline entry
-
-
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     if channel_id != "inc-vc-basic":
         return None
 
+    history_data = None
+    cache: IncCache = ap.get_cache("inc_cache" + ctx.project_id, default=None)
+    if not cache:
+        history_data = get_history_data(ctx)
+    else:
+        history_data = cache.history_data
+
     # Find the history item matching the entry_id
-    history_item = next((item for item in get_history()
-                        if item["id"] == entry_id), None)
+    history_item = next((item for item in history_data if item["id"] == entry_id), None)
     if not history_item:
         return None
 
@@ -129,14 +145,17 @@ def on_load_timeline_channel_info(channel_id: str, ctx):
     info = ap.TimelineChannelInfo(ctx.project_id)
     return info
 
-# listen to file change to refresh the timeline. It's not the best solution, but the easiest for now
 
-
+# listen to changes to refresh the timeline.
 def on_settings_changed(workspace_id, project_id, settings_id, ctx):
-    ap.refresh_timeline_channel("inc-vc-basic")
+    if settings_id != "inc_settings" or project_id != ctx.project_id:
+        return
 
-# File watcher events
-
-
-def on_project_directory_changed(ctx):
-    return None
+    history = get_history(ctx)
+    ap.update_timeline_entries(
+        "inc-vc-basic",
+        ctx.project_id,
+        history,
+        has_more=False,
+        update=True,
+    )
