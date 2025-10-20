@@ -97,8 +97,20 @@ def get_history(ctx):
         history.append(entry)
     return history
 
+# Initial load of the entire timeline
+def on_load_timeline_channel(channel_id: str, page_size: int, ctx):
+    if channel_id != "inc-vc-basic":
+        return None
 
-# Load the timeline channel entries
+    info = ap.TimelineChannelInfo(ctx.project_id)
+    history = get_history(ctx)
+    has_more = False
+    changes = None
+
+    return info, changes, history, has_more
+
+
+# Only load the timeline channel entries
 def on_load_timeline_channel_entries(channel_id: str, page_size: int, page: int, ctx):
     if channel_id != "inc-vc-basic":
         return None, False
@@ -106,7 +118,7 @@ def on_load_timeline_channel_entries(channel_id: str, page_size: int, page: int,
     return history, False
 
 
-# load the files when the user clicks on a timeline entry
+# Load the files when the user clicks on a timeline entry
 def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     if channel_id != "inc-vc-basic":
         return None
@@ -137,7 +149,7 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     return details
 
 
-# needs to be removed, because it has to be here due to a bug
+# Only load channel info object
 def on_load_timeline_channel_info(channel_id: str, ctx):
     if channel_id != "inc-vc-basic":
         return None
