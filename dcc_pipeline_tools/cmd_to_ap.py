@@ -49,7 +49,9 @@ def main():
     if publish_process:
         # Print a success to stdout so the C4D plugin can read it
         sys.__stdout__.write("The file has been published")
+        ap.log_success("DCC publish successful")
     else:
+        ap.log_error("DCC publish failed")
         raise Exception("Cannot publish the file")
 
 
