@@ -4,9 +4,13 @@ import os
 import subprocess
 import zipfile
 import psutil
+import tempfile
+import shutil
+import tempfile
 
 ctx = ap.get_context()
 ui = ap.UI()
+shared_settings = aps.SharedSettings(ctx.workspace_id, "unreal_binary_sync")
 
 tag_pattern = "Editor"  # This should be configurable in the UI
 max_depth = 200
@@ -393,12 +397,102 @@ def launch_editor(project_path,launch_project_path):
             ui.show_success("Binaries synced", f"Launching project {os.path.basename(launch_project_path)}")
         except Exception as e:
             ui.show_info("Binaries synced", f"Failed to launch project: {str(e)}")
+
+def get_s3_credentials():
+        access_key = shared_settings.get("access_key", "")
+        secret_key = shared_settings.get("secret_key", "")
+        endpoint_url = shared_settings.get("endpoint_url", "")
+        bucket_name = shared_settings.get("bucket_name", "")
+        if not all([access_key, secret_key, endpoint_url, bucket_name]):
+            return False
+        return access_key, secret_key, endpoint_url, bucket_name
+
+def download_from_s3(zip_file_name, progress):   
+
+    try:
+        import boto3
+    except ImportError:
+        ctx.install("boto3")
+        import boto3
+
+    creds = get_s3_credentials()
+    if not creds:
+        ui.show_error("S3 Credentials Missing", "Please check your S3 settings in the action configuration.")
+        return None
+    access_key, secret_key, endpoint_url, bucket_name = creds
+
+    # Download to Windows temp folder
+    temp_dir = tempfile.gettempdir()
+    local_zip_file_path = os.path.join(temp_dir, zip_file_name)
+
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url=endpoint_url
+    )
+
+    import botocore
+
+    try:
+        # Get the size of the file to download
+        obj = s3_client.head_object(Bucket=bucket_name, Key=zip_file_name)
+        total_size = obj['ContentLength']
+        progress.set_text(f"Downloading {zip_file_name} from S3...")
+        progress.report_progress(0.0)
+
+        # Download with progress reporting
+        with open(local_zip_file_path, 'wb') as f:
+            response = s3_client.get_object(Bucket=bucket_name, Key=zip_file_name)
+            chunk_size = 1024 * 1024  # 1 MB
+            downloaded = 0
+            for chunk in response['Body'].iter_chunks(chunk_size):
+                if progress.canceled:
+                    progress.finish()
+                    print("Download cancelled by user")
+                    return None
+                f.write(chunk)
+                downloaded += len(chunk)
+                percent = min(downloaded / total_size, 1.0)
+                progress.report_progress(percent)
+        print(f"Downloaded {zip_file_name} from S3 to {local_zip_file_path}")
+        progress.finish()
+        return local_zip_file_path
+    except botocore.exceptions.ClientError as e:
+        error_code = e.response['Error']['Code']
+        print(f"Failed to download {zip_file_name} from S3: {error_code} - {str(e)}")
+        ui.show_error("S3 Download Issue", "Check that the bucket name and key are correct and you have permission to access them.")
+        progress.finish()
+        return None
+    except ValueError as e:
+        if "Invalid endpoint" in str(e):
+            ui.show_toast("Your endpoint is not set correctly")
+        print(f"Failed to download {zip_file_name} from S3: {str(e)}")
+        progress.finish()
+        return None
+    except Exception as e:
+        print(f"Failed to download {zip_file_name} from S3: {str(e)}")
+        progress.finish()
+        return None
+
+def delete_temp_zip(local_zip_file_path):
+    try:
+        if os.path.exists(local_zip_file_path):
+            os.remove(local_zip_file_path)
+            print(f"Deleted temp zip: {local_zip_file_path}")
+    except Exception as e:
+        print(f"Failed to delete temp zip: {str(e)}")
+
     
-def run_sync_processes(sync_dependencies,source_path,launch_project_path,tag_pattern):
+
+def run_sync_processes(sync_dependencies,launch_project_path, local_settings):
 
     # Start the progress 
     progress = ap.Progress("Syncing Editor","Initializing...", infinite=True)
     progress.set_cancelable(True)
+
+    #Check for tag_pattern if needed
+    tag_pattern = shared_settings.get("tag_pattern", "") 
 
     # Get project path before closing dialog
     project_path = ctx.project_path
@@ -418,7 +512,17 @@ def run_sync_processes(sync_dependencies,source_path,launch_project_path,tag_pat
         
     # Found a matching tag, check for zip file
     zip_file_name = f"{matching_commit_id}.zip"
-    zip_file_path = os.path.join(source_path, zip_file_name)
+    
+    binary_location_type = shared_settings.get("binary_location_type", "folder")
+    zip_file_path = ""
+    if binary_location_type == "s3":
+        # Download the zip file from S3
+        zip_file_path = download_from_s3(zip_file_name, progress)
+        if not zip_file_path:
+            return
+    else:
+        source_path = local_settings.get(ctx.project_path+"_binary_source", "")
+        zip_file_path = os.path.join(source_path, zip_file_name)
     
     if os.path.exists(zip_file_path):
         if dry_run:
@@ -440,6 +544,10 @@ def run_sync_processes(sync_dependencies,source_path,launch_project_path,tag_pat
             if not unzip_and_manage_files(zip_file_path, project_path, progress):
                 return  # If extraction was canceled or failed
             
+            if binary_location_type == "s3":
+                # Clean up the downloaded temp zip file
+                delete_temp_zip(zip_file_path)
+            
             # Launch the selected uproject file if one was selected
             if launch_project_path:
                 launch_editor(project_path,launch_project_path)
@@ -460,8 +568,6 @@ def initialize():
     global dry_run
     
     project_path = ctx.project_path
-    project_id = ctx.project_id
-    workspace_id = ctx.workspace_id
     uproject_files = find_uproject_files(project_path)      
 
     # Get the project settings
@@ -477,16 +583,24 @@ def initialize():
     dry_run = local_settings.get(project_path+"_dry_run", False)    
     binary_source = local_settings.get(project_path+"_binary_source", "")
 
-    shared_settings = aps.SharedSettings(project_id,workspace_id,"unreal")
-    tag_pattern = shared_settings.get("_tag_pattern", "") 
+    # check if S3 credentials are set when using S3 and a folder is set when using folder
+    binary_location_type = shared_settings.get("binary_location_type", "folder")
+    if binary_location_type == "s3" and get_s3_credentials() is False:
+        ui.show_error("S3 Credentials Missing", "Please check your S3 settings in the action configuration or inform your workspace admin.")
+        return
+    elif binary_location_type == "folder" and not binary_source:
+        ui.show_error("No ZIP Location defined", "Please set up a location in the project settings")
+        return
+
+    tag_pattern = shared_settings.get("tag_pattern", "") 
 
     if dry_run:
         ui.show_console()
 
-    if not tag_pattern:
+    if not tag_pattern and shared_settings.get("project_type","launcher") == "source":
         if dry_run:
             print("Tag pattern is empty. Use something like <<Editor>> for all Git tags named <<Editor-1>>, <<Editor-2>>, etc.")
-        ui.show_error("No tag has been set", "Please define a tag pattern in the project settings")
+        ui.show_error("No tag has been set", "Please define a tag pattern in the action settings")
         return
 
     # Terminate if it's not an Unreal Project
@@ -496,12 +610,7 @@ def initialize():
         ui.show_error("Not an Unreal project", "Check your project folder")
         return
     
-    launch_project_display_name = local_settings.get(project_path+"_launch_project_display_name", uproject_files[0])    
-
-    # Terminate when there is no source for the zip file defined in the project settings
-    if not binary_source:
-        ui.show_error("No ZIP Location defined", "Please set up a location in the project settings")
-        return
+    launch_project_display_name = local_settings.get(project_path+"_launch_project_display_name", uproject_files[0])   
     
     launch_project_path = "" 
     for uproject_file in uproject_files:
@@ -509,7 +618,7 @@ def initialize():
             launch_project_path = uproject_file
             break
 
-    ctx.run_async(run_sync_processes,sync_dependencies,binary_source,launch_project_path,tag_pattern)   
+    ctx.run_async(run_sync_processes,sync_dependencies,launch_project_path,local_settings)   
 
 if __name__ == "__main__":
     initialize()

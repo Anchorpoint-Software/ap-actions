@@ -20,9 +20,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
 
         self.ctx = ctx        
         project_path = ctx.project_path
-        project_id = ctx.project_id
-        workspace_id = ctx.workspace_id
-        access_level = aps.get_workspace_access(workspace_id)
 
         # Get local and shared settings
         local_settings = aps.Settings()
@@ -30,9 +27,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
         sync_dependencies = local_settings.get(project_path+"_sync_dependencies", False)
         launch_project_display_name = local_settings.get(project_path+"_launch_project_display_name", no_project_label) 
         dry_run = local_settings.get(project_path+"_dry_run", False)
-        
-        shared_settings = aps.SharedSettings(project_id,workspace_id,"unreal")
-        tag_pattern = shared_settings.get("_tag_pattern", "")
 
         self.dialog = ap.Dialog()
 
@@ -68,19 +62,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_checkbox(text="Debug Mode",var="dry_run",default=dry_run,callback = self.store_local_settings)
         self.dialog.add_info("Runs in dry run mode by only displaying prints instead of executing the real<br>synchronisation")  
 
-        # Display shared settings only when you are an admin
-        if (access_level is not aps.AccessLevel.Member):
-            self.dialog.add_empty()
-            self.dialog.add_text("<b>Shared Settings</b>")
-            self.dialog.add_text("Tag Pattern",width = 100).add_input(
-                placeholder="Editor",
-                var="tag_pattern",
-                default=tag_pattern,
-                width = 344,
-                callback = self.store_shared_settings
-            )
-            self.dialog.add_info("Specify a pattern for Git tags that tells Anchorpoint that there is a binary<br>attached to a commit. E.g. use <b>Editor</b> if your tag is named <b>Editor-1</b>.") 
-
 
     def get_dialog(self):
         return self.dialog
@@ -113,18 +94,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
                 dirs.clear()
         
         return uproject_files
-
-    def store_shared_settings(self,dialog,value):
-
-        ctx = ap.get_context()
-        project_id = ctx.project_id
-        workspace_id = ctx.workspace_id
-
-        tag_pattern = dialog.get_value("tag_pattern")
-        shared_settings = aps.SharedSettings(project_id,workspace_id,"unreal")
-        shared_settings.set("_tag_pattern", tag_pattern)
-        shared_settings.store()        
-        return
     
     def store_local_settings(self,dialog,value):
 

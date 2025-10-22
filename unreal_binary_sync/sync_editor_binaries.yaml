@@ -14,10 +14,10 @@ action:
   author: Anchorpoint Software GmbH
   description: Syncs Game and Editor binaries
 
-  script: "sync_binaries.py"
+  script: "sync_editor_binaries.py"
   icon:
     path: :/icons/unrealEngine.svg
   
   register:
     sidebar:
-      enable: true
+      enable: show_sync_editor_sidebar_button.py
