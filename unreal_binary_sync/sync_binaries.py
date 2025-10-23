@@ -456,8 +456,6 @@ def download_from_s3(zip_file_name, progress):
         endpoint_url=endpoint_url
     )
 
-    import botocore
-
     try:
         # Get the size of the file to download
         obj = s3_client.head_object(Bucket=bucket_name, Key=zip_file_name)
@@ -483,14 +481,6 @@ def download_from_s3(zip_file_name, progress):
         print(f"Downloaded {zip_file_name} from S3 to {local_zip_file_path}")
         progress.finish()
         return local_zip_file_path
-    except botocore.exceptions.ClientError as e:
-        error_code = e.response['Error']['Code']
-        print(
-            f"Failed to download {zip_file_name} from S3: {error_code} - {str(e)}")
-        ui.show_error("S3 Download Issue",
-                      "Check that the bucket name and key are correct and you have permission to access them.")
-        progress.finish()
-        return None
     except ValueError as e:
         if "Invalid endpoint" in str(e):
             ui.show_toast("Your endpoint is not set correctly")
@@ -520,10 +510,10 @@ def sync_binaries_async(sync_dependencies, launch_project_path):
     local_settings = aps.Settings()
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
-    project_type = shared_settings.get("project_type", "launcher")
 
     # Start the progress
-    progress = ap.Progress("Syncing Editor", "Initializing...", infinite=True)
+    progress = ap.Progress(
+        "Syncing Binaries", "Initializing...", infinite=True)
     progress.set_cancelable(True)
 
     # Check for tag_pattern if needed

@@ -10,7 +10,7 @@ from datetime import datetime
 import re
 
 
-def compile_binaries(engine_dir, project_dir, project_name, editor_target):
+def compile_binaries(engine_dir, project_dir, project_name, editor_target, progress):
     ui = ap.UI()
 
     print(
@@ -47,6 +47,7 @@ def compile_binaries(engine_dir, project_dir, project_name, editor_target):
         f"-project={project_file}",
         "-useprecompiled"
     ]
+    progress.set_text("Compiling, see console for details...")
 
     try:
         # Execute the command and stream output line by line to the current console
@@ -108,6 +109,32 @@ def add_incremental_git_tag(project_dir, tag_pattern):
                 num = int(match.group(1))
                 if num > highest_number:
                     highest_number = num
+
+        # Get the latest commit hash
+        result_commit = subprocess.run(
+            ['git', 'rev-parse', 'HEAD'],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        latest_commit = result_commit.stdout.strip()
+
+        # Get tags pointing to the latest commit
+        result_tags_on_commit = subprocess.run(
+            ['git', 'tag', '--points-at', latest_commit],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        tags_on_commit = result_tags_on_commit.stdout.strip().splitlines()
+
+        # If the latest commit already has a tag, skip tagging
+        if tags_on_commit:
+            print(
+                f"Latest commit already has tag(s): {tags_on_commit}. Skipping tag creation.")
+            return
 
         # If no tags found, start with 1
         if highest_number == 0:
@@ -171,7 +198,7 @@ def find_uproject_file(project_path):
     return None
 
 
-def create_binaries_zip(project_dir, output_dir):
+def create_binaries_zip(project_dir, output_dir, progress, max_progress):
     """
     Create a ZIP file of the project's Binaries folder and save it to the desktop.
 
@@ -227,22 +254,23 @@ def create_binaries_zip(project_dir, output_dir):
     # Files to exclude from the ZIP
     excluded_extensions = {'.pdb', '.exp'}
 
+    # Gather all files to be zipped and count them
+    files_to_zip = []
+    for binary_dir in all_binary_dirs:
+        for file_path in binary_dir.rglob('*'):
+            if file_path.is_file() and file_path.suffix.lower() not in excluded_extensions:
+                files_to_zip.append(file_path)
+    total_files = len(files_to_zip)
+    print(f"Total files to zip: {total_files}")
+    progress.set_text(f"Zipping {total_files} files...")
+
     try:
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-            # Walk through all binary directories and add all files
-            for binary_dir in all_binary_dirs:
-                print(f"Processing directory: {binary_dir}")
-                for file_path in binary_dir.rglob('*'):
-                    if file_path.is_file():
-                        # Skip files with excluded extensions
-                        if file_path.suffix.lower() in excluded_extensions:
-                            continue
-
-                        # Calculate relative path for the archive
-                        arc_name = file_path.relative_to(project_dir)
-                        zipf.write(file_path, arc_name)
-                        print(f"Added: {arc_name}")
-
+            for idx, file_path in enumerate(files_to_zip, 1):
+                arc_name = file_path.relative_to(project_dir)
+                zipf.write(file_path, arc_name)
+                print(f"Added: {arc_name}")
+                progress.report_progress(idx / total_files * max_progress)
         print(f"Successfully created ZIP archive: {zip_path}")
         return zip_path
 
@@ -264,7 +292,7 @@ def get_s3_credentials():
     return access_key, secret_key, endpoint_url, bucket_name
 
 
-def upload_to_s3(zip_file_path):
+def upload_to_s3(zip_file_path, progress):
     ui = ap.UI()
     ctx = ap.get_context()
     try:
@@ -290,8 +318,40 @@ def upload_to_s3(zip_file_path):
     zip_file_name = os.path.basename(zip_file_path)
     try:
         print(f"Uploading {zip_file_name} to S3 bucket {bucket_name}...")
+        file_size = os.path.getsize(zip_file_path)
+        uploaded = 0
+        chunk_size = 1024 * 1024  # 1 MB
+
         with open(zip_file_path, "rb") as f:
-            s3_client.upload_fileobj(f, bucket_name, zip_file_name)
+            while True:
+                if progress.canceled:
+                    progress.finish()
+                    print("Upload cancelled by user")
+                    return False
+                chunk = f.read(chunk_size)
+                if not chunk:
+                    break
+                # Upload chunk by chunk using upload_fileobj with a wrapper
+                # Note: upload_fileobj doesn't support chunked progress directly,
+                # so we'll use put_object in a loop instead
+
+                # Reset file pointer for actual upload
+                f.seek(0)
+
+                # Create a callback for progress tracking
+                def upload_callback(bytes_uploaded):
+                    nonlocal uploaded
+                    uploaded += bytes_uploaded
+                    percent = min(uploaded / file_size, 1.0)
+                    progress.report_progress(
+                        0.6 + percent * 0.4)  # Scale to 60-100%
+                    if progress.canceled:
+                        raise Exception("Upload cancelled by user")
+
+                s3_client.upload_fileobj(
+                    f, bucket_name, zip_file_name,
+                    Callback=upload_callback
+                )
         print(f"Successfully uploaded {zip_file_name} to S3.")
         return True
     except Exception as e:
@@ -314,18 +374,27 @@ def delete_temp_zip(local_zip_file_path):
 def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir, tag_pattern):
     ui = ap.UI()
     ctx = ap.get_context()
+    progress = ap.Progress("Submitting Binaries",
+                           "Initializing...", infinite=True)
+    progress.set_cancelable(True)
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
 
     binary_location = shared_settings.get(
         "binary_location_type", "folder")
     # Use Unreal Build Tool to compile the binaries, skipping if already built
-    compile_binaries(engine_dir, project_dir, project_name, editor_target)
+    compile_binaries(engine_dir, project_dir,
+                     project_name, editor_target, progress)
     # Create the zip file
-    zip_file_path = create_binaries_zip(project_dir, output_dir)
+    if binary_location == "s3":
+        zip_file_path = create_binaries_zip(
+            project_dir, output_dir, progress, 0.6)
+    else:
+        zip_file_path = create_binaries_zip(
+            project_dir, output_dir, progress, 1.0)
 
     if binary_location == "s3":
-        s3_upload = upload_to_s3(zip_file_path)
+        s3_upload = upload_to_s3(zip_file_path, progress)
         if not s3_upload:
             ui.show_error("S3 Upload Failed",
                           "The binaries could not be uploaded to S3. Check the console for more information.")
@@ -334,6 +403,7 @@ def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, 
         delete_temp_zip(zip_file_path)
 
     add_incremental_git_tag(project_dir, tag_pattern)
+    progress.finish()
     ui.show_success("Binaries Submitted")
 
 

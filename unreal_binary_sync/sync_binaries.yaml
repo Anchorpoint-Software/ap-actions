@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Sync Editor
+  name: Sync Binaries
 
   version: 1
   id: ap::unreal::sync
@@ -20,4 +20,4 @@ action:
   
   register:
     sidebar:
-      enable: show_sync_editor_sidebar_button.py
+      enable: True
