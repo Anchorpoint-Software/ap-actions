@@ -73,17 +73,13 @@ def main():
     dialog.add_info(
         "Select whether your Unreal Engine is built from source code or installed via the<br>Epic Games Launcher.")
 
-    dialog.start_section("Source Build Settings", foldable=True)
     dialog.add_text("Tag Pattern", width=110).add_input(
         placeholder="Editor",
         var="tag_pattern_var",
         default=tag_pattern,
         callback=apply_callback
     )
-    dialog.add_info("Only applicable when building from source. Specify a pattern for Git tags that tells<br>Anchorpoint that there is a binary attached to a commit. E.g. use <b>Editor</b> if your tag<br>is named <b>Editor-1</b>.")
-
-    dialog.end_section()
-    dialog.add_empty()
+    dialog.add_info("Specify a pattern for Git tags that tells Anchorpoint that there is a binary<br>attached to a commit. E.g. use <b>Editor</b> if your tagis named <b>Editor-1</b>.")
 
     dialog.add_text("Binary Location", width=110).add_dropdown(
         default=BINARY_LOCATIONS[binary_location],

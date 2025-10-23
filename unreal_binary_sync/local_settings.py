@@ -2,6 +2,7 @@ import anchorpoint as ap
 import apsync as aps
 import os
 import submit_binaries
+import sync_binaries
 
 
 class UnrealProjectSettings(ap.AnchorpointSettings):
@@ -31,7 +32,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
             project_path+"_sync_dependencies", False)
         launch_project_display_name = local_settings.get(
             project_path+"_launch_project_display_name", no_project_label)
-        dry_run = local_settings.get(project_path+"_dry_run", False)
         enable_binary_sync = local_settings.get(
             project_path+"_enable_binary_sync", False)
         enable_binary_submission = local_settings.get(
@@ -79,11 +79,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_info(
                 "Launch the Unreal Editor when the sync is complete")
 
-            self.dialog.add_checkbox(text="Debug Mode", var="dry_run",
-                                     default=dry_run, callback=self.store_local_settings)
-            self.dialog.add_info(
-                "Runs in dry run mode by only displaying prints instead of executing the real<br>synchronisation")
-
         if self.project_type == "launcher":
             self.dialog.add_text("<b>Binary Sync Settings</b>")
             self.dialog.add_checkbox(text="Enable Binary Sync on Pull", var="enable_binary_sync",
@@ -115,7 +110,7 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
         submit_binaries.main()
 
     def sync_binaries(self, dialog):
-        pass
+        sync_binaries.main()
 
     def find_uproject_files(self, project_path):
 
@@ -161,8 +156,6 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
                                dialog.get_value("sync_dependencies"))
             local_settings.set(project_path+"_launch_project_display_name",
                                dialog.get_value("launch_project_display_name"))
-            local_settings.set(
-                project_path+"_dry_run", dialog.get_value("dry_run"))
 
         if self.project_type == "launcher":
             local_settings.set(

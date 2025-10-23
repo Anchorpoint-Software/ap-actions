@@ -6,6 +6,7 @@ import anchorpoint as ap
 import apsync as aps
 from pathlib import Path
 from datetime import datetime
+import re
 
 
 def compile_binaries(engine_dir, project_dir, project_name, editor_target):
@@ -205,10 +206,55 @@ def create_binaries_zip(project_dir, output_dir):
         print(f"Error creating ZIP archive: {e}", file=sys.stderr)
 
 
-def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir):
+def add_incremental_git_tag(project_dir, tag_pattern):
+
+    tag_prefix = tag_pattern+"-"
+    highest_number = 0
+
+    try:
+        # Get all tags and their commit hashes
+        result = subprocess.run(
+            ['git', 'tag', '--list', f'{tag_prefix}*'],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        tags = result.stdout.strip().splitlines()
+
+        # Find highest Game-NUMBER tag
+        for tag in tags:
+            match = re.match(rf"{tag_prefix}(\d+)$", tag)
+            if match:
+                num = int(match.group(1))
+                if num > highest_number:
+                    highest_number = num
+
+        # If no tags found, start with 1
+        if highest_number == 0:
+            new_tag = f"{tag_prefix}1"
+        else:
+            new_tag = f"{tag_prefix}{highest_number + 1}"
+
+        # Tag the latest commit
+        subprocess.run(
+            ['git', 'tag', new_tag],
+            cwd=project_dir,
+            check=True
+        )
+        print(f"Added new git tag: {new_tag}")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error adding git tag: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+
+
+def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir, tag_pattern):
     ui = ap.UI()
     compile_binaries(engine_dir, project_dir, project_name, editor_target)
     create_binaries_zip(project_dir, output_dir)
+    add_incremental_git_tag(project_dir, tag_pattern)
     ui.show_success("Binaries Submitted")
 
 
@@ -220,6 +266,11 @@ def main():
 
     binary_location = shared_settings.get(
         "binary_location_type", "folder")
+    tag_pattern = shared_settings.get("tag_pattern", "")
+    if tag_pattern == "":
+        ui.show_error("Tag Pattern Not Set",
+                      "Please set the Tag Pattern in the package settings.")
+        return
     local_settings = aps.Settings()
 
     # Hardcoded variables - modify these as needed
@@ -256,7 +307,7 @@ def main():
 
     ui.show_console()
     ctx.run_async(submit_binaries_async, engine_dir,
-                  project_dir, project_name, editor_target, output_dir)
+                  project_dir, project_name, editor_target, output_dir, tag_pattern)
 
 
 if __name__ == "__main__":
