@@ -29,6 +29,7 @@ action:
   actions:
     - ap::unreal::sync
     - ap::unreal::settings
+    - ap::unreal::submit
 
 
     
