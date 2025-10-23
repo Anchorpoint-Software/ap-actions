@@ -206,8 +206,10 @@ def create_binaries_zip(project_dir, output_dir):
 
 
 def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir):
+    ui = ap.UI()
     compile_binaries(engine_dir, project_dir, project_name, editor_target)
     create_binaries_zip(project_dir, output_dir)
+    ui.show_success("Binaries Submitted")
 
 
 def main():
@@ -215,6 +217,9 @@ def main():
     ui = ap.UI()
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
+
+    binary_location = shared_settings.get(
+        "binary_location_type", "folder")
     local_settings = aps.Settings()
 
     # Hardcoded variables - modify these as needed
@@ -238,7 +243,16 @@ def main():
     # Editor target to build, currently hardcoded
     editor_target = f"{project_name}Editor"
     # Get desktop path
-    output_dir = Path.home() / "Desktop"
+    output_dir = ""
+    if binary_location == "folder":
+        output_dir = local_settings.get(
+            ctx.project_path+"_binary_source", "")
+        if not output_dir:
+            ui.show_error("Binary Source Not Set",
+                          "Please set the Binary Source folder in the project settings.")
+            return
+        output_dir = Path(output_dir)
+        print(f"Using output directory from local settings: {output_dir}")
 
     ui.show_console()
     ctx.run_async(submit_binaries_async, engine_dir,

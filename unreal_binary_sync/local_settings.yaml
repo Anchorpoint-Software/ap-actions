@@ -5,19 +5,13 @@
 
 version: 1.0
 action:
-  name: Sync Editor
+  name: Unreal
 
   version: 1
-  id: ap::unreal::sync
+  id: ap::unreal::settings
   category: user
   type: python
   author: Anchorpoint Software GmbH
-  description: Syncs Game and Editor binaries
+  description: ""
 
-  script: "sync_editor_binaries.py"
-  icon:
-    path: :/icons/unrealEngine.svg
-  
-  register:
-    sidebar:
-      enable: show_sync_editor_sidebar_button.py
+  script: "local_settings.py"

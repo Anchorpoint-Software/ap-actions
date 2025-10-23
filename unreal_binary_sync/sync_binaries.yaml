@@ -5,19 +5,19 @@
 
 version: 1.0
 action:
-  name: Submit Game Binaries
+  name: Sync Editor
 
   version: 1
-  id: ap::unreal::submit
+  id: ap::unreal::sync
   category: user
   type: python
   author: Anchorpoint Software GmbH
   description: Syncs Game and Editor binaries
 
-  script: "submit_binaries.py"
+  script: "sync_binaries.py"
   icon:
     path: :/icons/unrealEngine.svg
   
   register:
     sidebar:
-      enable: True
+      enable: show_sync_editor_sidebar_button.py
