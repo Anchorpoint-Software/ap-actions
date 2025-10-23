@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import os
+import tempfile
 import zipfile
 import anchorpoint as ap
 import apsync as aps
@@ -85,6 +86,49 @@ def compile_binaries(engine_dir, project_dir, project_name, editor_target):
         sys.exit(1)
 
 
+def add_incremental_git_tag(project_dir, tag_pattern):
+    tag_prefix = tag_pattern+"-"
+    highest_number = 0
+
+    try:
+        # Get all tags and their commit hashes
+        result = subprocess.run(
+            ['git', 'tag', '--list', f'{tag_prefix}*'],
+            cwd=project_dir,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        tags = result.stdout.strip().splitlines()
+
+        # Find highest Game-NUMBER tag
+        for tag in tags:
+            match = re.match(rf"{tag_prefix}(\d+)$", tag)
+            if match:
+                num = int(match.group(1))
+                if num > highest_number:
+                    highest_number = num
+
+        # If no tags found, start with 1
+        if highest_number == 0:
+            new_tag = f"{tag_prefix}1"
+        else:
+            new_tag = f"{tag_prefix}{highest_number + 1}"
+
+        # Tag the latest commit
+        subprocess.run(
+            ['git', 'tag', new_tag],
+            cwd=project_dir,
+            check=True
+        )
+        print(f"Added new git tag: {new_tag}")
+
+    except subprocess.CalledProcessError as e:
+        print(f"Error adding git tag: {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+
+
 def get_git_commit_id(project_dir):
     try:
         # Run git command to get the full commit hash
@@ -165,10 +209,10 @@ def create_binaries_zip(project_dir, output_dir):
     # Get commit ID for filename
     commit_id = get_git_commit_id(project_dir)
     zip_filename = f"{commit_id}.zip"
-    zip_path = output_dir / zip_filename
+    zip_path = os.path.join(output_dir, zip_filename)
 
     # Check if file exists and inform about overwrite
-    if zip_path.exists():
+    if os.path.exists(zip_path):
         print(f"File already exists and will be overwritten: {zip_path}")
     else:
         print(f"Creating new ZIP file: {zip_path}")
@@ -200,60 +244,95 @@ def create_binaries_zip(project_dir, output_dir):
                         print(f"Added: {arc_name}")
 
         print(f"Successfully created ZIP archive: {zip_path}")
-        print(f"Archive size: {zip_path.stat().st_size / (1024*1024):.2f} MB")
+        return zip_path
 
     except Exception as e:
         print(f"Error creating ZIP archive: {e}", file=sys.stderr)
 
 
-def add_incremental_git_tag(project_dir, tag_pattern):
+def get_s3_credentials():
+    ctx = ap.get_context()
+    shared_settings = aps.SharedSettings(
+        ctx.workspace_id, "unreal_binary_sync")
 
-    tag_prefix = tag_pattern+"-"
-    highest_number = 0
+    access_key = shared_settings.get("access_key", "")
+    secret_key = shared_settings.get("secret_key", "")
+    endpoint_url = shared_settings.get("endpoint_url", "")
+    bucket_name = shared_settings.get("bucket_name", "")
+    if not all([access_key, secret_key, endpoint_url, bucket_name]):
+        return False
+    return access_key, secret_key, endpoint_url, bucket_name
 
+
+def upload_to_s3(zip_file_path):
+    ui = ap.UI()
+    ctx = ap.get_context()
     try:
-        # Get all tags and their commit hashes
-        result = subprocess.run(
-            ['git', 'tag', '--list', f'{tag_prefix}*'],
-            cwd=project_dir,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        tags = result.stdout.strip().splitlines()
+        import boto3
+    except ImportError:
+        ctx.install("boto3")
+        import boto3
 
-        # Find highest Game-NUMBER tag
-        for tag in tags:
-            match = re.match(rf"{tag_prefix}(\d+)$", tag)
-            if match:
-                num = int(match.group(1))
-                if num > highest_number:
-                    highest_number = num
+    creds = get_s3_credentials()
+    if not creds:
+        ui.show_error("S3 Credentials Missing",
+                      "Please check your S3 settings in the action configuration.")
+        return False
+    access_key, secret_key, endpoint_url, bucket_name = creds
 
-        # If no tags found, start with 1
-        if highest_number == 0:
-            new_tag = f"{tag_prefix}1"
-        else:
-            new_tag = f"{tag_prefix}{highest_number + 1}"
+    s3_client = boto3.client(
+        "s3",
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        endpoint_url=endpoint_url
+    )
 
-        # Tag the latest commit
-        subprocess.run(
-            ['git', 'tag', new_tag],
-            cwd=project_dir,
-            check=True
-        )
-        print(f"Added new git tag: {new_tag}")
-
-    except subprocess.CalledProcessError as e:
-        print(f"Error adding git tag: {e}", file=sys.stderr)
+    zip_file_name = os.path.basename(zip_file_path)
+    try:
+        print(f"Uploading {zip_file_name} to S3 bucket {bucket_name}...")
+        with open(zip_file_path, "rb") as f:
+            s3_client.upload_fileobj(f, bucket_name, zip_file_name)
+        print(f"Successfully uploaded {zip_file_name} to S3.")
+        return True
     except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+        print(
+            f"Failed to upload to S3: {str(e)}", file=sys.stderr)
+        ui.show_error("S3 Upload Issue",
+                      "Check your S3 settings and permissions.")
+        return False
+
+
+def delete_temp_zip(local_zip_file_path):
+    try:
+        if os.path.exists(local_zip_file_path):
+            os.remove(local_zip_file_path)
+            print(f"Deleted temp zip: {local_zip_file_path}")
+    except Exception as e:
+        print(f"Failed to delete temp zip: {str(e)}")
 
 
 def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir, tag_pattern):
     ui = ap.UI()
+    ctx = ap.get_context()
+    shared_settings = aps.SharedSettings(
+        ctx.workspace_id, "unreal_binary_sync")
+
+    binary_location = shared_settings.get(
+        "binary_location_type", "folder")
+    # Use Unreal Build Tool to compile the binaries, skipping if already built
     compile_binaries(engine_dir, project_dir, project_name, editor_target)
-    create_binaries_zip(project_dir, output_dir)
+    # Create the zip file
+    zip_file_path = create_binaries_zip(project_dir, output_dir)
+
+    if binary_location == "s3":
+        s3_upload = upload_to_s3(zip_file_path)
+        if not s3_upload:
+            ui.show_error("S3 Upload Failed",
+                          "The binaries could not be uploaded to S3. Check the console for more information.")
+            return
+        # Delete the temp zip after upload
+        delete_temp_zip(zip_file_path)
+
     add_incremental_git_tag(project_dir, tag_pattern)
     ui.show_success("Binaries Submitted")
 
@@ -304,6 +383,10 @@ def main():
             return
         output_dir = Path(output_dir)
         print(f"Using output directory from local settings: {output_dir}")
+    else:
+        # Use a temp directory for S3 uploads
+        output_dir = tempfile.gettempdir()
+        print(f"Using temporary output directory for S3 upload: {output_dir}")
 
     ui.show_console()
     ctx.run_async(submit_binaries_async, engine_dir,
