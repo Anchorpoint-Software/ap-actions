@@ -17,6 +17,9 @@ def unzip_and_manage_files(zip_file_path, project_path, progress):
 
     # Check if we're already at the latest state
     binary_list_path = os.path.join(project_path, "extracted_binaries.txt")
+
+    add_local_settings_to_gitignore(project_path, "extracted_binaries.txt")
+
     if os.path.exists(binary_list_path):
         with open(binary_list_path, 'r') as file:
             first_line = file.readline().strip()
@@ -266,6 +269,24 @@ def run_setup(project_path, progress):
     except Exception as e:
         ui.show_error("Setup Error", str(e))
         return False
+
+
+def add_local_settings_to_gitignore(project_path, file):
+    # Add config/local_settings.json to local gitignore (.git/info/exclude) if not already present
+    git_info_exclude = os.path.join(project_path, ".git", "info", "exclude")
+    try:
+        entry = "\n" + file
+        # Check if entry already exists
+        if os.path.exists(git_info_exclude):
+            with open(git_info_exclude, "r") as f:
+                if entry.strip() not in [line.strip() for line in f]:
+                    with open(git_info_exclude, "a") as fa:
+                        fa.write(entry)
+        else:
+            with open(git_info_exclude, "a") as fa:
+                fa.write(entry)
+    except Exception as e:
+        print(f"Failed to update .git/info/exclude: {str(e)}")
 
 
 def is_unreal_running():
