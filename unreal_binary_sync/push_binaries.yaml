@@ -8,16 +8,16 @@ action:
   name: Submit Binaries
 
   version: 1
-  id: ap::unreal::submit
+  id: ap::unreal::push
   category: user
   type: python
   author: Anchorpoint Software GmbH
-  description: Syncs Game and Editor binaries
+  description: Pushes Game and Editor binaries
 
-  script: "submit_binaries.py"
+  script: push_binaries.py
   icon:
     path: :/icons/unrealEngine.svg
   
   register:
     sidebar:
-      enable: True
+      enable: push_binary_button_state_hook.py

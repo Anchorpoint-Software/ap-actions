@@ -356,7 +356,7 @@ def upload_to_s3(zip_file_path, progress):
         return True
     except Exception as e:
         print(
-            f"Failed to upload to S3: {str(e)}", file=sys.stderr)
+            f"Failed to upload to S3: {str(e)}")
         ui.show_error("S3 Upload Issue",
                       "Check your S3 settings and permissions.")
         return False

@@ -5,11 +5,19 @@
 
 version: 1.0
 action:
-  name: Hooks
+  name: Pull Binaries
 
   version: 1
-  id: ap::unreal::hooks
+  id: ap::unreal::pull
+  category: user
   type: python
   author: Anchorpoint Software GmbH
+  description: Pulls Game and Editor binaries
 
-  script: hooks.py
+  script: pull_binaries.py
+  icon:
+    path: :/icons/unrealEngine.svg
+  
+  register:
+    sidebar:
+      enable: True

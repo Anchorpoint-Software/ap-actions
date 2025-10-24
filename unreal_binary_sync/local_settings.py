@@ -1,8 +1,6 @@
 import anchorpoint as ap
 import apsync as aps
 import os
-import submit_binaries
-import sync_binaries
 
 
 class UnrealProjectSettings(ap.AnchorpointSettings):
@@ -32,10 +30,10 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
             project_path+"_sync_dependencies", False)
         launch_project_display_name = local_settings.get(
             project_path+"_launch_project_display_name", no_project_label)
-        enable_binary_sync = local_settings.get(
-            project_path+"_enable_binary_sync", False)
-        enable_binary_submission = local_settings.get(
-            project_path+"_enable_binary_submission", False)
+        enable_binary_pull = local_settings.get(
+            project_path+"_enable_binary_auto_pull", False)
+        enable_binary_push = local_settings.get(
+            project_path+"_enable_binary_push", False)
         engine_directory = local_settings.get(
             project_path+"_engine_directory", "")
 
@@ -81,16 +79,14 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
 
         if self.project_type == "launcher":
             self.dialog.add_text("<b>Binary Sync Settings</b>")
-            self.dialog.add_checkbox(text="Enable Binary Sync on Pull", var="enable_binary_sync",
-                                     default=enable_binary_sync, callback=self.store_local_settings)
+            self.dialog.add_checkbox(text="Enable Binary Sync on Pull", var="enable_binary_pull",
+                                     default=enable_binary_pull, callback=self.store_local_settings)
             self.dialog.add_info(
                 "Sync the project binaries when pulling changes from the repository.")
-            self.dialog.add_button(
-                "Sync Binaries", callback=self.sync_binaries, primary=False)
             self.dialog.add_empty()
             self.dialog.add_text("<b>Binary Submission Settings</b>")
-            self.dialog.add_checkbox(text="Compile and Submit Binaries on Push", var="enable_binary_submission",
-                                     default=enable_binary_submission, callback=self.store_local_settings)
+            self.dialog.add_checkbox(text="Add Binary Push Button", var="enable_binary_push",
+                                     default=enable_binary_push, callback=self.enable_binary_push)
             self.dialog.add_text("Engine Directory", width=100).add_input(
                 placeholder=r"C:\Program Files\Epic Games\UE_5.6",
                 browse=ap.BrowseType.Folder,
@@ -99,18 +95,10 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
                 var="engine_directory",
                 callback=self.store_local_settings)
             self.dialog.add_info(
-                "Compile and submit the project binaries when pushing changes to the repository.")
-            self.dialog.add_button(
-                "Submit Binaries", callback=self.submit_binaries, primary=False)
+                "Add a sidebar button to compile and push the project binaries when pushing changes to the repository.")
 
     def get_dialog(self):
         return self.dialog
-
-    def submit_binaries(self, dialog):
-        submit_binaries.main()
-
-    def sync_binaries(self, dialog):
-        sync_binaries.main()
 
     def find_uproject_files(self, project_path):
 
@@ -141,6 +129,13 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
 
         return uproject_files
 
+    def enable_binary_push(self, dialog, value):
+        dialog.set_enabled("engine_directory", value)
+        ap.UI().show_info("Project refresh needed",
+                          "Close and reopen the project to change the sidebar button state")
+        self.store_local_settings(dialog, value)
+        return
+
     def store_local_settings(self, dialog, value):
 
         ctx = ap.get_context()
@@ -159,11 +154,11 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
 
         if self.project_type == "launcher":
             local_settings.set(
-                project_path+"_enable_binary_sync", dialog.get_value("enable_binary_sync"))
+                project_path+"_enable_binary_auto_pull", dialog.get_value("enable_binary_pull"))
             local_settings.set(project_path+"_engine_directory",
                                dialog.get_value("engine_directory"))
             local_settings.set(
-                project_path+"_enable_binary_submission", dialog.get_value("enable_binary_submission"))
+                project_path+"_enable_binary_push", dialog.get_value("enable_binary_push"))
 
         local_settings.store()
         return

@@ -20,7 +20,8 @@ def unzip_and_manage_files(zip_file_path, project_path, progress):
 
     add_local_settings_to_gitignore(project_path, "extracted_binaries.txt")
 
-    if os.path.exists(binary_list_path):
+    binaries_folder = os.path.join(project_path, "Binaries")
+    if os.path.exists(binary_list_path) and os.path.exists(binaries_folder):
         with open(binary_list_path, 'r') as file:
             first_line = file.readline().strip()
             current_zip = os.path.basename(zip_file_path)
@@ -31,16 +32,26 @@ def unzip_and_manage_files(zip_file_path, project_path, progress):
                 return False
 
     # Delete existing files from previous sync if extracted_binaries.txt exists
-    if os.path.exists(binary_list_path):
-        with open(binary_list_path, 'r') as file:
-            # Skip the header lines
-            next(file)  # Skip "Binary sync from..." line
-            next(file)  # Skip separator line
-            for line in file:
-                file_path = line.strip()
-                full_path = os.path.join(project_path, file_path)
-                if os.path.exists(full_path):
-                    os.remove(full_path)
+    try:
+        if os.path.exists(binary_list_path):
+            with open(binary_list_path, 'r') as file:
+                # Skip the header lines
+                next(file)  # Skip "Binary sync from..." line
+                next(file)  # Skip separator line
+                for line in file:
+                    file_path = line.strip()
+                    full_path = os.path.join(project_path, file_path)
+                    if os.path.exists(full_path):
+                        os.remove(full_path)
+    except Exception as e:
+        # Check if Unreal Editor is running
+        if is_unreal_running():
+            print("Unreal Editor is running, cannot delete files")
+            ui.show_info("Unreal Editor is running",
+                         "Please close Unreal Engine before proceeding pulling the binaries")
+        else:
+            ui.show_error("File Deletion Error",
+                          f"Failed to delete existing binary files: {str(e)}")
 
     # Create a list to store unzipped files
     unzipped_files = []
@@ -391,8 +402,8 @@ def get_matching_commit_id(commit_history, tag_pattern):
 
     # If no matching tag was found
     print("\nNo matching binaries found in the search")
-    ui.show_error("No compatible tag found",
-                  f"No tag found for commits with tag pattern '{tag_pattern}'")
+    ui.show_info("No compatible tag found",
+                 f"No tag found in your local commits with tag pattern '{tag_pattern}'")
     return None, None
 
 
@@ -619,12 +630,6 @@ def pull(ctx: ap.Context, silent=False):
         print("Could not find any .uproject file. Binary Push cancelled.")
         if not silent:
             ui.show_error("Not an Unreal project", "Check your project folder")
-        return
-
-    # Check if Unreal Editor is running
-    if is_unreal_running():
-        ui.show_info("Unreal Editor is running",
-                     "Please close Unreal Engine before proceeding pulling the binaries")
         return
 
     # Get the project settings

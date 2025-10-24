@@ -5,19 +5,11 @@
 
 version: 1.0
 action:
-  name: Sync Binaries
+  name: Hooks
 
   version: 1
-  id: ap::unreal::sync
-  category: user
+  id: ap::unreal::hooks
   type: python
   author: Anchorpoint Software GmbH
-  description: Syncs Game and Editor binaries
 
-  script: "sync_binaries.py"
-  icon:
-    path: :/icons/unrealEngine.svg
-  
-  register:
-    sidebar:
-      enable: True
+  script: auto_pull_hook.py
