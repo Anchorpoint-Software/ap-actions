@@ -323,35 +323,20 @@ def upload_to_s3(zip_file_path, progress):
         chunk_size = 1024 * 1024  # 1 MB
 
         with open(zip_file_path, "rb") as f:
-            while True:
+            # Create a callback for progress tracking
+            def upload_callback(bytes_uploaded):
+                nonlocal uploaded
+                uploaded += bytes_uploaded
+                percent = min(uploaded / file_size, 1.0)
+                progress.report_progress(
+                    0.6 + percent * 0.4)  # Scale to 60-100%
                 if progress.canceled:
-                    progress.finish()
-                    print("Upload cancelled by user")
-                    return False
-                chunk = f.read(chunk_size)
-                if not chunk:
-                    break
-                # Upload chunk by chunk using upload_fileobj with a wrapper
-                # Note: upload_fileobj doesn't support chunked progress directly,
-                # so we'll use put_object in a loop instead
+                    raise Exception("Upload cancelled by user")
 
-                # Reset file pointer for actual upload
-                f.seek(0)
-
-                # Create a callback for progress tracking
-                def upload_callback(bytes_uploaded):
-                    nonlocal uploaded
-                    uploaded += bytes_uploaded
-                    percent = min(uploaded / file_size, 1.0)
-                    progress.report_progress(
-                        0.6 + percent * 0.4)  # Scale to 60-100%
-                    if progress.canceled:
-                        raise Exception("Upload cancelled by user")
-
-                s3_client.upload_fileobj(
-                    f, bucket_name, zip_file_name,
-                    Callback=upload_callback
-                )
+            s3_client.upload_fileobj(
+                f, bucket_name, zip_file_name,
+                Callback=upload_callback
+            )
         print(f"Successfully uploaded {zip_file_name} to S3.")
         return True
     except Exception as e:
