@@ -7,10 +7,6 @@ ui = ap.UI()
 settings = aps.SharedSettings(ctx.workspace_id, "unreal_binary_sync")
 
 # keys are stored as settings and values are displayed in the dropdown
-PROJECT_TYPES = {
-    "launcher": "Epic Games Launcher",
-    "source": "Built from Source"
-}
 
 BINARY_LOCATIONS = {
     "folder": "Shared Folder",
@@ -20,14 +16,9 @@ BINARY_LOCATIONS = {
 
 def apply_callback(dialog, value):
     # Get the selected value from the dropdown
-    project_type_value = dialog.get_value("project_type_var")
     binary_location_value = dialog.get_value("binary_location_type_var")
 
-    if (project_type_value == "Epic Games Launcher"):
-        settings.set("project_type", "launcher")
-    else:
-        settings.set("project_type", "source")
-        settings.set("tag_pattern", dialog.get_value("tag_pattern_var"))
+    settings.set("tag_pattern", dialog.get_value("tag_pattern_var"))
 
     if (binary_location_value == "S3 Cloud Storage"):
         settings.set("binary_location_type", "s3")
@@ -56,22 +47,12 @@ def main():
     dialog = ap.Dialog()
     dialog.title = "Sync Settings"
 
-    project_type = settings.get("project_type", "launcher")
     binary_location = settings.get("binary_location_type", "folder")
     tag_pattern = settings.get("tag_pattern", "")
     access_key = settings.get("access_key", "")
     secret_key = settings.get("secret_key", "")
     endpoint_url = settings.get("endpoint_url", "")
     bucket_name = settings.get("bucket_name", "")
-
-    dialog.add_text("Editor Type", width=110).add_dropdown(
-        default=PROJECT_TYPES[project_type],
-        values=list(PROJECT_TYPES.values()),
-        var="project_type_var",
-        callback=apply_callback
-    )
-    dialog.add_info(
-        "Select whether your Unreal Engine is built from source code or installed via the<br>Epic Games Launcher.")
 
     dialog.add_text("Tag Pattern", width=110).add_input(
         placeholder="Editor",

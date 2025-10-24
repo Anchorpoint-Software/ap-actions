@@ -58,44 +58,41 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
             self.dialog.add_info(
                 "The folder containing all the ZIP files named with commit IDs. Learn how to<br>properly <a href='https://docs.anchorpoint.app/docs/version-control/features/binary-sync/' >setup binary syncing</a>.")
 
-        if self.project_type == "source":
-            self.dialog.add_checkbox(
-                text="Sync Setup Dependencies",
-                var="sync_dependencies",
-                default=sync_dependencies,
-                callback=self.store_local_settings
-            )
-            self.dialog.add_info(
-                "Note that you have to accept a Windows Control Popup for UE Prerequisites")
+        self.dialog.add_checkbox(
+            text="Sync Setup Dependencies",
+            var="sync_dependencies",
+            default=sync_dependencies,
+            callback=self.store_local_settings
+        )
+        self.dialog.add_info(
+            "Only applicable when you build the engine from source. Note that you have to<br>accept a Windows Control Popup for UE Prerequisites.")
 
-            self.dialog.add_text("Launch Project", width=100).add_dropdown(
-                default=launch_project_display_name,
-                values=uproject_display_names,
-                var="launch_project_display_name",
-                callback=self.store_local_settings
-            )
-            self.dialog.add_info(
-                "Launch the Unreal Editor when the sync is complete")
+        self.dialog.add_text("Launch Project", width=110).add_dropdown(
+            default=launch_project_display_name,
+            values=uproject_display_names,
+            var="launch_project_display_name",
+            callback=self.store_local_settings
+        )
+        self.dialog.add_info(
+            "Launch the Unreal Editor when the sync is complete")
 
-        if self.project_type == "launcher":
-            self.dialog.add_text("<b>Binary Sync Settings</b>")
-            self.dialog.add_checkbox(text="Enable Binary Sync on Pull", var="enable_binary_pull",
-                                     default=enable_binary_pull, callback=self.store_local_settings)
-            self.dialog.add_info(
-                "Sync the project binaries when pulling changes from the repository.")
-            self.dialog.add_empty()
-            self.dialog.add_text("<b>Binary Submission Settings</b>")
-            self.dialog.add_checkbox(text="Add Binary Push Button", var="enable_binary_push",
-                                     default=enable_binary_push, callback=self.enable_binary_push)
-            self.dialog.add_text("Engine Directory", width=100).add_input(
-                placeholder=r"C:\Program Files\Epic Games\UE_5.6",
-                browse=ap.BrowseType.Folder,
-                width=246,
-                default=engine_directory,
-                var="engine_directory",
-                callback=self.store_local_settings)
-            self.dialog.add_info(
-                "Add a sidebar button to compile and push the project binaries when pushing changes to the repository.")
+        self.dialog.add_checkbox(text="Enable Binary Sync on Pull", var="enable_binary_pull",
+                                 default=enable_binary_pull, callback=self.store_local_settings)
+        self.dialog.add_info(
+            "Sync the project binaries when pulling changes from the repository.")
+        self.dialog.add_empty()
+        self.dialog.add_text("<b>Binary Submission Settings</b>")
+        self.dialog.add_checkbox(text="Add Binary Push Button", var="enable_binary_push",
+                                 default=enable_binary_push, callback=self.enable_binary_push)
+        self.dialog.add_text("Engine Directory", width=110).add_input(
+            placeholder=r"C:\Program Files\Epic Games\UE_5.6",
+            browse=ap.BrowseType.Folder,
+            width=246,
+            default=engine_directory,
+            var="engine_directory",
+            callback=self.store_local_settings)
+        self.dialog.add_info(
+            "Only applicable when you use the Unreal Engine version from the Epic Games<br>Launcher. Add a sidebar button to compile and push the project binaries when<br>pushing changes to the repository.")
 
     def get_dialog(self):
         return self.dialog
@@ -146,19 +143,17 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
         if self.binary_location == "folder":
             local_settings.set(project_path+"_binary_source",
                                dialog.get_value("binary_source"))
-        if self.project_type == "source":
-            local_settings.set(project_path+"_sync_dependencies",
-                               dialog.get_value("sync_dependencies"))
-            local_settings.set(project_path+"_launch_project_display_name",
-                               dialog.get_value("launch_project_display_name"))
+        local_settings.set(project_path+"_sync_dependencies",
+                           dialog.get_value("sync_dependencies"))
+        local_settings.set(project_path+"_launch_project_display_name",
+                           dialog.get_value("launch_project_display_name"))
 
-        if self.project_type == "launcher":
-            local_settings.set(
-                project_path+"_enable_binary_auto_pull", dialog.get_value("enable_binary_pull"))
-            local_settings.set(project_path+"_engine_directory",
-                               dialog.get_value("engine_directory"))
-            local_settings.set(
-                project_path+"_enable_binary_push", dialog.get_value("enable_binary_push"))
+        local_settings.set(
+            project_path+"_enable_binary_auto_pull", dialog.get_value("enable_binary_pull"))
+        local_settings.set(project_path+"_engine_directory",
+                           dialog.get_value("engine_directory"))
+        local_settings.set(
+            project_path+"_enable_binary_push", dialog.get_value("enable_binary_push"))
 
         local_settings.store()
         return

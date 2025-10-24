@@ -20,8 +20,7 @@ def unzip_and_manage_files(zip_file_path, project_path, progress):
 
     add_local_settings_to_gitignore(project_path, "extracted_binaries.txt")
 
-    binaries_folder = os.path.join(project_path, "Binaries")
-    if os.path.exists(binary_list_path) and os.path.exists(binaries_folder):
+    if os.path.exists(binary_list_path):
         with open(binary_list_path, 'r') as file:
             first_line = file.readline().strip()
             current_zip = os.path.basename(zip_file_path)
@@ -598,7 +597,7 @@ def pull_binaries_async(sync_dependencies, launch_project_path, ctx):
 
         # Launch the selected uproject file if one was selected
         if launch_project_path:
-            launch_editor(project_path, launch_project_path, ui)
+            launch_editor(project_path, launch_project_path)
         else:
             ui.show_success(
                 "Binaries synced", f"Files extracted from {matching_tag.replace(",", "")}")
@@ -618,7 +617,6 @@ def pull(ctx: ap.Context, silent=False):
 
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
-    project_type = shared_settings.get("project_type", "launcher")
     binary_location_type = shared_settings.get(
         "binary_location_type", "folder")
 
@@ -649,34 +647,34 @@ def pull(ctx: ap.Context, silent=False):
     # Check if a tag has been set in the action settings
     tag_pattern = shared_settings.get("tag_pattern", "")
 
-    if not tag_pattern and shared_settings.get("project_type", "launcher") == "source":
+    if not tag_pattern:
         print("Tag pattern is empty. Use something like <<Editor>> for all Git tags named <<Editor-1>>, <<Editor-2>>, etc.")
         ui.show_error("No tag has been set",
                       "Please define a tag pattern in the action settings")
         return
 
-    if project_type == "source":
-
-        # Check for .uedependencies file
-        uedependencies_path = os.path.join(project_path, ".uedependencies")
-        if os.path.exists(uedependencies_path):
-            sync_dependencies = local_settings.get(
-                project_path+"_sync_dependencies", False)
+    # Check for .uedependencies file
+    uedependencies_path = os.path.join(project_path, ".uedependencies")
+    if os.path.exists(uedependencies_path):
+        sync_dependencies = local_settings.get(
+            project_path+"_sync_dependencies", False)
+    else:
+        # Check if Setup.bat exists in the project root
+        setup_bat_path = os.path.join(project_path, "Setup.bat")
+        if not os.path.exists(setup_bat_path):
+            sync_dependencies = False
         else:
             sync_dependencies = True
 
-        # Get the launch project path
-        launch_project_display_name = local_settings.get(
-            project_path+"_launch_project_display_name", uproject_files[0])
+    # Get the launch project path
+    launch_project_display_name = local_settings.get(
+        project_path+"_launch_project_display_name", uproject_files[0])
 
-        launch_project_path = ""
-        for uproject_file in uproject_files:
-            if launch_project_display_name in uproject_file:
-                launch_project_path = uproject_file
-                break
-    else:
-        sync_dependencies = False
-        launch_project_path = ""
+    launch_project_path = ""
+    for uproject_file in uproject_files:
+        if launch_project_display_name in uproject_file:
+            launch_project_path = uproject_file
+            break
 
     ctx.run_async(pull_binaries_async, sync_dependencies,
                   launch_project_path, ctx)
