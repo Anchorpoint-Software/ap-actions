@@ -1,0 +1,15 @@
+# Anchorpoint Markup Language
+# Predefined Variables: e.g. ${path}
+# Environment Variables: e.g. ${MY_VARIABLE}
+# Full documentation: https://docs.anchorpoint.app/docs/actions/create-actions
+
+version: 1.0
+action:
+  name: Hooks
+
+  version: 1
+  id: ap::unreal::hooks
+  type: python
+  author: Anchorpoint Software GmbH
+
+  script: hooks.py

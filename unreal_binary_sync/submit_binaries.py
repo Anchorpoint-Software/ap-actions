@@ -371,7 +371,7 @@ def delete_temp_zip(local_zip_file_path):
         print(f"Failed to delete temp zip: {str(e)}")
 
 
-def submit_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir, tag_pattern):
+def push_binaries_async(engine_dir, project_dir, project_name, editor_target, output_dir, tag_pattern):
     ui = ap.UI()
     ctx = ap.get_context()
     progress = ap.Progress("Submitting Binaries",
@@ -459,7 +459,7 @@ def main():
         print(f"Using temporary output directory for S3 upload: {output_dir}")
 
     ui.show_console()
-    ctx.run_async(submit_binaries_async, engine_dir,
+    ctx.run_async(push_binaries_async, engine_dir,
                   project_dir, project_name, editor_target, output_dir, tag_pattern)
 
 

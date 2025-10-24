@@ -30,6 +30,7 @@ action:
     - ap::unreal::sync
     - ap::unreal::settings
     - ap::unreal::submit
+    - ap::unreal::hooks
 
 
     

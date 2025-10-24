@@ -28,7 +28,7 @@ def unzip_and_manage_files(zip_file_path, project_path, progress):
                 ui.show_info("Binaries up to date",
                              "Editor Binaries are already at the latest state")
                 progress.finish()
-                return True
+                return False
 
     # Delete existing files from previous sync if extracted_binaries.txt exists
     if os.path.exists(binary_list_path):
@@ -415,8 +415,7 @@ def launch_editor(project_path, launch_project_path):
                          f"Failed to launch project: {str(e)}")
 
 
-def get_s3_credentials():
-    ctx = ap.get_context()
+def get_s3_credentials(ctx):
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
 
@@ -429,16 +428,15 @@ def get_s3_credentials():
     return access_key, secret_key, endpoint_url, bucket_name
 
 
-def download_from_s3(zip_file_name, progress):
+def download_from_s3(zip_file_name, progress, ctx):
     ui = ap.UI()
-    ctx = ap.get_context()
     try:
         import boto3
     except ImportError:
         ctx.install("boto3")
         import boto3
 
-    creds = get_s3_credentials()
+    creds = get_s3_credentials(ctx)
     if not creds:
         ui.show_error("S3 Credentials Missing",
                       "Please check your S3 settings in the action configuration.")
@@ -448,6 +446,13 @@ def download_from_s3(zip_file_name, progress):
     # Download to Windows temp folder
     temp_dir = tempfile.gettempdir()
     local_zip_file_path = os.path.join(temp_dir, zip_file_name)
+
+    # Check if zip file already exists in temp
+    if os.path.exists(local_zip_file_path):
+        print(
+            f"Zip file already exists at {local_zip_file_path}, skipping download")
+        progress.report_progress(1.0)
+        return local_zip_file_path
 
     s3_client = boto3.client(
         "s3",
@@ -502,10 +507,9 @@ def delete_temp_zip(local_zip_file_path):
         print(f"Failed to delete temp zip: {str(e)}")
 
 
-def sync_binaries_async(sync_dependencies, launch_project_path):
+def pull_binaries_async(sync_dependencies, launch_project_path, ctx):
 
     ui = ap.UI()
-    ctx = ap.get_context()
 
     local_settings = aps.Settings()
     shared_settings = aps.SharedSettings(
@@ -553,7 +557,7 @@ def sync_binaries_async(sync_dependencies, launch_project_path):
     zip_file_path = ""
     if binary_location_type == "s3":
         # Download the zip file from S3
-        zip_file_path = download_from_s3(zip_file_name, progress)
+        zip_file_path = download_from_s3(zip_file_name, progress, ctx)
         if not zip_file_path:
             print("Failed to download zip file from S3")
             progress.finish()
@@ -573,7 +577,8 @@ def sync_binaries_async(sync_dependencies, launch_project_path):
     print(f"Extract binaries from {matching_tag}")
 
     try:
-        if not unzip_and_manage_files(zip_file_path, project_path, progress):
+        unzip = unzip_and_manage_files(zip_file_path, project_path, progress)
+        if not unzip:
             return  # If extraction was canceled or failed
 
         if binary_location_type == "s3":
@@ -593,10 +598,12 @@ def sync_binaries_async(sync_dependencies, launch_project_path):
         return
 
 
-# perform certain checks before starting the async process and then call the async function
-def main():
+def pull(ctx: ap.Context, silent=False):
+
     ui = ap.UI()
-    ctx = ap.get_context()
+
+    print(ctx.workspace_id)
+    print(ctx.project_path)
 
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
@@ -609,14 +616,15 @@ def main():
 
     # Terminate if it's not an Unreal Project
     if not uproject_files:
-        print("Could not find any .uproject file")
-        ui.show_error("Not an Unreal project", "Check your project folder")
+        print("Could not find any .uproject file. Binary Push cancelled.")
+        if not silent:
+            ui.show_error("Not an Unreal project", "Check your project folder")
         return
 
     # Check if Unreal Editor is running
     if is_unreal_running():
         ui.show_info("Unreal Editor is running",
-                     "Please close Unreal Engine before proceeding with the binary sync.")
+                     "Please close Unreal Engine before proceeding pulling the binaries")
         return
 
     # Get the project settings
@@ -624,7 +632,7 @@ def main():
     binary_source = local_settings.get(project_path+"_binary_source", "")
 
     # check if S3 credentials are set when using S3 and a folder is set when using folder
-    if binary_location_type == "s3" and get_s3_credentials() is False:
+    if binary_location_type == "s3" and get_s3_credentials(ctx) is False:
         ui.show_error("S3 Credentials Missing",
                       "Please check your S3 settings in the action configuration or inform your workspace admin.")
         return
@@ -665,8 +673,15 @@ def main():
         sync_dependencies = False
         launch_project_path = ""
 
-    ctx.run_async(sync_binaries_async, sync_dependencies,
-                  launch_project_path)
+    ctx.run_async(pull_binaries_async, sync_dependencies,
+                  launch_project_path, ctx)
+
+# perform certain checks before starting the async process and then call the async function
+
+
+def main():
+    ctx = ap.get_context()
+    pull(ctx)
 
 
 if __name__ == "__main__":
