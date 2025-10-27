@@ -45,14 +45,16 @@ def main():
     }
 
     # Trigger the publish process
-    publish_process = publish.publish_file(msg, doc_path, data_object=data_object)
-    if publish_process:
+    try:
+        publish_successful = publish.publish_file(
+            msg, doc_path, data_object=data_object)
         # Print a success to stdout so the C4D plugin can read it
-        sys.__stdout__.write("The file has been published")
-        ap.log_success("DCC publish successful")
-    else:
+        if publish_successful:
+            sys.__stdout__.write("The file has been published")
+            ap.log_success("DCC publish successful")
+    except Exception as e:
+        sys.__stdout__.write("An issue has occurred: " + str(e))
         ap.log_error("DCC publish failed")
-        raise Exception("Cannot publish the file")
 
 
 if __name__ == "__main__":

@@ -19,15 +19,27 @@ create_master = shared_settings.get("create_master_file", False)
 
 def trigger_publish(msg, path, data_object):
     progress = ap.Progress("Publishing File", "Please wait...")
-    publish_process = publish.publish_file(msg, path, data_object)
     ui = ap.UI()
-    if publish_process:
-        ui.show_success(
-            "Publish Successful",
-            "The file has been added to the timeline",
-        )
-    else:
-        ui.show_error("Cannot publish the file", "An error occurred during publishing")
+    try:
+        publish_successful = publish.publish_file(msg, path, data_object)
+        if publish_successful:
+            ap.log_success("DCC publish successful")
+            ui.show_success(
+                "Publish Successful",
+                "The file has been added to the timeline",
+            )
+        else:
+            ui.show_error(
+                "Cannot publish the file",
+                "Check the console for more information",
+            )
+            ap.log_error("DCC publish failed")
+    except Exception as e:
+        print(e)
+        ui.show_error("Cannot publish the file",
+                      "Check the console for more informatio")
+        ap.log_error("DCC publish failed")
+
     progress.finish()
 
 
@@ -62,8 +74,10 @@ def main():
         callback=text_callback,
     )
     dialog.add_info("Creates a timeline entry for this file")
-    dialog.add_checkbox(create_master, text="Create Master File", var="create_master")
-    dialog.add_info("This will create a file without increments in the file name")
+    dialog.add_checkbox(
+        create_master, text="Create Master File", var="create_master")
+    dialog.add_info(
+        "This will create a file without increments in the file name")
     dialog.add_button(
         "Publish", var="publish_button_var", callback=button_callback, enabled=False
     )

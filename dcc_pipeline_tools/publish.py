@@ -80,7 +80,8 @@ def publish_file(msg, path, data_object=None):
     project_settings = aps.SharedSettings(
         ctx.project_id, ctx.workspace_id, "inc_settings"
     )
-    workspace_settings = aps.SharedSettings(ctx.workspace_id, "inc_workspace_settings")
+    workspace_settings = aps.SharedSettings(
+        ctx.workspace_id, "inc_workspace_settings")
     history_array = project_settings.get("inc_versions", [])
 
     # Check if we need to create a master file
@@ -159,7 +160,7 @@ def publish_file(msg, path, data_object=None):
         tag = aps.AttributeTag("master", "yellow")
         database.attributes.set_attribute_value(master_path, "Type", tag)
 
-    # Trigger webhook if set
+    # Trigger webhook if set -> needs a fix
     webhook_url = workspace_settings.get("webhook_url", "")
     if webhook_url:
         try:
@@ -185,4 +186,4 @@ def publish_file(msg, path, data_object=None):
         except Exception as e:
             raise Exception(f"Failed to send webhook: {e}")
 
-        return True
+    return True

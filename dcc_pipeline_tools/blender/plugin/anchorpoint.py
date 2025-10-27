@@ -1,3 +1,13 @@
+import glob
+import threading
+import platform
+import re
+import json
+import os
+import subprocess
+from bpy.props import StringProperty
+from bpy.types import Operator, Panel, PropertyGroup
+import bpy
 bl_info = {
     "name": "Anchorpoint Integration",
     "author": "Anchorpoint",
@@ -8,24 +18,15 @@ bl_info = {
     "category": "System",
 }
 
-import bpy
-from bpy.types import Operator, Panel, PropertyGroup
-from bpy.props import StringProperty
-import subprocess
-import os
-import json
-import re
-import platform
-import threading
-import glob
 
 # Global variables for UI message display
 _pending_message = None
 _pending_title = "Anchorpoint"
 _message_type = 'INFO'
 
+
 def show_message_delayed(message, title="Anchorpoint", icon='INFO'):
-    #Store message to be shown by timer callback
+    # Store message to be shown by timer callback
     global _pending_message, _message_type, _pending_title
     _pending_message = message
     _pending_title = title
@@ -33,17 +34,17 @@ def show_message_delayed(message, title="Anchorpoint", icon='INFO'):
     # Register timer to show message in main thread
     bpy.app.timers.register(show_pending_message, first_interval=0.1)
 
+
 def show_pending_message():
-    #Timer callback to show pending message
+    # Timer callback to show pending message
     global _pending_message, _message_type, _pending_title
     if _pending_message:
         # Use the dialog operator with OK button
-        bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT', 
-                                        message=_pending_message, 
-                                        dialog_title=_pending_title)
+        bpy.ops.anchorpoint.show_message('INVOKE_DEFAULT',
+                                         message=_pending_message,
+                                         dialog_title=_pending_title)
         _pending_message = None
     return None  # Don't repeat timer
-
 
 
 # Check if the file is in an Anchorpoint project
@@ -76,10 +77,11 @@ def is_in_anchorpoint_project(file_path: str) -> bool:
 
 def get_executable_path():
     if platform.system() == "Windows":
-        cli_path = os.path.join(os.getenv('APPDATA'), "Anchorpoint Software", "Anchorpoint","app","ap.exe")
+        cli_path = os.path.join(
+            os.getenv('APPDATA'), "Anchorpoint Software", "Anchorpoint", "app", "ap.exe")
 
     elif platform.system() == "Darwin":  # macOS
-        cli_path = "/Applications/Anchorpoint.app/Contents/Frameworks/ap"        
+        cli_path = "/Applications/Anchorpoint.app/Contents/Frameworks/ap"
 
     if os.path.exists(cli_path):
         return cli_path
@@ -125,46 +127,51 @@ def run_executable(msg, path):
                 command, capture_output=True, text=True, check=True, startupinfo=startupinfo)
             if result.stderr:
                 print(f"Anchorpoint Error: {result.stderr}")
-                show_message_delayed("An issue has occurred", "Anchorpoint Error", 'ERROR')
+                show_message_delayed(
+                    "An issue has occurred", "Anchorpoint Error", 'ERROR')
             else:
                 output_msg = result.stdout.strip()
-                print(f"Anchorpoint Success: {output_msg}")
+                print(f"Anchorpoint Message: {output_msg}")
                 show_message_delayed(output_msg, "Anchorpoint Success", 'INFO')
         except subprocess.CalledProcessError as e:
-            print(f"Anchorpoint Error: An error occurred during execution: {e}")
-            show_message_delayed("An error occurred during execution", "Anchorpoint Error", 'ERROR')
+            print(
+                f"Anchorpoint Error: An error occurred during execution: {e}")
+            show_message_delayed(
+                "An error occurred during execution", "Anchorpoint Error", 'ERROR')
         except Exception as e:
             print(f"Anchorpoint Error: Unexpected error: {str(e)}")
-            show_message_delayed(f"Unexpected error: {str(e)}", "Anchorpoint Error", 'ERROR')
+            show_message_delayed(
+                f"Unexpected error: {str(e)}", "Anchorpoint Error", 'ERROR')
 
     threading.Thread(target=execute_command).start()
+
 
 class ANCHORPOINT_OT_show_message(Operator):
     """Show a message dialog"""
     bl_idname = "anchorpoint.show_message"
-    bl_label = "File published successfully"
-    
+    bl_label = "File published"
+
     message: StringProperty(
         name="Message",
         description="Message to display",
         default=""
     )
-    
+
     dialog_title: StringProperty(
         name="Dialog Title",
         description="Title for the dialog",
         default="Anchorpoint"
     )
-    
+
     def execute(self, context):
         return {'FINISHED'}
-    
+
     def invoke(self, context, event):
         # restore cursor to default
         context.window.cursor_modal_restore()
         # show success dialog
         return context.window_manager.invoke_props_dialog(self, width=400)
-    
+
     def draw(self, context):
         layout = self.layout
         # Split message into lines for better display
@@ -179,12 +186,13 @@ class ANCHORPOINT_OT_open_anchorpoint(Operator):
     bl_idname = "anchorpoint.open_anchorpoint"
     bl_label = "Open Anchorpoint"
     bl_description = "Opens Anchorpoint application"
-    
+
     def execute(self, context):
         if not bpy.data.is_saved:
-            self.report({'ERROR'}, "Document must be saved before opening Anchorpoint.")
+            self.report(
+                {'ERROR'}, "Document must be saved before opening Anchorpoint.")
             return {'CANCELLED'}
-        
+
         file_path = bpy.data.filepath
         try:
             if platform.system() == "Windows":
@@ -209,7 +217,7 @@ class ANCHORPOINT_OT_open_anchorpoint(Operator):
         except Exception as e:
             self.report({'ERROR'}, f"Failed to open Anchorpoint: {e}")
             return {'CANCELLED'}
-        
+
         return {'FINISHED'}
 
 
@@ -218,49 +226,52 @@ class ANCHORPOINT_OT_publish_version(Operator):
     bl_idname = "anchorpoint.publish_version"
     bl_label = "Publish"
     bl_description = "Sets your current file as latest version"
-    
+
     comment: StringProperty(
         name="Comment",
         description="Comment for this version",
         default=""
     )
-    
+
     def execute(self, context):
         if not self.comment.strip():
             self.report({'ERROR'}, "Please enter a comment")
             return {'CANCELLED'}
-        
+
         if not bpy.data.is_saved:
             self.report({'ERROR'}, "Document must be saved before publishing.")
             return {'CANCELLED'}
-        
+
         file_path = bpy.data.filepath
         if not is_in_anchorpoint_project(file_path):
-            self.report({'ERROR'}, "This file is not part of an Anchorpoint project")
+            self.report(
+                {'ERROR'}, "This file is not part of an Anchorpoint project")
             return {'CANCELLED'}
-        
+
         # Set cursor to waiting/hourglass
         context.window.cursor_modal_set('WAIT')
-        
+
         # Start the publish process
         run_executable(self.comment, file_path)
         return {'FINISHED'}
-    
+
     def invoke(self, context, event):
         if not bpy.data.is_saved:
             self.report({'ERROR'}, "You have to save your file first")
             return {'CANCELLED'}
-        
+
         file_path = bpy.data.filepath
         if not is_in_anchorpoint_project(os.path.dirname(file_path)):
-            self.report({'ERROR'}, "This file is not part of an Anchorpoint project")
+            self.report(
+                {'ERROR'}, "This file is not part of an Anchorpoint project")
             return {'CANCELLED'}
-        
+
         return context.window_manager.invoke_props_dialog(self, width=400, confirm_text="Publish")
-    
+
     def draw(self, context):
         layout = self.layout
-        layout.label(text="Publishing will create a new version in Anchorpoint")
+        layout.label(
+            text="Publishing will create a new version in Anchorpoint")
         layout.prop(self, "comment", text="Comment")
 
 
@@ -268,7 +279,7 @@ class ANCHORPOINT_MT_menu(bpy.types.Menu):
     """Anchorpoint menu"""
     bl_label = "Anchorpoint"
     bl_idname = "ANCHORPOINT_MT_menu"
-    
+
     def draw(self, context):
         layout = self.layout
         layout.operator("anchorpoint.open_anchorpoint", icon='FILE_FOLDER')
@@ -291,7 +302,7 @@ classes = [
 def register():
     for cls in classes:
         bpy.utils.register_class(cls)
-    
+
     # Add menu to the header
     bpy.types.TOPBAR_MT_editor_menus.append(draw_anchorpoint_menu)
 
@@ -299,7 +310,7 @@ def register():
 def unregister():
     # Remove menu from the header
     bpy.types.TOPBAR_MT_editor_menus.remove(draw_anchorpoint_menu)
-    
+
     for cls in reversed(classes):
         bpy.utils.unregister_class(cls)
 
