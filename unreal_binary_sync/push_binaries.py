@@ -150,6 +150,14 @@ def add_incremental_git_tag(project_dir, tag_pattern):
         )
         print(f"Added new git tag: {new_tag}")
 
+        # Push the tag to the remote repository
+        subprocess.run(
+            ['git', 'push', 'origin', new_tag],
+            cwd=project_dir,
+            check=True
+        )
+        print(f"Pushed tag {new_tag} to remote repository")
+
     except subprocess.CalledProcessError as e:
         print(f"Error adding git tag: {e}", file=sys.stderr)
     except Exception as e:
