@@ -5,7 +5,7 @@
 
 version: 1.0
 action:
-  name: Submit Binaries
+  name: Push Binaries
 
   version: 1
   id: ap::unreal::push
@@ -16,7 +16,7 @@ action:
 
   script: push_binaries.py
   icon:
-    path: :/icons/unrealEngine.svg
+    path: icons/unrealPush.svg
   
   register:
     sidebar:

@@ -612,9 +612,6 @@ def pull(ctx: ap.Context, silent=False):
 
     ui = ap.UI()
 
-    print(ctx.workspace_id)
-    print(ctx.project_path)
-
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
     binary_location_type = shared_settings.get(

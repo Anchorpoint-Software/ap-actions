@@ -16,7 +16,7 @@ action:
 
   script: pull_binaries.py
   icon:
-    path: :/icons/unrealEngine.svg
+    path: icons/unrealPull.svg
   
   register:
     sidebar:
