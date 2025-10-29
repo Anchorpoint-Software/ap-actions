@@ -1,6 +1,6 @@
 # Unreal Binary Sync
 
-A comprehensive solution for syncing compiled Unreal Engine binaries across development teams using Anchorpoint (Git) similar to Unreal Game Sync for Perforce. This system allows teams to share pre-compiled binaries instead of requiring everyone to build from source. This system works for game binaries when using the Unreal Editor from the Epic Games Launcher and when you build the Editor from source.
+A comprehensive solution for syncing compiled Unreal Engine binaries across development teams using Anchorpoint (Git) similar to Unreal Game Sync for Perforce. This system allows teams to share pre-compiled binaries instead of requiring everyone to build from source. This system works for game binaries when using the Unreal Editor from the Epic Games Launcher and when you build the Editor from source. You can find more information on how to use it in our [documentation](https://docs.anchorpoint.app/docs/version-control/features/binary-sync/). 
 
 ## Overview
 
@@ -163,16 +163,16 @@ unreal_binary_sync/
 
 ### Common Issues
 
-**"No .uproject file found"**
+**No .uproject file found**
 - Ensure you're running the action from an Unreal Engine project directory
 - Check that .uproject files exist in the project or subdirectories
 
-**"No compatible tag found"**
+**No compatible tag found**
 - Verify your tag pattern matches existing Git tags
 - Check that tagged commits exist in your repository
 - Ensure Git tags follow the pattern format (e.g., Editor-1, Editor-2)
 
-**"UnrealBuildTool not found"**
+**UnrealBuildTool not found**
 - Verify the Engine Directory path in project settings
 - Ensure Unreal Engine is properly installed
 - Check that the specified version exists

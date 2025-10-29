@@ -39,8 +39,7 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
 
         self.shared_settings = aps.SharedSettings(
             ctx.workspace_id, "unreal_binary_sync")
-        self.project_type = self.shared_settings.get(
-            "project_type", "launcher")
+
         self.binary_location = self.shared_settings.get(
             "binary_location_type", "folder")
 
@@ -65,7 +64,7 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
             callback=self.store_local_settings
         )
         self.dialog.add_info(
-            "Only applicable when you build the engine from source. Note that you have to<br>accept a Windows Control Popup for UE Prerequisites.")
+            "Only applicable when you build the <a href='https://docs.anchorpoint.app/docs/version-control/features/binary-sync/#case-2-building-the-unreal-editor-from-source'>engine from source</a>. Note that you have to<br>accept a Windows Control Popup for UE Prerequisites.")
 
         self.dialog.add_text("Launch Project", width=110).add_dropdown(
             default=launch_project_display_name,
@@ -87,12 +86,12 @@ class UnrealProjectSettings(ap.AnchorpointSettings):
         self.dialog.add_text("Engine Directory", width=110).add_input(
             placeholder=r"C:\Program Files\Epic Games\UE_5.6",
             browse=ap.BrowseType.Folder,
-            width=246,
+            width=266,
             default=engine_directory,
             var="engine_directory",
             callback=self.store_local_settings)
         self.dialog.add_info(
-            "Only applicable when you use the Unreal Engine version from the Epic Games<br>Launcher. Add a sidebar button to compile and push the project binaries when<br>pushing changes to the repository.")
+            "Only applicable when you use the Unreal Engine version from the Epic Games<br>Launcher. Add a sidebar button to compile and push the project binaries when<br>pushing changes to the repository. Learn more about <a href='https://docs.anchorpoint.app/docs/version-control/features/binary-sync/#setup-the-binary-sync-action-in-anchorpoint'>pushing binaries</a>.")
 
     def get_dialog(self):
         return self.dialog
