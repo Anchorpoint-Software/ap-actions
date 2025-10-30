@@ -30,6 +30,7 @@ action:
     - ap::unreal::pull
     - ap::unreal::push
     - ap::unreal::hooks
+    - ap::unreal::settings
 
 
     

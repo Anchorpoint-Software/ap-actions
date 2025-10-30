@@ -14,4 +14,4 @@ action:
   author: Anchorpoint Software GmbH
   description: ""
 
-  script: "local_settings.py"
+  script: "local_project_settings.py"
