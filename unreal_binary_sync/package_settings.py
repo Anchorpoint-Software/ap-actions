@@ -27,10 +27,12 @@ def apply_callback(dialog, value):
         dialog.set_enabled("secret_key_var", True)
         dialog.set_enabled("endpoint_url_var", True)
         dialog.set_enabled("bucket_name_var", True)
-        settings.set("access_key", dialog.get_value("access_key_var"))
-        settings.set("secret_key", dialog.get_value("secret_key_var"))
-        settings.set("endpoint_url", dialog.get_value("endpoint_url_var"))
-        settings.set("bucket_name", dialog.get_value("bucket_name_var"))
+        settings.set("access_key", dialog.get_value("access_key_var").strip())
+        settings.set("secret_key", dialog.get_value("secret_key_var").strip())
+        settings.set("endpoint_url", dialog.get_value(
+            "endpoint_url_var").strip())
+        settings.set("bucket_name", dialog.get_value(
+            "bucket_name_var").strip())
     else:
         settings.set("binary_location_type", "folder")
 
