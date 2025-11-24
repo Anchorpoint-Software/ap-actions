@@ -62,7 +62,7 @@ def main():
         default=tag_pattern,
         callback=apply_callback
     )
-    dialog.add_info("Specify a pattern for Git tags that tells Anchorpoint that there is a binary attached to a<br>commit. E.g. use <b>Editor</b> if your tagis named <b>Editor-1</b>. Learn more about <a href='https://docs.anchorpoint.app/docs/version-control/features/binary-sync/'>binary syncing</a>.")
+    dialog.add_info("Specify a pattern for Git tags that tells Anchorpoint that there is a binary attached to a<br>commit. E.g. use <b>Editor</b> if your tagis named <b>Editor-1</b>. Learn more about <a href='https://docs.anchorpoint.app/git/binary-syncing/'>binary syncing</a>.")
 
     dialog.add_text("Binary Location", width=110).add_dropdown(
         default=BINARY_LOCATIONS[binary_location],

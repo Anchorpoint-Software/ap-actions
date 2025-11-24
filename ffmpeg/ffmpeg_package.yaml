@@ -16,7 +16,7 @@ action:
   type: package
   enable: true
   author: "Anchorpoint Software GmbH"
-  description: Creates <a href='https://docs.anchorpoint.app/docs/5-utilities/1-video-conversion/'>video files from image sequences</a> or other videos with a single click
+  description: Creates <a href='https://docs.anchorpoint.app/assets/utilities/video-conversion/'>video files from image sequences</a> or other videos with a single click
   
   icon:
     path: "icons/packageIcon.svg"

@@ -13,7 +13,7 @@ action:
   type: package
   enable: true
   author: Anchorpoint Software GmbH
-  description: Create new file and folder structures from <a href='https://docs.anchorpoint.app/docs/4-assets-and-tasks/1-Templates/'>templates</a>
+  description: Create new file and folder structures from <a href='https://docs.anchorpoint.app/assets/templates/'>templates</a>
   icon:
     path: folderTemplates.svg  
 

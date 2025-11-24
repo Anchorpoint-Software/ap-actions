@@ -180,7 +180,7 @@ def on_file_selected(dialog, value):
 
     dialog.add_checkbox(
         text="Overwrite existing Attribute Values", var="overwrite")
-    dialog.add_info(f"Existing {object_type}s will be merged with new ones. If you override existing <br>Attributes, it will use the Attribute values from the csv file. <a href='https://docs.anchorpoint.app/docs/asset-management/utilities/import-csv/'>Learn more</a>")
+    dialog.add_info(f"Existing {object_type}s will be merged with new ones. If you override existing <br>Attributes, it will use the Attribute values from the csv file. <a href='https://docs.anchorpoint.app/assets/utilities/import-csv/'>Learn more</a>")
 
     dialog.add_button(f"Create {object_type.capitalize()}s", callback=lambda dialog: create_objects_async(dialog, csv_path),
                       var="create_objects_btn", enabled=True)

@@ -15,7 +15,7 @@ action:
   category: "csv"
   type: package
   enable: true
-  description: Creates folders or tasks from a <a href="https://docs.anchorpoint.app/docs/asset-management/utilities/import-csv/">CSV file</a> including Attributes.
+  description: Creates folders or tasks from a <a href="https://docs.anchorpoint.app/assets/utilities/import-csv/">CSV file</a> including Attributes.
 
   author: "Anchorpoint Software GmbH"
   icon:

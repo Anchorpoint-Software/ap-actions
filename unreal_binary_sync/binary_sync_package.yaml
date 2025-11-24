@@ -15,7 +15,7 @@ action:
   category: unreal
   type: package
   enable: false
-  description: Sync the engine and game binaries from an external source to your project. Find out how to <a href ="https://docs.anchorpoint.app/docs/version-control/features/binary-sync/">set it up</a>.
+  description: Sync the engine and game binaries from an external source to your project. Find out how to <a href ="https://docs.anchorpoint.app/git/binary-syncing/">set it up</a>.
 
   author: "Anchorpoint Software GmbH"
   settings: "package_settings.py"
