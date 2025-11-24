@@ -1,6 +1,6 @@
 # Unreal Binary Sync
 
-A comprehensive solution for syncing compiled Unreal Engine binaries across development teams using Anchorpoint (Git) similar to Unreal Game Sync for Perforce. This system allows teams to share pre-compiled binaries instead of requiring everyone to build from source. This system works for game binaries when using the Unreal Editor from the Epic Games Launcher and when you build the Editor from source. You can find more information on how to use it in our [documentation](https://docs.anchorpoint.app/docs/version-control/features/binary-sync/). 
+A comprehensive solution for syncing compiled Unreal Engine binaries across development teams using Anchorpoint (Git) similar to Unreal Game Sync for Perforce. This system allows teams to share pre-compiled binaries instead of requiring everyone to build from source. This system works for game binaries when using the Unreal Editor from the Epic Games Launcher and when you build the Editor from source. You can find more information on how to use it in our [documentation](https://docs.anchorpoint.app/git/binary-syncing/). 
 
 ## Overview
 

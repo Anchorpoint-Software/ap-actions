@@ -21,7 +21,7 @@ You can also trigger a webhook at the end of the publish process to e.g. connect
 
 
 ## Adjusting this workflow for your own pipeline
-This workflow can be completely customized for your own needs. The recommended way is to copy and paste this code to a new Git repository, that you then import in Anchorpoint in the Action Settings. Before you start, make sure that you understand the [development of Actions](https://docs.anchorpoint.app/docs/actions/create-actions/) in Anchorpoint.
+This workflow can be completely customized for your own needs. The recommended way is to copy and paste this code to a new Git repository, that you then import in Anchorpoint in the Action Settings. Before you start, make sure that you understand the [development of Actions](https://docs.anchorpoint.app/api/intro/) in Anchorpoint.
 
 1. Create a new public Git repository on GitHub
 2. Copy and paste the content from this folder to your new repository and push it to GitHub

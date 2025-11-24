@@ -18,9 +18,9 @@ Actions are plugins, that allow you to extend the UI of Anchorpoint or integrate
 Everything where you have to do a lot of manual work (renaming files, copying files, constantly opening the DCC to load files and save them again or bugging your teammates to put data in the right place) you can automate with Actions.
 
 ## Documentation
-- [Actions introduction](https://docs.anchorpoint.app/docs/actions/create-actions/)
-- [YAML reference](https://docs.anchorpoint.app/docs/actions/yaml/)
-- [Python reference](https://docs.anchorpoint.app/docs/actions/python/)
+- [Actions introduction](https://docs.anchorpoint.app/api/intro/)
+- [YAML reference](https://docs.anchorpoint.app/api/yaml/)
+- [Python reference](https://docs.anchorpoint.app/api/python/api/)
 
 ## Want to contribute?
 Do you have scripts that you use in your workflow and think that they could be valuable for other users? Share them via a pull request. If you need any help feel free to contact us directly.
