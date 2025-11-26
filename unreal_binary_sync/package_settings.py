@@ -44,6 +44,41 @@ def apply_callback(dialog, value):
     settings.store()
 
 
+def text_connection_callback(dialog):
+    ctx.run_async(text_connection_async, dialog)
+
+
+def text_connection_async(dialog):
+    dialog.set_processing("text_button_var", True, "Testing...")
+    ctx = ap.get_context()
+    try:
+        import boto3
+    except ImportError:
+        ctx.install("boto3")
+        import boto3
+
+    access_key = dialog.get_value("access_key_var").strip()
+    secret_key = dialog.get_value("secret_key_var").strip()
+    endpoint_url = dialog.get_value("endpoint_url_var").strip()
+    bucket_name = dialog.get_value("bucket_name_var").strip()
+
+    try:
+        s3 = boto3.client(
+            "s3",
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            endpoint_url=endpoint_url
+        )
+        # Try to list objects in the bucket to test credentials
+        s3.list_objects_v2(Bucket=bucket_name, MaxKeys=1)
+        ui.show_success("Connection successful", "Credentials are valid")
+    except Exception as e:
+        ui.show_error("Cannot connect", "See console for details")
+        print(str(e))
+
+    dialog.set_processing("text_button_var", False)
+
+
 def main():
     # Create a dialog container
     dialog = ap.Dialog()
@@ -100,6 +135,8 @@ def main():
         var="bucket_name_var", enabled=(binary_location == "s3"),
         callback=apply_callback
     )
+    dialog.add_button("Test Connection",
+                      callback=text_connection_callback, var="text_button_var", primary=False)
     dialog.end_section()
 
     # Present the dialog to the user

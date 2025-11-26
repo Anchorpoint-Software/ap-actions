@@ -224,12 +224,11 @@ def create_binaries_zip(project_dir, output_dir, progress, max_progress):
     # Find plugin binaries
     plugin_binaries = []
     if plugins_dir.exists():
-        for plugin_path in plugins_dir.iterdir():
-            if plugin_path.is_dir():
-                plugin_binaries_dir = plugin_path / "Binaries"
-                if plugin_binaries_dir.exists():
-                    plugin_binaries.append(plugin_binaries_dir)
-                    print(f"Found plugin binaries: {plugin_binaries_dir}")
+        # Recursively search for all "Binaries" folders inside Plugins
+        for binaries_dir in plugins_dir.rglob("Binaries"):
+            if binaries_dir.is_dir():
+                plugin_binaries.append(binaries_dir)
+                print(f"Found plugin binaries: {binaries_dir}")
 
     # Check if we have any binaries to zip
     all_binary_dirs = []
@@ -368,7 +367,7 @@ def push_binaries_async(engine_dir, project_dir, project_name, editor_target, ou
     ui = ap.UI()
     ctx = ap.get_context()
     progress = ap.Progress("Submitting Binaries",
-                           "Initializing...", infinite=True)
+                           "Compiling...", infinite=True)
     progress.set_cancelable(True)
     shared_settings = aps.SharedSettings(
         ctx.workspace_id, "unreal_binary_sync")
@@ -391,6 +390,7 @@ def push_binaries_async(engine_dir, project_dir, project_name, editor_target, ou
         if not s3_upload:
             ui.show_error("S3 Upload Failed",
                           "The binaries could not be uploaded to S3. Check the console for more information.")
+            progress.finish()
             return
         # Delete the temp zip after upload
         delete_temp_zip(zip_file_path)
