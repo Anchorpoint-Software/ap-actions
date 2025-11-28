@@ -191,6 +191,9 @@ def resolve_tokens(variable_list):
             variables["YY-MM-DD"] = datetime.today().strftime("%y-%m-%d")
         elif variable == "DD-MM-YY":
             variables["DD-MM-YY"] = datetime.today().strftime("%d-%m-%y")
+        elif variables["ProjectName"]:
+            project = aps.get_project(ctx.path)
+            variables["ProjectName"] = str(project.name)
         elif variable == "ProjectFolder":
             projectFolder = os.path.basename(
                 os.path.normpath(ctx.project_path))
@@ -265,7 +268,7 @@ def create_dialog():
         dialog.icon = ctx.icon
 
     # Set a description and a dropdown. Use \t to create tab spaces
-    dialog.add_text("Template",width=72).add_dropdown(
+    dialog.add_text("Template", width=72).add_dropdown(
         folder_templates[0],
         folder_templates,
         var="dropdown",
@@ -277,7 +280,7 @@ def create_dialog():
 
     if has_keys:
         for key in user_inputs.keys():
-            dialog.add_text(str(key).replace("_", " "),width=72).add_input(
+            dialog.add_text(str(key).replace("_", " "), width=72).add_input(
                 "", var=str(key)
             )
         dialog.add_info(
