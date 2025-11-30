@@ -191,7 +191,7 @@ def resolve_tokens(variable_list):
             variables["YY-MM-DD"] = datetime.today().strftime("%y-%m-%d")
         elif variable == "DD-MM-YY":
             variables["DD-MM-YY"] = datetime.today().strftime("%d-%m-%y")
-        elif variables["ProjectName"]:
+        elif variable == "ProjectName":
             project = aps.get_project(ctx.path)
             variables["ProjectName"] = str(project.name)
         elif variable == "ProjectFolder":
