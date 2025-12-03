@@ -67,7 +67,7 @@ def scale_png_by_half(input_path):
 
     with Image.open(input_path) as img:
         new_size = (max(1, img.width // 2), max(1, img.height // 2))
-        resized = img.resize(new_size, Image.LANCZOS)
+        resized = img.resize(new_size, Image.Resampling.LANCZOS)
         resized.save(output_path, format="PNG")
 
     return output_path

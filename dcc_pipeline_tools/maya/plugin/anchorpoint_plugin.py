@@ -1,6 +1,6 @@
-import maya.cmds as cmds
-import maya.api.OpenMaya as om
-import maya.utils
+import maya.cmds as cmds  # pyright: ignore[reportMissingImports]
+import maya.api.OpenMaya as om  # pyright: ignore[reportMissingImports]
+import maya.utils  # pyright: ignore[reportMissingImports]
 import subprocess
 import os
 import json
@@ -47,7 +47,9 @@ def is_in_anchorpoint_project(file_path: str) -> bool:
 
 def get_executable_path():
     if platform.system() == "Windows":
-        cli_path = os.path.join(os.getenv('APPDATA'), "Anchorpoint Software", "Anchorpoint","app","ap.exe")
+        cli_path = os.path.join(
+            os.getenv("APPDATA"), "Anchorpoint Software", "Anchorpoint", "app", "ap.exe"
+        )  # pyright: ignore[reportCallIssue]
 
     elif platform.system() == "Darwin":  # macOS
         cli_path = "/Applications/Anchorpoint.app/Contents/Frameworks/ap"        
@@ -197,8 +199,7 @@ def open_anchorpoint_with_file():
 
         if platform.system() == "Windows":
             appdata = os.getenv('LOCALAPPDATA')
-            anchorpoint_exe = os.path.join(
-                appdata, "Anchorpoint", "anchorpoint.exe")
+            anchorpoint_exe = os.path.join(appdata, "Anchorpoint", "anchorpoint.exe")  # pyright: ignore[reportCallIssue]
             if not os.path.exists(anchorpoint_exe):
                 cmds.confirmDialog(
                     title="Error", message="Anchorpoint executable not found!")

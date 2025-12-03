@@ -114,7 +114,7 @@ def set_variable_availability(dialog, value):
         dialog.hide_row(str(key), True)
 
     if value in template_available_tokens:
-        for key in template_available_tokens[value]:
+        for key in template_available_tokens[value]:  # pyright: ignore[reportOptionalIterable]
             dialog.hide_row(str(key), False)
 
 
@@ -122,7 +122,7 @@ def get_user_input_for_template(template_name):
     if template_name in template_available_tokens.keys():
         tokens = template_available_tokens[template_name]
         template_user_inputs = {}
-        for token in tokens:
+        for token in tokens:  # pyright: ignore[reportOptionalIterable]
             if token in user_inputs.keys():
                 template_user_inputs[token] = user_inputs[token]
         return template_user_inputs
@@ -132,7 +132,7 @@ def get_user_input_for_template(template_name):
 
 # Search for tokens in a single file oder folder name / entry
 def get_tokens(entry, variables: dict):
-    entry_vars = re.findall("\[[^\[\]]*\]", entry)
+    entry_vars = re.findall(r"\[[^\[\]]*\]", entry)
     for var in entry_vars:
         variables[var.replace("[", "").replace("]", "")] = None
 
@@ -220,7 +220,7 @@ def resolve_tokens(variable_list):
             variables[variable] = ""
 
     if callbacks and "resolve_tokens" in dir(callbacks):
-        callbacks.resolve_tokens(variables, target_folder)
+        callbacks.resolve_tokens(variables, target_folder)  # pyright: ignore[reportAttributeAccessIssue]
 
     for variable in variables:
         if len(variables[variable]) == 0:
@@ -362,8 +362,7 @@ def create_project_from_template_async(
         project.update_metadata(user_inputs_for_template)
 
     if callbacks and "project_from_template_created" in dir(callbacks):
-        callbacks.project_from_template_created(
-            target, source, variables, project)
+        callbacks.project_from_template_created(target, source, variables, project)  # pyright: ignore[reportAttributeAccessIssue]
 
     ui.show_success("Project successfully created")
 
@@ -379,7 +378,7 @@ def create_documents_from_template_async(template_path, target_folder, ctx):
                 template_path, target_folder, variables, workspace_id=ctx.workspace_id
             )
             if callbacks and "file_from_template_created" in dir(callbacks):
-                callbacks.file_from_template_created(
+                callbacks.file_from_template_created(  # pyright: ignore[reportAttributeAccessIssue]
                     target_folder, template_path, variables
                 )
         else:
@@ -387,7 +386,7 @@ def create_documents_from_template_async(template_path, target_folder, ctx):
                 template_path, target_folder, variables, workspace_id=ctx.workspace_id
             )
             if callbacks and "folder_from_template_created" in dir(callbacks):
-                callbacks.folder_from_template_created(
+                callbacks.folder_from_template_created(  # pyright: ignore[reportAttributeAccessIssue]
                     target_folder, template_path, variables
                 )
 

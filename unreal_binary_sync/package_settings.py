@@ -52,10 +52,10 @@ def text_connection_async(dialog):
     dialog.set_processing("text_button_var", True, "Testing...")
     ctx = ap.get_context()
     try:
-        import boto3
+        import boto3  # pyright: ignore[reportMissingImports]
     except ImportError:
         ctx.install("boto3")
-        import boto3
+        import boto3  # pyright: ignore[reportMissingImports]
 
     access_key = dialog.get_value("access_key_var").strip()
     secret_key = dialog.get_value("secret_key_var").strip()

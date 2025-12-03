@@ -5,9 +5,10 @@ import re
 import json
 import os
 import subprocess
-from bpy.props import StringProperty
-from bpy.types import Operator, Panel, PropertyGroup
-import bpy
+from bpy.props import StringProperty  # pyright: ignore[reportMissingImports]
+from bpy.types import Operator, Panel, PropertyGroup  # pyright: ignore[reportMissingImports]
+import bpy  # pyright: ignore[reportMissingImports]
+
 bl_info = {
     "name": "Anchorpoint Integration",
     "author": "Anchorpoint",
@@ -78,7 +79,8 @@ def is_in_anchorpoint_project(file_path: str) -> bool:
 def get_executable_path():
     if platform.system() == "Windows":
         cli_path = os.path.join(
-            os.getenv('APPDATA'), "Anchorpoint Software", "Anchorpoint", "app", "ap.exe")
+            os.getenv("APPDATA"), "Anchorpoint Software", "Anchorpoint", "app", "ap.exe"
+        )  # pyright: ignore[reportCallIssue]
 
     elif platform.system() == "Darwin":  # macOS
         cli_path = "/Applications/Anchorpoint.app/Contents/Frameworks/ap"
@@ -152,16 +154,12 @@ class ANCHORPOINT_OT_show_message(Operator):
     bl_label = "File published"
 
     message: StringProperty(
-        name="Message",
-        description="Message to display",
-        default=""
-    )
+        name="Message", description="Message to display", default=""
+    )  # pyright: ignore[reportInvalidTypeForm]
 
     dialog_title: StringProperty(
-        name="Dialog Title",
-        description="Title for the dialog",
-        default="Anchorpoint"
-    )
+        name="Dialog Title", description="Title for the dialog", default="Anchorpoint"
+    )  # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context):
         return {'FINISHED'}
@@ -199,7 +197,8 @@ class ANCHORPOINT_OT_open_anchorpoint(Operator):
                 # Use the user's home directory for AppData
                 appdata = os.getenv('LOCALAPPDATA')
                 anchorpoint_exe = os.path.join(
-                    appdata, "Anchorpoint", "anchorpoint.exe")
+                    appdata, "Anchorpoint", "anchorpoint.exe"
+                )  # pyright: ignore[reportCallIssue]
                 if not os.path.exists(anchorpoint_exe):
                     self.report({'ERROR'}, "Anchorpoint executable not found!")
                     return {'CANCELLED'}
@@ -228,10 +227,8 @@ class ANCHORPOINT_OT_publish_version(Operator):
     bl_description = "Sets your current file as latest version"
 
     comment: StringProperty(
-        name="Comment",
-        description="Comment for this version",
-        default=""
-    )
+        name="Comment", description="Comment for this version", default=""
+    )  # pyright: ignore[reportInvalidTypeForm]
 
     def execute(self, context):
         if not self.comment.strip():

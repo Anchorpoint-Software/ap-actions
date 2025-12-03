@@ -441,10 +441,10 @@ def get_s3_credentials(ctx):
 def download_from_s3(zip_file_name, progress, ctx):
     ui = ap.UI()
     try:
-        import boto3
+        import boto3  # pyright: ignore[reportMissingImports]
     except ImportError:
         ctx.install("boto3")
-        import boto3
+        import boto3  # pyright: ignore[reportMissingImports]
 
     creds = get_s3_credentials(ctx)
     if not creds:
@@ -498,7 +498,7 @@ def download_from_s3(zip_file_name, progress, ctx):
         return local_zip_file_path
     except ValueError as e:
         if "Invalid endpoint" in str(e):
-            ui.show_toast("Your endpoint is not set correctly")
+            ui.show_error("Your endpoint is not set correctly")
         print(f"Failed to download {zip_file_name} from S3: {str(e)}")
         progress.finish()
         return None

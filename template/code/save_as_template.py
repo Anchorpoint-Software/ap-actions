@@ -61,12 +61,12 @@ def create_template_async(name, source, target, ctx):
             os.makedirs(target)
             aps.copy_folder(source, target, workspace_id=ctx.workspace_id)
             if callbacks and "folder_template_saved" in dir(callbacks):
-                callbacks.folder_template_saved(name, target)
+                callbacks.folder_template_saved(name, target)  # pyright: ignore[reportAttributeAccessIssue]
         else:
             os.makedirs(os.path.dirname(target))
             aps.copy_file(source, target, workspace_id=ctx.workspace_id)
             if callbacks and "file_template_saved" in dir(callbacks):
-                callbacks.file_template_saved(name, target)
+                callbacks.file_template_saved(name, target)  # pyright: ignore[reportAttributeAccessIssue]
 
         ui.create_tab(os.path.dirname(target))
 

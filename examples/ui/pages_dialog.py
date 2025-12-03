@@ -31,7 +31,9 @@ def show_dialog():
     dialog.add_text("Content: ").add_input(placeholder="Content", var="content")
 
     dialog.add_button(
-        "Back", callback=lambda dialog: dialog.prev_page(), primary=False
+        "Back",
+        callback=lambda dialog: dialog.prev_page(),  # pyright: ignore[reportAttributeAccessIssue]
+        primary=False,
     ).add_button("Create", callback=create_file)
 
     dialog.show()

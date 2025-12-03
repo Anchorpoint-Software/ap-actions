@@ -10,7 +10,7 @@ import json
 # without having to read it from shared settings every time
 @dataclass
 class IncCache:
-    history_data: list = None
+    history_data: list | None = None
 
 
 # Use the string version of the enum from c++
@@ -62,7 +62,7 @@ def get_history_data(ctx):
 
 # Map the history data to timeline entries
 def get_history(ctx):
-    cache: IncCache = ap.get_cache("inc_cache" + ctx.project_id, default=IncCache())
+    cache: IncCache = ap.get_cache("inc_cache" + ctx.project_id, default=IncCache())  # pyright: ignore[reportAssignmentType]
     cache.history_data = get_history_data(ctx)
 
     # Build the timeline entries from the JSON history that comes from get_history()
@@ -123,12 +123,15 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     if channel_id != "inc-vc-basic":
         return None
 
-    history_data = None
-    cache: IncCache = ap.get_cache("inc_cache" + ctx.project_id, default=None)
+    history_data: list | None = None
+    cache: IncCache | None = ap.get_cache("inc_cache" + ctx.project_id, default=None)  # pyright: ignore[reportAssignmentType]
     if not cache:
         history_data = get_history_data(ctx)
     else:
         history_data = cache.history_data
+
+    if not history_data:
+        return None
 
     # Find the history item matching the entry_id
     history_item = next((item for item in history_data if item["id"] == entry_id), None)

@@ -20,11 +20,11 @@ else:
     )
 
     # Let's print the name of the project
-    print("The project name is: " + project.name)
+    print("The project name is: " + project.name)  # pyright: ignore[reportAttributeAccessIssue]
 
     # A project can store additional metadata that is not shown as attributes.
     # This is useful for setting up technical information about a project such as a client name or the general aspect ratio
-    metadata = project.get_metadata()
+    metadata = project.get_metadata()  # pyright: ignore[reportAttributeAccessIssue]
 
     # Metadata of a project is just a python dict[str,str]
     metadata["Project_Name"] = "Anchorpoint"
@@ -32,7 +32,7 @@ else:
 
     # Update the projects metadata so that all actions can use them
     # Note that only the creator of a project can update the metadata. Reading metadata is generally possible.
-    project.update_metadata(metadata)
+    project.update_metadata(metadata)  # pyright: ignore[reportAttributeAccessIssue]
 
     # When working with an existing project, you can always look up the active project for any given path (file or folder)
     other_project = aps.get_project(project_folder)

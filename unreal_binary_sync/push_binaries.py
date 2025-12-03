@@ -64,7 +64,7 @@ def compile_binaries(engine_dir, project_dir, project_name, editor_target, progr
             creationflags=creationflags
         )
         # Stream each non-empty line to the console
-        for line in process.stdout:
+        for line in process.stdout:  # pyright: ignore[reportOptionalIterable]
             if line.strip():  # Only print non-empty lines
                 print(line)
         process.wait()
@@ -303,10 +303,10 @@ def upload_to_s3(zip_file_path, progress):
     ui = ap.UI()
     ctx = ap.get_context()
     try:
-        import boto3
+        import boto3  # pyright: ignore[reportMissingImports]
     except ImportError:
         ctx.install("boto3")
-        import boto3
+        import boto3  # pyright: ignore[reportMissingImports]
 
     creds = get_s3_credentials()
     if not creds:

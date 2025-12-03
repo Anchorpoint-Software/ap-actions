@@ -102,12 +102,12 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, 
 
     # progress bar
     output = ""
-    for line in ffmpeg.stderr:
+    for line in ffmpeg.stderr:  # pyright: ignore[reportOptionalIterable]
         output += line
         if not output.endswith("\n"):
             output += "\n"
 
-        if "Error opening input file" in line and audio_path in line:
+        if "Error opening input file" in line and audio_path in line:  # pyright: ignore[reportOperatorIssue]
             print(line)
             ui.show_error("Unsupported Audio File", description="The specified audio file could not be opened. Please check the file path and format.")
             ffmpeg.terminate()

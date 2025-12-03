@@ -67,7 +67,7 @@ class IncProjectType(ap.ProjectType):
         return self.dialog
 
     def get_project_name_candidate(self):
-        return os.path.basename(self.dialog.get_value("project_path"))
+        return os.path.basename(self.dialog.get_value("project_path"))  # pyright: ignore[reportCallIssue]
 
     def get_project_path(self):
         return self.dialog.get_value("project_path")
@@ -79,7 +79,7 @@ class IncProjectType(ap.ProjectType):
 
         # store project parent path for next time
         project_path = self.dialog.get_value("project_path")
-        parent_path = os.path.dirname(project_path.rstrip("\\/"))
+        parent_path = os.path.dirname(project_path.rstrip("\\/"))  # pyright: ignore[reportAttributeAccessIssue]
         # If parent_path is empty or same as project_path, it's a root drive
         if parent_path and parent_path != project_path:
             self.local_settings.set("prev_project_path", parent_path)
@@ -102,8 +102,7 @@ class IncProjectType(ap.ProjectType):
         variables = {"project_name": project_name}
         # variable structure example: {"client_name": "some_client","country_code":"de"}
         for token in self.tokens:
-            value = self.dialog.get_value(
-                f"{token}_token_var").strip()
+            value = self.dialog.get_value(f"{token}_token_var").strip()  # pyright: ignore[reportAttributeAccessIssue]
             if value != "":
                 variables[token] = value
 
