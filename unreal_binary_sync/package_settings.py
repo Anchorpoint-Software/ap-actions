@@ -1,6 +1,5 @@
 import anchorpoint as ap
 import apsync as aps
-import os
 
 ctx = ap.get_context()
 ui = ap.UI()
