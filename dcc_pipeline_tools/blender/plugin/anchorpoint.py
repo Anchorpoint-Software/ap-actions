@@ -1,12 +1,11 @@
 import glob
 import threading
 import platform
-import re
 import json
 import os
 import subprocess
 from bpy.props import StringProperty  # pyright: ignore[reportMissingImports]
-from bpy.types import Operator, Panel, PropertyGroup  # pyright: ignore[reportMissingImports]
+from bpy.types import Operator  # pyright: ignore[reportMissingImports]
 import bpy  # pyright: ignore[reportMissingImports]
 
 bl_info = {

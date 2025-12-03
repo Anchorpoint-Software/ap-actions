@@ -4,7 +4,6 @@ import maya.utils  # pyright: ignore[reportMissingImports]
 import subprocess
 import os
 import json
-import re
 import platform
 import threading
 import glob

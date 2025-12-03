@@ -5,8 +5,6 @@ import subprocess
 import zipfile
 import psutil
 import tempfile
-import shutil
-import tempfile
 
 
 def unzip_and_manage_files(zip_file_path, project_path, progress):
