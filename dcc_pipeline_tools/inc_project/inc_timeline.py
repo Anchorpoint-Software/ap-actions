@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 import anchorpoint as ap
 import apsync as aps
@@ -10,7 +11,7 @@ import json
 # without having to read it from shared settings every time
 @dataclass
 class IncCache:
-    history_data: list | None = None
+    history_data: Optional[list] = None
 
 
 # Use the string version of the enum from c++
@@ -123,8 +124,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     if channel_id != "inc-vc-basic":
         return None
 
-    history_data: list | None = None
-    cache: IncCache | None = ap.get_cache("inc_cache" + ctx.project_id, default=None)  # pyright: ignore[reportAssignmentType]
+    history_data: Optional[list] = None
+    cache: Optional[IncCache] = ap.get_cache("inc_cache" + ctx.project_id, default=None)  # pyright: ignore[reportAssignmentType]
     if not cache:
         history_data = get_history_data(ctx)
     else:
