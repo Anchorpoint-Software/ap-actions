@@ -30,6 +30,7 @@ Show a success message when the operation is complete.
 
 """
 
+from typing import cast
 import anchorpoint as ap
 import apsync as aps
 import csv
@@ -130,7 +131,7 @@ def convert_attribute_value(attribute_type, value):
 
 
 def show_dialog():
-    last_csv_file = settings.get("last_csv_file", "")
+    last_csv_file = cast(str, settings.get("last_csv_file", ""))
     dialog = ap.Dialog()
     dialog.title = f"{object_type.capitalize()}s from CSV"
     dialog.icon = ctx.icon

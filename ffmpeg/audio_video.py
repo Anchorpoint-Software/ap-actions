@@ -74,7 +74,7 @@ def run_ffmpeg(arguments, remove_audio):
     ui.show_busy(input_path)
     platform_args = {}
     if platform.system() == "Windows":
-        from subprocess import CREATE_NO_WINDOW
+        from subprocess import CREATE_NO_WINDOW  # pyright: ignore[reportAttributeAccessIssue]
 
         platform_args = {"creationflags": CREATE_NO_WINDOW}
 

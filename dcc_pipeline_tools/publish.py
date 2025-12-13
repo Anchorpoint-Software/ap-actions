@@ -1,3 +1,4 @@
+from typing import cast
 import apsync as aps
 import uuid
 from datetime import datetime
@@ -82,7 +83,7 @@ def publish_file(msg, path, data_object=None):
     )
     workspace_settings = aps.SharedSettings(
         ctx.workspace_id, "inc_workspace_settings")
-    history_array = project_settings.get("inc_versions", [])
+    history_array = cast(list, project_settings.get("inc_versions", []))
 
     # Check if we need to create a master file
     create_master = isinstance(data_object, dict) and data_object.get(

@@ -121,9 +121,9 @@ def run_executable(msg, path):
             ]
             startupinfo = None
             if platform.system() == "Windows":
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = subprocess.SW_HIDE
+                startupinfo = subprocess.STARTUPINFO()  # pyright: ignore[reportAttributeAccessIssue]
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # pyright: ignore[reportAttributeAccessIssue]
+                startupinfo.wShowWindow = subprocess.SW_HIDE  # pyright: ignore[reportAttributeAccessIssue]
             result = subprocess.run(
                 command, capture_output=True, text=True, check=True, startupinfo=startupinfo)
             if result.stderr:

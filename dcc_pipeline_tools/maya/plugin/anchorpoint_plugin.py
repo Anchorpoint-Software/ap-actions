@@ -142,9 +142,9 @@ def run_executable(msg, path):
 
             startupinfo = None
             if platform.system() == "Windows":
-                startupinfo = subprocess.STARTUPINFO()
-                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                startupinfo.wShowWindow = subprocess.SW_HIDE
+                startupinfo = subprocess.STARTUPINFO()  # pyright: ignore[reportAttributeAccessIssue]
+                startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # pyright: ignore[reportAttributeAccessIssue]
+                startupinfo.wShowWindow = subprocess.SW_HIDE  # pyright: ignore[reportAttributeAccessIssue]
 
             result = subprocess.run(
                 command,
@@ -207,7 +207,11 @@ def open_anchorpoint_with_file():
             # Detach + no console to keep things clean and fully separate from Maya
             creationflags = 0
             try:
-                creationflags = subprocess.CREATE_NEW_PROCESS_GROUP | subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW
+                creationflags = (
+                    subprocess.CREATE_NEW_PROCESS_GROUP  # pyright: ignore[reportAttributeAccessIssue]
+                    | subprocess.DETACHED_PROCESS  # pyright: ignore[reportAttributeAccessIssue]
+                    | subprocess.CREATE_NO_WINDOW  # pyright: ignore[reportAttributeAccessIssue]
+                )
             except AttributeError:
                 # On some Python builds these flags may not exist; it's fine to skip.
                 creationflags = 0

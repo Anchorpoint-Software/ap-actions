@@ -1,3 +1,4 @@
+from typing import cast
 import anchorpoint as ap
 import apsync as aps
 import os
@@ -571,7 +572,9 @@ def pull_binaries_async(sync_dependencies, launch_project_path, ctx):
             progress.finish()
             return
     else:
-        source_path = local_settings.get(ctx.project_path+"_binary_source", "")
+        source_path = cast(
+            str, local_settings.get(ctx.project_path + "_binary_source", "")
+        )
         zip_file_path = os.path.join(source_path, zip_file_name)
 
     if not os.path.exists(zip_file_path):

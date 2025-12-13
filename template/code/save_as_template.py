@@ -124,7 +124,7 @@ dialog.add_info(
     "Your template will appear in a <b>new tab.</b> <br> Templates are accessible from the <b>New</b> context menu. <br> <a href='https://www.anchorpoint.app/blog/automate-folder-structures-and-naming-conventions-without-writing-code'>Learn more about templates</a>"
 )
 
-if project:
+if project and project.path:
     dialog.add_separator()
     project_dir = os.path.split(project.path)[1]
     dialog.add_checkbox(

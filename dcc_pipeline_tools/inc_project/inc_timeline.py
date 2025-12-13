@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
+from typing import Optional, cast
 
 import anchorpoint as ap
 import apsync as aps
@@ -50,7 +50,7 @@ def get_history_data(ctx):
     settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "inc_settings")
 
     # Get the array of strings and parse them as JSON objects
-    history_array = settings.get("inc_versions", [])
+    history_array = cast(list, settings.get("inc_versions", []))
     history = []
     for entry in history_array:
         try:

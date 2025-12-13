@@ -12,7 +12,7 @@ drive_var = "drive"
 
 def get_unused_drives():
     import string
-    from ctypes import windll
+    from ctypes import windll  # pyright: ignore[reportAttributeAccessIssue]
 
     drives = []
     bitmask = windll.kernel32.GetLogicalDrives()

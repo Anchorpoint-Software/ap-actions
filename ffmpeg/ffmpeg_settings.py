@@ -1,3 +1,4 @@
+from typing import cast
 import anchorpoint as ap
 import apsync as aps
 import os
@@ -53,7 +54,7 @@ def open_dialog():
     location = settings.get("location")
     resolution = settings.get("resolution")
     path = settings.get("path")
-    audio_track = settings.get("audio_track")
+    audio_track = cast(str, settings.get("audio_track"))
     add_audio = settings.get("add_audio", False)
     location_bool = True
 

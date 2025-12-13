@@ -1,3 +1,4 @@
+from typing import cast
 import anchorpoint as ap
 import apsync as aps
 import zipfile
@@ -106,8 +107,8 @@ def main():
     selected_folders = ctx.selected_folders
 
     settings = aps.Settings()
-    ignore_extensions = settings.get("ignore_extensions", ["blend1"])
-    ignore_folders = settings.get("ignore_folders", [])
+    ignore_extensions = cast(list[str], settings.get("ignore_extensions", ["blend1"]))
+    ignore_folders = cast(list[str], settings.get("ignore_folders", []))
 
     suggested_archive_name = get_default_archive_name(selected_files, selected_folders)
     exclude_incremental_saves = settings.get(
