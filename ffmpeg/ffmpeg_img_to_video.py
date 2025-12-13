@@ -83,15 +83,15 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, 
     args = {
         "args": arguments,
         "stdout": subprocess.PIPE,
-        "stderr": subprocess.PIPE,
-        "stdin": subprocess.PIPE,
+        "stderr": subprocess.STDOUT,
+        "stdin": subprocess.DEVNULL,
         "bufsize": 1,
         "universal_newlines": True,
     }
 
     if platform.system() == "Windows":
-        startupinfo = subprocess.STARTUPINFO()
-        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startupinfo = subprocess.STARTUPINFO()  # pyright: ignore[reportAttributeAccessIssue]
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW  # pyright: ignore[reportAttributeAccessIssue]
         args["startupinfo"] = startupinfo
 
     ffmpeg = subprocess.Popen(**args, encoding="utf-8")
@@ -102,38 +102,42 @@ def ffmpeg_seq_to_video(ffmpeg_path, target_folder, fps, selected_files, scale, 
 
     # progress bar
     output = ""
-    for line in ffmpeg.stderr:  # pyright: ignore[reportOptionalIterable]
-        output += line
-        if not output.endswith("\n"):
-            output += "\n"
+    try:
+        for line in ffmpeg.stdout:  # pyright: ignore[reportOptionalIterable]
+            output += line
+            if not output.endswith("\n"):
+                output += "\n"
 
-        if "Error opening input file" in line and audio_path in line:  # pyright: ignore[reportOperatorIssue]
-            print(line)
-            ui.show_error("Unsupported Audio File", description="The specified audio file could not be opened. Please check the file path and format.")
-            ffmpeg.terminate()
-            ffmpeg.wait()
-            os.remove(concat_file)
-            return
+            if "Error opening input file" in line and audio_path in line:  # pyright: ignore[reportOperatorIssue]
+                print(line)
+                ui.show_error(
+                    "Unsupported Audio File",
+                    description="The specified audio file could not be opened. Please check the file path and format.",
+                )
+                ffmpeg.terminate()
+                ffmpeg.wait()
+                os.remove(concat_file)
+                return
 
-        if "drop_frames=" in line:
-            drop_frame = re.search(r"(\d+)", line).group()
+            if "drop_frames=" in line:
+                drop_frame = re.search(r"(\d+)", line).group()
 
-        if "frame=" in line and not progress_infinite:
-            current_frame = re.search(r"(\d+)", line).group()
-            percentage = (int(current_frame) + int(drop_frame)) / (
-                len(selected_files) + 1
-            )
-            progress.report_progress(percentage)
-            progress.set_text(f"{int(percentage*100)}% encoded")
+            if "frame=" in line and not progress_infinite:
+                current_frame = re.search(r"(\d+)", line).group()
+                percentage = (int(current_frame) + int(drop_frame)) / (
+                    len(selected_files) + 1
+                )
+                progress.report_progress(percentage)
+                progress.set_text(f"{int(percentage * 100)}% encoded")
 
-        if progress.canceled:
-            ui.show_info("Canceled")
-            ffmpeg.terminate()
-            ffmpeg.wait()
-            os.remove(concat_file)
-            return
-
-    ffmpeg.wait()
+            if progress.canceled:
+                ui.show_info("Canceled")
+                ffmpeg.terminate()
+                ffmpeg.wait()
+                os.remove(concat_file)
+                return
+    finally:
+        ffmpeg.communicate()
 
     if ffmpeg.returncode != 0:
         if "Error opening input files: Invalid data found when processing input" in output:
