@@ -6,6 +6,7 @@ import subprocess
 import zipfile
 import psutil
 import tempfile
+import platform
 
 
 def unzip_and_manage_files(zip_file_path, project_path, progress):
@@ -334,19 +335,39 @@ def find_uproject_files(project_path):
     return uproject_files
 
 
+def get_git_executable():
+    application_dir = ap.get_application_dir()
+    git_path = None
+    if platform.system() == "Windows":
+        git_path = os.path.join(application_dir, "plugins", "git")
+        git_exe = os.path.join(git_path, "cmd", "git.exe")
+    elif platform.system() == "Darwin":
+        git_path = os.path.join(application_dir, "..", "Resources", "git")
+        git_exe = os.path.join(git_path, "bin", "git")
+    else:
+        raise RuntimeError("Unsupported Platform")
+
+    if (git_path):
+        return os.path.normpath(git_exe)
+    else:
+        return "git"  # Fallback to system git that is installed on the system
+
+
 def get_commit_history(project_path):
     ui = ap.UI()
     commit_history = []
     max_depth = 200
     try:
         startupinfo = None
-        if os.name == 'nt':  # Check if the OS is Windows
+        if os.name == 'nt':
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-        # Get current commit ID
+        # Use bundled git instead of system git
+        git_exe = get_git_executable()
+
         current_commit = subprocess.check_output(
-            ['git', 'rev-parse', 'HEAD'],
+            [git_exe, 'rev-parse', 'HEAD'],
             cwd=project_path,
             text=True,
             startupinfo=startupinfo
@@ -357,7 +378,7 @@ def get_commit_history(project_path):
 
         # Get commit history with tags
         commit_history = subprocess.check_output(
-            ['git', 'log', '--pretty=format:%H %d', f'-{max_depth}'],
+            [git_exe, 'log', '--pretty=format:%H %d', f'-{max_depth}'],
             cwd=project_path,
             text=True,
             startupinfo=startupinfo

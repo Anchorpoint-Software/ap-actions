@@ -7,6 +7,7 @@ import anchorpoint as ap
 import apsync as aps
 from pathlib import Path
 import re
+import platform
 
 
 def compile_binaries(engine_dir, project_dir, project_name, editor_target, progress):
@@ -86,14 +87,35 @@ def compile_binaries(engine_dir, project_dir, project_name, editor_target, progr
         sys.exit(1)
 
 
+def get_git_executable():
+    application_dir = ap.get_application_dir()
+    git_path = None
+    if platform.system() == "Windows":
+        git_path = os.path.join(application_dir, "plugins", "git")
+        git_exe = os.path.join(git_path, "cmd", "git.exe")
+    elif platform.system() == "Darwin":
+        git_path = os.path.join(application_dir, "..", "Resources", "git")
+        git_exe = os.path.join(git_path, "bin", "git")
+    else:
+        raise RuntimeError("Unsupported Platform")
+
+    if (git_path):
+        return os.path.normpath(git_exe)
+    else:
+        return "git"  # Fallback to system git that is installed on the system
+
+
 def add_incremental_git_tag(project_dir, tag_pattern):
     tag_prefix = tag_pattern+"-"
     highest_number = 0
 
+    # Use bundled git instead of system git
+    git_exe = get_git_executable()
+
     try:
         # Get all tags and their commit hashes
         result = subprocess.run(
-            ['git', 'tag', '--list', f'{tag_prefix}*'],
+            [git_exe, 'tag', '--list', f'{tag_prefix}*'],
             cwd=project_dir,
             capture_output=True,
             text=True,
@@ -111,7 +133,7 @@ def add_incremental_git_tag(project_dir, tag_pattern):
 
         # Get the latest commit hash
         result_commit = subprocess.run(
-            ['git', 'rev-parse', 'HEAD'],
+            [git_exe, 'rev-parse', 'HEAD'],
             cwd=project_dir,
             capture_output=True,
             text=True,
@@ -121,7 +143,7 @@ def add_incremental_git_tag(project_dir, tag_pattern):
 
         # Get tags pointing to the latest commit
         result_tags_on_commit = subprocess.run(
-            ['git', 'tag', '--points-at', latest_commit],
+            [git_exe, 'tag', '--points-at', latest_commit],
             cwd=project_dir,
             capture_output=True,
             text=True,
@@ -143,7 +165,7 @@ def add_incremental_git_tag(project_dir, tag_pattern):
 
         # Tag the latest commit
         subprocess.run(
-            ['git', 'tag', new_tag],
+            [git_exe, 'tag', new_tag],
             cwd=project_dir,
             check=True
         )
@@ -151,7 +173,7 @@ def add_incremental_git_tag(project_dir, tag_pattern):
 
         # Push the tag to the remote repository
         subprocess.run(
-            ['git', 'push', 'origin', new_tag],
+            [git_exe, 'push', 'origin', new_tag],
             cwd=project_dir,
             check=True
         )
@@ -164,10 +186,13 @@ def add_incremental_git_tag(project_dir, tag_pattern):
 
 
 def get_git_commit_id(project_dir):
+    # Use bundled git instead of system git
+    git_exe = get_git_executable()
+
     try:
         # Run git command to get the full commit hash
         result = subprocess.run(
-            ['git', 'rev-parse', 'HEAD'],
+            [git_exe, 'rev-parse', 'HEAD'],
             cwd=project_dir,
             capture_output=True,
             text=True,
