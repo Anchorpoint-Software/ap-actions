@@ -101,7 +101,12 @@ def publish_file(msg, path, data_object=None):
     # Create a random id
     version_id = uuid.uuid4().hex[:8]
 
-    files = [{"path": path, "status": file_status}]
+    # Get a relative doc path
+    relative_path = os.path.relpath(
+        path, ctx.project_path
+    )
+
+    files = [{"path": relative_path, "status": file_status}]
 
     # Set the application type based on the file extension
     type = ""

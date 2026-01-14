@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
+import os
 from typing import Optional, cast
 
 import anchorpoint as ap
@@ -40,14 +41,15 @@ def get_history_data(ctx):
     #        "id": "e5f6g7h8",
     #        "type": "version",
     #        "files": [
-    #            {"path": "C:/Users/USERNAME/Desktop/Projects/AB123/3_Scenes/1_Cinema4D/AB123_v001.c4d",
+    #            {"path": "3_Scenes/1_Cinema4D/AB123_v001.c4d",
     #                "status": "Modified"}
     #        ]
     #    }
     # ]
 
     # Retrieve the history from shared settings
-    settings = aps.SharedSettings(ctx.project_id, ctx.workspace_id, "inc_settings")
+    settings = aps.SharedSettings(
+        ctx.project_id, ctx.workspace_id, "inc_settings")
 
     # Get the array of strings and parse them as JSON objects
     history_array = cast(list, settings.get("inc_versions", []))
@@ -63,7 +65,9 @@ def get_history_data(ctx):
 
 # Map the history data to timeline entries
 def get_history(ctx):
-    cache: IncCache = ap.get_cache("inc_cache" + ctx.project_id, default=IncCache())  # pyright: ignore[reportAssignmentType]
+    # pyright: ignore[reportAssignmentType]
+    cache: IncCache = ap.get_cache(
+        "inc_cache" + ctx.project_id, default=IncCache())
     cache.history_data = get_history_data(ctx)
 
     # Build the timeline entries from the JSON history that comes from get_history()
@@ -71,7 +75,8 @@ def get_history(ctx):
     for history_item in cache.history_data:
         entry = ap.TimelineChannelEntry()
         entry.id = history_item["id"]
-        entry.time = int(datetime.fromisoformat(history_item["time"]).timestamp())
+        entry.time = int(datetime.fromisoformat(
+            history_item["time"]).timestamp())
         entry.message = history_item["message"]
         entry.user_email = history_item["user_email"]
         entry.has_details = True
@@ -92,13 +97,16 @@ def get_history(ctx):
             )
             entry.tooltip = "Published from Blender"
         else:
-            entry.icon = aps.Icon(":/icons/user-interface/information.svg", "#70717A")
+            entry.icon = aps.Icon(
+                ":/icons/user-interface/information.svg", "#70717A")
             entry.tooltip = "Created a new file"
 
         history.append(entry)
     return history
 
 # Initial load of the entire timeline
+
+
 def on_load_timeline_channel(channel_id: str, page_size: int, ctx):
     if channel_id != "inc-vc-basic":
         return None
@@ -125,7 +133,10 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         return None
 
     history_data: Optional[list] = None
-    cache: Optional[IncCache] = ap.get_cache("inc_cache" + ctx.project_id, default=None)  # pyright: ignore[reportAssignmentType]
+
+    # pyright: ignore[reportAssignmentType]
+    cache: Optional[IncCache] = ap.get_cache(
+        "inc_cache" + ctx.project_id, default=None)
     if not cache:
         history_data = get_history_data(ctx)
     else:
@@ -135,7 +146,8 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
         return None
 
     # Find the history item matching the entry_id
-    history_item = next((item for item in history_data if item["id"] == entry_id), None)
+    history_item = next(
+        (item for item in history_data if item["id"] == entry_id), None)
     if not history_item:
         return None
 
@@ -143,7 +155,9 @@ def on_load_timeline_channel_entry_details(channel_id: str, entry_id: str, ctx):
     changes = []
     for file_obj in history_item["files"]:
         change = ap.VCPendingChange()
-        change.path = file_obj["path"].replace("\\\\", "/")
+        # make an absolute path
+        change.path = os.path.join(
+            ctx.project_path, file_obj["path"].replace("\\\\", "/"))
         change.status = get_vc_file_status_from_string(file_obj["status"])
         changes.append(change)
 
