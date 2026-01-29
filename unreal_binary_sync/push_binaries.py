@@ -230,6 +230,34 @@ def find_uproject_file(project_path):
     return None
 
 
+def find_all_binaries_dirs(project_dir):
+    """
+    Recursively find all folders named "Binaries" within the project directory.
+    Skips folders named "Content", "Intermediate", "Saved", "DerivedDataCache", "Source", and "Config".
+
+    Args:
+        project_dir (Path): Path to the project directory
+
+    Returns:
+        list: List of Path objects pointing to Binaries directories
+    """
+    all_binary_dirs = []
+    excluded_folders = {"Content", "Intermediate",
+                        "Saved", "DerivedDataCache", "Source", "Config"}
+
+    # Recursively search for all "Binaries" folders
+    for binaries_dir in project_dir.rglob("Binaries"):
+        if binaries_dir.is_dir():
+            # Check if any parent directory is in the excluded list
+            if not any(part in excluded_folders for part in binaries_dir.parts):
+                all_binary_dirs.append(binaries_dir)
+                print(f"Found binaries: {binaries_dir}")
+            else:
+                print(f"Skipping binaries in excluded folder: {binaries_dir}")
+
+    return all_binary_dirs
+
+
 def create_binaries_zip(project_dir, output_dir, progress, max_progress):
     """
     Create a ZIP file of the project's Binaries folder and save it to the desktop.
@@ -238,27 +266,10 @@ def create_binaries_zip(project_dir, output_dir, progress, max_progress):
         project_dir (Path): Path to the project directory
         project_name (str): Name of the project
     """
-    binaries_dir = project_dir / "Binaries"
-    plugins_dir = project_dir / "Plugins"
 
-    # Check if main Binaries folder exists
-    if not binaries_dir.exists():
-        print(f"Warning: Main Binaries folder not found at {binaries_dir}")
-
-    # Find plugin binaries
-    plugin_binaries = []
-    if plugins_dir.exists():
-        # Recursively search for all "Binaries" folders inside Plugins
-        for binaries_dir in plugins_dir.rglob("Binaries"):
-            if binaries_dir.is_dir():
-                plugin_binaries.append(binaries_dir)
-                print(f"Found plugin binaries: {binaries_dir}")
-
-    # Check if we have any binaries to zip
-    all_binary_dirs = []
-    if binaries_dir.exists():
-        all_binary_dirs.append(binaries_dir)
-    all_binary_dirs.extend(plugin_binaries)
+    progress.set_text(f"Searching for Binaries folders...")
+    # Find all Binaries directories
+    all_binary_dirs = find_all_binaries_dirs(project_dir)
 
     if not all_binary_dirs:
         print("Warning: No binaries found to zip")
@@ -276,10 +287,7 @@ def create_binaries_zip(project_dir, output_dir, progress, max_progress):
         print(f"Creating new ZIP file: {zip_path}")
 
     print("------ Creating ZIP archive of Binaries folders ------")
-    print(
-        f"Main binaries: {binaries_dir if binaries_dir.exists() else 'Not found'}")
-    if plugin_binaries:
-        print(f"Plugin binaries: {len(plugin_binaries)} plugin(s)")
+    print(f"Found {len(all_binary_dirs)} Binaries folder(s)")
     print(f"Destination: {zip_path}")
 
     # Files to exclude from the ZIP
