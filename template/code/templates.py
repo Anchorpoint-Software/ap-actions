@@ -114,7 +114,8 @@ def set_variable_availability(dialog, value):
         dialog.hide_row(str(key), True)
 
     if value in template_available_tokens:
-        for key in template_available_tokens[value]:  # pyright: ignore[reportOptionalIterable]
+        # pyright: ignore[reportOptionalIterable]
+        for key in template_available_tokens[value]:
             dialog.hide_row(str(key), False)
 
 
@@ -220,7 +221,8 @@ def resolve_tokens(variable_list):
             variables[variable] = ""
 
     if callbacks and "resolve_tokens" in dir(callbacks):
-        callbacks.resolve_tokens(variables, target_folder)  # pyright: ignore[reportAttributeAccessIssue]
+        # pyright: ignore[reportAttributeAccessIssue]
+        callbacks.resolve_tokens(variables, target_folder)
 
     for variable in variables:
         if len(variables[variable]) == 0:
@@ -313,8 +315,9 @@ def strip_spaces(string):
 def create_project_from_template_async(
     template_path, target_folder, ctx, template_name
 ):
-    # Start the progress indicator in the top right corner
-    ap.Progress("Creating Project", "Copying Files and Attributes")
+    # Start the infinite progress indicator in the top right corner
+    progress = ap.Progress("Creating from Template",
+                           "Copying Files and Attributes", infinite=True)
     # Get the template root folder
     foldernames = get_all_foldernames(template_path)
     if len(foldernames) > 1:
@@ -362,14 +365,18 @@ def create_project_from_template_async(
         project.update_metadata(user_inputs_for_template)
 
     if callbacks and "project_from_template_created" in dir(callbacks):
-        callbacks.project_from_template_created(target, source, variables, project)  # pyright: ignore[reportAttributeAccessIssue]
+        # pyright: ignore[reportAttributeAccessIssue]
+        callbacks.project_from_template_created(
+            target, source, variables, project)
 
+    progress.finish()
     ui.show_success("Project successfully created")
 
 
 def create_documents_from_template_async(template_path, target_folder, ctx):
-    # Start the progress indicator in the top right corner
-    ap.Progress("Creating From Template", "Copying Files and Attributes")
+    # Start the infinite progress indicator in the top right corner
+    progress = ap.Progress("Creating from Template",
+                           "Copying Files and Attributes", infinite=True)
 
     # Copy the whole folder structure and resolve all tokens using the variables dict
     try:
@@ -390,8 +397,10 @@ def create_documents_from_template_async(template_path, target_folder, ctx):
                     target_folder, template_path, variables
                 )
 
+        progress.finish()
         ui.show_success("Document(s) successfully created")
     except Exception as e:
+        progress.finish()
         if "exists" in str(e):
             ui.show_info("Document(s) already exist",
                          "Please choose a different name")
