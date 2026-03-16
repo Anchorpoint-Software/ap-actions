@@ -1,0 +1,6 @@
+version: "1.0"
+action:
+  id: "ap::symlink::settings"
+  name: Symlinks
+  type: python
+  script: symlink_settings.py

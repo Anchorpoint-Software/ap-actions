@@ -1,0 +1,11 @@
+version: "1.0"
+action:
+  id: "ap::folder_link"
+  type: python
+  name: "Folder Link"
+  description: "Creates a symbolic link to any folder"
+  script: folder_link.py
+
+  register:
+    new_folder:
+      enable: true
