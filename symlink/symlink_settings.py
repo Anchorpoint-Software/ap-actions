@@ -98,6 +98,12 @@ class SymlinkSettings(ap.AnchorpointSettings):
                     d, s, l, idx),
                 var=f"create_{i}",
                 primary=True,
+            ).add_button(
+                "Remove",
+                callback=lambda d, s=source, l=link, rv=i: self._remove_entry(
+                    d, s, l, rv),
+                var=f"discard_{i}",
+                primary=False,
             )
 
             # Row for when symlink EXISTS: text + Remove button
@@ -118,6 +124,7 @@ class SymlinkSettings(ap.AnchorpointSettings):
                 self.dialog.hide_row(f"missing_{i}", True)
                 self.dialog.hide_row(f"missing_info_{i}", True)
                 self.dialog.hide_row(f"create_{i}", True)
+                self.dialog.hide_row(f"discard_{i}", True)
             else:
                 self.dialog.hide_row(f"exists_{i}", True)
                 self.dialog.hide_row(f"exists_info_{i}", True)
@@ -202,6 +209,7 @@ class SymlinkSettings(ap.AnchorpointSettings):
         dialog.hide_row(f"missing_{idx}", True)
         dialog.hide_row(f"missing_info_{idx}", True)
         dialog.hide_row(f"create_{idx}", True)
+        dialog.hide_row(f"discard_{idx}", True)
         dialog.hide_row(f"exists_{idx}", False)
         dialog.hide_row(f"exists_info_{idx}", False)
         dialog.hide_row(f"remove_{idx}", False)
@@ -229,10 +237,25 @@ class SymlinkSettings(ap.AnchorpointSettings):
         dialog.hide_row(f"missing_{idx}", True)
         dialog.hide_row(f"missing_info_{idx}", True)
         dialog.hide_row(f"create_{idx}", True)
+        dialog.hide_row(f"discard_{idx}", True)
         dialog.hide_row(f"exists_{idx}", True)
         dialog.hide_row(f"exists_info_{idx}", True)
         dialog.hide_row(f"remove_{idx}", True)
         ap.UI().show_success("Symlink Removed", f"'{link}' has been removed")
+
+    def _remove_entry(self, dialog, source, link, idx):
+        entries = self._get_entries()
+        entries = [e for e in entries if not (
+            e.get("source") == source and e.get("link") == link)]
+        self.settings.set("entries", json.dumps(entries))
+        self.settings.store()
+
+        dialog.hide_row(f"missing_{idx}", True)
+        dialog.hide_row(f"missing_info_{idx}", True)
+        dialog.hide_row(f"create_{idx}", True)
+        dialog.hide_row(f"discard_{idx}", True)
+        ap.UI().show_success("Entry Removed",
+                             f"'{link}' has been removed from settings")
 
     def get_dialog(self):
         return self.dialog
