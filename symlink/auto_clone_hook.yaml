@@ -1,0 +1,6 @@
+version: 1.0
+action:
+  name: Symlink Clone Hook
+  id: ap::symlink::clone_hook
+  type: python
+  script: auto_clone_hook.py
