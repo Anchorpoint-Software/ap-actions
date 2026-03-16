@@ -1,10 +1,12 @@
 version: "1.0"
 action:
-  id: "ap::folder_link"
+  id: "ap::symlink"
   type: python
-  name: "Folder Link"
+  name: "Symlink"
   description: "Creates a symbolic link to any folder"
-  script: folder_link.py
+  script: create_symlink.py
+  icon:
+    path: "symlink.svg"
 
   register:
     new_folder:

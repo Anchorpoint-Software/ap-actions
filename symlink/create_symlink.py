@@ -1,3 +1,5 @@
+from tkinter import filedialog
+import tkinter as tk
 import anchorpoint as ap
 import apsync as aps
 import os
@@ -78,20 +80,18 @@ def _store_symlink_entry(source_abs, link_abs):
     print(f"Stored symlink entry: {source_rel} -> {link_rel}")
 
 
-def on_source_changed(dialog, value):
-    """Enable the Create Link button only when a valid folder is selected."""
-    is_valid = bool(value and value.strip()) and os.path.isdir(value.strip())
-    dialog.set_enabled("create_btn", is_valid)
+root = tk.Tk()
+root.withdraw()
+root.attributes("-topmost", True)
 
+source_folder = filedialog.askdirectory(
+    title="Select Folder to Link",
+    initialdir=ctx.path,
+)
 
-def create_link_callback(dialog):
-    source_folder = dialog.get_value("source_folder")
+root.destroy()
 
-    if not source_folder or not os.path.isdir(source_folder):
-        ui.show_error("Invalid folder",
-                      "Please select a valid folder to link.")
-        return
-
+if source_folder and os.path.isdir(source_folder):
     link_name = os.path.basename(source_folder.rstrip("/\\"))
     link_path = os.path.join(ctx.path, link_name)
 
@@ -100,43 +100,21 @@ def create_link_callback(dialog):
             "Already exists",
             f"A file or folder named '{link_name}' already exists in the current location.",
         )
-        return
-
-    try:
-        os.symlink(source_folder, link_path, target_is_directory=True)
-        print(f"Created symlink: {link_path} -> {source_folder}")
-    except OSError as e:
-        if hasattr(e, "winerror") and e.winerror == 1314:
-            ui.show_error(
-                "Permission denied",
-                "Creating symbolic links requires Developer Mode or administrator privileges on Windows. "
-                "Enable Developer Mode in Windows Settings > Privacy & Security > For developers.",
-            )
-        else:
-            ui.show_error("Failed to create symlink", str(e))
-        return
-
-    add_to_local_gitignore(link_path)
-    _store_symlink_entry(source_folder, link_path)
-
-    dialog.close()
-    ui.reload()
-    ui.show_success("Folder Link Created",
-                    f"'{link_name}' has been linked successfully")
-
-
-dialog = ap.Dialog()
-dialog.title = "Folder Link"
-
-dialog.add_text("Folder to link:\t").add_input(
-    placeholder="Browse for a folder...",
-    browse=ap.BrowseType.Folder,
-    browse_path=ctx.path,
-    var="source_folder",
-    callback=on_source_changed,
-)
-
-dialog.add_button("Create Link", callback=create_link_callback,
-                  var="create_btn", enabled=False)
-
-dialog.show()
+    else:
+        try:
+            os.symlink(source_folder, link_path, target_is_directory=True)
+            print(f"Created symlink: {link_path} -> {source_folder}")
+            add_to_local_gitignore(link_path)
+            _store_symlink_entry(source_folder, link_path)
+            ui.reload()
+            ui.show_success("Folder Link Created",
+                            f"'{link_name}' has been linked successfully")
+        except OSError as e:
+            if hasattr(e, "winerror") and e.winerror == 1314:
+                ui.show_error(
+                    "Permission denied",
+                    "Creating symbolic links requires Developer Mode or administrator privileges on Windows. "
+                    "Enable Developer Mode in Windows Settings > Privacy & Security > For developers.",
+                )
+            else:
+                ui.show_error("Failed to create symlink", str(e))

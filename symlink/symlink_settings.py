@@ -63,14 +63,12 @@ class SymlinkSettings(ap.AnchorpointSettings):
 
         if not entries:
             self.dialog.add_info(
-                "No symlinks configured yet. Use the <b>Folder Link</b> action<br>"
-                "in the New Folder menu to create symlinks."
+                "No symlinks have been added yet. Use the <b>Symlink</b> Action in the New Folder<br>menu to create symlinks."
             )
             return
 
         self.dialog.add_info(
-            "Manage folder symlinks for this project. Symlinks that exist<br>"
-            "on disk are marked with ✔."
+            "Symlinks are pointing to folders from another location. This is useful when you want<br>to include files in your project without copying them over."
         )
 
         for i, entry in enumerate(entries):
@@ -79,11 +77,23 @@ class SymlinkSettings(ap.AnchorpointSettings):
             link_abs = os.path.join(self.project_path, link)
             exists = os.path.islink(link_abs)
 
+            # Format source: show "(external) foldername" for paths outside the project
+            if source.startswith(".."):
+                source_display = f"(external) {os.path.basename(source.rstrip('/'))}"
+            else:
+                source_display = source
+
+            symlink_icon = os.path.join(os.path.dirname(
+                __file__), "symlink.svg").replace("\\", "/")
+
             # Row for when symlink does NOT exist: text + Create button
             self.dialog.add_text(
-                f"{source} → {link}", var=f"missing_{i}", width=400
-            ).add_button(
-                "Create",
+                f"{link}", var=f"missing_{i}", width=400
+            )
+            self.dialog.add_info(
+                "Source not defined", var=f"missing_info_{i}")
+            self.dialog.add_button(
+                "Create Symlink",
                 callback=lambda d, s=source, l=link, idx=i: self._create_symlink(
                     d, s, l, idx),
                 var=f"create_{i}",
@@ -92,8 +102,11 @@ class SymlinkSettings(ap.AnchorpointSettings):
 
             # Row for when symlink EXISTS: text + Remove button
             self.dialog.add_text(
-                f"✔ {source} → {link}", var=f"exists_{i}", width=400
-            ).add_button(
+                f"{link}", var=f"exists_{i}", width=400
+            )
+            self.dialog.add_info(
+                f"<b>Source:</b> {source_display}", var=f"exists_info_{i}")
+            self.dialog.add_button(
                 "Remove",
                 callback=lambda d, s=source, l=link, rv=i: self._remove_symlink(
                     d, s, l, rv),
@@ -103,8 +116,15 @@ class SymlinkSettings(ap.AnchorpointSettings):
 
             if exists:
                 self.dialog.hide_row(f"missing_{i}", True)
+                self.dialog.hide_row(f"missing_info_{i}", True)
+                self.dialog.hide_row(f"create_{i}", True)
             else:
                 self.dialog.hide_row(f"exists_{i}", True)
+                self.dialog.hide_row(f"exists_info_{i}", True)
+                self.dialog.hide_row(f"remove_{i}", True)
+
+            if i < len(entries) - 1:
+                self.dialog.add_text(" ", var=f"sep_{i}")
 
     def _create_symlink(self, dialog, source, link, idx):
         source_abs = os.path.join(self.project_path, source)
@@ -114,7 +134,8 @@ class SymlinkSettings(ap.AnchorpointSettings):
             self._show_browse_dialog(source, link, idx, dialog)
             return
 
-        self._do_create_symlink(dialog, source_abs, link_abs, source, link, idx)
+        self._do_create_symlink(
+            dialog, source_abs, link_abs, source, link, idx)
 
     def _show_browse_dialog(self, source, link, idx, settings_dialog):
         import tkinter as tk
@@ -137,7 +158,8 @@ class SymlinkSettings(ap.AnchorpointSettings):
         link_abs = os.path.join(self.project_path, link)
 
         try:
-            new_source_rel = os.path.relpath(new_source_abs, self.project_path).replace(os.sep, "/")
+            new_source_rel = os.path.relpath(
+                new_source_abs, self.project_path).replace(os.sep, "/")
         except ValueError:
             new_source_rel = None
 
@@ -151,7 +173,8 @@ class SymlinkSettings(ap.AnchorpointSettings):
             self.settings.set("entries", json.dumps(entries))
             self.settings.store()
 
-        self._do_create_symlink(settings_dialog, new_source_abs, link_abs, new_source_rel or source, link, idx)
+        self._do_create_symlink(
+            settings_dialog, new_source_abs, link_abs, new_source_rel or source, link, idx)
 
     def _do_create_symlink(self, dialog, source_abs, link_abs, source, link, idx):
         if os.path.exists(link_abs) or os.path.islink(link_abs):
@@ -177,7 +200,11 @@ class SymlinkSettings(ap.AnchorpointSettings):
 
         add_to_local_gitignore(link_abs)
         dialog.hide_row(f"missing_{idx}", True)
+        dialog.hide_row(f"missing_info_{idx}", True)
+        dialog.hide_row(f"create_{idx}", True)
         dialog.hide_row(f"exists_{idx}", False)
+        dialog.hide_row(f"exists_info_{idx}", False)
+        dialog.hide_row(f"remove_{idx}", False)
         ap.UI().show_success("Symlink Created",
                              f"'{link}' has been linked successfully")
 
@@ -200,7 +227,11 @@ class SymlinkSettings(ap.AnchorpointSettings):
         self.settings.store()
 
         dialog.hide_row(f"missing_{idx}", True)
+        dialog.hide_row(f"missing_info_{idx}", True)
+        dialog.hide_row(f"create_{idx}", True)
         dialog.hide_row(f"exists_{idx}", True)
+        dialog.hide_row(f"exists_info_{idx}", True)
+        dialog.hide_row(f"remove_{idx}", True)
         ap.UI().show_success("Symlink Removed", f"'{link}' has been removed")
 
     def get_dialog(self):
