@@ -1,0 +1,23 @@
+version: "1.0"
+
+action:
+  name: "Symlinks"
+  version: 1
+  id: "ap::package::symlinks"
+  type: package
+  enable: false
+  description: Create and manage symbolic links (symlinks) to folders from external locations. Symlinks are automatically re-created when cloning a project.
+
+  author: "Anchorpoint Software GmbH"
+  settings: "symlink_settings.py"
+
+  icon:
+    path: symlink_package.svg
+
+  platforms:
+    - win
+
+  actions:
+    - ap::symlink
+    - ap::symlink::settings
+    - ap::symlink::clone_hook
