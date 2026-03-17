@@ -90,6 +90,7 @@ class SymlinkSettings(ap.AnchorpointSettings):
         self.dialog.add_info(
             "Symlinks are pointing to folders from another location. This is useful when you want<br>to include files in your project without copying them over."
         )
+        self.dialog.add_text("<b>Available Symlinks</b>")
 
         for i, entry in enumerate(entries):
             source = entry.get("source", "")
@@ -98,7 +99,7 @@ class SymlinkSettings(ap.AnchorpointSettings):
             exists = os.path.islink(link_abs)
 
             # Format source: show "(external) foldername" for paths outside the project
-            if source.startswith(".."):
+            if os.path.isabs(source) or source.startswith(".."):
                 source_display = f"(external) {os.path.basename(source.rstrip('/'))}"
             else:
                 source_display = source
@@ -196,20 +197,19 @@ class SymlinkSettings(ap.AnchorpointSettings):
             new_source_rel = os.path.relpath(
                 new_source_abs, self.project_path).replace(os.sep, "/")
         except ValueError:
-            new_source_rel = None
+            new_source_rel = new_source_abs.replace(os.sep, "/")
 
         # Update the settings entry with the new source path
-        if new_source_rel:
-            entries = self._get_entries()
-            for entry in entries:
-                if entry.get("source") == source and entry.get("link") == link:
-                    entry["source"] = new_source_rel
-                    break
-            self.settings.set("entries", json.dumps(entries))
-            self.settings.store()
+        entries = self._get_entries()
+        for entry in entries:
+            if entry.get("source") == source and entry.get("link") == link:
+                entry["source"] = new_source_rel
+                break
+        self.settings.set("entries", json.dumps(entries))
+        self.settings.store()
 
         self._do_create_symlink(
-            settings_dialog, new_source_abs, link_abs, new_source_rel or source, link, idx)
+            settings_dialog, new_source_abs, link_abs, new_source_rel, link, idx)
 
     def _do_create_symlink(self, dialog, source_abs, link_abs, source, link, idx):
         if os.path.exists(link_abs) or os.path.islink(link_abs):

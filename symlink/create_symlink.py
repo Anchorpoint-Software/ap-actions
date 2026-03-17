@@ -72,7 +72,6 @@ def add_to_local_gitignore(link_path):
 def _store_symlink_entry(source_abs, link_abs):
     """Store symlink entry in shared settings for project-wide management."""
     if not ctx.project_id:
-        print("No project context, skipping settings storage")
         return
 
     project_path = ctx.project_path
@@ -80,8 +79,7 @@ def _store_symlink_entry(source_abs, link_abs):
         source_rel = os.path.relpath(
             source_abs, project_path).replace(os.sep, "/")
     except ValueError:
-        print("Source is on a different drive, skipping settings storage")
-        return
+        source_rel = source_abs.replace(os.sep, "/")
 
     link_rel = os.path.relpath(link_abs, project_path).replace(os.sep, "/")
 
@@ -91,13 +89,11 @@ def _store_symlink_entry(source_abs, link_abs):
 
     for entry in entries:
         if entry.get("source") == source_rel and entry.get("link") == link_rel:
-            print(f"Symlink entry already exists: {source_rel} -> {link_rel}")
             return
 
     entries.append({"source": source_rel, "link": link_rel})
     settings.set("entries", json.dumps(entries))
     settings.store()
-    print(f"Stored symlink entry: {source_rel} -> {link_rel}")
 
 
 if not is_developer_mode_enabled():
