@@ -3,10 +3,30 @@ import tkinter as tk
 import anchorpoint as ap
 import apsync as aps
 import os
+import sys
 import json
+
+SYMLINK_DOCS_URL = "https://docs.anchorpoint.app/assets/utilities/symlinks/"
 
 ctx = ap.get_context()
 ui = ap.UI()
+
+
+def is_developer_mode_enabled():
+    if sys.platform != "win32":
+        return True
+    import winreg
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock",
+        )
+        value, _ = winreg.QueryValueEx(
+            key, "AllowDevelopmentWithoutDevLicense")
+        winreg.CloseKey(key)
+        return value == 1
+    except OSError:
+        return False
 
 
 def find_git_root(path):
@@ -79,6 +99,14 @@ def _store_symlink_entry(source_abs, link_abs):
     settings.store()
     print(f"Stored symlink entry: {source_rel} -> {link_rel}")
 
+
+if not is_developer_mode_enabled():
+    ui.show_info(
+        "Developer Mode Required",
+        f'Creating symlinks requires Windows Developer Mode. Learn how to <a href="{SYMLINK_DOCS_URL}">enable this setting</a> on your computer.',
+        duration=6000,
+    )
+    raise SystemExit()
 
 root = tk.Tk()
 root.withdraw()

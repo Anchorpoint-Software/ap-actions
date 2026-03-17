@@ -1,7 +1,27 @@
 import anchorpoint as ap
 import apsync as aps
 import os
+import sys
 import json
+
+SYMLINK_DOCS_URL = "https://docs.anchorpoint.app/assets/utilities/symlinks/"
+
+
+def is_developer_mode_enabled():
+    if sys.platform != "win32":
+        return True
+    import winreg
+    try:
+        key = winreg.OpenKey(
+            winreg.HKEY_LOCAL_MACHINE,
+            r"SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock",
+        )
+        value, _ = winreg.QueryValueEx(
+            key, "AllowDevelopmentWithoutDevLicense")
+        winreg.CloseKey(key)
+        return value == 1
+    except OSError:
+        return False
 
 
 def find_git_root(path):
@@ -134,6 +154,14 @@ class SymlinkSettings(ap.AnchorpointSettings):
                 self.dialog.add_text(" ", var=f"sep_{i}")
 
     def _create_symlink(self, dialog, source, link, idx):
+        if not is_developer_mode_enabled():
+            ui.show_info(
+                "Developer Mode Required",
+                f'Creating symlinks requires Windows Developer Mode. Learn how to <a href="{SYMLINK_DOCS_URL}">enable this setting</a> on your computer.',
+                duration=6000,
+            )
+            return
+
         source_abs = os.path.join(self.project_path, source)
         link_abs = os.path.join(self.project_path, link)
 
