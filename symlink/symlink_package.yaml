@@ -9,7 +9,6 @@ action:
   description: Create and manage symbolic links (symlinks) to folders from external locations. Symlinks are automatically re-created when cloning a project.
 
   author: "Anchorpoint Software GmbH"
-  settings: "symlink_settings.py"
 
   icon:
     path: symlink_package.svg
