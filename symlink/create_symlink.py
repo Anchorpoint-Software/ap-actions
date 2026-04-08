@@ -50,7 +50,7 @@ def add_to_local_gitignore(link_path):
         return
 
     exclude_path = os.path.join(git_root, ".git", "info", "exclude")
-    rel_path = os.path.relpath(link_path, git_root).replace(os.sep, "/")
+    rel_path = "/" + os.path.relpath(link_path, git_root).replace(os.sep, "/")
 
     content = ""
     if os.path.exists(exclude_path):
