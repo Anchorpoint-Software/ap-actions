@@ -14,7 +14,7 @@ def get_image(workspace_id, input_path):
         if thumbnail_path:
             # Copy thumbnail to same directory with original filename
             output_dir = os.path.dirname(thumbnail_path)
-            file_name = os.path.basename(input_path).split(".")[0]
+            file_name = os.path.splitext(os.path.basename(input_path))[0]
             renamed_thumbnail_path = os.path.join(output_dir, file_name + ".png")
 
             if not os.path.exists(renamed_thumbnail_path):
@@ -33,10 +33,11 @@ def get_image(workspace_id, input_path):
                 output_folder = create_temp_directory()
 
             # get the proper filename, rename it because the generated PNG file has a _pt appendix
-            file_name = os.path.basename(input_path).split(".")[0]
+            file_name = os.path.splitext(os.path.basename(input_path))[0]
             image_path = os.path.join(
                 output_folder, file_name + str("_dt") + str(".png")
             )
+            print("Generated image path: " + image_path)
 
             if not os.path.exists(image_path):
                 # start progress
