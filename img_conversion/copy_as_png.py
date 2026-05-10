@@ -37,7 +37,6 @@ def get_image(workspace_id, input_path):
             image_path = os.path.join(
                 output_folder, file_name + str("_dt") + str(".png")
             )
-            print("Generated image path: " + image_path)
 
             if not os.path.exists(image_path):
                 # start progress
