@@ -8,8 +8,12 @@ import stat
 import anchorpoint as ap
 
 if platform.system() == "Darwin":
-    FFMPEG_INSTALL_URL = "https://s3.eu-central-1.amazonaws.com/releases.anchorpoint.app/ffmpeg/ffmpeg.zip"
-    FFMPEG_ZIP_PATH = "ffmpeg/ffmpeg"
+    if platform.machine() == "arm64":
+        FFMPEG_INSTALL_URL = "https://s3.eu-central-1.amazonaws.com/releases.anchorpoint.app/ffmpeg/ffmpeg_arm.zip"
+    else:
+        FFMPEG_INSTALL_URL = "https://s3.eu-central-1.amazonaws.com/releases.anchorpoint.app/ffmpeg/ffmpeg.zip"
+
+    FFMPEG_ZIP_PATHP_PATH = "ffmpeg/ffmpeg"
 else:
     FFMPEG_INSTALL_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
     FFMPEG_ZIP_PATH = "ffmpeg-master-latest-win64-gpl/bin/ffmpeg.exe"
